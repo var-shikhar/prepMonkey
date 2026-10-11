@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const [user, openReports] = await Promise.all([requireRole('author', 'admin'), openReportCount()]);
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-hairline bg-background/75 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
           <Logo href="/admin" />
           <span className="rounded-full bg-gradient-brand px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide text-white uppercase">Admin</span>

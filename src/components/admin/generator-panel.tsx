@@ -43,7 +43,7 @@ export function GeneratorPanel({ exam }: { exam: ExamConfig }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
-      <section className="space-y-4 rounded-2xl border bg-card p-5 lg:self-start">
+      <section className="space-y-4 glass rounded-3xl p-5 lg:self-start">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Skill</Label>
           <Select value={skillId} onValueChange={setSkillId}>
@@ -99,7 +99,7 @@ export function GeneratorPanel({ exam }: { exam: ExamConfig }) {
         {results.map((r, i) => (
           <div key={i} className="space-y-2">
             {r.created.map((c) => (
-              <div key={c.id} className="flex items-start gap-3 rounded-2xl border bg-card p-4">
+              <div key={c.id} className="flex items-start gap-3 glass rounded-3xl p-4">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[0.65rem] font-semibold">Draft</span>
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-[0.7rem] text-muted-foreground">{c.id} · {c.type}</p>

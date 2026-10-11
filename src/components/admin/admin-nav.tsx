@@ -29,7 +29,7 @@ export function AdminNav({ openReports, isAdmin }: { openReports: number; isAdmi
             aria-current={active ? 'page' : undefined}
             className={cn(
               'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-              active ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
+              active ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-wash hover:text-foreground',
             )}
           >
             <item.icon className={cn('size-4', active && 'text-primary')} />

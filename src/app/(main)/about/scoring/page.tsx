@@ -10,7 +10,7 @@ export default function ScoringPage() {
   return (
     <article className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold sm:text-4xl">How scoring works</h1>
+        <h1 className="text-[2rem] leading-[1.08] font-semibold tracking-[-0.035em] sm:text-5xl">How scoring works</h1>
         <p className="text-muted-foreground">PrepMonkey scores mocks the way certification exams report results, so a pass here means something.</p>
       </header>
       <Section title="Criterion-referenced">
@@ -28,7 +28,7 @@ export default function ScoringPage() {
       <Section title="Readiness and predicted score">
         Readiness blends your recent answers on every skill, weighting recent and harder questions more and starting each skill from a cautious 50% until you&apos;ve shown otherwise. The skills combine by their blueprint weights into a predicted score, and readiness is the chance that score clears the pass mark. With little data the estimate is deliberately modest.
       </Section>
-      <p className="rounded-2xl border bg-secondary/50 p-4 text-sm text-muted-foreground">
+      <p className="rounded-2xl border bg-wash p-4 text-sm text-muted-foreground">
         Official exams set their cut score through a confidential standard-setting study, so no practice platform can reproduce it exactly. Our mapping is a demanding approximation.
       </p>
     </article>
@@ -38,7 +38,7 @@ export default function ScoringPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2">
-      <h2 className="text-xl font-semibold">{title}</h2>
+      <h2 className="font-heading text-xl font-semibold tracking-[-0.02em] sm:text-2xl">{title}</h2>
       <p className="leading-relaxed text-muted-foreground">{children}</p>
     </section>
   );

@@ -70,10 +70,10 @@ export function TeamView({ initial, userId, exams }: { initial: TeamData; userId
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground capitalize">Team · you are {team.role === 'member' ? 'a member' : `the ${team.role}`}</p>
-          <h1 className="text-3xl font-bold">{team.name}</h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em]">{team.name}</h1>
         </div>
         {team.inviteCode && (
-          <div className="flex items-center gap-2 rounded-2xl border bg-card px-3 py-2">
+          <div className="flex items-center gap-2 glass rounded-3xl px-3 py-2">
             <span className="text-xs text-muted-foreground">Invite code</span>
             <span className="font-mono text-sm font-semibold tracking-widest">{team.inviteCode}</span>
             <Button variant="ghost" size="icon-sm" onClick={copyInvite} aria-label="Copy invite link"><Copy /></Button>
@@ -99,7 +99,7 @@ export function TeamView({ initial, userId, exams }: { initial: TeamData; userId
                 const overdue = a.overdue;
                 const doneCount = a.results ? Object.values(a.results).filter((c) => c?.status === 'submitted').length : 0;
                 return (
-                  <li key={a.id} className="space-y-3 rounded-2xl border bg-card p-4">
+                  <li key={a.id} className="space-y-3 glass rounded-3xl p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <h3 className="font-semibold">{a.title}</h3>
@@ -121,7 +121,7 @@ export function TeamView({ initial, userId, exams }: { initial: TeamData; userId
                       </div>
                     </div>
                     {manager && a.results && (
-                      <div className="space-y-2 border-t pt-3">
+                      <div className="space-y-2 border-t border-hairline pt-3">
                         <p className="text-xs text-muted-foreground">{doneCount} of {team.members.length} finished</p>
                         <div className="flex flex-wrap gap-2">
                           {team.members.map((m) => {
@@ -153,7 +153,7 @@ export function TeamView({ initial, userId, exams }: { initial: TeamData; userId
         </TabsContent>
 
         <TabsContent value="members">
-          <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+          <ul className="divide-y divide-hairline overflow-hidden glass rounded-3xl">
             {team.members.map((m) => (
               <li key={m.userId} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <span className="min-w-0 flex-1">
@@ -197,7 +197,7 @@ function NewAssignment({ teamId, exams, onCreated }: { teamId: string; exams: Ex
   });
   if (!open) return <Button variant="outline" onClick={() => setOpen(true)}><Plus /> New assignment</Button>;
   return (
-    <form className="grid gap-4 rounded-2xl border bg-card p-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
+    <form className="grid gap-4 glass rounded-3xl p-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Exam</Label>
         <Select value={examId} onValueChange={setExamId}>
