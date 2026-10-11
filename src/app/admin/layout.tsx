@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { openReportCount } from '@/server/admin/moderation';
 import { requireRole } from '@/server/session';
 
-export const metadata: Metadata = { title: { default: 'Admin', template: '%s · quizzMonkey admin' } };
+export const metadata: Metadata = { title: { default: 'Admin', template: '%s · PrepMonkey admin' } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // The count reveals nothing on its own and is only rendered once the role check passes, so both share a round trip.

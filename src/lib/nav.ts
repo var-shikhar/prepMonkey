@@ -21,10 +21,13 @@ export const APP_NAV: NavItem[] = [
   { href: '/progress', label: 'Progress', icon: ChartNoAxesColumnIncreasing, match: ['/attempt'] },
 ];
 
+// Visitors get a single page: these jump to its sections. Explore, Interviews and
+// Pricing are app pages for signed-in people, and send visitors back here.
 export const MARKETING_NAV = [
-  { href: '/explore', label: 'Explore exams' },
-  { href: '/interviews', label: 'Mock interviews' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: '/#how-it-works', label: 'How it works' },
+  { href: '/#catalogue', label: 'Exams' },
+  { href: '/#plans', label: 'Pricing' },
+  { href: '/#faq', label: 'FAQ' },
 ];
 
 export function isActive(item: Pick<NavItem, 'href' | 'match'>, pathname: string) {

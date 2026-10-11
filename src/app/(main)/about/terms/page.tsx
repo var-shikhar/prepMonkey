@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Terms',
-  description: 'The ground rules for using quizzMonkey, an independent practice platform not affiliated with any exam vendor.',
+  description: 'The ground rules for using PrepMonkey, an independent practice platform not affiliated with any exam vendor.',
   alternates: { canonical: '/about/terms' },
 };
 
@@ -11,11 +11,11 @@ export default function Page() {
     <article className="mx-auto max-w-3xl space-y-6 px-4 py-10 sm:px-6">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold sm:text-4xl">Terms</h1>
-        <p className="text-muted-foreground">The ground rules for using quizzMonkey.</p>
+        <p className="text-muted-foreground">The ground rules for using PrepMonkey.</p>
       </header>
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">Practice, not certification</h2>
-        <p className="leading-relaxed text-muted-foreground">quizzMonkey is an independent practice platform. It is not affiliated with any exam vendor, and readiness certificates are not official credentials.</p>
+        <p className="leading-relaxed text-muted-foreground">PrepMonkey is an independent practice platform. It is not affiliated with any exam vendor, and readiness certificates are not official credentials.</p>
       </section>
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">Fair use</h2>

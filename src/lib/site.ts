@@ -6,7 +6,7 @@
 // BETTER_AUTH_URL, the address the app is actually served from.
 
 export const DEFAULT_SITE_URL = 'https://quizzmonkey.vercel.app';
-export const SITE_NAME = 'quizzMonkey';
+export const SITE_NAME = 'PrepMonkey';
 
 /** The site's origin, or an absolute URL for `path` on it. Accepts SITE_URL with or without a scheme. */
 export function siteUrl(path = ''): string {
