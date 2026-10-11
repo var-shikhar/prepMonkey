@@ -64,10 +64,10 @@ export function Leaderboard({ top, me, optedIn, anonymous }: { top: LeaderRow[];
 export function NewBadges({ badges }: { badges: BadgeDef[] }) {
   if (!badges.length) return null;
   return (
-    <section className="flex flex-wrap items-center gap-3 rounded-3xl border border-banana/60 bg-banana/15 p-4">
+    <section className="glass flex flex-wrap items-center gap-3 rounded-3xl border-banana/50 bg-banana/10 p-4">
       <span className="text-sm font-semibold">New badge{badges.length > 1 ? 's' : ''} unlocked!</span>
       {badges.map((b) => (
-        <span key={b.id} className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-sm font-medium shadow-sm animate-pop">
+        <span key={b.id} className="inline-flex items-center gap-2 rounded-full border border-hairline-strong bg-background/70 px-3 py-1.5 text-sm font-medium animate-pop">
           <span aria-hidden>{b.emoji}</span>{b.name}
         </span>
       ))}

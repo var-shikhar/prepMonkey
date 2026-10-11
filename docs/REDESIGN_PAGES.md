@@ -16,9 +16,9 @@ Status: ⏳ in review · ✅ approved · ⬜ not started
 | 7 | Onboarding | `/onboarding` | New learners | ⬜ |
 | 8 | Dashboard | `/dashboard` | Learners | ✅ |
 | 9 | Exam player | `/attempt/[id]` | Learners | ✅ |
-| 10 | Results | `/attempt/[id]/result` | Learners | ⏳ |
+| 10 | Results | `/attempt/[id]/result` | Learners | ✅ |
 | 11 | Study a skill | `/exams/[examId]/study/[skillId]` | Learners | ⬜ |
-| 12 | Progress | `/progress` | Learners | ⬜ |
+| 12 | Progress | `/progress` | Learners | ⏳ |
 | 13 | Mock interviews (list + room) | `/interviews`, `/interviews/[id]` | Learners (visitors → `/#how-it-works`) | ⬜ |
 | 14 | Saved questions | `/saved` | Learners | ⬜ |
 | 15 | Settings | `/settings` | Learners | ⬜ |
