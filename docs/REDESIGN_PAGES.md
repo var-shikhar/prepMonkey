@@ -10,12 +10,12 @@ Status: ⏳ in review · ✅ approved · ⬜ not started
 | 1 | Landing (the whole public site: how it works, exams, pricing, FAQ) | `/` | Visitors | ✅ |
 | 2 | Sign in / Sign up | `/sign-in`, `/sign-up` | Visitors | ⬜ |
 | 3 | Explore (catalogue) | `/explore` | Learners (visitors → `/#catalogue`) | ⬜ |
-| 4 | Exam hub | `/exams/[examId]` | Everyone | ⏳ |
+| 4 | Exam hub | `/exams/[examId]` | Everyone | ✅ |
 | 5 | Sample questions | `/exams/[examId]/sample-questions` | Everyone | ⬜ |
 | 6 | Pricing / upgrade | `/pricing` | Learners (visitors → `/#plans`) | ⬜ |
 | 7 | Onboarding | `/onboarding` | New learners | ⬜ |
 | 8 | Dashboard | `/dashboard` | Learners | ✅ |
-| 9 | Exam player | `/attempt/[id]` | Learners | ⬜ |
+| 9 | Exam player | `/attempt/[id]` | Learners | ⏳ |
 | 10 | Results | `/attempt/[id]/result` | Learners | ⬜ |
 | 11 | Study a skill | `/exams/[examId]/study/[skillId]` | Learners | ⬜ |
 | 12 | Progress | `/progress` | Learners | ⬜ |
