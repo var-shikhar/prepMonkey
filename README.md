@@ -1,6 +1,6 @@
-# quizzMonkey
+# PrepMonkey
 
-Mock exams, quizzes and interview practice in one calm place. quizzMonkey runs
+Mock exams, quizzes and interview practice in one calm place. PrepMonkey runs
 timed certification mocks that follow each exam's official blueprint, drills
 that explain every option, a readiness score that tells you when you're ready,
 and AI mock interviews with rubric feedback.
@@ -175,5 +175,5 @@ component with `(await headers()).get('x-nonce')` and pass it to
 
 ## Disclaimer
 
-quizzMonkey is an independent practice platform. It is not affiliated with any
+PrepMonkey is an independent practice platform. It is not affiliated with any
 exam vendor, and readiness certificates are not official credentials.

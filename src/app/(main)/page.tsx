@@ -1,203 +1,254 @@
 import type { Metadata } from 'next';
+import { Instrument_Serif } from 'next/font/google';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import {
-  ArrowRight, BookOpenCheck, BrainCircuit, CalendarClock, Compass, Gauge, MessagesSquare, ScrollText, Timer,
-} from 'lucide-react';
-import { ExamCard } from '@/components/exams/exam-card';
-import { HeroPreview } from '@/components/marketing/hero-preview';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
+import { MascotFace } from '@/components/brand/mascot-face';
 import { Reveal } from '@/components/common/reveal';
-import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid';
+import { ExamFaq } from '@/components/exam-hub/exam-faq';
+import { ExamCatalog } from '@/components/marketing/exam-catalog';
+import { FeatureStories } from '@/components/marketing/feature-stories';
+import { HeroBackdrop } from '@/components/marketing/hero-backdrop';
+import { MarkConstruction } from '@/components/marketing/mark-construction';
+import { ScrollProgress } from '@/components/marketing/scroll-progress';
+import { ProductSequence } from '@/components/marketing/product-sequence';
+import { SubjectMarquee } from '@/components/marketing/subject-marquee';
+import { JsonLd } from '@/components/seo/json-ld';
 import { Button } from '@/components/ui/button';
-import { Spotlight } from '@/components/ui/spotlight-new';
+import { LANDING_FAQ } from '@/lib/landing-faq';
+import { FREE_FEATURES, PRO_FEATURES } from '@/lib/plans';
+import { examListLd, faqLd, graph } from '@/lib/seo';
+import { cn } from '@/lib/utils';
+import { getProPrice } from '@/server/billing';
 import { listExams } from '@/server/exams';
 import { getUser } from '@/server/session';
 
 export const metadata: Metadata = { alternates: { canonical: '/' } };
 
+// The serif accent is only used on this page, so only this page loads it.
+const CATEGORY_LABEL = { certification: 'Certifications', quiz: 'Subject quizzes', interview: 'Interview prep' } as const;
+
+const serif = Instrument_Serif({ subsets: ['latin'], weight: '400', style: 'italic' });
+
 export default async function LandingPage() {
   const user = await getUser();
   if (user) redirect('/dashboard');
-  const exams = await listExams();
+  const [exams, proPrice] = await Promise.all([listExams(), getProPrice()]);
   const totalQuestions = exams.reduce((a, e) => a + e.questionCount, 0);
 
   return (
-    <>
+    // data-surface switches the whole document, header and footer included, to the cocoa palette.
+    <div data-surface="cocoa" className="relative overflow-x-clip">
+      <ScrollProgress />
+      <JsonLd data={graph(examListLd(exams), faqLd(LANDING_FAQ))} />
+      <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[60] opacity-[0.06] mix-blend-overlay" />
+
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div aria-hidden className="bg-grid mask-fade-b pointer-events-none absolute inset-0 -z-10" />
-        <Spotlight
-          gradientFirst="radial-gradient(68.54% 68.72% at 55.02% 31.46%, hsla(35, 100%, 70%, .16) 0, hsla(28, 100%, 55%, .05) 50%, hsla(28, 100%, 45%, 0) 80%)"
-          gradientSecond="radial-gradient(50% 50% at 50% 50%, hsla(40, 100%, 75%, .12) 0, hsla(35, 100%, 55%, .04) 80%, transparent 100%)"
-          gradientThird="radial-gradient(50% 50% at 50% 50%, hsla(45, 100%, 70%, .08) 0, hsla(35, 100%, 45%, .03) 80%, transparent 100%)"
-        />
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-16 pb-20 sm:px-6 md:pt-24 lg:grid-cols-[1.1fr_1fr]">
-          <Reveal className="space-y-7">
-            <Link href="/interviews" className="inline-flex items-center gap-2 rounded-full border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur transition hover:border-primary/40 hover:text-foreground">
-              <span className="rounded-full bg-gradient-brand px-1.5 py-px text-[0.65rem] font-semibold text-white">New</span>
-              AI mock interviews with rubric feedback
+      <section className="relative">
+        <HeroBackdrop />
+
+        <div className="relative mx-auto max-w-5xl px-4 pt-20 text-center sm:px-6 sm:pt-28">
+          <Reveal className="relative inline-block">
+            {/* The pill is the lamp: a warm cone of light falls from it over the headline. */}
+            <div aria-hidden className="pointer-events-none absolute inset-0">
+              <div className="animate-beam absolute origin-top top-1/2 left-1/2 h-[44rem] w-[min(76rem,200vw)] -translate-x-1/2 bg-[conic-gradient(from_180deg_at_50%_0%,transparent_36%,oklch(0.86_0.12_72/0.2)_50%,transparent_64%)] [mask-image:radial-gradient(farthest-side_at_50%_0%,black_30%,transparent)]" />
+              <div className="animate-beam absolute origin-top top-1/2 left-1/2 h-[30rem] w-[44rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side_at_50%_0%,oklch(0.75_0.17_58/0.35),transparent)]" />
+              <div className="absolute -inset-x-8 -inset-y-4 rounded-full bg-primary/35 blur-2xl" />
+              <div className="absolute top-full left-1/2 h-px w-56 -translate-x-1/2 bg-gradient-to-r from-transparent via-[oklch(0.9_0.1_75)] to-transparent" />
+            </div>
+            <Link href="#how-it-works" className="glass relative inline-flex items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs font-medium text-muted-foreground transition hover:text-foreground">
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[0.65rem] font-semibold text-primary-foreground">New</span>
+              AI mock interviews, scored against a rubric
               <ArrowRight className="size-3" />
             </Link>
-            <h1 className="text-4xl leading-[1.05] font-bold sm:text-5xl lg:text-6xl">
-              Practise like it&apos;s <span className="text-gradient">exam day</span>.
+          </Reveal>
+          <Reveal delay={0.05}>
+            <h1 className="mt-8 text-[3.2rem] leading-[0.95] font-semibold tracking-[-0.045em] sm:text-7xl lg:text-[6.75rem]">
+              Prep like it&apos;s
+              <br />
+              <span className={cn(serif.className, 'text-ember pr-3 text-[1.08em] font-normal tracking-[-0.02em]')}>exam day.</span>
             </h1>
-            <p className="max-w-xl text-lg text-muted-foreground">
-              Timed mocks that follow the real blueprint, drills that explain every option, and a readiness score that tells you when you&apos;re ready.
-              One calm place for certifications, quizzes and interview prep.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button asChild variant="premium" size="xl">
-                <Link href="/sign-up">Start practising free <ArrowRight data-icon="inline-end" /></Link>
-              </Button>
-              <Button asChild variant="outline" size="xl">
-                <Link href="/explore"><Compass data-icon="inline-start" /> Explore exams</Link>
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {totalQuestions.toLocaleString()} practice questions · every option explained · no card needed
+          </Reveal>
+          <Reveal delay={0.12}>
+            <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+              Mocks that follow the official blueprint, an explanation for every option, and a readiness score that tells you when to book.
+              For certifications, technical subjects and interviews.
             </p>
           </Reveal>
-          <Reveal delay={0.15}>
-            <HeroPreview />
+          <Reveal delay={0.18} className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <Button asChild variant="premium" size="xl" className="px-7">
+              <Link href="/sign-up">Start practising free <ArrowRight data-icon="inline-end" /></Link>
+            </Button>
+            <Button asChild variant="ghost" size="xl" className="glass px-7">
+              <Link href="#catalogue">Explore exams</Link>
+            </Button>
           </Reveal>
+          <Reveal delay={0.24}>
+            <p className="mt-6 text-sm text-muted-foreground/80">
+              Free to start · no card needed{totalQuestions > 0 && ` · ${totalQuestions.toLocaleString('en-IN')} questions`}
+            </p>
+          </Reveal>
+        </div>
+
+        <div className="mt-16 sm:mt-20">
+          <ProductSequence />
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <Reveal className="mx-auto mb-10 max-w-2xl text-center">
-          <h2 className="text-3xl font-semibold sm:text-4xl">Three steps. No guesswork.</h2>
-          <p className="mt-3 text-muted-foreground">quizzMonkey always shows you one next step, so you spend your time practising instead of planning.</p>
-        </Reveal>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { icon: Compass, title: 'Pick your exam', body: 'Choose a certification or quiz. A 15-question diagnostic finds your starting point.' },
-            { icon: BookOpenCheck, title: 'Learn with drills', body: 'Practise a topic and see why each option is right or wrong, straight away.' },
-            { icon: Timer, title: 'Prove it under time', body: 'Sit a full timed mock scored like the real exam. Your readiness updates as you go.' },
-          ].map((step, i) => (
-            <Reveal key={step.title} delay={i * 0.08} className="relative rounded-2xl border bg-card p-6">
-              <span className="absolute top-5 right-5 font-heading text-4xl font-bold text-muted-foreground/15">{i + 1}</span>
-              <step.icon className="size-6 text-primary" />
-              <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{step.body}</p>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <Reveal className="mx-auto mb-10 max-w-2xl text-center">
-          <h2 className="text-3xl font-semibold sm:text-4xl">Everything you need, nothing you don&apos;t</h2>
-          <p className="mt-3 text-muted-foreground">Built around how certification exams actually work.</p>
-        </Reveal>
-        <BentoGrid>
-          <BentoGridItem
-            className="md:col-span-2"
-            icon={<ScrollText className="size-5 text-primary" />}
-            title="Blueprint-accurate mocks"
-            description="Questions are drawn per skill in the official proportions, with the real timer, scale and pass mark. Harder questions weigh more, just like the real thing."
-            header={<FeatureArt kind="blueprint" />}
-          />
-          <BentoGridItem
-            icon={<Gauge className="size-5 text-primary" />}
-            title="A readiness score you can trust"
-            description="Your recent answers, weighted by the blueprint, predict your score and flag your weakest skills."
-            header={<FeatureArt kind="gauge" />}
-          />
-          <BentoGridItem
-            icon={<CalendarClock className="size-5 text-primary" />}
-            title="Spaced review"
-            description="Missed questions come back just before you'd forget them. A few minutes a day keeps them fresh."
-            header={<FeatureArt kind="calendar" />}
-          />
-          <BentoGridItem
-            className="md:col-span-2"
-            icon={<MessagesSquare className="size-5 text-primary" />}
-            title="AI mock interviews"
-            description="Pick a role and level. The interviewer asks follow-ups based on your answers and scores you against a clear rubric."
-            header={<FeatureArt kind="chat" />}
-          />
-        </BentoGrid>
-      </section>
-
-      {/* Exams */}
+      {/* Everything you can practise */}
       {exams.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <Reveal className="mb-8 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2 className="text-3xl font-semibold">Popular exams</h2>
-              <p className="mt-2 text-muted-foreground">Start with a free diagnostic on any of them.</p>
-            </div>
-            <Button asChild variant="ghost"><Link href="/explore">See all exams <ArrowRight data-icon="inline-end" /></Link></Button>
-          </Reveal>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {exams.slice(0, 6).map((exam, i) => (
-              <Reveal key={exam.id} delay={i * 0.06}><ExamCard exam={exam} /></Reveal>
-            ))}
+        <section aria-labelledby="practise-for" className="pt-24 pb-12 sm:pt-32 lg:pt-40">
+          <div className="mx-auto mb-12 flex max-w-6xl flex-wrap items-end justify-between gap-6 px-4 sm:px-6">
+            <Reveal>
+              <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Practise for</p>
+              <h2 id="practise-for" className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
+                {exams.length} exams and subjects, <span className="text-muted-foreground">one place.</span>
+              </h2>
+            </Reveal>
+            <Reveal delay={0.08} className="flex flex-wrap gap-2">
+              {(Object.keys(CATEGORY_LABEL) as (keyof typeof CATEGORY_LABEL)[]).map((c) => {
+                const n = exams.filter((e) => e.category === c).length;
+                return n > 0 && (
+                  <span key={c} className="glass rounded-full px-3.5 py-1.5 text-sm">
+                    <span className="font-semibold">{n}</span> <span className="text-muted-foreground">{CATEGORY_LABEL[c]}</span>
+                  </span>
+                );
+              })}
+            </Reveal>
           </div>
+          <SubjectMarquee
+            items={exams.map((e) => ({ href: `/exams/${e.id}`, label: e.title, code: e.code, kind: { certification: 'Certification', quiz: 'Quiz', interview: 'Interview prep' }[e.category], accent: e.meta.accent }))}
+          />
         </section>
       )}
 
-      {/* Final CTA */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <Reveal className="relative overflow-hidden rounded-3xl bg-gradient-brand px-6 py-14 text-center text-white sm:px-12">
-          <div aria-hidden className="bg-grid pointer-events-none absolute inset-0 opacity-30" />
-          <BrainCircuit className="mx-auto size-10 opacity-90" />
-          <h2 className="mt-4 text-3xl font-semibold sm:text-4xl">Your next exam, minus the nerves.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/85">Create a free account in seconds, or try it as a guest. Your progress follows you when you sign up.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild size="xl" className="bg-white text-[oklch(0.3_0.06_45)] hover:bg-white/90">
-              <Link href="/sign-up">Create free account</Link>
-            </Button>
-            <Button asChild size="xl" variant="ghost" className="text-white hover:bg-white/15 hover:text-white">
-              <Link href="/sign-in">I already have one</Link>
-            </Button>
+
+      {/* How it works */}
+      <section id="how-it-works" className="scroll-mt-16 py-28 sm:py-36 lg:py-44">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading eyebrow="How it works" title="From first question to exam day." className="mb-10 lg:mb-0">
+            PrepMonkey always shows you one next step, so your time goes into practising, not planning.
+          </SectionHeading>
+        </div>
+        {/* Full width on desktop: the pinned track slides edge to edge. */}
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:max-w-none lg:px-0">
+          <FeatureStories />
+        </div>
+      </section>
+
+      {/* The guide */}
+      <section id="guide" className="relative scroll-mt-16 border-y bg-section-alt py-28 sm:py-36 lg:py-44">
+        <div className="mx-auto grid max-w-6xl items-center gap-16 px-4 sm:px-6 md:grid-cols-2 lg:gap-24">
+          <MarkConstruction className="mx-auto w-full max-w-sm" />
+          <div>
+            <SectionHeading eyebrow="Your guide" title="A tutor on every question." align="left">
+              Stuck on a question? Ask the PrepMonkey tutor about the exact one in front of you. It explains the idea behind it and what each option misses, then gets out of the way.
+            </SectionHeading>
+            <ul className="mt-8 divide-y border-y">
+              {[
+                ['Explains the reasoning', 'Not just the answer key: why the right option is right and why the others fall short.'],
+                ['Knows your blueprint', 'Answers in terms of the exam and skill you are studying, at your level.'],
+                ['Stays out of mocks', 'Timed mocks run like the real exam, with no hints, so your score means something.'],
+              ].map(([t, d], i) => (
+                <Reveal key={t} delay={i * 0.08} className="flex gap-4 py-4">
+                  <span className="mt-0.5 font-mono text-xs text-primary">0{i + 1}</span>
+                  <div>
+                    <div className="font-medium">{t}</div>
+                    <div className="mt-0.5 text-sm text-muted-foreground">{d}</div>
+                  </div>
+                </Reveal>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Catalogue */}
+      {exams.length > 0 && (
+        <section id="catalogue" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-28 sm:py-36 lg:py-44 sm:px-6">
+          <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+            <SectionHeading eyebrow="Catalogue" title="What will you prep today?" align="left">
+              Every exam starts with a free diagnostic.
+            </SectionHeading>
+          </div>
+          <ExamCatalog exams={exams} />
+        </section>
+      )}
+
+      {/* Plans */}
+      <section id="plans" className="mx-auto max-w-5xl scroll-mt-16 px-4 py-28 sm:py-36 lg:py-44 sm:px-6">
+        <SectionHeading eyebrow="Pricing" title="Free to start. Pro when it counts." className="mb-14 sm:mb-16">
+          Every exam, drill and explanation is free. Upgrade for unlimited full mocks and more AI coaching.
+        </SectionHeading>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Reveal className="glass flex flex-col rounded-3xl p-8">
+            <h3 className="text-lg font-semibold">Free</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Everything you need to practise properly.</p>
+            <ul className="mt-7 flex-1 space-y-3 text-sm">
+              {FREE_FEATURES.map((f) => <li key={f} className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-muted-foreground" />{f}</li>)}
+            </ul>
+            <Button asChild variant="ghost" size="xl" className="glass mt-8 w-full"><Link href="/sign-up">Start free</Link></Button>
+          </Reveal>
+          <Reveal delay={0.1} className="ring-spin relative rounded-[1.5rem] p-px">
+            <div className="relative flex h-full flex-col overflow-hidden rounded-[calc(1.5rem-1px)] bg-raised p-8">
+              <div aria-hidden className="absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl" />
+              <h3 className="relative flex items-center gap-2 text-lg font-semibold"><Sparkles className="size-4 text-primary" /> Pro</h3>
+              <p className="relative mt-1 text-sm text-muted-foreground">Practise without limits.</p>
+              {proPrice && (
+                <p className="relative mt-5 font-heading text-4xl font-semibold tracking-[-0.03em]">
+                  {formatPrice(proPrice)}<span className="ml-1 text-sm font-normal text-muted-foreground">/ {proPrice.interval}</span>
+                </p>
+              )}
+              <ul className="relative mt-7 flex-1 space-y-3 text-sm">
+                {PRO_FEATURES.map((f) => <li key={f} className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{f}</li>)}
+              </ul>
+              <Button asChild variant="premium" size="xl" className="relative mt-8 w-full"><Link href="/sign-up?next=/pricing">Start free, upgrade any time <ArrowRight data-icon="inline-end" /></Link></Button>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="mx-auto max-w-3xl scroll-mt-16 px-4 py-28 sm:py-36 lg:py-44 sm:px-6">
+        <Reveal>
+          <ExamFaq faqs={LANDING_FAQ} id="landing-faq" title="Questions, answered honestly." titleClassName="mb-12 text-center text-4xl tracking-[-0.04em] text-balance sm:text-5xl" />
+        </Reveal>
+      </section>
+
+      {/* Final CTA. The negative bottom margin cancels the footer's top margin, so the glow runs into it. */}
+      <section id="start" className="relative -mb-24 overflow-hidden pt-36 pb-32 sm:pt-44 lg:pt-52">
+        <div aria-hidden className="absolute top-1/2 left-1/2 h-[36rem] w-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,oklch(0.72_0.17_55/0.22),transparent)]" />
+        <Reveal className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <div className="relative mx-auto size-36 sm:size-44">
+            <div aria-hidden className="ring-spin absolute inset-2 rounded-full opacity-60 blur-2xl" />
+            <div aria-hidden className="absolute inset-3 rounded-full border border-primary/25 bg-background/60 backdrop-blur" />
+            <MascotFace className="relative size-full p-4" title="The PrepMonkey guide" />
+          </div>
+          <h2 className="mt-8 text-5xl leading-[0.95] font-semibold tracking-[-0.045em] sm:text-7xl">
+            Walk in <span className={cn(serif.className, 'text-ember pr-2 font-normal tracking-[-0.02em]')}>ready.</span>
+          </h2>
+          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">Create a free account in seconds, or try it as a guest. Your progress follows you when you sign up.</p>
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
+            <Button asChild variant="premium" size="xl" className="px-7"><Link href="/sign-up">Create free account <ArrowRight data-icon="inline-end" /></Link></Button>
+            <Button asChild variant="ghost" size="xl" className="glass px-7"><Link href="/sign-in">Sign in</Link></Button>
           </div>
         </Reveal>
       </section>
-    </>
+    </div>
   );
 }
 
-/** Small, calm illustrations for the bento tiles (pure CSS, theme-aware). */
-function FeatureArt({ kind }: { kind: 'blueprint' | 'gauge' | 'calendar' | 'chat' }) {
-  if (kind === 'blueprint') {
-    const bars = [33, 17, 15, 11, 11, 8, 3, 3];
-    return (
-      <div className="flex h-24 items-end gap-2 rounded-xl bg-secondary/60 p-3">
-        {bars.map((h, i) => (
-          <div key={i} className="flex-1 rounded-t-md bg-gradient-to-t from-primary/80 to-banana/80 transition-all duration-500 group-hover/bento:opacity-100" style={{ height: `${h * 2.4}%`, opacity: 0.55 + i * 0.05 }} />
-        ))}
-      </div>
-    );
-  }
-  if (kind === 'gauge') {
-    return (
-      <div className="grid h-24 place-items-center rounded-xl bg-secondary/60">
-        <div className="relative size-20">
-          <svg viewBox="0 0 36 36" className="size-20 -rotate-90">
-            <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-border" strokeWidth="3.5" />
-            <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-primary transition-all duration-700" strokeWidth="3.5" strokeLinecap="round" strokeDasharray="97.4" strokeDashoffset="24" />
-          </svg>
-          <span className="absolute inset-0 grid place-items-center font-heading text-lg font-bold">76%</span>
-        </div>
-      </div>
-    );
-  }
-  if (kind === 'calendar') {
-    return (
-      <div className="grid h-24 grid-cols-7 gap-1.5 rounded-xl bg-secondary/60 p-3">
-        {Array.from({ length: 21 }, (_, i) => (
-          <span key={i} className="rounded-[4px]" style={{ background: `color-mix(in oklch, var(--primary) ${[8, 30, 60, 15, 80, 45, 20][i % 7] + (i > 13 ? 10 : 0)}%, transparent)` }} />
-        ))}
-      </div>
-    );
-  }
+const formatPrice = (p: { amount: number; currency: string }) =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: p.currency, maximumFractionDigits: p.amount % 1 ? 2 : 0 }).format(p.amount);
+
+function SectionHeading({ eyebrow, title, children, align = 'center', className }: {
+  eyebrow: string; title: string; children?: React.ReactNode; align?: 'center' | 'left'; className?: string;
+}) {
   return (
-    <div className="flex h-24 flex-col justify-center gap-2 rounded-xl bg-secondary/60 p-3 text-xs">
-      <span className="w-fit max-w-[85%] rounded-2xl rounded-bl-sm bg-card px-3 py-1.5 shadow-sm">Walk me through how you&apos;d design a rate limiter.</span>
-      <span className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3 py-1.5 text-primary-foreground">I&apos;d start with a token bucket per API key…</span>
-    </div>
+    <Reveal className={cn(align === 'center' ? 'mx-auto max-w-2xl text-center' : 'max-w-xl', className)}>
+      <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{eyebrow}</p>
+      <h2 className="mt-4 text-4xl leading-[1.02] font-semibold tracking-[-0.04em] text-balance sm:text-5xl">{title}</h2>
+      {children && <p className="mt-4 text-lg leading-relaxed text-muted-foreground">{children}</p>}
+    </Reveal>
   );
 }

@@ -34,7 +34,7 @@ export default async function VerifyCodePage({ params }: { params: Promise<{ cod
           <Row label="Code" value={cert.id} mono />
         </dl>
         <Button asChild variant="outline" className="mt-6"><Link href={`/certificates/${cert.id}`}>View certificate</Link></Button>
-        <p className="mt-4 text-xs text-muted-foreground">quizzMonkey readiness certificates confirm a passing score on a full practice exam. They are not official vendor credentials.</p>
+        <p className="mt-4 text-xs text-muted-foreground">PrepMonkey readiness certificates confirm a passing score on a full practice exam. They are not official vendor credentials.</p>
       </div>
     </div>
   );

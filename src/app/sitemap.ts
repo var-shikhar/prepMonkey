@@ -8,7 +8,8 @@ import { getSampleQuestions } from '@/server/exams';
 // Rendered on request (not at build time), so deploys never need the database during the build.
 export const dynamic = 'force-dynamic';
 
-const STATIC_PAGES = ['/', '/explore', '/interviews', '/pricing', '/verify', '/about/scoring', '/about/privacy', '/about/terms'];
+// Explore, Interviews and Pricing redirect visitors (and crawlers) to the landing page, so they aren't listed.
+const STATIC_PAGES = ['/', '/verify', '/about/scoring', '/about/privacy', '/about/terms'];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages: MetadataRoute.Sitemap = STATIC_PAGES.map((p) => ({ url: siteUrl(p), changeFrequency: 'weekly', priority: p === '/' ? 1 : 0.6 }));

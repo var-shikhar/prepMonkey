@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Check, Sparkles } from 'lucide-react';
 import { UpgradeButton } from '@/components/billing/billing-buttons';
 import { Reveal } from '@/components/common/reveal';
 import { Button } from '@/components/ui/button';
+import { FREE_FEATURES, PRO_FEATURES } from '@/lib/plans';
 import { billingEnabled, getPlan, getProPrice } from '@/server/billing';
 import { getUser } from '@/server/session';
 
@@ -13,22 +15,10 @@ export const metadata: Metadata = {
   alternates: { canonical: '/pricing' },
 };
 
-const FREE = [
-  'Every exam and quiz in the catalog',
-  'Diagnostics, drills, quick mocks and adaptive tests',
-  'Explanations for every option',
-  'Readiness score, study plan and spaced review',
-  'Verifiable readiness certificates',
-];
-const PRO = [
-  'Everything in Free',
-  'Unlimited full-length mock exams',
-  'More AI tutor, interview and coaching requests every day',
-  'Priority access to new exams',
-];
-
 export default async function PricingPage() {
   const [user, price] = await Promise.all([getUser(), getProPrice()]);
+  // Visitors compare plans on the landing page.
+  if (!user) redirect('/#plans');
   const enabled = billingEnabled();
   const plan = user ? await getPlan(user.id) : 'free';
   const fmt = price ? new Intl.NumberFormat(undefined, { style: 'currency', currency: price.currency, maximumFractionDigits: price.amount % 1 ? 2 : 0 }).format(price.amount) : null;
@@ -45,7 +35,7 @@ export default async function PricingPage() {
           <h2 className="text-lg font-semibold">Free</h2>
           <p className="mt-1 font-heading text-4xl font-bold">{price ? new Intl.NumberFormat(undefined, { style: 'currency', currency: price.currency, maximumFractionDigits: 0 }).format(0) : 'Free'}</p>
           <p className="text-sm text-muted-foreground">forever</p>
-          <ul className="mt-6 flex-1 space-y-2.5 text-sm">{FREE.map((f) => <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" />{f}</li>)}</ul>
+          <ul className="mt-6 flex-1 space-y-2.5 text-sm">{FREE_FEATURES.map((f) => <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-success" />{f}</li>)}</ul>
           {enabled && <p className="mt-4 text-xs text-muted-foreground">Includes {process.env.FREE_FULL_MOCKS_PER_MONTH || 2} full mocks per exam every 30 days.</p>}
           <div className="mt-6">
             {user ? <Button asChild variant="outline" size="xl" className="w-full"><Link href="/dashboard">{plan === 'free' ? 'Your current plan' : 'Go to dashboard'}</Link></Button>
@@ -67,7 +57,7 @@ export default async function PricingPage() {
               <p className="relative text-sm text-muted-foreground">Everything is unlocked while we get ready.</p>
             </>
           )}
-          <ul className="relative mt-6 flex-1 space-y-2.5 text-sm">{PRO.map((f) => <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{f}</li>)}</ul>
+          <ul className="relative mt-6 flex-1 space-y-2.5 text-sm">{PRO_FEATURES.map((f) => <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{f}</li>)}</ul>
           <div className="relative mt-6">
             {!enabled || !price ? (
               <Button variant="premium" size="xl" className="w-full" disabled>Available soon</Button>

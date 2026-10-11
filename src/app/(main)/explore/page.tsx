@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Reveal } from '@/components/common/reveal';
 import { Catalog } from '@/components/exams/catalog';
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ExplorePage() {
+  // Visitors browse the catalogue on the landing page.
+  if (!(await getUser())) redirect('/#catalogue');
   const exams = await listExams(); // cached catalogue: the full list is in the first HTML
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">

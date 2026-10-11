@@ -35,6 +35,12 @@
     --color-warning: var(--warning);
     --color-warning-foreground: var(--warning-foreground);
     --color-banana: var(--banana);
+    --color-hairline: var(--hairline);
+    --color-hairline-strong: var(--hairline-strong);
+    --color-wash: var(--wash);
+    --color-inset: var(--inset);
+    --color-section-alt: var(--section-alt);
+    --color-raised: var(--raised);
     --color-cocoa: var(--cocoa);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
@@ -64,6 +70,36 @@
     /* backwards: holds the start state through any delay, then lets hover transforms apply. */
     --animate-reveal: reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
     --animate-drift: drift 7s ease-in-out infinite;
+    --animate-marquee: marquee var(--marquee-duration, 40s) linear infinite;
+    --animate-beam: beam-on 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both, beam-breathe 7s ease-in-out 1.8s infinite;
+
+    /* The hero light switches on downwards from its source, then breathes. */
+    @keyframes beam-on {
+        from { opacity: 0; transform: scaleY(0.35); }
+        to { opacity: 1; transform: scaleY(1); }
+    }
+    /* A streak that flies down-left along its own length, then waits out the rest of its cycle. */
+    --animate-shoot: shoot 10s linear infinite;
+    @keyframes shoot {
+        0% { transform: rotate(-32deg) translateX(0); opacity: 0; }
+        1.5% { opacity: 1; }
+        9% { transform: rotate(-32deg) translateX(-34rem); opacity: 0; }
+        100% { transform: rotate(-32deg) translateX(-34rem); opacity: 0; }
+    }
+    --animate-glint: glint 8s ease-in-out infinite;
+    @keyframes glint {
+        0%, 70%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+        78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        88% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+    }
+    @keyframes beam-breathe {
+        50% { opacity: 0.72; }
+    }
+
+    /* The track holds its items twice, so sliding by half loops seamlessly. */
+    @keyframes marquee {
+        to { transform: translateX(-50%); }
+    }
 
     @keyframes shimmer {
         0% { background-position: -200% 0; }
@@ -87,7 +123,7 @@
 }
 
 /*
- * quizzMonkey palette: warm cream and cocoa neutrals, a banana-to-orange
+ * PrepMonkey palette: warm cream and cocoa neutrals, a banana-to-orange
  * accent. Orange is the one action colour; banana marks highlights and
  * streaks; cocoa is the brand ink. Light and dark share the same roles.
  */
@@ -185,6 +221,57 @@
     --grid-line: oklch(1 0.02 80 / 0.045);
 }
 
+/*
+ * The marketing surface (data-surface="cocoa"), in both themes. Dark pushes the
+ * palette deeper so cream type and the single orange accent carry the page;
+ * light is warm ivory with cocoa ink. The --hairline/--wash/--inset family
+ * replaces hard-coded white-alpha lines, so every panel reads in either theme.
+ */
+:root {
+    --hairline: oklch(0.3 0.04 50 / 0.09);
+    --hairline-strong: oklch(0.3 0.04 50 / 0.18);
+    --wash: oklch(0.3 0.04 50 / 0.035);
+    --inset: oklch(0.3 0.04 50 / 0.035);
+    --section-alt: oklch(0.965 0.014 78);
+    --raised: oklch(1 0 0);
+    --glass-top: oklch(1 0 0 / 0.75);
+    --glass-bottom: oklch(1 0 0 / 0.5);
+    --glass-edge: oklch(1 0 0 / 0.9);
+    --glass-shadow: 0 30px 70px -40px oklch(0.38 0.06 45 / 0.35);
+    --ember-a: oklch(0.72 0.17 62);
+    --ember-b: oklch(0.62 0.18 48);
+    --ember-c: oklch(0.5 0.15 38);
+}
+.dark {
+    --hairline: oklch(1 0.02 80 / 0.07);
+    --hairline-strong: oklch(1 0.02 80 / 0.15);
+    --wash: oklch(1 0 0 / 0.04);
+    --inset: oklch(0 0 0 / 0.25);
+    --section-alt: oklch(0.15 0.012 50);
+    --raised: oklch(0.17 0.014 50);
+    --glass-top: oklch(1 0 0 / 0.045);
+    --glass-bottom: oklch(1 0 0 / 0.015);
+    --glass-edge: oklch(1 0.02 80 / 0.07);
+    --glass-shadow: 0 30px 80px -40px oklch(0 0 0 / 0.8);
+    --ember-a: oklch(0.96 0.04 85);
+    --ember-b: oklch(0.78 0.16 60);
+    --ember-c: oklch(0.68 0.18 45);
+}
+.dark:has([data-surface='cocoa']) {
+    --background: oklch(0.135 0.011 50);
+    --card: oklch(0.17 0.012 52);
+    --secondary: oklch(0.21 0.014 52);
+    --muted: oklch(0.21 0.014 52);
+    --muted-foreground: oklch(0.72 0.02 75);
+    --border: oklch(1 0.02 80 / 8%);
+}
+:root:not(.dark):has([data-surface='cocoa']) {
+    --background: oklch(0.985 0.007 80);
+    --card: oklch(1 0 0);
+    --border: oklch(0.3 0.04 50 / 10%);
+    --muted-foreground: oklch(0.47 0.03 55);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -259,6 +346,31 @@
   .mask-fade-b {
     mask-image: linear-gradient(to bottom, black 55%, transparent);
   }
+  /* Film grain over the dark surface; a tiny SVG noise tile, so there's no image request. */
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* Cream fading into ember orange, for the one or two words a page leans on. */
+  .text-ember {
+    background-image: linear-gradient(180deg, var(--ember-a) 10%, var(--ember-b) 70%, var(--ember-c));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Smoked glass: a faint fill, a hairline border and a lit top edge. */
+  .glass {
+    background: linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
+    border: 1px solid var(--hairline-strong);
+    box-shadow: inset 0 1px 0 var(--glass-edge), var(--glass-shadow);
+  }
+  .mask-fade-x {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  }
+  /* A slowly turning brand-gradient ring: put it behind a card inset by the ring width. */
+  .ring-spin {
+    background: conic-gradient(from var(--ring-angle, 0deg), var(--banana), var(--primary), oklch(0.58 0.17 40), var(--primary), var(--banana));
+    animation: ring-spin 6s linear infinite;
+  }
   .scrollbar-none {
     scrollbar-width: none;
   }
@@ -275,4 +387,14 @@
   @page { size: A4 landscape; margin: 0; }
   body { background: white !important; }
   .certificate { max-width: none; border-radius: 0; }
+}
+
+/* Registered so the conic gradient's angle can animate (.ring-spin). */
+@property --ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes ring-spin {
+  to { --ring-angle: 360deg; }
 }
