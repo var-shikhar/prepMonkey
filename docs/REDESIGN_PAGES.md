@@ -8,20 +8,20 @@ Status: ⏳ in review · ✅ approved · ⬜ not started
 | # | Page | Route | Who sees it | Status |
 |---|------|-------|-------------|--------|
 | 1 | Landing (the whole public site: how it works, exams, pricing, FAQ) | `/` | Visitors | ✅ |
-| 2 | Sign in / Sign up | `/sign-in`, `/sign-up` | Visitors | ⬜ |
+| 2 | Sign in / Sign up | `/sign-in`, `/sign-up` | Visitors | ✅ |
 | 3 | Explore (catalogue) | `/explore` | Learners (visitors → `/#catalogue`) | ⬜ |
 | 4 | Exam hub | `/exams/[examId]` | Everyone | ✅ |
 | 5 | Sample questions | `/exams/[examId]/sample-questions` | Everyone | ⬜ |
 | 6 | Pricing / upgrade | `/pricing` | Learners (visitors → `/#plans`) | ⬜ |
-| 7 | Onboarding | `/onboarding` | New learners | ⬜ |
+| 7 | Onboarding | `/onboarding` | New learners | ✅ |
 | 8 | Dashboard | `/dashboard` | Learners | ✅ |
 | 9 | Exam player | `/attempt/[id]` | Learners | ✅ |
 | 10 | Results | `/attempt/[id]/result` | Learners | ✅ |
 | 11 | Study a skill | `/exams/[examId]/study/[skillId]` | Learners | ⬜ |
 | 12 | Progress | `/progress` | Learners | ✅ |
 | 13 | Mock interviews (list + room) | `/interviews`, `/interviews/[id]` | Learners (visitors → `/#how-it-works`) | ⬜ |
-| 14 | Saved questions | `/saved` | Learners | ⬜ |
-| 15 | Settings | `/settings` | Learners | ⬜ |
+| 14 | Saved questions | `/saved` | Learners | ✅ |
+| 15 | Settings | `/settings` | Learners | ✅ |
 | 16 | Teams (list, team, join) | `/teams`, `/teams/[id]`, `/teams/join/[code]` | Learners | ⬜ |
 | 17 | Challenge | `/challenge/[code]` | Everyone | ⬜ |
 | 18 | Certificate + verify | `/certificates/[id]`, `/verify`, `/verify/[code]` | Everyone | ⬜ |
