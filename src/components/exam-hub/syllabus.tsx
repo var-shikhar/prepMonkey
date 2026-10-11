@@ -42,7 +42,7 @@ export function Syllabus({ exam, mastery, counts, studySkills, signedIn, pending
     <section className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="text-xl font-semibold">Syllabus</h2>
+          <h2 className="font-heading text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Syllabus</h2>
           <p className="text-sm text-muted-foreground">{exam.domains.length} domains · {exam.skills.length} skills, weighted like the official blueprint.</p>
         </div>
       </div>
@@ -54,22 +54,23 @@ export function Syllabus({ exam, mastery, counts, studySkills, signedIn, pending
             ? Math.round((touched.reduce((a, m) => a + m.mastery * m.weight, 0) / touched.reduce((a, m) => a + m.weight, 0)) * 100)
             : null;
           return (
-            <details key={d.id} className="group overflow-hidden rounded-2xl border bg-card">
+            <details key={d.id} className="glass group overflow-hidden rounded-3xl">
               <summary className="flex cursor-pointer list-none items-center gap-4 px-4 py-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-5 [&::-webkit-details-marker]:hidden">
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary font-heading text-sm font-semibold">{d.id}</span>
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-hairline bg-wash font-heading text-sm font-semibold">{d.id}</span>
                 <span className="min-w-0 flex-1 text-left">
                   <span className="block truncate font-semibold">{d.name}</span>
                   <span className="block text-xs font-normal text-muted-foreground">{d.weight}% of the exam · {skills.length} skills</span>
                 </span>
                 <span className="hidden w-32 shrink-0 sm:block">
                   <span className="flex justify-between text-xs text-muted-foreground"><span>Mastery</span><span className="font-semibold text-foreground">{domainMastery == null ? '—' : `${domainMastery}%`}</span></span>
-                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-secondary">
+                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-hairline">
                     <span className="block h-full rounded-full bg-gradient-brand transition-all duration-700" style={{ width: `${domainMastery ?? 0}%` }} />
                   </span>
                 </span>
+                {domainMastery != null && <span className="shrink-0 text-sm font-semibold tabular-nums sm:hidden">{domainMastery}%</span>}
                 <ChevronDown aria-hidden className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
               </summary>
-              <ul className="divide-y border-t text-sm animate-in fade-in slide-in-from-top-1">
+              <ul className="divide-y divide-hairline border-t border-hairline text-sm animate-in fade-in slide-in-from-top-1">
                 {skills.map((s) => {
                   const m = bySkill.get(s.id);
                   const level = LEVEL[m?.level ?? 'new'];
@@ -82,7 +83,7 @@ export function Syllabus({ exam, mastery, counts, studySkills, signedIn, pending
                           <span className={cn('rounded-full px-2 py-0.5 text-[0.65rem] font-semibold', level.className)}>{level.label}</span>
                         </div>
                         <div className="mt-1.5 flex items-center gap-2">
-                          <span className="h-1 w-24 overflow-hidden rounded-full bg-secondary">
+                          <span className="h-1 w-24 overflow-hidden rounded-full bg-hairline">
                             <span className={cn('block h-full rounded-full transition-all duration-700', level.bar)} style={{ width: `${pct}%` }} />
                           </span>
                           <span className="text-xs text-muted-foreground">{s.weight}% · {counts[s.id] ?? 0} questions{m?.answered ? ` · ${m.answered} answered` : ''}</span>
