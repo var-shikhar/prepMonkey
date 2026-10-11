@@ -80,8 +80,8 @@ function OptionList({ item, response, onChange, revealed, readOnly }: {
           <label
             key={o.id}
             className={cn(
-              'group relative flex cursor-pointer items-start gap-3 rounded-2xl border bg-card p-3.5 transition-all duration-200 sm:p-4',
-              !readOnly && 'hover:border-primary/40 hover:bg-accent/40',
+              'glass group relative flex cursor-pointer items-start gap-3 rounded-2xl p-3.5 transition-all duration-200 sm:p-4',
+              !readOnly && 'hover:border-primary/40 hover:bg-primary/[0.04]',
               selected && !revealed && 'border-primary bg-primary/[0.07] shadow-[0_0_0_1px_var(--primary)]',
               isKey && 'border-success/60 bg-success/[0.08]',
               wrongPick && 'border-destructive/60 bg-destructive/[0.07]',
@@ -102,7 +102,7 @@ function OptionList({ item, response, onChange, revealed, readOnly }: {
             <span
               aria-hidden
               className={cn(
-                'mt-0.5 grid size-7 shrink-0 place-items-center border text-xs font-bold transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring',
+                'mt-0.5 grid size-7 shrink-0 place-items-center border border-hairline-strong text-xs font-bold transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring',
                 multi ? 'rounded-lg' : 'rounded-full',
                 selected && !revealed && 'border-primary bg-primary text-primary-foreground',
                 isKey && 'border-success bg-success text-success-foreground',
@@ -121,7 +121,7 @@ function OptionList({ item, response, onChange, revealed, readOnly }: {
                     exit={{ opacity: 0, height: 0 }}
                     className="block overflow-hidden"
                   >
-                    <span className={cn('block rounded-xl px-3 py-2 text-sm', isKey ? 'bg-success/10' : 'bg-muted')}>
+                    <span className={cn('block rounded-xl px-3 py-2 text-sm', isKey ? 'bg-success/10' : 'bg-wash')}>
                       <b className={isKey ? 'text-success' : 'text-muted-foreground'}>{isKey ? 'Correct. ' : 'Incorrect. '}</b>
                       <RichText text={key.why} className="inline text-muted-foreground [&>p]:inline" />
                     </span>
@@ -130,7 +130,7 @@ function OptionList({ item, response, onChange, revealed, readOnly }: {
               </AnimatePresence>
             </span>
             {revealed && selected && (
-              <span className="absolute -top-2 right-3 rounded-full border bg-background px-2 py-px text-[0.65rem] font-semibold text-muted-foreground">Your answer</span>
+              <span className="absolute -top-2 right-3 rounded-full border border-hairline-strong bg-background px-2 py-px text-[0.65rem] font-semibold text-muted-foreground">Your answer</span>
             )}
           </label>
         );
@@ -190,11 +190,11 @@ function OrderList({ item, response, onChange, revealed, readOnly }: {
             value={id}
             dragListener={!readOnly}
             onDragEnd={() => onChange(order)}
-            className="flex items-center gap-3 rounded-2xl border bg-card p-3 shadow-xs active:cursor-grabbing"
+            className="glass flex items-center gap-3 rounded-2xl p-3 active:cursor-grabbing"
             whileDrag={{ scale: 1.02, boxShadow: '0 12px 30px -12px oklch(0.38 0.06 45 / 0.35)' }}
           >
             <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
-            <span className="grid size-7 shrink-0 place-items-center rounded-lg border text-xs font-bold">{i + 1}</span>
+            <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-hairline-strong text-xs font-bold">{i + 1}</span>
             <RichText text={byId.get(id)?.text} className="min-w-0 flex-1 text-[0.95rem]" />
             {!readOnly && (
               <span className="flex shrink-0 flex-col">
@@ -276,7 +276,7 @@ function FillIn({ response, onChange, revealed, readOnly }: {
   if (revealed) {
     return (
       <div className="space-y-2">
-        <div className="rounded-2xl border bg-card p-3.5 text-sm">
+        <div className="glass rounded-2xl p-3.5 text-sm">
           <span className="text-muted-foreground">Your answer: </span>
           <span className="font-medium">{response[0]?.trim() || 'No answer'}</span>
         </div>
