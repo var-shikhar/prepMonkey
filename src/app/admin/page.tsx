@@ -20,7 +20,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Overview</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em]">Overview</h1>
           <p className="text-sm text-muted-foreground">Content health and activity for {exam.code}.</p>
         </div>
         <ExamSwitcher exams={examOptions(exams)} value={exam.id} />
@@ -34,7 +34,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
-        <section className="rounded-2xl border bg-card p-5">
+        <section className="glass rounded-3xl p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-semibold"><AlertTriangle className="size-4 text-primary" /> Needs attention</h2>
             <Button asChild variant="ghost" size="sm"><Link href={q('flagged=1&sort=p')}>Review all <ArrowRight data-icon="inline-end" /></Link></Button>
@@ -58,7 +58,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
           )}
         </section>
 
-        <section className="rounded-2xl border bg-card p-5">
+        <section className="glass rounded-3xl p-5">
           <h2 className="mb-3 font-semibold">Last 7 days</h2>
           <dl className="grid grid-cols-2 gap-3">
             <Mini label="Attempts started" value={data.attempts7} />
@@ -81,7 +81,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
 
 function Stat({ label, value, href, tone }: { label: string; value: number; href: string; tone?: 'warn' }) {
   return (
-    <Link href={href} className="rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40">
+    <Link href={href} className="glass rounded-3xl p-4 transition-colors hover:border-primary/40">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className={tone === 'warn' ? 'mt-1 font-heading text-2xl font-semibold text-primary' : 'mt-1 font-heading text-2xl font-semibold'}>{value.toLocaleString()}</div>
     </Link>
@@ -90,7 +90,7 @@ function Stat({ label, value, href, tone }: { label: string; value: number; href
 
 function Mini({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-secondary/50 p-3">
+    <div className="rounded-xl bg-wash p-3">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="font-heading text-xl font-semibold">{value.toLocaleString()}</dd>
     </div>
@@ -99,7 +99,7 @@ function Mini({ label, value }: { label: string; value: number }) {
 
 function Shortcut({ href, icon: Icon, title, body }: { href: string; icon: typeof FileQuestion; title: string; body: string }) {
   return (
-    <Link href={href} className="group rounded-2xl border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40">
+    <Link href={href} className="group glass rounded-3xl p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40">
       <Icon className="size-5 text-primary" />
       <div className="mt-2 text-sm font-semibold">{title}</div>
       <div className="text-xs text-muted-foreground">{body}</div>

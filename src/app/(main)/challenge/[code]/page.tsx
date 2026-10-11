@@ -27,12 +27,12 @@ export default async function ChallengePage({ params }: { params: Promise<{ code
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
-      <section className="relative overflow-hidden rounded-3xl border bg-card p-6 text-center sm:p-10">
+      <section className="relative overflow-hidden glass rounded-3xl p-6 text-center sm:p-10">
         <div aria-hidden className="bg-grid mask-fade-b pointer-events-none absolute inset-0" />
         <div className="relative space-y-4">
           <Swords className="mx-auto size-10 text-primary" />
           <p className="text-sm font-semibold tracking-wide text-primary uppercase">You&apos;ve been challenged</p>
-          <h1 className="text-3xl font-bold sm:text-4xl">{c.title}</h1>
+          <h1 className="text-[2rem] leading-[1.08] font-semibold tracking-[-0.035em] sm:text-5xl">{c.title}</h1>
           <p className="text-muted-foreground">{c.examTitle}</p>
           <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5"><FileQuestion className="size-4 text-primary" />{c.itemCount} questions</span>
@@ -51,11 +51,11 @@ export default async function ChallengePage({ params }: { params: Promise<{ code
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Leaderboard</h2>
+        <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">Leaderboard</h2>
         {c.leaderboard.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No finished runs yet. Set the score to beat!</p>
         ) : (
-          <ol className="divide-y overflow-hidden rounded-2xl border bg-card">
+          <ol className="divide-y divide-hairline overflow-hidden glass rounded-3xl">
             {c.leaderboard.map((r) => (
               <li key={r.userId} className={cn('flex items-center gap-4 px-4 py-3 text-sm', r.userId === user?.id && 'bg-primary/10 font-semibold')}>
                 <span className="w-7 text-center font-heading text-base font-bold">{r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span>

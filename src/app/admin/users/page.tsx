@@ -8,7 +8,7 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold">Users</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.03em]">Users</h1>
         <p className="text-sm text-muted-foreground">Registered accounts (guests are not listed).</p>
       </div>
       <UsersTable selfId={user.id} />

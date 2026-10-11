@@ -13,7 +13,7 @@ export default async function AdminImportPage({ searchParams }: { searchParams: 
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Import &amp; export</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em]">Import &amp; export</h1>
           <p className="text-sm text-muted-foreground">Every item is validated before anything is written.</p>
         </div>
         <ExamSwitcher exams={examOptions(exams)} value={exam.id} />
