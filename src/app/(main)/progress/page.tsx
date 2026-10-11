@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Award, ChevronRight, Compass, LineChart } from 'lucide-react';
+import { Award, ChevronRight, Compass } from 'lucide-react';
+import { MascotMark } from '@/components/brand/mascot';
 import { MasteryBars } from '@/components/charts/mastery-bars';
 import { ScoreTrend } from '@/components/charts/score-trend';
 import { LinkPending } from '@/components/common/link-pending';
@@ -8,6 +9,7 @@ import { Reveal } from '@/components/common/reveal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KINDS } from '@/lib/attempt-kinds';
+import { serif } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { getProgressData } from '@/server/analytics';
 import { listAttempts } from '@/server/attempts';
@@ -33,21 +35,24 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
   if (!data.exams.length && !data.certificates.length) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
-        <LineChart className="mx-auto size-12 text-primary" />
-        <h1 className="mt-4 text-3xl font-bold">Your progress lives here</h1>
+      <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
+        <div className="glass rounded-[1.75rem] p-8 text-center sm:p-12">
+        <MascotMark className="mx-auto size-16" />
+        <h1 className="mt-5 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">Your progress <Accent>lives here.</Accent></h1>
         <p className="mx-auto mt-2 max-w-md text-muted-foreground">Scores, trends and skill mastery appear after your first drill or mock. The diagnostic is the quickest start.</p>
-        <Button asChild variant="premium" size="xl" className="mt-6"><Link href="/explore"><Compass data-icon="inline-start" />Pick an exam</Link></Button>
+        <Button asChild variant="premium" size="xl" className="mt-7 w-full sm:w-auto"><Link href="/explore"><Compass data-icon="inline-start" />Pick an exam</Link></Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 pt-6 pb-12 sm:space-y-8 sm:px-6 sm:pt-10">
       <Reveal className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Progress</h1>
-          <p className="text-muted-foreground">{current ? current.title : 'All exams'}</p>
+          <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">{current ? current.code : 'All exams'}</p>
+          <h1 className="mt-2 text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.04em] sm:text-5xl">Your <Accent>progress.</Accent></h1>
+          {current && <p className="mt-2 text-muted-foreground">{current.title}</p>}
         </div>
       </Reveal>
 
@@ -58,7 +63,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             <Link
               key={e.id}
               href={`/progress?exam=${e.id}${tab ? `&tab=${tab}` : ''}`}
-              className={cn('shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors', e.id === data.examId ? 'border-primary bg-primary text-primary-foreground' : 'hover:border-primary/40')}
+              className={cn('shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors', e.id === data.examId ? 'border-primary bg-primary text-primary-foreground' : 'border-hairline-strong bg-wash hover:border-primary/40')}
             >
               <LinkPending>{e.code}</LinkPending>
             </Link>
@@ -68,12 +73,15 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
       {/* Keyed so a link to another ?tab= (e.g. the user menu's Certificates) switches tabs while already here. */}
       <Tabs key={defaultTab} defaultValue={defaultTab} className="gap-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="certificates">Certificates{data.certificates.length ? ` · ${data.certificates.length}` : ''}</TabsTrigger>
-          <TabsTrigger value="achievements">Achievements</TabsTrigger>
-        </TabsList>
+        {/* Scrolls sideways on narrow phones rather than squeezing four tabs. */}
+        <div className="scrollbar-none -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="glass h-auto w-max rounded-full p-1">
+            <TabsTrigger value="overview" className="rounded-full px-3 py-1.5 data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground">Overview</TabsTrigger>
+            <TabsTrigger value="history" className="rounded-full px-3 py-1.5 data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground">History</TabsTrigger>
+            <TabsTrigger value="certificates" className="rounded-full px-3 py-1.5 data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground">Certificates{data.certificates.length ? ` · ${data.certificates.length}` : ''}</TabsTrigger>
+            <TabsTrigger value="achievements" className="rounded-full px-3 py-1.5 data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground">Achievements</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -84,22 +92,22 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-            <section className="rounded-3xl border bg-card p-5">
-              <h2 className="font-semibold">Mock score trend</h2>
+            <section className="glass min-w-0 rounded-3xl p-5">
+              <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">Mock score trend</h2>
               <p className="mb-4 text-xs text-muted-foreground">Scaled score of each mock and diagnostic{current ? ` for ${current.code}` : ''}.</p>
               {data.trend.length && data.scale ? (
                 <ScoreTrend points={data.trend} min={data.scale.min} max={data.scale.max} passing={data.scale.passing} title={`Mock score trend${current ? ` for ${current.code}` : ''}`} />
               ) : (
-                <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Take a diagnostic or a mock to start your trend line.</p>
+                <p className="rounded-2xl border border-dashed border-hairline-strong p-8 text-center text-sm text-muted-foreground">Take a diagnostic or a mock to start your trend line.</p>
               )}
             </section>
-            <section className="rounded-3xl border bg-card p-5">
-              <h2 className="font-semibold">Skill mastery</h2>
+            <section className="glass min-w-0 rounded-3xl p-5">
+              <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">Skill mastery</h2>
               <p className="mb-4 text-xs text-muted-foreground">Weakest first. Recent answers count most.</p>
               {data.readiness?.answered ? (
                 <MasteryBars skills={data.readiness.skills} />
               ) : (
-                <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No answers yet for this exam.</p>
+                <p className="rounded-2xl border border-dashed border-hairline-strong p-8 text-center text-sm text-muted-foreground">No answers yet for this exam.</p>
               )}
             </section>
           </div>
@@ -107,19 +115,19 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
         <TabsContent value="history">
           {history.length === 0 ? (
-            <p className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">No finished attempts yet.</p>
+            <p className="glass rounded-3xl border-dashed p-10 text-center text-sm text-muted-foreground">No finished attempts yet.</p>
           ) : (
-            <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+            <ul className="glass divide-y divide-hairline overflow-hidden rounded-3xl">
               {history.map((a) => (
                 <li key={a.id}>
-                  <Link href={`/attempt/${a.id}/result`} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 transition-colors hover:bg-accent/30 sm:px-5">
+                  <Link href={`/attempt/${a.id}/result`} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3.5 transition-colors hover:bg-wash sm:px-5">
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium">{a.examCode} · {KINDS[a.kind].label}</span>
                       <span className="block text-xs text-muted-foreground">
                         {new Date(a.startedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })} · {a.correctCount ?? 0}/{a.itemCount} correct
                       </span>
                     </span>
-                    <span className={cn('rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums', a.passed ? 'bg-success/12 text-success' : 'bg-secondary')}>
+                    <span className={cn('rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums', a.passed ? 'bg-success/12 text-success' : 'bg-wash')}>
                       {KINDS[a.kind].scored && a.scaled != null ? a.scaled : `${a.itemCount ? Math.round(((a.correctCount ?? 0) / a.itemCount) * 100) : 0}%`}
                     </span>
                     <ChevronRight className="size-4 text-muted-foreground" />
@@ -132,7 +140,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
         <TabsContent value="certificates">
           {data.certificates.length === 0 ? (
-            <div className="rounded-3xl border border-dashed p-10 text-center">
+            <div className="glass rounded-3xl border-dashed p-10 text-center">
               <Award className="mx-auto size-10 text-primary" />
               <p className="mt-3 font-medium">No certificates yet</p>
               <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">Pass a full mock at exam-realistic difficulty or harder to earn a verifiable readiness certificate.</p>
@@ -140,8 +148,8 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {data.certificates.map((c) => (
-                <Link key={c.id} href={`/certificates/${c.id}`} className="group relative overflow-hidden rounded-2xl border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40">
-                  <div aria-hidden className="absolute -top-10 -right-10 size-32 rounded-full bg-banana/25 blur-2xl" />
+                <Link key={c.id} href={`/certificates/${c.id}`} className="glass group relative overflow-hidden rounded-3xl p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40">
+                  <div aria-hidden className="absolute -top-10 -right-10 size-32 rounded-full bg-primary/20 blur-2xl" />
                   <Award className="size-7 text-primary" />
                   <div className="mt-3 text-xs font-semibold text-muted-foreground">{c.examCode}</div>
                   <div className="font-semibold">{c.examTitle}</div>
@@ -163,11 +171,16 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   );
 }
 
+/** The serif, ember-tinted words a headline leans on. */
+function Accent({ children }: { children: React.ReactNode }) {
+  return <span className={cn(serif.className, 'text-ember pr-1 font-normal tracking-[-0.01em]')}>{children}</span>;
+}
+
 function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl border bg-card p-4">
+    <div className="glass rounded-3xl p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 font-heading text-2xl font-semibold">{value}</div>
+      <div className="mt-1 font-heading text-[1.7rem] font-semibold tracking-[-0.03em] tabular-nums">{value}</div>
       {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
