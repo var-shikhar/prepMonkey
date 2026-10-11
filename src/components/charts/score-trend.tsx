@@ -57,7 +57,7 @@ export function ScoreTrend({ points, min, max, passing, title }: { points: Trend
     <figure className="space-y-3">
       <div
         ref={wrap}
-        className="relative outline-none focus-visible:rounded-xl focus-visible:ring-2 focus-visible:ring-ring"
+        className="relative w-full min-w-0 outline-none focus-visible:rounded-xl focus-visible:ring-2 focus-visible:ring-ring"
         tabIndex={0}
         role="img"
         aria-label={`${title}. ${points.length} attempts, latest ${points[last]?.value ?? 'none'}, pass mark ${passing}. Use arrow keys to step through attempts.`}
@@ -115,7 +115,7 @@ export function ScoreTrend({ points, min, max, passing, title }: { points: Trend
         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">View as table</summary>
         <div className="mt-2 overflow-x-auto rounded-xl border">
           <table className="w-full text-left text-xs">
-            <thead className="bg-secondary/60 text-muted-foreground">
+            <thead className="bg-wash text-muted-foreground">
               <tr><th className="px-3 py-2 font-medium">Date</th><th className="px-3 py-2 font-medium">Attempt</th><th className="px-3 py-2 text-right font-medium">Score</th><th className="px-3 py-2 font-medium">Result</th></tr>
             </thead>
             <tbody className="divide-y">

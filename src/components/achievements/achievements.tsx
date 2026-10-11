@@ -7,19 +7,19 @@ import type { LeaderRow } from '@/server/gamification';
 export function BadgeGrid({ badges }: { badges: (BadgeDef & { earnedAt: string | null })[] }) {
   const earned = badges.filter((b) => b.earnedAt).length;
   return (
-    <section className="space-y-4 rounded-3xl border bg-card p-5">
+    <section className="glass min-w-0 space-y-4 rounded-3xl p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Badges</h2>
+        <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">Badges</h2>
         <span className="text-sm text-muted-foreground">{earned} of {badges.length}</span>
       </div>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {badges.map((b) => (
           <li
             key={b.id}
-            className={cn('flex flex-col items-center gap-1.5 rounded-2xl border p-4 text-center transition-colors', b.earnedAt ? 'border-primary/30 bg-primary/[0.05]' : 'opacity-60')}
+            className={cn('flex flex-col items-center gap-1.5 rounded-2xl border p-4 text-center transition-colors', b.earnedAt ? 'border-primary/30 bg-primary/[0.06]' : 'border-hairline bg-wash opacity-60')}
             title={b.earnedAt ? `Earned ${new Date(b.earnedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}` : 'Not earned yet'}
           >
-            <span className={cn('grid size-12 place-items-center rounded-full text-2xl', b.earnedAt ? 'bg-gradient-to-br from-banana/60 to-primary/40' : 'bg-secondary grayscale')} aria-hidden>
+            <span className={cn('grid size-12 place-items-center rounded-full text-2xl', b.earnedAt ? 'bg-gradient-to-br from-banana/60 to-primary/40' : 'bg-hairline grayscale')} aria-hidden>
               {b.earnedAt ? b.emoji : <Lock className="size-5 text-muted-foreground" />}
             </span>
             <span className="text-sm font-semibold">{b.name}</span>
@@ -33,9 +33,9 @@ export function BadgeGrid({ badges }: { badges: (BadgeDef & { earnedAt: string |
 
 export function Leaderboard({ top, me, optedIn, anonymous }: { top: LeaderRow[]; me: LeaderRow | null; optedIn: boolean; anonymous: boolean }) {
   return (
-    <section className="space-y-4 rounded-3xl border bg-card p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 font-semibold"><Trophy className="size-4 text-primary" /> This week&apos;s leaderboard</h2>
+    <section className="glass min-w-0 space-y-4 rounded-3xl p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold tracking-[-0.02em]"><Trophy className="size-4 text-primary" /> This week&apos;s leaderboard</h2>
         <span className="text-xs text-muted-foreground">XP, last 7 days</span>
       </div>
       {top.length === 0 ? (
