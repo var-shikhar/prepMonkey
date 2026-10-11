@@ -39,8 +39,8 @@ export async function SiteHeader() {
               <UserMenu user={{ name: user.name, email: user.email, image: user.image, role: user.role as string, isAnonymous: user.isAnonymous }} />
             </>
           ) : (
+            // Visitors follow their device's theme; the toggle is for signed-in people.
             <>
-              <ThemeToggle />
               <Button asChild variant="ghost" className="hidden sm:inline-flex">
                 <Link href="/sign-in">Sign in</Link>
               </Button>

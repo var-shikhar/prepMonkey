@@ -58,7 +58,7 @@ export function AdaptivePlayer({ initial }: { initial: PlayerState }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-hairline bg-background/75 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4 sm:px-6">
           <Gauge className="size-5 text-primary" />
           <div className="min-w-0 leading-tight">
@@ -67,7 +67,7 @@ export function AdaptivePlayer({ initial }: { initial: PlayerState }) {
           </div>
           <Button asChild variant="ghost" size="sm" className="ml-auto"><Link href={`/exams/${initial.examId}`}><LogOut /> Save &amp; exit</Link></Button>
         </div>
-        <div className="h-1 bg-secondary" aria-hidden>
+        <div className="h-[3px] bg-hairline" aria-hidden>
           <motion.div className="h-full bg-gradient-brand" animate={{ width: `${((position - 1) / target) * 100}%` }} />
         </div>
       </header>
@@ -91,7 +91,7 @@ export function AdaptivePlayer({ initial }: { initial: PlayerState }) {
         </AnimatePresence>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/90 px-4 pt-3 pb-safe backdrop-blur-xl">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-background/75 px-4 pt-3 pb-safe backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           <p className="hidden text-xs text-muted-foreground sm:block">Answers are final once submitted. Your score appears at the end.</p>
           <Button variant="premium" size="xl" className="w-full sm:w-auto" disabled={!answered || submit.isPending} onClick={go}>

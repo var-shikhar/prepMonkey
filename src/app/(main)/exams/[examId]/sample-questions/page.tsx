@@ -48,7 +48,7 @@ export default async function SampleQuestionsPage({ params }: { params: Promise<
 
       <Reveal className="space-y-4">
         <Breadcrumbs items={[{ name: 'Explore', href: '/explore' }, { name: ex.code, href: `/exams/${ex.id}` }, { name: 'Sample questions' }]} />
-        <h1 className="text-3xl font-bold sm:text-4xl">{sampleQuestionsTitle(ex)}</h1>
+        <h1 className="text-[2rem] leading-[1.08] font-semibold tracking-[-0.035em] sm:text-5xl">{sampleQuestionsTitle(ex)}</h1>
         <p className="text-lg text-muted-foreground">
           {questions.length} questions from the {ex.title} practice bank, spread across its domains. Pick your answer, then open the explanation to see why each option is right or wrong.
         </p>
@@ -74,7 +74,7 @@ function SampleQuestion({ q, index, domain }: { q: Question; index: number; doma
   const correct = options.filter((o) => o.correct);
   const wrong = options.filter((o) => !o.correct && o.why);
   return (
-    <li className="space-y-4 rounded-2xl border bg-card p-5 sm:p-6">
+    <li className="space-y-4 glass rounded-3xl p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="font-heading text-sm font-semibold text-foreground">Question {index + 1}</span>
         {domain && <span className="rounded-full bg-secondary px-2.5 py-0.5">{domain}</span>}
@@ -90,7 +90,7 @@ function SampleQuestion({ q, index, domain }: { q: Question; index: number; doma
         ))}
       </ul>
       {/* Collapsed so learners can try first; still in the HTML for crawlers and answer engines. */}
-      <details className="group rounded-xl bg-secondary/40 px-4">
+      <details className="group rounded-xl bg-wash px-4">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
           Show the answer and explanation
           <ChevronDown aria-hidden className="size-4 shrink-0 transition-transform group-open:rotate-180" />

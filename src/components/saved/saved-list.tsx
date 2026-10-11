@@ -62,11 +62,11 @@ export function SavedList({ initial, aiTutor = false }: { initial: SavedItem[]; 
 
   if (!items.length) {
     return (
-      <div className="rounded-3xl border border-dashed p-12 text-center">
+      <div className="glass rounded-[1.75rem] border-dashed p-10 text-center sm:p-12">
         <Bookmark className="mx-auto size-10 text-primary" />
         <p className="mt-3 font-medium">Nothing saved yet</p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">Tap <b>Save</b> on any question during practice or in your results to keep it here with your own notes.</p>
-        <Button asChild variant="outline" className="mt-5"><Link href="/explore">Find something to practise</Link></Button>
+        <Button asChild variant="premium" size="lg" className="mt-6 w-full sm:w-auto"><Link href="/explore">Find something to practise</Link></Button>
       </div>
     );
   }
@@ -78,7 +78,7 @@ export function SavedList({ initial, aiTutor = false }: { initial: SavedItem[]; 
       {Object.entries(groups).map(([examId, list]) => (
         <section key={examId} className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">{list[0].examCode} <span className="font-normal text-muted-foreground">· {list.length} saved</span></h2>
+            <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">{list[0].examCode} <span className="font-normal text-muted-foreground">· {list.length} saved</span></h2>
             <StartButton variant="outline" size="sm" input={{ examId, kind: 'saved', count: Math.min(list.length, 60) }}><Play /> Practise these</StartButton>
           </div>
           <ul className="space-y-2.5">
@@ -88,7 +88,7 @@ export function SavedList({ initial, aiTutor = false }: { initial: SavedItem[]; 
                 // No `layout`: it re-measured every item on each expand and note save. The exit's height
                 // collapse already slides the items below into place.
                 return (
-                  <motion.li key={item.questionId} exit={{ opacity: 0, height: 0 }} className="overflow-hidden rounded-2xl border bg-card">
+                  <motion.li key={item.questionId} exit={{ opacity: 0, height: 0 }} className="glass overflow-hidden rounded-3xl">
                     <button type="button" onClick={() => setOpen(expanded ? null : item.questionId)} aria-expanded={expanded} className="flex w-full items-start gap-3 p-4 text-left hover:bg-accent/30">
                       <Bookmark className="mt-0.5 size-4 shrink-0 fill-primary text-primary" />
                       <span className="min-w-0 flex-1">
@@ -99,10 +99,10 @@ export function SavedList({ initial, aiTutor = false }: { initial: SavedItem[]; 
                       <ChevronDown className={cn('mt-1 size-4 shrink-0 text-muted-foreground transition-transform', expanded && 'rotate-180')} />
                     </button>
                     {expanded && (
-                      <div className="space-y-4 border-t px-4 pt-4 pb-5">
+                      <div className="space-y-4 border-t border-hairline px-4 pt-4 pb-5">
                         <RichText text={item.question.stem} className="font-medium" />
                         <QuestionView item={item.question} response={[]} revealed={item.question} />
-                        <div className="rounded-2xl bg-secondary/50 p-4">
+                        <div className="rounded-2xl border border-hairline bg-wash p-4">
                           <h4 className="mb-1.5 text-sm font-semibold">Explanation</h4>
                           <RichText text={item.question.explanation} className="text-sm" />
                         </div>

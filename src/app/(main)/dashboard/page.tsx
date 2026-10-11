@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight, CalendarClock, ChevronRight, Compass, Flame, Play, Sparkles, Star, Target, Zap } from 'lucide-react';
+import { ArrowRight, CalendarClock, ChevronRight, Compass, Flame, Play, Plus, Star, Target, Zap } from 'lucide-react';
+import { MascotMark } from '@/components/brand/mascot';
 import { Reveal } from '@/components/common/reveal';
 import { ActivityHeatmap } from '@/components/dashboard/activity-heatmap';
 import { GoalRing } from '@/components/dashboard/goal-ring';
 import { StartButton } from '@/components/results/start-button';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { KINDS } from '@/lib/attempt-kinds';
 import { daysUntil } from '@/lib/dates';
+import { serif } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { getMyExams, type DashboardExam } from '@/server/analytics';
 import { getActiveAttempts, listAttempts } from '@/server/attempts';
@@ -43,32 +44,46 @@ export default async function DashboardPage() {
   const plan = primary ? await getStudyPlan(user.id, primary.id) : null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
-      <Reveal className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-6xl px-4 pt-6 pb-10 sm:px-6 sm:pt-10">
+      <Reveal className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
-          <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', timeZone: profile.timezone })}</p>
-          <h1 className="text-3xl font-bold sm:text-4xl">{greeting(profile.timezone)}{firstName ? `, ${firstName}` : ''} 👋</h1>
+          <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+            {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', timeZone: profile.timezone })}
+          </p>
+          <h1 className="mt-2 text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.04em] sm:text-5xl">
+            {greeting(profile.timezone)},{' '}
+            <span className={cn(serif.className, 'text-ember pr-1 font-normal tracking-[-0.01em]')}>{firstName || 'there'}.</span>
+          </h1>
         </div>
         {user.isAnonymous && (
-          <Button asChild variant="outline" className="border-primary/40">
-            <Link href="/sign-up"><Sparkles /> Save your progress: create a free account</Link>
-          </Button>
+          <Link
+            href="/sign-up"
+            className="glass group inline-flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition hover:border-primary/40 sm:w-auto"
+          >
+            <MascotMark className="size-7 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">You&apos;re practising as a guest</span>
+              <span className="block text-xs text-muted-foreground">Create a free account to keep your progress</span>
+            </span>
+            <ArrowRight className="size-4 shrink-0 text-primary transition group-hover:translate-x-0.5" />
+          </Link>
         )}
       </Reveal>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div className="space-y-6">
-          <Reveal delay={0.05}><UpNext active={active} exams={myExams} primary={primary} plan={plan} /></Reveal>
+      {/*
+        Phones get one column in priority order: next step, today, plan, exams, results, activity.
+        From lg the two wrappers become columns; on phones they're display:contents, so `order` interleaves them.
+      */}
+      <div className="mt-7 flex flex-col gap-5 sm:mt-9 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
+        <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <Reveal delay={0.05} className="order-1"><UpNext active={active} exams={myExams} primary={primary} plan={plan} /></Reveal>
 
-          <Reveal delay={0.1}>
+          <Reveal delay={0.1} className="order-4">
             <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Your exams</h2>
-                <Button asChild variant="ghost" size="sm"><Link href="/explore"><Compass /> Add an exam</Link></Button>
-              </div>
+              <SectionTitle title="Your exams" action={<Link href="/explore" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary"><Plus className="size-4" /> Add an exam</Link>} />
               {myExams.length === 0 ? (
-                <Link href="/explore" className="flex items-center gap-4 rounded-2xl border border-dashed p-6 transition-colors hover:border-primary/40 hover:bg-accent/20">
-                  <Compass className="size-8 text-primary" />
+                <Link href="/explore" className="glass flex items-center gap-4 rounded-3xl border-dashed p-6 transition hover:border-primary/40">
+                  <span className="grid size-11 place-items-center rounded-2xl bg-primary/12 text-primary"><Compass className="size-5" /></span>
                   <span><span className="block font-semibold">Pick your first exam</span><span className="text-sm text-muted-foreground">Browse certifications and quizzes, then take a free diagnostic.</span></span>
                 </Link>
               ) : (
@@ -80,63 +95,81 @@ export default async function DashboardPage() {
           </Reveal>
 
           {recent.length > 0 && (
-            <Reveal delay={0.15}>
+            <Reveal delay={0.15} className="order-5">
               <section className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Recent results</h2>
-                  <Button asChild variant="ghost" size="sm"><Link href="/progress">See all <ArrowRight data-icon="inline-end" /></Link></Button>
-                </div>
-                <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-                  {recent.map((a) => (
-                    <li key={a.id}>
-                      <Link href={`/attempt/${a.id}/result`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/30">
-                        <span className="grid size-9 place-items-center rounded-xl bg-secondary text-xs font-bold">{a.examCode.split('-')[0]}</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium">{KINDS[a.kind].label}</span>
-                          <span className="block text-xs text-muted-foreground">{new Date(a.startedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
-                        </span>
-                        <span className={cn('rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums', a.passed ? 'bg-success/12 text-success' : 'bg-secondary')}>
-                          {KINDS[a.kind].scored && a.scaled != null ? a.scaled : `${a.itemCount ? Math.round(((a.correctCount ?? 0) / a.itemCount) * 100) : 0}%`}
-                        </span>
-                        <ChevronRight className="size-4 text-muted-foreground" />
-                      </Link>
-                    </li>
-                  ))}
+                <SectionTitle title="Recent results" action={<Link href="/progress" className="inline-flex items-center gap-1 text-sm font-medium text-primary">See all <ArrowRight className="size-3.5" /></Link>} />
+                <ul className="glass divide-y divide-hairline overflow-hidden rounded-3xl">
+                  {recent.map((a) => {
+                    const pct = a.itemCount ? Math.round(((a.correctCount ?? 0) / a.itemCount) * 100) : 0;
+                    return (
+                      <li key={a.id}>
+                        <Link href={`/attempt/${a.id}/result`} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-wash">
+                          <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-hairline bg-wash font-mono text-[0.62rem] font-bold">{a.examCode.split('-')[0].slice(0, 4)}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium">{KINDS[a.kind].label}</span>
+                            <span className="block text-xs text-muted-foreground">{new Date(a.startedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+                          </span>
+                          <span className={cn('rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums', a.passed ? 'bg-success/12 text-success' : 'bg-wash')}>
+                            {KINDS[a.kind].scored && a.scaled != null ? a.scaled : `${pct}%`}
+                          </span>
+                          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             </Reveal>
           )}
         </div>
 
-        {/* ---------------- side column */}
-        <div className="space-y-6">
-          <Reveal delay={0.1}>
-            <section className="rounded-3xl border bg-card p-5">
-              <h2 className="mb-4 text-sm font-semibold text-muted-foreground">Today</h2>
+        <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <Reveal delay={0.08} className="order-2">
+            <section className="glass rounded-3xl p-5">
               <div className="flex items-center gap-4">
                 <GoalRing done={streak.today.items} goal={profile.dailyGoal} />
-                <div className="space-y-1.5">
-                  <p className="text-sm font-medium">
-                    {streak.today.items >= profile.dailyGoal ? 'Daily goal done! 🎉' : `${profile.dailyGoal - streak.today.items} questions to your daily goal`}
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">Today</p>
+                  <p className="mt-1 font-heading text-lg leading-snug font-semibold">
+                    {streak.today.items >= profile.dailyGoal ? 'Daily goal done.' : `${profile.dailyGoal - streak.today.items} questions to go`}
                   </p>
-                  <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Flame className={cn('size-4', streak.activeToday ? 'fill-banana/70 text-primary' : '')} />
-                    {streak.current ? `${streak.current}-day streak` : 'Start a streak today'}
-                  </p>
-                  <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><Star className="size-4" /> {profile.xp.toLocaleString()} XP</p>
                 </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Stat icon={<Flame className={cn('size-4', streak.activeToday ? 'fill-banana/70 text-primary' : 'text-muted-foreground')} />} value={streak.current} label="day streak" />
+                <Stat icon={<Star className="size-4 text-muted-foreground" />} value={profile.xp} label="XP earned" />
               </div>
             </section>
           </Reveal>
-          {plan && <Reveal delay={0.12}><TodayPlan plan={plan} /></Reveal>}
-          <Reveal delay={0.15}>
-            <section className="rounded-3xl border bg-card p-5">
-              <h2 className="mb-4 text-sm font-semibold text-muted-foreground">Activity</h2>
-              <ActivityHeatmap days={heat} timeZone={profile.timezone} />
+          {plan && <Reveal delay={0.12} className="order-3"><TodayPlan plan={plan} /></Reveal>}
+          <Reveal delay={0.15} className="order-6">
+            <section className="glass rounded-3xl p-5">
+              <h2 className="mb-4 text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">Activity</h2>
+              <div className="mx-auto max-w-[19rem] lg:max-w-none">
+                <ActivityHeatmap days={heat} timeZone={profile.timezone} />
+              </div>
             </section>
           </Reveal>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">{title}</h2>
+      {action}
+    </div>
+  );
+}
+
+function Stat({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+  return (
+    <div className="rounded-2xl border border-hairline bg-wash px-3 py-2.5">
+      <div className="flex items-center gap-1.5">{icon}<span className="font-heading text-lg font-semibold tabular-nums">{value.toLocaleString()}</span></div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -151,6 +184,7 @@ function UpNext({ active, exams, primary, plan }: {
   let title: string;
   let body: string;
   let action: React.ReactNode;
+  let progress: number | null = null;
   const mostDue = [...exams].sort((a, b) => b.due - a.due)[0];
   const nextTask = plan?.days[0]?.tasks.find((t) => !t.done && t.kind !== 'rest');
 
@@ -159,6 +193,7 @@ function UpNext({ active, exams, primary, plan }: {
     eyebrow = 'Pick up where you left off';
     title = `${a.examCode} · ${KINDS[a.kind].label}`;
     body = `Question ${a.position} of ${a.itemCount}, ${a.answered} answered${a.deadline ? '. The timer is still running.' : '.'}`;
+    progress = a.itemCount ? Math.round((a.answered / a.itemCount) * 100) : 0;
     action = <Button asChild variant="premium" size="xl"><Link href={`/attempt/${a.id}`}><Play data-icon="inline-start" />Resume</Link></Button>;
   } else if (plan && nextTask) {
     eyebrow = `Today's plan · ${plan.examCode}`;
@@ -193,18 +228,44 @@ function UpNext({ active, exams, primary, plan }: {
   }
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-primary/25 bg-card p-6 sm:p-7">
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.09] via-banana/[0.07] to-transparent" />
-      <div aria-hidden className="bg-grid mask-fade-b pointer-events-none absolute inset-0 opacity-60" />
-      <div className="relative space-y-4">
-        <p className="text-xs font-semibold tracking-wide text-primary uppercase">{eyebrow}</p>
-        <div className="space-y-1.5">
-          <h2 className="text-2xl font-semibold">{title}</h2>
-          <p className="max-w-xl text-muted-foreground">{body}</p>
-        </div>
-        {action}
+    <section className="glass relative overflow-hidden rounded-[1.75rem] border-primary/25 p-6 sm:p-8">
+      <div aria-hidden className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-primary/20 blur-3xl" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: 'linear-gradient(to right, var(--hairline) 1px, transparent 1px), linear-gradient(to bottom, var(--hairline) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+          maskImage: 'radial-gradient(ellipse 70% 90% at 100% 0%, black, transparent 70%)',
+        }}
+      />
+      <div className="relative">
+        <p className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-primary uppercase">
+          <MascotMark className="size-5" /> {eyebrow}
+        </p>
+        <h2 className="mt-4 text-2xl leading-tight font-semibold tracking-[-0.03em] text-balance sm:text-3xl">{title}</h2>
+        <p className="mt-2 max-w-xl text-muted-foreground">{body}</p>
+        {progress != null && (
+          <div className="mt-5 h-1.5 max-w-sm overflow-hidden rounded-full bg-hairline">
+            <div className="bg-gradient-brand h-full rounded-full" style={{ width: `${progress}%` }} />
+          </div>
+        )}
+        {/* Full width on phones, where it's the thumb's target; natural width from sm. */}
+        <div className="mt-6 [&>*]:w-full sm:[&>*]:w-auto">{action}</div>
       </div>
     </section>
+  );
+}
+
+function ReadinessRing({ value }: { value: number | null }) {
+  return (
+    <div className="relative size-14 shrink-0">
+      <svg viewBox="0 0 36 36" className="size-14 -rotate-90">
+        <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-hairline" strokeWidth="3" />
+        {value != null && <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-primary" strokeWidth="3" strokeLinecap="round" pathLength="100" strokeDasharray={`${value} 100`} />}
+      </svg>
+      <span className="absolute inset-0 grid place-items-center text-[0.7rem] font-semibold tabular-nums">{value != null ? `${value}%` : '–'}</span>
+    </div>
   );
 }
 
@@ -212,23 +273,33 @@ function MyExamCard({ exam }: { exam: DashboardExam }) {
   const r = exam.readiness;
   const days = exam.targetDate ? daysUntil(exam.targetDate) : null;
   return (
-    <Link href={`/exams/${exam.id}`} className="group rounded-2xl border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <Link href={`/exams/${exam.id}`} className="glass group flex h-full flex-col rounded-3xl p-4 transition duration-300 hover:-translate-y-0.5 hover:border-primary/40">
+      <div className="flex items-start gap-3">
+        <span
+          className="grid size-11 shrink-0 place-items-center rounded-xl font-mono text-[0.62rem] font-bold text-white shadow-sm"
+          style={{ background: `linear-gradient(135deg, ${exam.accent ?? '#ea7a1f'}, oklch(0.42 0.09 45))` }}
+        >
+          {exam.code.split('-')[0].slice(0, 4)}
+        </span>
+        <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-muted-foreground">{exam.code}</div>
-          <div className="truncate font-semibold">{exam.title}</div>
+          <div className="line-clamp-2 leading-snug font-semibold">{exam.title}</div>
         </div>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
       </div>
-      <div className="mt-4 space-y-1.5">
-        <div className="flex justify-between text-xs"><span className="text-muted-foreground">Readiness</span><span className="font-semibold">{r?.readiness != null ? `${r.readiness}%` : 'Not yet'}</span></div>
-        <Progress value={r?.readiness ?? 0} className="h-1.5" />
+      <div className="mt-4 flex items-center gap-3">
+        <ReadinessRing value={r?.readiness ?? null} />
+        <div className="min-w-0 text-sm">
+          <div className="font-medium">{r?.readiness != null ? (r.readiness >= 75 ? 'Looking ready' : 'Building up') : 'Not started yet'}</div>
+          <div className="text-xs text-muted-foreground">{r?.predictedScaled != null ? `Predicted score ${r.predictedScaled}` : 'Take the diagnostic to get a readiness score'}</div>
+        </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {r?.predictedScaled != null && <span>Predicted {r.predictedScaled}</span>}
-        {exam.due > 0 && <span className="text-primary">{exam.due} due for review</span>}
-        {days != null && days >= 0 && <span>Exam in {days} day{days === 1 ? '' : 's'}</span>}
-      </div>
+      {(exam.due > 0 || (days != null && days >= 0)) && (
+        <div className="mt-4 flex flex-wrap gap-1.5 text-xs">
+          {exam.due > 0 && <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 font-medium text-primary">{exam.due} due for review</span>}
+          {days != null && days >= 0 && <span className="rounded-full border border-hairline bg-wash px-2.5 py-1">Exam in {days} day{days === 1 ? '' : 's'}</span>}
+        </div>
+      )}
     </Link>
   );
 }

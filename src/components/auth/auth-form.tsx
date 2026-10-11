@@ -5,19 +5,23 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { ArrowRight, Eye, EyeOff, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
+import { MascotMark } from '@/components/brand/mascot';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { authClient, signIn, signUp } from '@/lib/auth-client';
+import { serif } from '@/lib/fonts';
 import { safeRedirectPath } from '@/lib/safe-redirect';
+import { cn } from '@/lib/utils';
 
 type Mode = 'sign-in' | 'sign-up';
 
-const COPY: Record<Mode, { title: string; subtitle: string; cta: string; switchText: string; switchLink: string; switchHref: string }> = {
+const COPY: Record<Mode, { title: string; accent: string; subtitle: string; cta: string; switchText: string; switchLink: string; switchHref: string }> = {
   'sign-in': {
-    title: 'Welcome back',
+    title: 'Welcome',
+    accent: 'back.',
     subtitle: 'Pick up right where you left off.',
     cta: 'Sign in',
     switchText: "New to PrepMonkey?",
@@ -25,7 +29,8 @@ const COPY: Record<Mode, { title: string; subtitle: string; cta: string; switchT
     switchHref: '/sign-up',
   },
   'sign-up': {
-    title: 'Create your free account',
+    title: 'Create your free',
+    accent: 'account.',
     subtitle: 'Save your progress, streaks and certificates across devices.',
     cta: 'Create account',
     switchText: 'Already have an account?',
@@ -85,10 +90,13 @@ export function AuthForm({ mode, next, providers, isGuest }: { mode: Mode; next?
 
   return (
     // CSS entrance: the form is visible in the server HTML instead of waiting for hydration.
-    <div className="reveal w-full max-w-sm">
-      <div className="rounded-3xl border bg-card/90 p-6 shadow-[0_30px_80px_-40px_oklch(0.38_0.06_45/0.5)] backdrop-blur sm:p-8">
-        <div className="mb-6 space-y-1.5 text-center">
-          <h1 className="text-2xl font-semibold">{copy.title}</h1>
+    <div className="reveal w-full max-w-md">
+      <div className="glass rounded-[1.75rem] p-6 backdrop-blur-xl sm:p-8">
+        <div className="mb-7 space-y-2 text-center">
+          <MascotMark className="mx-auto size-12 lg:hidden" />
+          <h1 className="text-[1.75rem] leading-tight font-semibold tracking-[-0.035em] sm:text-3xl">
+            {copy.title} <span className={cn(serif.className, 'text-ember pr-1 font-normal tracking-[-0.01em]')}>{copy.accent}</span>
+          </h1>
           <p className="text-sm text-muted-foreground">{isGuest && mode === 'sign-up' ? 'Keep everything you did as a guest.' : copy.subtitle}</p>
         </div>
 
@@ -144,7 +152,7 @@ export function AuthForm({ mode, next, providers, isGuest }: { mode: Mode; next?
           </div>
 
           {error && (
-            <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
           )}

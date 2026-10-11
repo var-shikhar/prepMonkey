@@ -59,14 +59,14 @@ export function ReportsQueue() {
         <ul className="space-y-3">
           <AnimatePresence initial={false}>
             {data.map((r) => (
-              <motion.li key={r.id} layout exit={{ opacity: 0, x: 40 }} className="space-y-3 rounded-2xl border bg-card p-4">
+              <motion.li key={r.id} layout exit={{ opacity: 0, x: 40 }} className="space-y-3 glass rounded-3xl p-4">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">{REASON[r.reason] ?? r.reason}</span>
                   <span className="font-mono text-muted-foreground">{r.examCode} · {r.questionId}</span>
                   <span className="ml-auto text-muted-foreground">{r.reporter} · {new Date(r.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                 </div>
                 <p className="line-clamp-2 text-sm">{r.stem.replace(/```[\s\S]*?```/g, '[code]')}</p>
-                {r.message && <blockquote className="rounded-xl border-l-2 border-primary/50 bg-secondary/50 px-3 py-2 text-sm">{r.message}</blockquote>}
+                {r.message && <blockquote className="rounded-xl border-l-2 border-primary/50 bg-wash px-3 py-2 text-sm">{r.message}</blockquote>}
                 {r.resolution && <p className="text-xs text-muted-foreground">Resolution: {r.resolution}</p>}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button asChild variant="outline" size="sm"><Link href={`/admin/questions/${encodeURIComponent(r.questionId)}`}><ExternalLink /> Open in editor</Link></Button>

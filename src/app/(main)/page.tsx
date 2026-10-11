@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Instrument_Serif } from 'next/font/google';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight, Check, Sparkles } from 'lucide-react';
@@ -15,6 +14,7 @@ import { ProductSequence } from '@/components/marketing/product-sequence';
 import { SubjectMarquee } from '@/components/marketing/subject-marquee';
 import { JsonLd } from '@/components/seo/json-ld';
 import { Button } from '@/components/ui/button';
+import { serif } from '@/lib/fonts';
 import { LANDING_FAQ } from '@/lib/landing-faq';
 import { FREE_FEATURES, PRO_FEATURES } from '@/lib/plans';
 import { examListLd, faqLd, graph } from '@/lib/seo';
@@ -25,10 +25,7 @@ import { getUser } from '@/server/session';
 
 export const metadata: Metadata = { alternates: { canonical: '/' } };
 
-// The serif accent is only used on this page, so only this page loads it.
 const CATEGORY_LABEL = { certification: 'Certifications', quiz: 'Subject quizzes', interview: 'Interview prep' } as const;
-
-const serif = Instrument_Serif({ subsets: ['latin'], weight: '400', style: 'italic' });
 
 export default async function LandingPage() {
   const user = await getUser();
@@ -37,8 +34,7 @@ export default async function LandingPage() {
   const totalQuestions = exams.reduce((a, e) => a + e.questionCount, 0);
 
   return (
-    // data-surface switches the whole document, header and footer included, to the cocoa palette.
-    <div data-surface="cocoa" className="relative overflow-x-clip">
+    <div className="relative overflow-x-clip">
       <ScrollProgress />
       <JsonLd data={graph(examListLd(exams), faqLd(LANDING_FAQ))} />
       <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[60] opacity-[0.06] mix-blend-overlay" />

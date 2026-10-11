@@ -1,19 +1,20 @@
 'use client';
 
-import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
+import { animate, motion, useMotionValue, useTransform } from 'motion/react';
 import { useEffect } from 'react';
+import { useReducedMotionSafe } from '@/lib/use-reduced-motion';
 
 const R = 30;
 const C = 2 * Math.PI * R;
 
 /** Today's goal: questions answered vs. the daily target. */
 export function GoalRing({ done, goal }: { done: number; goal: number }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   const pct = Math.min(1, goal ? done / goal : 0);
-  const v = useMotionValue(reduce ? pct : 0);
+  const v = useMotionValue(0);
   const offset = useTransform(v, (x) => C * (1 - x));
   useEffect(() => {
-    if (reduce) return;
+    if (reduce) { v.set(pct); return; }
     const a = animate(v, pct, { duration: 1, ease: [0.22, 1, 0.36, 1] });
     return () => a.stop();
   }, [pct, v, reduce]);

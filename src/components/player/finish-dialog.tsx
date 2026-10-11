@@ -34,11 +34,11 @@ export function FinishDialog({
         </AlertDialogHeader>
 
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-xl border bg-secondary/40 p-3"><div className="font-heading text-xl font-semibold">{answered}</div><div className="text-xs text-muted-foreground">answered</div></div>
-          <button type="button" onClick={onReviewUnanswered} disabled={!unanswered} className="rounded-xl border bg-secondary/40 p-3 transition enabled:hover:border-primary/40 disabled:opacity-60">
+          <div className="rounded-xl border border-hairline bg-wash p-3"><div className="font-heading text-xl font-semibold">{answered}</div><div className="text-xs text-muted-foreground">answered</div></div>
+          <button type="button" onClick={onReviewUnanswered} disabled={!unanswered} className="rounded-xl border border-hairline bg-wash p-3 transition enabled:hover:border-primary/40 disabled:opacity-60">
             <div className="font-heading text-xl font-semibold">{unanswered}</div><div className="text-xs text-muted-foreground">unanswered</div>
           </button>
-          <button type="button" onClick={onReviewFlagged} disabled={!flagged} className="rounded-xl border bg-secondary/40 p-3 transition enabled:hover:border-primary/40 disabled:opacity-60">
+          <button type="button" onClick={onReviewFlagged} disabled={!flagged} className="rounded-xl border border-hairline bg-wash p-3 transition enabled:hover:border-primary/40 disabled:opacity-60">
             <div className="font-heading text-xl font-semibold">{flagged}</div><div className="text-xs text-muted-foreground">flagged</div>
           </button>
         </div>
