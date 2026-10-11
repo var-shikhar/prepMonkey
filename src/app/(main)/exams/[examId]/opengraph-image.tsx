@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { getExam } from '@/server/exams';
 
-export const alt = 'quizzMonkey practice exam';
+export const alt = 'PrepMonkey practice exam';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -20,7 +20,7 @@ export default async function ExamOpengraphImage({ params }: { params: Promise<{
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 36, fontWeight: 700 }}>
           <div style={{ width: 56, height: 56, borderRadius: 28, background: '#6b3a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>🐒</div>
-          <span>quizz<span style={{ color: '#e86500' }}>Monkey</span></span>
+          <span>Prep<span style={{ color: '#e86500' }}>Monkey</span></span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div style={{ display: 'flex' }}>

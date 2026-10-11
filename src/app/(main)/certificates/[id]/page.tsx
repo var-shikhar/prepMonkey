@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return cert
     ? {
       title: `${cert.candidateName} · ${cert.examCode} readiness certificate`,
-      description: `Verified quizzMonkey readiness certificate: ${cert.scaled} on ${cert.examTitle}.`,
+      description: `Verified PrepMonkey readiness certificate: ${cert.scaled} on ${cert.examTitle}.`,
       robots: { index: false, follow: true },
     }
     : { title: 'Certificate not found', robots: { index: false } };
@@ -32,7 +32,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 sm:py-10 print:p-0">
       <div className="space-y-2 text-center print:hidden">
-        <p className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-3 py-1 text-sm font-medium text-success"><BadgeCheck className="size-4" /> Verified by quizzMonkey</p>
+        <p className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-3 py-1 text-sm font-medium text-success"><BadgeCheck className="size-4" /> Verified by PrepMonkey</p>
         <h1 className="text-2xl font-bold sm:text-3xl">{mine ? 'Your readiness certificate' : 'Readiness certificate'}</h1>
       </div>
       <CertificateCard cert={cert} verifyUrl={verifyUrl} />

@@ -14,7 +14,7 @@ export async function SiteFooter() {
             Mock exams, quizzes and interview practice in one calm place. Practise like it&apos;s exam day.
           </p>
         </div>
-        <FooterCol title="Practise" links={[['Explore exams', '/explore'], ['Mock interviews', '/interviews'], ['Pricing', '/pricing']]} />
+        <FooterCol title="Practise" links={[['How it works', '/#how-it-works'], ['Exams', '/#catalogue'], ['Pricing', '/#plans'], ['FAQ', '/#faq']]} />
         <FooterCol title="Account" links={[['Sign in', '/sign-in'], ['Create account', '/sign-up'], ['Verify a certificate', '/verify']]} />
         <FooterCol title="About" links={[['How scoring works', '/about/scoring'], ['Privacy', '/about/privacy'], ['Terms', '/about/terms']]} />
       </div>
@@ -34,7 +34,7 @@ export async function SiteFooter() {
       )}
       <div className="border-t">
         <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-muted-foreground sm:px-6">
-          © {new Date().getFullYear()} quizzMonkey. An independent practice platform, not affiliated with any exam vendor. Readiness certificates are not official credentials.
+          © {new Date().getFullYear()} PrepMonkey. An independent practice platform, not affiliated with any exam vendor. Readiness certificates are not official credentials.
         </p>
       </div>
     </footer>

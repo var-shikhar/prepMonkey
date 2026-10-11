@@ -50,7 +50,7 @@ export function examFaq(ex: FaqExam): FaqEntry[] {
   if (certification) {
     faqs.push({
       q: `Is this the official ${ex.code} exam?`,
-      a: `No. quizzMonkey is an independent practice platform${ex.vendor ? ` and isn't affiliated with ${ex.vendor}` : ''}. Practise here, then book the real exam with the vendor. Readiness certificates are not official credentials.`,
+      a: `No. PrepMonkey is an independent practice platform${ex.vendor ? ` and isn't affiliated with ${ex.vendor}` : ''}. Practise here, then book the real exam with the vendor. Readiness certificates are not official credentials.`,
       ...(ex.config.officialUrl ? { link: { href: ex.config.officialUrl, label: 'Official exam page' } } : {}),
     });
   }

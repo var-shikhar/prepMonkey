@@ -18,7 +18,7 @@ const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono', preload: 
 // No canonical here: it would be inherited by every page. Pages set their own.
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: { default: 'quizzMonkey · Mock exams, quizzes & interview practice', template: '%s · quizzMonkey' },
+  title: { default: 'PrepMonkey · Mock exams, quizzes & interview practice', template: '%s · PrepMonkey' },
   description: 'Timed certification mocks, practice drills, readiness analytics and AI mock interviews, all in one place.',
   applicationName: SITE_NAME,
   openGraph: { siteName: SITE_NAME, type: 'website', locale: 'en_US' },

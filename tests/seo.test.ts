@@ -80,7 +80,7 @@ describe('llms.txt', () => {
       { ...asExam(cert), notes: cert.study, samples: 10 },
       { ...asExam(interview), notes: {}, samples: 0 },
     ]);
-    expect(txt.startsWith('# quizzMonkey\n\n> ')).toBe(true);
+    expect(txt.startsWith('# PrepMonkey\n\n> ')).toBe(true);
     expect(txt).toContain(`## Certification practice exams\n\n- [CCDV-F practice exam: Claude Certified Developer – Foundations](${DEFAULT_SITE_URL}/exams/ccdv-f)`);
     expect(txt).toContain(`  - [10 sample questions with answers and explanations](${DEFAULT_SITE_URL}/exams/ccdv-f/sample-questions)`);
     expect(txt).not.toContain('/exams/javascript/sample-questions');
