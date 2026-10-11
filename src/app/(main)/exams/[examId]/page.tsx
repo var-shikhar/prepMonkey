@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cache, Suspense } from 'react';
 import { ArrowRight, CalendarClock, ChevronRight, Clock, ExternalLink, FileQuestion, Layers, Play, Target, Trophy } from 'lucide-react';
+import { MascotMark } from '@/components/brand/mascot';
 import { Reveal } from '@/components/common/reveal';
 import { ExamFaq } from '@/components/exam-hub/exam-faq';
 import { ExamDateButton, GuestDiagnosticButton, OpenSetupButton } from '@/components/exam-hub/hub-actions';
@@ -12,7 +13,6 @@ import { Syllabus } from '@/components/exam-hub/syllabus';
 import { StartButton } from '@/components/results/start-button';
 import { Breadcrumbs } from '@/components/seo/breadcrumbs';
 import { JsonLd } from '@/components/seo/json-ld';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { KINDS } from '@/lib/attempt-kinds';
@@ -62,31 +62,57 @@ export default async function ExamHubPage({ params, searchParams }: { params: Pr
   const faqs = examFaq(ex);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-6xl space-y-12 px-4 pt-5 pb-12 sm:space-y-16 sm:px-6 sm:pt-8">
       <JsonLd data={graph(courseLd(ex), breadcrumbLd([{ name: 'Explore', path: '/explore' }, { name: ex.code, path: `/exams/${ex.id}` }]), faqLd(faqs))} />
 
       {/* ---------------- header */}
-      <Reveal className="space-y-4">
-        <Breadcrumbs items={[{ name: 'Explore', href: '/explore' }, { name: ex.code }]} />
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge className="bg-gradient-brand text-white">{ex.code}</Badge>
-          {ex.vendor && <Badge variant="secondary">{ex.vendor}</Badge>}
-          {cfg.blueprintVersion && <Badge variant="outline">{cfg.blueprintVersion}</Badge>}
-        </div>
-        <h1 className="max-w-3xl text-3xl font-bold sm:text-4xl">{ex.title}</h1>
-        {ex.meta.description && <p className="max-w-3xl text-muted-foreground">{ex.meta.description}</p>}
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <Metric icon={FileQuestion} label={`${cfg.itemCount} questions`} />
-          <Metric icon={Clock} label={`${cfg.timeLimitMinutes} minutes`} />
-          <Metric icon={Target} label={`Pass ${cfg.scale.passing} / ${cfg.scale.max.toLocaleString()}`} />
-          <Metric icon={Layers} label={`${cfg.domains.length} domains`} />
-          <Metric icon={Trophy} label={`${(pools.bank + pools.imported).toLocaleString()} practice questions`} />
-          {cfg.officialUrl && (
-            <a href={cfg.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary hover:underline">
-              Official exam page <ExternalLink className="size-3.5" />
-            </a>
-          )}
-        </div>
+      <Reveal>
+        <section className="glass relative overflow-hidden rounded-[1.75rem] p-5 sm:p-8">
+          <div aria-hidden className="pointer-events-none absolute -top-28 -right-20 size-80 rounded-full bg-primary/20 blur-3xl" />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage: 'linear-gradient(to right, var(--hairline) 1px, transparent 1px), linear-gradient(to bottom, var(--hairline) 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+              maskImage: 'radial-gradient(ellipse 60% 90% at 100% 0%, black, transparent 70%)',
+            }}
+          />
+          <div className="relative">
+            <Breadcrumbs items={[{ name: 'Explore', href: '/explore' }, { name: ex.code }]} />
+            <div className="mt-5 flex items-center gap-3">
+              <span
+                className="grid size-12 shrink-0 place-items-center rounded-2xl font-mono text-[0.7rem] font-bold text-white shadow-sm sm:size-14"
+                style={{ background: `linear-gradient(135deg, ${ex.meta.accent ?? '#ea7a1f'}, oklch(0.42 0.09 45))` }}
+              >
+                {ex.code.split('-')[0].slice(0, 4)}
+              </span>
+              <div className="flex min-w-0 flex-wrap gap-1.5 text-xs">
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 font-semibold text-primary">{ex.code}</span>
+                {ex.vendor && <span className="rounded-full border border-hairline bg-wash px-2.5 py-1 font-medium">{ex.vendor}</span>}
+                {cfg.blueprintVersion && <span className="rounded-full border border-hairline bg-wash px-2.5 py-1 text-muted-foreground">{cfg.blueprintVersion}</span>}
+              </div>
+            </div>
+            <h1 className="mt-5 max-w-3xl text-[1.9rem] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">{ex.title}</h1>
+            {ex.meta.description && <p className="mt-3 max-w-3xl text-muted-foreground sm:text-lg">{ex.meta.description}</p>}
+            <dl className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+              <Spec icon={FileQuestion} value={String(cfg.itemCount)} label="questions" />
+              <Spec icon={Clock} value={String(cfg.timeLimitMinutes)} label="minutes" />
+              <Spec icon={Target} value={String(cfg.scale.passing)} suffix={`/ ${cfg.scale.max.toLocaleString()}`} label="pass mark" />
+              <Spec icon={Layers} value={String(cfg.domains.length)} label="domains" />
+            </dl>
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+              {pools.bank + pools.imported > 0 && (
+                <span className="inline-flex items-center gap-1.5"><Trophy className="size-4 text-primary" />{(pools.bank + pools.imported).toLocaleString()} practice questions</span>
+              )}
+              {cfg.officialUrl && (
+                <a href={cfg.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
+                  Official exam page <ExternalLink className="size-3.5" />
+                </a>
+              )}
+            </div>
+          </div>
+        </section>
       </Reveal>
 
       {/* ---------------- the learner's own sections stream in behind the public page */}
@@ -103,12 +129,13 @@ export default async function ExamHubPage({ params, searchParams }: { params: Pr
 
       {samples.length > 0 && (
         <Reveal>
-          <section className="flex flex-col items-start justify-between gap-4 rounded-2xl border bg-card p-5 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="font-semibold">Sample questions with answers</h2>
+          <section className="glass flex flex-col gap-4 rounded-3xl p-5 sm:flex-row sm:items-center sm:p-6">
+            <MascotMark className="size-10 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-heading text-lg font-semibold">Sample questions with answers</h2>
               <p className="text-sm text-muted-foreground">{samples.length} questions from the {ex.code} bank, with an explanation for every option. No sign-up needed.</p>
             </div>
-            <Button asChild variant="outline"><Link href={`/exams/${ex.id}/sample-questions`}>See sample questions <ArrowRight data-icon="inline-end" /></Link></Button>
+            <Button asChild variant="ghost" size="lg" className="glass w-full sm:w-auto"><Link href={`/exams/${ex.id}/sample-questions`}>See sample questions <ArrowRight data-icon="inline-end" /></Link></Button>
           </section>
         </Reveal>
       )}
@@ -178,21 +205,21 @@ async function RecentAttempts({ examId }: { examId: string }) {
     <Reveal>
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Recent attempts</h2>
-          <Button asChild variant="ghost" size="sm"><Link href={`/progress?exam=${examId}`}>All history <ArrowRight data-icon="inline-end" /></Link></Button>
+          <h2 className="font-heading text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Recent attempts</h2>
+          <Link href={`/progress?exam=${examId}`} className="inline-flex items-center gap-1 text-sm font-medium text-primary">All history <ArrowRight className="size-3.5" /></Link>
         </div>
-        <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+        <ul className="glass divide-y divide-hairline overflow-hidden rounded-3xl">
           {recent.map((a) => (
             <li key={a.id}>
-              <Link href={`/attempt/${a.id}/result`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-accent/30 sm:px-5">
+              <Link href={`/attempt/${a.id}/result`} className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-wash sm:px-5">
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium">{KINDS[a.kind].label}</span>
                   <span className="block text-xs text-muted-foreground">{new Date(a.startedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })} · {a.correctCount ?? 0}/{a.itemCount} correct</span>
                 </span>
                 {KINDS[a.kind].scored && a.scaled != null ? (
-                  <span className={cn('rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums', a.passed ? 'bg-success/12 text-success' : 'bg-secondary')}>{a.scaled}</span>
+                  <span className={cn('rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums', a.passed ? 'bg-success/12 text-success' : 'bg-wash')}>{a.scaled}</span>
                 ) : (
-                  <span className="rounded-full bg-secondary px-2.5 py-1 text-sm font-semibold tabular-nums">{a.itemCount ? Math.round(((a.correctCount ?? 0) / a.itemCount) * 100) : 0}%</span>
+                  <span className="rounded-full bg-wash px-2.5 py-1 text-sm font-semibold tabular-nums">{a.itemCount ? Math.round(((a.correctCount ?? 0) / a.itemCount) * 100) : 0}%</span>
                 )}
                 <ChevronRight className="size-4 text-muted-foreground" />
               </Link>
@@ -204,8 +231,15 @@ async function RecentAttempts({ examId }: { examId: string }) {
   );
 }
 
-function Metric({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
-  return <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Icon className="size-4 text-primary" />{label}</span>;
+function Spec({ icon: Icon, value, suffix, label }: { icon: React.ComponentType<{ className?: string }>; value: string; suffix?: string; label: string }) {
+  return (
+    <div className="rounded-2xl border border-hairline bg-wash px-3.5 py-3">
+      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Icon className="size-3.5 text-primary" />{label}</dt>
+      <dd className="mt-1 font-heading text-2xl font-semibold tracking-[-0.03em] tabular-nums">
+        {value}{suffix && <span className="ml-1 text-sm font-normal tracking-normal text-muted-foreground">{suffix}</span>}
+      </dd>
+    </div>
+  );
 }
 
 function ProgressCard({ examId, hub, passing }: { examId: string; hub: ExamHubData; passing: number }) {
@@ -243,13 +277,13 @@ function ProgressCard({ examId, hub, passing }: { examId: string; hub: ExamHubDa
   }
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border bg-card p-6 sm:p-7">
-      <div aria-hidden className="pointer-events-none absolute -top-28 -right-20 size-72 rounded-full bg-banana/20 blur-3xl dark:bg-primary/10" />
-      <div className="relative grid items-center gap-8 md:grid-cols-[auto_1fr_auto]">
+    <section className="glass relative overflow-hidden rounded-[1.75rem] p-5 sm:p-7">
+      <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-20 size-80 rounded-full bg-primary/15 blur-3xl" />
+      <div className="relative grid items-center gap-6 md:grid-cols-[auto_1fr_auto] md:gap-8">
         <ReadinessGauge value={r?.readiness ?? null} />
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold">Your progress</h2>
+            <h2 className="font-heading text-xl font-semibold tracking-[-0.02em]">Your progress</h2>
             <ExamDateButton examId={examId} targetDate={hub.targetDate} daysLeft={hub.targetDate ? daysUntil(hub.targetDate) : null} />
           </div>
           <dl className="grid grid-cols-3 gap-2 sm:max-w-md">
@@ -259,7 +293,8 @@ function ProgressCard({ examId, hub, passing }: { examId: string; hub: ExamHubDa
           </dl>
           <p className="text-xs text-muted-foreground">{confidenceNote}</p>
         </div>
-        <div className="flex flex-col items-stretch gap-2 md:items-end">
+        {/* The main action spans the card on phones, where it's the thumb's target. */}
+        <div className="flex flex-col items-stretch gap-2 md:items-end [&>*:first-child]:w-full md:[&>*:first-child]:w-auto">
           {primary}
           <p className="max-w-xs text-xs text-muted-foreground md:text-right">{hint}</p>
           {hub.certificateId && (
@@ -275,7 +310,7 @@ function ProgressCard({ examId, hub, passing }: { examId: string; hub: ExamHubDa
 
 function MiniStat({ label, value, good }: { label: string; value: string; good?: boolean }) {
   return (
-    <div className="rounded-xl border bg-secondary/40 px-3 py-2">
+    <div className="rounded-2xl border border-hairline bg-wash px-3 py-2.5">
       <dt className="text-[0.7rem] text-muted-foreground">{label}</dt>
       <dd className={cn('font-heading text-lg font-semibold tabular-nums', good && 'text-success')}>{value}</dd>
     </div>
@@ -284,12 +319,13 @@ function MiniStat({ label, value, good }: { label: string; value: string; good?:
 
 function VisitorCard({ examId }: { examId: string }) {
   return (
-    <section className="flex flex-col items-start justify-between gap-5 rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] via-banana/[0.08] to-transparent p-6 sm:flex-row sm:items-center sm:p-7">
-      <div className="space-y-1.5">
-        <h2 className="text-lg font-semibold">Know where you stand in 20 minutes</h2>
+    <section className="glass relative flex flex-col items-start justify-between gap-5 overflow-hidden rounded-[1.75rem] border-primary/25 p-6 sm:flex-row sm:items-center sm:p-7">
+      <div aria-hidden className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-primary/20 blur-3xl" />
+      <div className="relative space-y-1.5">
+        <h2 className="font-heading text-xl font-semibold tracking-[-0.02em]">Know where you stand in 20 minutes</h2>
         <p className="max-w-xl text-sm text-muted-foreground">Take the free 15-question diagnostic. No account needed, and your results carry over if you sign up later.</p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="relative flex w-full flex-col gap-2 sm:w-auto sm:flex-row [&>*]:w-full sm:[&>*]:w-auto">
         <GuestDiagnosticButton examId={examId} />
         <Button asChild variant="ghost" size="xl"><Link href={`/sign-in?next=/exams/${examId}`}>Sign in</Link></Button>
       </div>

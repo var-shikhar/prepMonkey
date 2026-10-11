@@ -20,7 +20,7 @@ export function MasteryBars({ skills, limit = 8 }: { skills: SkillMastery[]; lim
           return (
             <li key={s.skillId} className="group grid grid-cols-[minmax(0,11rem)_1fr_3rem] items-center gap-3 text-sm" title={`${s.name}: ${pct == null ? 'not practised yet' : `${pct}% mastery from ${s.answered} answers`}`}>
               <span className="truncate text-muted-foreground group-hover:text-foreground">{s.name}</span>
-              <span className="relative h-2.5 rounded-r-[4px] bg-secondary/70">
+              <span className="relative h-2.5 rounded-r-[4px] bg-hairline">
                 {pct != null && (
                   <span
                     className="absolute inset-y-0 left-0 rounded-r-[4px] transition-[width,filter] duration-700 group-hover:brightness-110"

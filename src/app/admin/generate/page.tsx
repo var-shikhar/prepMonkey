@@ -15,7 +15,7 @@ export default async function AdminGeneratePage({ searchParams }: { searchParams
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">AI drafts</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em]">AI drafts</h1>
           <p className="text-sm text-muted-foreground">Generate candidate questions for a skill, then review them in the editor. {aiEnabled() ? `Model: ${aiModel()}.` : ''}</p>
         </div>
         <ExamSwitcher exams={examOptions(exams)} value={exam.id} />

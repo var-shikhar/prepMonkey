@@ -34,7 +34,8 @@ export const listExams = (): Promise<ExamCard[]> => cached('catalog:exams', asyn
     .select({
       id: exam.id, code: exam.code, title: exam.title, vendor: exam.vendor, category: exam.category, meta: exam.meta,
       config: exam.config, isFree: exam.isFree,
-      questionCount: sql<number>`(select count(*)::int from ${question} q where q.exam_id = ${exam.id} and q.status = 'published')`,
+      // Spelled out in full: a bare ${exam.id} renders as "id" here, which inside the subquery means q.id.
+      questionCount: sql<number>`(select count(*)::int from ${question} q where q.exam_id = "exam"."id" and q.status = 'published')`,
     })
     .from(exam)
     .where(eq(exam.isPublished, true))

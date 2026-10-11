@@ -74,12 +74,13 @@ export function OnboardingFlow({ exams, name }: { exams: ExamCard[]; name: strin
   const isLast = step === steps - 1;
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 py-6 sm:px-6">
+    <div className="relative mx-auto flex min-h-dvh max-w-2xl flex-col px-4 py-6 sm:px-6">
+      <div aria-hidden className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[28rem] w-[40rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
       <header className="flex items-center justify-between">
         <LogoMark className="size-9" />
         <div className="flex gap-1.5" aria-label={`Step ${step + 1} of ${steps}`}>
           {Array.from({ length: steps }, (_, i) => (
-            <span key={i} className={cn('h-1.5 rounded-full transition-all duration-300', i === step ? 'w-8 bg-primary' : i < step ? 'w-4 bg-primary/50' : 'w-4 bg-secondary')} />
+            <span key={i} className={cn('h-1.5 rounded-full transition-all duration-300', i === step ? 'w-8 bg-primary shadow-[0_0_10px_var(--primary)]' : i < step ? 'w-4 bg-primary/50' : 'w-4 bg-hairline-strong')} />
           ))}
         </div>
         <Button variant="ghost" size="sm" onClick={() => skip.mutate()} disabled={skip.isPending}>Skip</Button>
@@ -101,7 +102,7 @@ export function OnboardingFlow({ exams, name }: { exams: ExamCard[]; name: strin
                 <div className="grid gap-3">
                   {FOCUS.map((f) => (
                     <Choice key={f.key} selected={focus === f.key} onClick={() => setFocus(f.key)}>
-                      <f.icon className="size-6 text-primary" />
+                      <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary"><f.icon className="size-5" /></span>
                       <span><span className="block font-semibold">{f.title}</span><span className="text-sm text-muted-foreground">{f.body}</span></span>
                     </Choice>
                   ))}
@@ -115,7 +116,7 @@ export function OnboardingFlow({ exams, name }: { exams: ExamCard[]; name: strin
                 <div className="grid gap-3">
                   {exams.map((e) => (
                     <Choice key={e.id} selected={examId === e.id} onClick={() => setExamId(e.id)}>
-                      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-brand text-xs font-bold text-white">{e.code.split('-')[0].slice(0, 4)}</span>
+                      <span className="grid size-11 shrink-0 place-items-center rounded-xl font-mono text-[0.62rem] font-bold text-white shadow-sm" style={{ background: `linear-gradient(135deg, ${e.meta.accent ?? '#ea7a1f'}, oklch(0.42 0.09 45))` }}>{e.code.split('-')[0].slice(0, 4)}</span>
                       <span className="min-w-0"><span className="block font-semibold">{e.title}</span><span className="text-sm text-muted-foreground">{e.code} · {e.itemCount} questions · {e.timeLimitMinutes} min</span></span>
                     </Choice>
                   ))}
@@ -146,7 +147,7 @@ export function OnboardingFlow({ exams, name }: { exams: ExamCard[]; name: strin
         </AnimatePresence>
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t pt-5 pb-safe">
+      <footer className="flex items-center justify-between gap-3 border-t border-hairline pt-5 pb-safe">
         <Button variant="ghost" size="xl" onClick={() => setStep((s) => s - 1)} disabled={step === 0}><ArrowLeft data-icon="inline-start" />Back</Button>
         <Button variant="premium" size="xl" disabled={!canContinue || finish.isPending} onClick={() => (isLast ? finish.mutate() : setStep((s) => s + 1))}>
           {finish.isPending && <Spinner />}
@@ -161,7 +162,7 @@ export function OnboardingFlow({ exams, name }: { exams: ExamCard[]; name: strin
 function Heading({ title, body }: { title: string; body: string }) {
   return (
     <div className="space-y-2 text-center">
-      <h1 className="text-2xl font-bold sm:text-3xl">{title}</h1>
+      <h1 className="text-[1.75rem] leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-4xl">{title}</h1>
       <p className="text-muted-foreground">{body}</p>
     </div>
   );
@@ -174,7 +175,7 @@ function Choice({ selected, onClick, children, vertical }: { selected: boolean; 
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        'relative flex gap-4 rounded-2xl border bg-card p-4 text-left transition-all hover:border-primary/40',
+        'glass relative flex gap-4 rounded-3xl p-4 text-left transition-all hover:border-primary/40',
         vertical ? 'flex-col items-center gap-1 text-center' : 'items-center',
         selected && 'border-primary bg-primary/[0.06] shadow-[0_0_0_1px_var(--primary)]',
       )}

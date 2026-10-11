@@ -210,7 +210,7 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
 
         {/* ---------------- side panel */}
         <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
-          <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <section className="space-y-3 glass rounded-3xl p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">Status: <span className="capitalize">{draft.status}</span></h2>
               {validation.isFetching && <Spinner className="size-3.5" />}
@@ -236,7 +236,7 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
             </div>
           </section>
 
-          <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <section className="space-y-3 glass rounded-3xl p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">Learner preview</h2>
               <Button variant="ghost" size="xs" onClick={() => setShowAnswers((v) => !v)}>{showAnswers ? <><EyeOff /> Hide answers</> : <><Eye /> Show answers</>}</Button>
@@ -244,18 +244,18 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
             <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               <RichText text={draft.stem || 'Your question stem appears here.'} className="text-sm font-medium" />
               <QuestionView item={preview} response={previewResponse} onChange={setPreviewResponse} revealed={showAnswers ? preview : null} />
-              {showAnswers && draft.explanation && <RichText text={draft.explanation} className="rounded-xl bg-secondary/50 p-3 text-xs" />}
+              {showAnswers && draft.explanation && <RichText text={draft.explanation} className="rounded-xl bg-wash p-3 text-xs" />}
             </div>
           </section>
 
           {meta?.stats && <StatsPanel stats={meta.stats} options={draft.options} type={draft.type} />}
 
           {meta && meta.reports.length > 0 && (
-            <section className="space-y-2 rounded-2xl border bg-card p-4">
+            <section className="space-y-2 glass rounded-3xl p-4">
               <h2 className="text-sm font-semibold">Learner reports</h2>
               <ul className="space-y-2 text-sm">
                 {meta.reports.map((r) => (
-                  <li key={r.id} className="rounded-xl bg-secondary/50 p-2.5">
+                  <li key={r.id} className="rounded-xl bg-wash p-2.5">
                     <span className="flex items-center justify-between text-xs"><b className="capitalize">{r.reason.replace('-', ' ')}</b><span className="text-muted-foreground">{r.status}</span></span>
                     {r.message && <span className="mt-1 block text-xs text-muted-foreground">{r.message}</span>}
                   </li>
@@ -265,7 +265,7 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
           )}
 
           {meta && meta.revisions.length > 0 && (
-            <section className="space-y-2 rounded-2xl border bg-card p-4">
+            <section className="space-y-2 glass rounded-3xl p-4">
               <h2 className="flex items-center gap-2 text-sm font-semibold"><History className="size-4" /> History</h2>
               <ul className="space-y-1.5 text-xs text-muted-foreground">
                 {meta.revisions.map((r) => (
@@ -405,12 +405,12 @@ function StatsPanel({ stats, options, type }: { stats: NonNullable<EditorMeta['s
   const totalPicks = Object.values(stats.picks).reduce((a, b) => a + b, 0);
   const choice = type === 'single' || type === 'multi' || type === 'truefalse';
   return (
-    <section className="space-y-3 rounded-2xl border bg-card p-4">
+    <section className="space-y-3 glass rounded-3xl p-4">
       <h2 className="text-sm font-semibold">How learners do</h2>
       <dl className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-secondary/50 p-2"><dt className="text-[0.65rem] text-muted-foreground">Answered</dt><dd className="font-heading font-semibold tabular-nums">{stats.n}</dd></div>
-        <div className="rounded-xl bg-secondary/50 p-2"><dt className="text-[0.65rem] text-muted-foreground">% correct</dt><dd className="font-heading font-semibold tabular-nums">{stats.p != null ? `${Math.round(stats.p * 100)}%` : '—'}</dd></div>
-        <div className="rounded-xl bg-secondary/50 p-2"><dt className="text-[0.65rem] text-muted-foreground">Discrimination</dt><dd className="font-heading font-semibold tabular-nums">{stats.discrimination != null ? stats.discrimination.toFixed(2) : '—'}</dd></div>
+        <div className="rounded-xl bg-wash p-2"><dt className="text-[0.65rem] text-muted-foreground">Answered</dt><dd className="font-heading font-semibold tabular-nums">{stats.n}</dd></div>
+        <div className="rounded-xl bg-wash p-2"><dt className="text-[0.65rem] text-muted-foreground">% correct</dt><dd className="font-heading font-semibold tabular-nums">{stats.p != null ? `${Math.round(stats.p * 100)}%` : '—'}</dd></div>
+        <div className="rounded-xl bg-wash p-2"><dt className="text-[0.65rem] text-muted-foreground">Discrimination</dt><dd className="font-heading font-semibold tabular-nums">{stats.discrimination != null ? stats.discrimination.toFixed(2) : '—'}</dd></div>
       </dl>
       {stats.flags.length > 0 && (
         <ul className="space-y-1.5">
@@ -429,7 +429,7 @@ function StatsPanel({ stats, options, type }: { stats: NonNullable<EditorMeta['s
             return (
               <div key={o.id} className="grid grid-cols-[1.5rem_1fr_2.5rem] items-center gap-2 text-xs">
                 <span className="font-bold">{LETTERS[i]}</span>
-                <span className="h-2 rounded-r-[4px] bg-secondary/70">
+                <span className="h-2 rounded-r-[4px] bg-wash">
                   <span className="block h-full rounded-r-[4px]" style={{ width: `${Math.max(share * 100, 1)}%`, background: o.correct ? 'var(--success)' : 'var(--chart-1)' }} />
                 </span>
                 <span className="text-right tabular-nums">{Math.round(share * 100)}%</span>
@@ -446,7 +446,7 @@ function StatsPanel({ stats, options, type }: { stats: NonNullable<EditorMeta['s
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3 rounded-2xl border bg-card p-4 sm:p-5">
+    <section className="space-y-3 glass rounded-3xl p-4 sm:p-5">
       <h2 className="text-sm font-semibold">{title}</h2>
       {children}
     </section>

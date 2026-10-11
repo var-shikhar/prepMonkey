@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { Reveal } from '@/components/common/reveal';
+import { PageHeader } from '@/components/layout/page-header';
 import { Catalog } from '@/components/exams/catalog';
 import { JsonLd } from '@/components/seo/json-ld';
 import { examListLd, graph } from '@/lib/seo';
@@ -20,14 +20,14 @@ export default async function ExplorePage() {
   if (!(await getUser())) redirect('/#catalogue');
   const exams = await listExams(); // cached catalogue: the full list is in the first HTML
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-6xl space-y-8 px-4 pt-6 pb-12 sm:space-y-10 sm:px-6 sm:pt-10">
       <JsonLd data={graph(examListLd(exams))} />
-      <Reveal className="space-y-2">
-        <h1 className="text-3xl font-bold sm:text-4xl">Explore</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          Pick an exam to see its syllabus, take a free diagnostic, and practise with explanations for every option.
-        </p>
-      </Reveal>
+      <PageHeader
+        eyebrow="Catalogue"
+        title="Find your next"
+        accent="exam."
+        description="Pick an exam to see its syllabus, take a free diagnostic, and practise with explanations for every option."
+      />
       {/* Without readiness first (what crawlers and visitors see), then with the learner's own scores. */}
       <Suspense fallback={<Catalog exams={exams} readiness={{}} />}>
         <CatalogWithReadiness exams={exams} />

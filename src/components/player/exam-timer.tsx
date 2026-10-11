@@ -54,7 +54,7 @@ export function ExamTimer({ deadline, offsetMs, onExpire }: { deadline: string; 
       aria-label={`Time remaining ${formatClock(remaining)}`}
       className={cn(
         'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 font-mono text-sm font-semibold tabular-nums transition-colors',
-        level === 'ok' && 'bg-secondary',
+        level === 'ok' && 'border-hairline-strong bg-wash',
         level === 'warn' && 'border-warning/60 bg-warning/15 text-warning-foreground dark:text-warning',
         level === 'danger' && 'animate-pulse border-destructive/50 bg-destructive/10 text-destructive',
       )}

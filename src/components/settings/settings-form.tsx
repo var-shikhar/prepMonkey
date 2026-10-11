@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { api } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
+import { cn } from '@/lib/utils';
 import { ManageBillingButton } from '@/components/billing/billing-buttons';
 import Link from 'next/link';
 
@@ -86,8 +87,8 @@ export function SettingsForm({ initial }: { initial: Settings }) {
       <Section title="Practice" description="Your daily goal drives the ring on Home and your streak reminders.">
         <div className="space-y-2">
           <Label>Daily goal</Label>
-          <ToggleGroup type="single" variant="outline" value={String(prefs.dailyGoal)} onValueChange={(v) => v && savePrefs.mutate({ dailyGoal: Number(v) })} className="w-full sm:w-auto">
-            {[5, 10, 20, 40].map((n) => <ToggleGroupItem key={n} value={String(n)} className="flex-1 px-4">{n} questions</ToggleGroupItem>)}
+          <ToggleGroup type="single" variant="outline" value={String(prefs.dailyGoal)} onValueChange={(v) => v && savePrefs.mutate({ dailyGoal: Number(v) })} className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+            {[5, 10, 20, 40].map((n) => <ToggleGroupItem key={n} value={String(n)} className="flex-1 rounded-xl border-hairline-strong px-4 data-[state=on]:border-primary data-[state=on]:bg-primary/12 data-[state=on]:text-primary">{n} questions</ToggleGroupItem>)}
           </ToggleGroup>
         </div>
         <div className="space-y-1.5">
@@ -96,7 +97,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
             id="tz"
             value={prefs.timezone}
             onChange={(e) => savePrefs.mutate({ timezone: e.target.value })}
-            className="h-11 w-full rounded-lg border bg-background px-3 text-sm sm:max-w-sm"
+            className="h-11 w-full rounded-xl border border-hairline-strong bg-wash px-3 text-sm sm:max-w-sm"
           >
             {/* The saved zone may be an alias the browser doesn't list (Chrome omits "UTC"). */}
             {!zones.known.has(prefs.timezone) && <option value={prefs.timezone}>{prefs.timezone.replaceAll('_', ' ')}</option>}
@@ -104,7 +105,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           </select>
           <p className="text-xs text-muted-foreground">Streaks roll over at midnight in this time zone.</p>
         </div>
-        <Label className="flex items-center justify-between gap-4 rounded-2xl border p-4 font-normal">
+        <Label className="flex items-center justify-between gap-4 rounded-2xl border border-hairline bg-wash p-4 font-normal">
           <span><span className="block text-sm font-semibold">Show me on leaderboards</span><span className="text-xs text-muted-foreground">Only your display name and XP are shown.</span></span>
           <Switch checked={prefs.leaderboardOptIn} onCheckedChange={(v) => savePrefs.mutate({ leaderboardOptIn: v })} />
         </Label>
@@ -148,9 +149,9 @@ export function SettingsForm({ initial }: { initial: Settings }) {
 
 function Section({ title, description, children, danger }: { title: string; description?: string; children: React.ReactNode; danger?: boolean }) {
   return (
-    <section className={danger ? 'space-y-4 rounded-3xl border border-destructive/30 p-5 sm:p-6' : 'space-y-4 rounded-3xl border bg-card p-5 sm:p-6'}>
+    <section className={cn('glass space-y-4 rounded-3xl p-5 sm:p-6', danger && 'border-destructive/30 bg-destructive/[0.03]')}>
       <div>
-        <h2 className="font-semibold">{title}</h2>
+        <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">{title}</h2>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       {children}

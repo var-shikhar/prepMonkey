@@ -327,7 +327,7 @@ export function QuestionTable({ exam }: { exam: Exam }) {
       </div>
 
       {/* table: rows outside the viewport are replaced by two spacer rows */}
-      <div className="overflow-x-auto rounded-2xl border bg-card [overflow-anchor:none]">
+      <div className="overflow-x-auto glass rounded-3xl [overflow-anchor:none]">
         <table className="w-full min-w-[60rem] table-fixed text-left text-sm" aria-rowcount={(total ?? rows.length) + 1}>
           <colgroup>
             <col className="w-10" />
@@ -340,7 +340,7 @@ export function QuestionTable({ exam }: { exam: Exam }) {
             <col className="w-[5.5rem]" />
             <col className="w-36" />
           </colgroup>
-          <thead className="border-b bg-secondary/40 text-xs text-muted-foreground">
+          <thead className="border-b bg-wash text-xs text-muted-foreground">
             <tr aria-rowindex={1}>
               <th className="px-3 py-2.5">
                 <Checkbox
@@ -455,7 +455,7 @@ const QuestionRow = memo(function QuestionRow({ row, index, examId, selected, on
   const href = `/admin/questions/${encodeURIComponent(row.id)}?exam=${examId}`;
   const stats = row.stats;
   return (
-    <tr ref={measure} data-index={index} aria-rowindex={index + 2} className={cn('border-b transition-colors hover:bg-accent/30', selected && 'bg-primary/[0.04]')}>
+    <tr ref={measure} data-index={index} aria-rowindex={index + 2} className={cn('border-b transition-colors hover:bg-wash', selected && 'bg-primary/[0.04]')}>
       <td className="px-3 py-2.5">
         <Checkbox checked={selected} onCheckedChange={(v) => onToggle(row.id, v === true)} aria-label={`Select ${row.id}`} />
       </td>

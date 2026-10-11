@@ -55,7 +55,7 @@ export function ImportPanel({ examId, examCode }: { examId: string; examCode: st
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-      <section className="space-y-4 rounded-2xl border bg-card p-5">
+      <section className="space-y-4 glass rounded-3xl p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-semibold">Import into {examCode}</h2>
           <ToggleGroup type="single" variant="outline" size="sm" value={format} onValueChange={(v) => { if (v) { setFormat(v as typeof format); setPreview(null); } }}>
@@ -64,7 +64,7 @@ export function ImportPanel({ examId, examCode }: { examId: string; examCode: st
           </ToggleGroup>
         </div>
 
-        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center transition-colors hover:border-primary/40 hover:bg-accent/20">
+        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center transition-colors hover:border-primary/40 hover:bg-wash">
           <FileUp className="size-7 text-primary" />
           <span className="text-sm font-medium">{fileName || 'Choose a .json or .csv file'}</span>
           <span className="text-xs text-muted-foreground">or paste the contents below</span>
@@ -138,7 +138,7 @@ export function ImportPanel({ examId, examCode }: { examId: string; examCode: st
       </section>
 
       <aside className="space-y-4">
-        <section className="space-y-3 rounded-2xl border bg-card p-5">
+        <section className="space-y-3 glass rounded-3xl p-5">
           <h2 className="font-semibold">Export {examCode}</h2>
           <p className="text-sm text-muted-foreground">Downloads JSON in the same format as the content files, ready to edit and re-import.</p>
           <div className="grid gap-2">
@@ -146,7 +146,7 @@ export function ImportPanel({ examId, examCode }: { examId: string; examCode: st
             <Button asChild variant="outline"><a href={`/api/admin/export?examId=${examId}&status=all`}><Download /> Everything (incl. drafts)</a></Button>
           </div>
         </section>
-        <section className="space-y-2 rounded-2xl border bg-card p-5 text-sm text-muted-foreground">
+        <section className="space-y-2 glass rounded-3xl p-5 text-sm text-muted-foreground">
           <h2 className="font-semibold text-foreground">Formats</h2>
           <p><b>JSON:</b> an array of questions, exactly as in <code>content/exams/&lt;id&gt;/questions/*.json</code>.</p>
           <p><b>Udemy CSV:</b> the practice-test export (Question, Answer Option 1–6, Explanation 1–6, Correct Answers, Overall Explanation, Domain). Skills are matched automatically; review before publishing.</p>

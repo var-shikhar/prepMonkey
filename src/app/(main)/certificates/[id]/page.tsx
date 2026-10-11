@@ -33,7 +33,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 sm:py-10 print:p-0">
       <div className="space-y-2 text-center print:hidden">
         <p className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-3 py-1 text-sm font-medium text-success"><BadgeCheck className="size-4" /> Verified by PrepMonkey</p>
-        <h1 className="text-2xl font-bold sm:text-3xl">{mine ? 'Your readiness certificate' : 'Readiness certificate'}</h1>
+        <h1 className="text-[1.75rem] leading-tight font-semibold tracking-[-0.03em] sm:text-4xl">{mine ? 'Your readiness certificate' : 'Readiness certificate'}</h1>
       </div>
       <CertificateCard cert={cert} verifyUrl={verifyUrl} />
       <CertificateActions url={verifyUrl} title={`${cert.examCode} readiness certificate`} />

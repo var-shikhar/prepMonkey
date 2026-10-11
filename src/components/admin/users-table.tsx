@@ -37,9 +37,9 @@ export function UsersTable({ selfId }: { selfId: string }) {
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or email" className="h-9 pl-9" aria-label="Search users" />
       </div>
-      <div className="overflow-x-auto rounded-2xl border bg-card">
+      <div className="overflow-x-auto glass rounded-3xl">
         <table className="w-full min-w-[36rem] text-left text-sm">
-          <thead className="border-b bg-secondary/40 text-xs text-muted-foreground">
+          <thead className="border-b bg-wash text-xs text-muted-foreground">
             <tr><th className="px-4 py-2.5 font-medium">Name</th><th className="px-4 py-2.5 font-medium">Email</th><th className="px-4 py-2.5 font-medium">Joined</th><th className="px-4 py-2.5 font-medium">Role</th></tr>
           </thead>
           <tbody className="divide-y">

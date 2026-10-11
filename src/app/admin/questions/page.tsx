@@ -14,7 +14,7 @@ export default async function AdminQuestionsPage({ searchParams }: { searchParam
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Questions</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em]">Questions</h1>
           <p className="text-sm text-muted-foreground">Every item in {exam.code}, with live statistics from learner answers.</p>
         </div>
         <ExamSwitcher exams={examOptions(exams)} value={exam.id} />

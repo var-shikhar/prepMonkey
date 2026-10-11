@@ -8,7 +8,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className={user ? 'flex-1 pb-24 md:pb-0' : 'flex-1'}>{children}</main>
+      <main className={user ? 'flex-1 pb-28 md:pb-0' : 'flex-1'}>{children}</main>
       {user ? <MobileTabBar /> : <SiteFooter />}
     </div>
   );

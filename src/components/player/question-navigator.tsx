@@ -68,7 +68,7 @@ export function QuestionNavigator({ state, onJump }: { state: PlayerState; onJum
                 aria-label={`Question ${index + 1}${s.answered ? ', answered' : ''}${s.flagged ? ', flagged' : ''}`}
                 aria-current={current ? 'step' : undefined}
                 className={cn(
-                  'relative grid aspect-square place-items-center rounded-lg border text-xs font-semibold tabular-nums transition-all hover:-translate-y-px',
+                  'relative grid aspect-square place-items-center rounded-lg border border-hairline-strong bg-wash text-xs font-semibold tabular-nums transition-all hover:-translate-y-px',
                   s.answered && !s.verdict && 'border-primary/40 bg-primary/15 text-foreground',
                   s.verdict === 'right' && 'border-success/50 bg-success/15 text-success',
                   s.verdict === 'wrong' && 'border-destructive/50 bg-destructive/10 text-destructive',
@@ -95,7 +95,7 @@ export function QuestionNavigator({ state, onJump }: { state: PlayerState; onJum
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-xl border bg-secondary/40 px-2 py-2">
+    <div className="rounded-xl border border-hairline bg-wash px-2 py-2">
       <div className="font-heading text-base font-semibold tabular-nums">{value}</div>
       <div className="text-muted-foreground">{label}</div>
     </div>

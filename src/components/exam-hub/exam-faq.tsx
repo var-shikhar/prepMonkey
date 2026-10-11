@@ -10,8 +10,8 @@ import { cn } from '@/lib/utils';
 export function ExamFaq({ faqs, title = 'Questions about this exam', id = 'exam-faq', titleClassName }: { faqs: FaqEntry[]; title?: string; id?: string; titleClassName?: string }) {
   return (
     <section aria-labelledby={id} className="space-y-4">
-      <h2 id={id} className={cn('text-xl font-semibold', titleClassName)}>{title}</h2>
-      <div className="divide-y rounded-2xl border bg-card">
+      <h2 id={id} className={cn('font-heading text-xl font-semibold tracking-[-0.02em] sm:text-2xl', titleClassName)}>{title}</h2>
+      <div className="glass divide-y divide-hairline rounded-3xl">
         {faqs.map((f) => (
           <details key={f.q} className="group px-4 sm:px-5">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium [&::-webkit-details-marker]:hidden">

@@ -31,7 +31,7 @@ export function TeamsHome({ teams }: { teams: TeamRow[] }) {
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2">
-        <form className="space-y-3 rounded-3xl border bg-card p-5" onSubmit={(e) => { e.preventDefault(); if (name.trim().length >= 2) create.mutate(); }}>
+        <form className="space-y-3 glass rounded-3xl p-5" onSubmit={(e) => { e.preventDefault(); if (name.trim().length >= 2) create.mutate(); }}>
           <h2 className="font-semibold">Start a team</h2>
           <p className="text-sm text-muted-foreground">For a study group, a class or a company cohort. You set assignments and see everyone&apos;s results.</p>
           <div className="flex gap-2">
@@ -39,7 +39,7 @@ export function TeamsHome({ teams }: { teams: TeamRow[] }) {
             <Button type="submit" variant="premium" disabled={name.trim().length < 2 || create.isPending}>{create.isPending ? <Spinner /> : <Plus />} Create</Button>
           </div>
         </form>
-        <form className="space-y-3 rounded-3xl border bg-card p-5" onSubmit={(e) => { e.preventDefault(); if (code.trim()) join.mutate(); }}>
+        <form className="space-y-3 glass rounded-3xl p-5" onSubmit={(e) => { e.preventDefault(); if (code.trim()) join.mutate(); }}>
           <h2 className="font-semibold">Join a team</h2>
           <p className="text-sm text-muted-foreground">Enter the invite code your instructor or group shared with you.</p>
           <div className="flex gap-2">
@@ -50,7 +50,7 @@ export function TeamsHome({ teams }: { teams: TeamRow[] }) {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Your teams</h2>
+        <h2 className="font-heading text-lg font-semibold tracking-[-0.02em]">Your teams</h2>
         {teams.length === 0 ? (
           <div className="rounded-3xl border border-dashed p-10 text-center">
             <Users className="mx-auto size-9 text-primary" />
@@ -58,10 +58,10 @@ export function TeamsHome({ teams }: { teams: TeamRow[] }) {
             <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">Practising with others keeps everyone accountable. Create one above or ask for an invite code.</p>
           </div>
         ) : (
-          <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+          <ul className="divide-y divide-hairline overflow-hidden glass rounded-3xl">
             {teams.map((t) => (
               <li key={t.id}>
-                <Link href={`/teams/${t.id}`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-accent/30">
+                <Link href={`/teams/${t.id}`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-wash">
                   <span className="grid size-10 place-items-center rounded-xl bg-gradient-brand text-sm font-bold text-white">{t.name.slice(0, 2).toUpperCase()}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{t.name}</span>

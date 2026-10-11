@@ -36,8 +36,8 @@ export function ActivityHeatmap({ days, timeZone, weeks = 12 }: { days: { day: s
                 <Tooltip key={c.key}>
                   <TooltipTrigger asChild>
                     <span
-                      className="aspect-square rounded-[3px] border border-border/40"
-                      style={{ background: c.items ? `color-mix(in oklch, var(--primary) ${shade(c.items)}%, var(--secondary))` : 'var(--secondary)' }}
+                      className="aspect-square rounded-[3px] border border-hairline"
+                      style={{ background: c.items ? `color-mix(in oklch, var(--primary) ${shade(c.items)}%, var(--wash))` : 'var(--wash)' }}
                     />
                   </TooltipTrigger>
                   <TooltipContent>

@@ -62,7 +62,7 @@ export function PracticeOptions({ exam, signedIn, defaultName, hasImported, due,
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold">Ways to practise</h2>
+        <h2 className="font-heading text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Ways to practise</h2>
         <p className="text-sm text-muted-foreground">Not sure? Drills while you learn, mocks when you want a score.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
@@ -73,26 +73,26 @@ export function PracticeOptions({ exam, signedIn, defaultName, hasImported, due,
             onClick={() => open(c.key)}
             style={{ '--reveal-delay': `${i * 0.05}s` } as React.CSSProperties}
             className={cn(
-              'reveal group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_18px_40px_-28px_oklch(0.38_0.06_45/0.6)]',
+              'reveal glass group relative flex items-start gap-4 overflow-hidden rounded-3xl p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 md:flex-col md:gap-3 md:p-5',
               c.accent && 'border-primary/30',
             )}
           >
             {c.accent && <span className="absolute top-0 right-0 rounded-bl-xl bg-gradient-brand px-2.5 py-1 text-[0.65rem] font-semibold text-white">Exam conditions</span>}
-            <c.icon className="size-6 text-primary" />
-            <div>
-              <div className="font-heading text-base font-semibold">{c.title}</div>
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary"><c.icon className="size-5" /></span>
+            <div className="min-w-0 flex-1 md:flex md:w-full md:flex-1 md:flex-col">
+              <div className="pr-20 font-heading text-base font-semibold md:pr-0">{c.title}</div>
               <p className="mt-1 text-sm text-muted-foreground">{c.when}</p>
-            </div>
-            <div className="mt-auto flex items-center justify-between pt-1 text-xs text-muted-foreground">
-              <span>{c.meta}</span>
-              <ArrowRight className="size-4 transition group-hover:translate-x-0.5 group-hover:text-primary" />
+              <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground md:mt-auto md:pt-4">
+                <span>{c.meta}</span>
+                <ArrowRight className="size-4 transition group-hover:translate-x-0.5 group-hover:text-primary" />
+              </div>
             </div>
           </button>
         ))}
       </div>
 
       {signedIn && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 [&>button]:rounded-full [&>button]:border-hairline-strong [&>button]:bg-wash">
           <Button variant="outline" size="sm" disabled={start.isPending} onClick={() => start.mutate({ examId: exam.id, kind: 'adaptive' })}>
             <Gauge /> Adaptive test · {Math.min(20, exam.itemCount)} questions
           </Button>
