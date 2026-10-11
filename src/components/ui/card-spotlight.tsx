@@ -30,7 +30,7 @@ export const CardSpotlight = ({
 
   return (
     <div
-      className={cn("group/spotlight relative overflow-hidden rounded-xl border bg-card", className)}
+      className={cn("glass group/spotlight relative overflow-hidden rounded-xl", className)}
       onMouseMove={handleMouseMove}
       {...props}
     >

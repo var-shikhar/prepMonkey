@@ -33,7 +33,7 @@ export function Catalog({ exams, readiness }: { exams: ExamCardData[]; readiness
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-sm">
           <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search exams, vendors, topics…" className="h-11 rounded-xl pl-10" aria-label="Search exams" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search exams, vendors, topics…" className="h-11 rounded-2xl border-hairline-strong bg-wash pl-10" aria-label="Search exams" />
         </div>
         <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           {CATEGORIES.filter((c) => c.key === 'all' || present.has(c.key)).map((c) => (
@@ -44,7 +44,7 @@ export function Catalog({ exams, readiness }: { exams: ExamCardData[]; readiness
               aria-pressed={category === c.key}
               className={cn(
                 'shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors',
-                category === c.key ? 'border-primary bg-primary text-primary-foreground' : 'hover:border-primary/40 hover:bg-accent/40',
+                category === c.key ? 'border-primary bg-primary text-primary-foreground' : 'border-hairline-strong bg-wash hover:border-primary/40',
               )}
             >
               {c.label}
@@ -54,7 +54,7 @@ export function Catalog({ exams, readiness }: { exams: ExamCardData[]; readiness
       </div>
 
       {visible.length === 0 ? (
-        <div className="rounded-3xl border border-dashed p-12 text-center">
+        <div className="glass rounded-3xl border-dashed p-12 text-center">
           <p className="font-medium">No exams match “{query}”.</p>
           <p className="mt-1 text-sm text-muted-foreground">Try a vendor name or a shorter search.</p>
         </div>
@@ -63,7 +63,7 @@ export function Catalog({ exams, readiness }: { exams: ExamCardData[]; readiness
           {/* initial={false}: cards present on load render visible (and in the server HTML); filtering still animates. */}
           <AnimatePresence mode="popLayout" initial={false}>
             {visible.map((exam) => (
-              <motion.div key={exam.id} layout initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}>
+              <motion.div key={exam.id} layout className="h-full" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}>
                 <ExamCard exam={exam} readiness={readiness[exam.id]} />
               </motion.div>
             ))}

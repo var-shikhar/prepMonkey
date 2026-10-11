@@ -1,7 +1,6 @@
 import { BookOpenCheck, Gauge, Timer } from 'lucide-react';
 import { MascotFace } from '@/components/brand/mascot-face';
 import { Logo } from '@/components/brand/logo';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { serif } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 
@@ -30,7 +29,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div aria-hidden className="pointer-events-none absolute -top-48 left-1/2 -z-10 h-[34rem] w-[52rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo />
-        <ThemeToggle />
       </header>
       <main className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-12 px-4 pt-4 pb-16 sm:px-6 sm:pt-8 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:pt-0">
         <section aria-hidden className="hidden lg:block">
