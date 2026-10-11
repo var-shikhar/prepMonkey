@@ -10,7 +10,7 @@ export function StreakChip({ days, activeToday, todayItems, goal }: { days: numb
           tabIndex={0}
           className={cn(
             'inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-sm font-semibold tabular-nums transition-colors',
-            activeToday ? 'border-primary/30 bg-primary/10 text-primary' : 'text-muted-foreground',
+            activeToday ? 'border-primary/30 bg-primary/10 text-primary' : 'border-hairline-strong bg-wash text-muted-foreground',
           )}
         >
           <Flame className={cn('size-4', activeToday && 'fill-banana/70')} />
