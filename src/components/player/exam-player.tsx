@@ -186,7 +186,7 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
   return (
     <div className="flex min-h-dvh flex-col">
       {/* ---------------- top bar */}
-      <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-hairline bg-background/75 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-3 sm:px-6">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -210,6 +210,7 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
 
           <div className="min-w-0 leading-tight">
             <div className="truncate text-sm font-semibold">{state.examCode} · {kind.label}</div>
+            <div className="truncate text-xs text-muted-foreground sm:hidden">Question {index + 1} of {total} · {answeredCount} answered</div>
             <div className="hidden truncate text-xs text-muted-foreground sm:block">{state.difficultyLabel} · {isDrill ? 'answers after each question' : 'answers at the end'}</div>
           </div>
 
@@ -218,7 +219,7 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
             {state.deadline ? (
               <ExamTimer deadline={state.deadline} offsetMs={offsetMs} onExpire={onExpire} />
             ) : (
-              <span className="hidden h-8 items-center rounded-full border bg-secondary px-3 text-xs font-medium text-muted-foreground sm:inline-flex">Untimed</span>
+              <span className="hidden h-8 items-center rounded-full border border-hairline-strong bg-wash px-3 text-xs font-medium text-muted-foreground sm:inline-flex">Untimed</span>
             )}
             <Button variant="outline" size="icon" className="lg:hidden" onClick={() => ui.setNavigatorOpen(true)} aria-label="Question navigator">
               <LayoutGrid />
@@ -228,8 +229,8 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
             </Button>
           </div>
         </div>
-        <div className="h-1 bg-secondary" aria-hidden>
-          <motion.div className="h-full bg-gradient-brand" animate={{ width: `${(answeredCount / total) * 100}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
+        <div className="h-[3px] bg-hairline" aria-hidden>
+          <motion.div className="h-full bg-gradient-brand shadow-[0_0_12px_var(--primary)]" animate={{ width: `${(answeredCount / total) * 100}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
         </div>
       </header>
 
@@ -249,7 +250,7 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-heading text-sm font-semibold text-muted-foreground">Question {index + 1} <span className="font-normal">of {total}</span></span>
-                {isDrill && <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">{item.skillName}</span>}
+                {isDrill && <span className="rounded-full border border-hairline bg-wash px-2.5 py-0.5 text-xs text-muted-foreground">{item.skillName}</span>}
                 <div className="ml-auto flex items-center gap-1">
                   <Button variant="ghost" size="sm" onClick={toggleFlag} aria-pressed={flagged} className={cn(flagged && 'text-cocoa dark:text-banana')}>
                     <Flag className={cn(flagged && 'fill-banana')} /> <span className="hidden sm:inline">{flagged ? 'Flagged' : 'Flag'}</span>
@@ -267,16 +268,16 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
               </div>
 
               {caseStudy && (
-                <div className="rounded-2xl border bg-secondary/40">
+                <div className="glass rounded-2xl">
                   <button type="button" onClick={() => ui.setCaseOpen(!ui.caseOpen)} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold">
                     <BookOpen className="size-4 text-primary" /> Case study: {caseStudy.title}
                     <ChevronDown className={cn('ml-auto size-4 transition-transform', ui.caseOpen && 'rotate-180')} />
                   </button>
-                  {ui.caseOpen && <RichText text={caseStudy.scenario} className="border-t px-4 py-3 text-sm text-muted-foreground" />}
+                  {ui.caseOpen && <RichText text={caseStudy.scenario} className="border-t border-hairline px-4 py-3 text-sm text-muted-foreground" />}
                 </div>
               )}
 
-              <RichText text={item.stem} className="text-[1.05rem] font-medium sm:text-lg" />
+              <RichText text={item.stem} className="text-[1.08rem] leading-relaxed font-medium tracking-[-0.01em] sm:text-xl" />
               <p className="text-sm text-muted-foreground">{selectHint(item, item.type === 'multi' ? response.length : 0)}</p>
 
               <QuestionView item={item} response={response} onChange={setResponse} revealed={revealed} />
@@ -286,7 +287,7 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
                   <motion.section
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={cn('space-y-2 rounded-2xl border p-4 sm:p-5', revealed.correct ? 'border-success/40 bg-success/[0.06]' : 'border-destructive/30 bg-destructive/[0.05]')}
+                    className={cn('glass space-y-2 rounded-3xl p-4 sm:p-5', revealed.correct ? 'border-success/40 bg-success/[0.06]' : 'border-destructive/30 bg-destructive/[0.05]')}
                   >
                     <h3 className={cn('flex items-center gap-2 text-base font-semibold', revealed.correct ? 'text-success' : 'text-destructive')}>
                       {revealed.correct ? <Check className="size-5" /> : <X className="size-5" />}
@@ -317,7 +318,7 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
 
         {/* desktop navigator */}
         <aside className="hidden w-72 shrink-0 lg:block">
-          <div className="sticky top-24 space-y-4 rounded-2xl border bg-card p-4">
+          <div className="glass sticky top-24 space-y-4 rounded-3xl p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">Questions</h2>
               <SaveIndicator state={saveState} />
@@ -331,13 +332,13 @@ export function ExamPlayer({ initial }: { initial: PlayerState }) {
       </div>
 
       {/* mobile step controls */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/90 px-3 pt-3 pb-safe backdrop-blur-xl lg:hidden">
-        <div className="mx-auto flex max-w-2xl items-center gap-2">
-          <Button variant="outline" size="icon-lg" onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous question"><ArrowLeft /></Button>
+      <div className="pb-safe fixed inset-x-3 bottom-3 z-30 lg:hidden">
+        <div className="glass mx-auto flex max-w-2xl items-center gap-2 rounded-[1.6rem] p-2 backdrop-blur-2xl">
+          <Button variant="outline" size="icon-lg" className="rounded-2xl border-hairline-strong bg-wash" onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous question"><ArrowLeft /></Button>
           <div className="flex-1">
             <PrimaryButton isDrill={isDrill} revealed={Boolean(revealed)} hasAnswer={hasAnswer} last={last} checking={check.isPending} onClick={primary} onSkip={() => go(index + 1)} block />
           </div>
-          <Button variant="outline" size="icon-lg" onClick={() => go(index + 1)} disabled={last} aria-label="Next question"><ArrowRight /></Button>
+          <Button variant="outline" size="icon-lg" className="rounded-2xl border-hairline-strong bg-wash" onClick={() => go(index + 1)} disabled={last} aria-label="Next question"><ArrowRight /></Button>
         </div>
       </div>
 
