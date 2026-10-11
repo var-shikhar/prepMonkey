@@ -12,15 +12,15 @@ export function TodayPlan({ plan }: { plan: PlanView }) {
   if (!today) return null;
   const done = today.tasks.filter((t) => t.done).length;
   return (
-    <section className="rounded-3xl border bg-card p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><CalendarCheck className="size-4 text-primary" /> Today&apos;s plan · {plan.examCode}</h2>
+    <section className="glass rounded-3xl p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase"><CalendarCheck className="size-4 text-primary" /> Today&apos;s plan · {plan.examCode}</h2>
         <span className="text-xs text-muted-foreground tabular-nums">{done}/{today.tasks.length}</span>
       </div>
       <ul className="space-y-2.5">
         {today.tasks.map((t, i) => (
           <li key={i} className="flex items-start gap-3">
-            <span className={cn('mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border', t.done && 'border-success bg-success text-success-foreground')}>
+            <span className={cn('mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border border-hairline-strong', t.done && 'border-success bg-success text-success-foreground')}>
               {t.done && <Check className="size-3" />}
             </span>
             <span className="min-w-0 flex-1">

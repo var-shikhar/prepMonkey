@@ -26,7 +26,7 @@ export function AppNav() {
             {active && (
               <motion.span
                 layoutId="app-nav-pill"
-                className="absolute inset-0 -z-10 rounded-full bg-secondary ring-1 ring-border"
+                className="absolute inset-0 -z-10 rounded-full border border-hairline-strong bg-wash"
                 transition={{ type: 'spring', stiffness: 420, damping: 34 }}
               />
             )}
@@ -43,15 +43,16 @@ export function AppNav() {
   );
 }
 
-/** Phone navigation: the same four destinations as a bottom tab bar. */
+/**
+ * Phone navigation: the same four destinations in a floating glass dock that
+ * sits clear of the screen edge (and the home indicator). A soft pill slides
+ * behind whichever tab is active.
+ */
 export function MobileTabBar() {
   const pathname = usePathname();
   return (
-    <nav
-      aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 print:hidden border-t bg-background/85 pb-safe backdrop-blur-xl md:hidden"
-    >
-      <ul className="mx-auto grid max-w-md grid-cols-4">
+    <nav aria-label="Main" className="pb-safe fixed inset-x-3 bottom-3 z-40 print:hidden md:hidden">
+      <ul className="glass mx-auto grid max-w-md grid-cols-4 rounded-[1.6rem] p-1.5 backdrop-blur-2xl">
         {APP_NAV.map((item) => {
           const active = isActive(item, pathname);
           const Icon = item.icon;
@@ -61,15 +62,20 @@ export function MobileTabBar() {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex flex-col items-center gap-1 pt-2.5 pb-1 text-[0.7rem] font-medium transition-colors',
+                  'relative flex flex-col items-center gap-1 rounded-[1.2rem] py-2 text-[0.68rem] font-medium transition-colors',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >
                 {active && (
-                  <motion.span layoutId="tab-indicator" className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
+                  <motion.span
+                    layoutId="tab-indicator"
+                    className="absolute inset-0 rounded-[1.2rem] border border-primary/25 bg-primary/12"
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  />
                 )}
-                <Icon className="size-5" strokeWidth={active ? 2.25 : 1.75} />
-                {item.label}
+                <Icon className="relative size-5" strokeWidth={active ? 2.25 : 1.75} />
+                <span className="relative">{item.label}</span>
+                {item.badge && !active && <span className="absolute top-1.5 right-[calc(50%-1.1rem)] size-1.5 rounded-full bg-primary" />}
               </Link>
             </li>
           );
