@@ -50,7 +50,7 @@ export function ReviewList({ items, attemptId, aiTutor = false }: { items: Resul
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">Review your answers</h2>
+        <h2 className="font-heading text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Review your answers</h2>
         <ToggleGroup type="single" value={filter} onValueChange={(v) => v && setFilter(v as Filter)} variant="outline" size="sm">
           {(['incorrect', 'all', 'flagged', 'unanswered'] as Filter[]).map((f) => (
             <ToggleGroupItem key={f} value={f} disabled={!counts[f]} className="capitalize">
@@ -61,19 +61,19 @@ export function ReviewList({ items, attemptId, aiTutor = false }: { items: Resul
       </div>
 
       {visible.length === 0 && (
-        <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Nothing here. Nice!</p>
+        <p className="glass rounded-3xl border-dashed p-8 text-center text-sm text-muted-foreground">Nothing here. Nice!</p>
       )}
 
       <ul className="space-y-2.5">
         {visible.map(({ item, index }) => {
           const expanded = open === item.id;
           return (
-            <li key={item.id} className={cn('overflow-hidden rounded-2xl border bg-card transition-shadow', expanded && 'shadow-[0_20px_50px_-35px_oklch(0.38_0.06_45/0.6)]')}>
+            <li key={item.id} className={cn('glass overflow-hidden rounded-3xl transition-shadow', expanded && 'shadow-[0_20px_50px_-35px_oklch(0.38_0.06_45/0.6)]')}>
               <button
                 type="button"
                 onClick={() => setOpen(expanded ? null : item.id)}
                 aria-expanded={expanded}
-                className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-accent/30"
+                className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-wash"
               >
                 <span
                   className={cn(
@@ -98,10 +98,10 @@ export function ReviewList({ items, attemptId, aiTutor = false }: { items: Resul
               <AnimatePresence initial={false}>
                 {expanded && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                    <div className="space-y-4 border-t px-4 pt-4 pb-5">
+                    <div className="space-y-4 border-t border-hairline px-4 pt-4 pb-5">
                       <RichText text={item.stem} className="font-medium" />
                       <QuestionView item={item} response={item.selected} revealed={item} />
-                      <div className="rounded-2xl bg-secondary/50 p-4">
+                      <div className="rounded-2xl border border-hairline bg-wash p-4">
                         <h4 className="mb-1.5 text-sm font-semibold">Explanation</h4>
                         <RichText text={item.explanation} className="text-sm" />
                         {item.reference && <p className="mt-2 text-xs text-muted-foreground">Reference: {item.reference}</p>}

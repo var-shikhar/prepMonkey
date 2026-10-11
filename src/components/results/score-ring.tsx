@@ -1,7 +1,8 @@
 'use client';
 
-import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
+import { animate, motion, useMotionValue, useTransform } from 'motion/react';
 import { useEffect } from 'react';
+import { useReducedMotionSafe } from '@/lib/use-reduced-motion';
 import { cn } from '@/lib/utils';
 
 const R = 52;
@@ -19,14 +20,14 @@ export function ScoreRing({ value, mark, label, sublabel, tone, size = 176 }: {
   tone: 'pass' | 'fail' | 'neutral';
   size?: number;
 }) {
-  const reduce = useReducedMotion();
-  const progress = useMotionValue(reduce ? value : 0);
-  const count = useMotionValue(reduce ? label : 0);
+  const reduce = useReducedMotionSafe();
+  const progress = useMotionValue(0);
+  const count = useMotionValue(0);
   const shown = useTransform(count, (v) => Math.round(v).toLocaleString());
   const dash = useTransform(progress, (v) => C * (1 - v));
 
   useEffect(() => {
-    if (reduce) return;
+    if (reduce) { progress.set(value); count.set(label); return; }
     const a = animate(progress, value, { duration: 1.2, ease: [0.22, 1, 0.36, 1] });
     const b = animate(count, label, { duration: 1.2, ease: [0.22, 1, 0.36, 1] });
     return () => { a.stop(); b.stop(); };
@@ -36,7 +37,7 @@ export function ScoreRing({ value, mark, label, sublabel, tone, size = 176 }: {
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg viewBox="0 0 120 120" className="size-full -rotate-90">
-        <circle cx="60" cy="60" r={R} fill="none" className="stroke-secondary" strokeWidth="10" />
+        <circle cx="60" cy="60" r={R} fill="none" className="stroke-hairline-strong" strokeWidth="10" />
         <motion.circle
           cx="60" cy="60" r={R} fill="none" strokeWidth="10" strokeLinecap="round" strokeDasharray={C}
           style={{ strokeDashoffset: dash }}
