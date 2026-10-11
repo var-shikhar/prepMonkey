@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ChevronRight, KeyRound, MessagesSquare } from 'lucide-react';
 import { Reveal } from '@/components/common/reveal';
 import { InterviewSetup } from '@/components/interviews/interview-setup';
@@ -17,6 +18,8 @@ export const metadata: Metadata = {
 
 export default async function InterviewsPage() {
   const user = await getUser();
+  // Visitors meet interviews on the landing page.
+  if (!user) redirect('/#how-it-works');
   const enabled = aiEnabled();
   const past = user ? await listInterviews(user.id) : [];
   return (

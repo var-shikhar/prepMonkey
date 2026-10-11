@@ -9,7 +9,7 @@ const CATEGORY_LABEL = { certification: 'Certification', quiz: 'Quiz', interview
 
 export function ExamCard({ exam, readiness }: { exam: ExamCardData; readiness?: number | null }) {
   return (
-    <Link href={`/exams/${exam.id}`} className="group block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <Link href={`/exams/${exam.id}`} className="group block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <CardSpotlight className="h-full rounded-2xl transition duration-300 group-hover:-translate-y-0.5 group-hover:border-primary/30">
         <div className="flex h-full flex-col gap-4 p-5">
           <div className="flex items-start justify-between gap-3">
@@ -44,7 +44,7 @@ export function ExamCard({ exam, readiness }: { exam: ExamCardData; readiness?: 
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">Readiness</span><span className="font-semibold">{readiness}%</span></div>
                 <Progress value={readiness} className="h-1.5" />
               </div>
-            ) : (
+            ) : exam.questionCount > 0 && (
               <div className="text-xs text-muted-foreground">{exam.questionCount.toLocaleString()} practice questions</div>
             )}
           </div>

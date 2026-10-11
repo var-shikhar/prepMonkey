@@ -20,7 +20,7 @@ const COPY: Record<Mode, { title: string; subtitle: string; cta: string; switchT
     title: 'Welcome back',
     subtitle: 'Pick up right where you left off.',
     cta: 'Sign in',
-    switchText: "New to quizzMonkey?",
+    switchText: "New to PrepMonkey?",
     switchLink: 'Create an account',
     switchHref: '/sign-up',
   },
@@ -60,7 +60,7 @@ export function AuthForm({ mode, next, providers, isGuest }: { mode: Mode; next?
         setError(res.error.message ?? 'Something went wrong. Please try again.');
         return;
       }
-      toast.success(mode === 'sign-up' ? (isGuest ? 'Account created. Your guest progress came with you.' : 'Welcome to quizzMonkey!') : 'Signed in');
+      toast.success(mode === 'sign-up' ? (isGuest ? 'Account created. Your guest progress came with you.' : 'Welcome to PrepMonkey!') : 'Signed in');
       done();
     });
   }

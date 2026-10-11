@@ -1,4 +1,4 @@
-# quizzMonkey roadmap
+# PrepMonkey roadmap
 
 Agreed with the product owner on 6 October 2026. We work through it one step at
 a time and update the status column as items land.

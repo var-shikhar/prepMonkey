@@ -1,15 +1,16 @@
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import type { FaqEntry } from '@/lib/exam-faq';
+import { cn } from '@/lib/utils';
 
 /**
  * Common questions about the exam. Native <details>, so every answer is in the
  * HTML (for crawlers and find-in-page) and opening one needs no JavaScript.
  */
-export function ExamFaq({ faqs }: { faqs: FaqEntry[] }) {
+export function ExamFaq({ faqs, title = 'Questions about this exam', id = 'exam-faq', titleClassName }: { faqs: FaqEntry[]; title?: string; id?: string; titleClassName?: string }) {
   return (
-    <section aria-labelledby="exam-faq" className="space-y-4">
-      <h2 id="exam-faq" className="text-xl font-semibold">Questions about this exam</h2>
+    <section aria-labelledby={id} className="space-y-4">
+      <h2 id={id} className={cn('text-xl font-semibold', titleClassName)}>{title}</h2>
       <div className="divide-y rounded-2xl border bg-card">
         {faqs.map((f) => (
           <details key={f.q} className="group px-4 sm:px-5">
