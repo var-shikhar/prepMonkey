@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ChevronRight, KeyRound } from 'lucide-react';
+import { ChevronRight, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Reveal } from '@/components/common/reveal';
 import { InterviewSetup } from '@/components/interviews/interview-setup';
 import { PageHeader } from '@/components/layout/page-header';
@@ -9,7 +10,7 @@ import { focusLabel, levelLabel, roleLabel } from '@/lib/interview-presets';
 import { cn } from '@/lib/utils';
 import { aiEnabled } from '@/server/ai/client';
 import { listInterviews } from '@/server/ai/interviews';
-import { getUser, isStaff } from '@/server/session';
+import { getUser } from '@/server/session';
 
 export const metadata: Metadata = {
   title: 'AI mock interviews',
@@ -33,14 +34,16 @@ export default async function InterviewsPage() {
       />
 
       {!enabled ? (
+        // Setup instructions for admins live on the admin Generate page; everyone here sees the same card.
         <div className="glass rounded-3xl border-dashed p-8 text-center">
-          <KeyRound className="mx-auto size-9 text-primary" />
-          <h2 className="mt-3 text-lg font-semibold">Interviews are almost ready</h2>
+          <span className="mx-auto grid size-12 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary"><Sparkles className="size-6" /></span>
+          <span className="mt-4 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">Coming soon</span>
+          <h2 className="mt-2 text-lg font-semibold">AI mock interviews are on their way</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {isStaff(user)
-              ? 'Add OPENAI_API_KEY (plus OPENAI_BASE_URL for a LiteLLM proxy, and AI_MODEL) to .env and restart the server to switch them on.'
-              : 'AI interviews switch on shortly. In the meantime, sharpen up with a drill.'}
+            A live interviewer that asks real interview questions for your level, follows up, and scores you on a clear rubric.
+            Until then, sharpen up with a drill.
           </p>
+          <Button asChild variant="premium" className="mt-5"><Link href="/explore">Find a drill</Link></Button>
         </div>
       ) : (
         <Reveal delay={0.05}><InterviewSetup signedIn={Boolean(user)} /></Reveal>
