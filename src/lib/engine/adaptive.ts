@@ -26,6 +26,8 @@ interface PoolItem { id: string; skill: string; difficulty: number }
 
 export function pickNextAdaptive<T extends PoolItem>(
   exam: ExamConfig, pool: T[], used: Set<string>, answeredSkills: string[], theta: number, target: number, rand: () => number = Math.random,
+  /** items the learner saw in earlier attempts; avoided when an unseen item fits equally well */
+  seen?: ReadonlyMap<string, number> | null,
 ): T | null {
   const need = skillAllocation(exam, target);
   const have: Record<string, number> = {};
@@ -44,7 +46,9 @@ export function pickNextAdaptive<T extends PoolItem>(
       const gap = Math.abs((ITEM_LOCATION[q.difficulty] ?? 0) - theta);
       if (gap < bestGap - 1e-9) { best = [q]; bestGap = gap; } else if (Math.abs(gap - bestGap) < 1e-9) best.push(q);
     }
-    return best[Math.floor(rand() * best.length)] ?? null;
+    const fresh = seen?.size ? best.filter((q) => !seen.has(q.id)) : best;
+    const from = fresh.length ? fresh : best;
+    return from[Math.floor(rand() * from.length)] ?? null;
   };
 
   for (const s of skills) {

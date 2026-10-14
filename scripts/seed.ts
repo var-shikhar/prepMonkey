@@ -38,6 +38,8 @@ function toRow(examId: string, q: ContentQuestion, pool: 'bank' | 'imported') {
     caseId: q.caseId ? (q.caseId.includes(':') ? q.caseId : `${examId}:${q.caseId}`) : null,
     source: 'seed',
     provenance: q.source ?? null,
+    roleLevel: q.roleLevel ?? null,
+    asked: q.asked ?? null,
   };
 }
 
@@ -77,7 +79,7 @@ async function seedExam(id: string) {
       // Only refresh rows the seed still owns.
       setWhere: eq(question.source, 'seed'),
       set: Object.fromEntries(
-        ['pool', 'domain', 'skill', 'difficulty', 'type', 'select', 'stem', 'options', 'answerOrder', 'prompts', 'accepted', 'explanation', 'reference', 'caseId', 'provenance']
+        ['pool', 'domain', 'skill', 'difficulty', 'type', 'select', 'stem', 'options', 'answerOrder', 'prompts', 'accepted', 'explanation', 'reference', 'caseId', 'provenance', 'roleLevel', 'asked']
           .map((k) => [k, sql.raw(`excluded.${k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)}`)]),
       ),
     });
