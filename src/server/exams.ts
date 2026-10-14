@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { caseStudy, exam, question, studyNote } from '@/db/schema';
 import type { Question } from '@/lib/engine';
+import type { RoleCounts } from '@/lib/role-levels';
 import { cached } from './cache';
 
 export type ExamRow = typeof exam.$inferSelect;
@@ -77,7 +78,10 @@ export function getAssemblyPool(examId: string, pool: 'bank' | 'imported' | 'all
     const where = [eq(question.examId, examId), eq(question.status, 'published')];
     if (pool !== 'all') where.push(eq(question.pool, pool));
     return db
-      .select({ id: question.id, domain: question.domain, skill: question.skill, difficulty: question.difficulty, type: question.type, options: question.options })
+      .select({
+        id: question.id, domain: question.domain, skill: question.skill, difficulty: question.difficulty, type: question.type, options: question.options,
+        roleLevel: question.roleLevel, asked: sql<boolean>`${question.asked} is not null`,
+      })
       .from(question)
       .where(and(...where));
   });
@@ -146,6 +150,22 @@ export const getSampleQuestions = (examId: string, limit = 10) => cached(`catalo
 });
 
 /** Published question counts per pool (the reviewed bank vs. imported practice sets). */
+/** Reviewed-bank question counts per role level, and how many are reported as asked in real interviews. */
+export const getRoleCounts = (examId: string) => cached(`catalog:roles:${examId}`, async () => {
+  const rows = await db
+    .select({ level: question.roleLevel, asked: sql<boolean>`${question.asked} is not null`, n: sql<number>`count(*)::int` })
+    .from(question)
+    .where(and(eq(question.examId, examId), eq(question.status, 'published'), eq(question.pool, 'bank')))
+    .groupBy(question.roleLevel, sql`${question.asked} is not null`);
+  const byLevel: Record<number, number> = {};
+  let asked = 0;
+  for (const r of rows) {
+    if (r.level != null) byLevel[r.level] = (byLevel[r.level] ?? 0) + r.n;
+    if (r.asked) asked += r.n;
+  }
+  return { byLevel, asked } satisfies RoleCounts;
+});
+
 export const getPoolCounts = (examId: string) => cached(`catalog:pools:${examId}`, async () => {
   const rows = await db
     .select({ pool: question.pool, n: sql<number>`count(*)::int` })

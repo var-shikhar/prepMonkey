@@ -13,6 +13,10 @@ export const startAttemptSchema = z.object({
   count: z.number().int().min(1).max(2000).optional(),
   timed: z.boolean().optional(),
   instant: z.boolean().optional(),
+  /** target role level 1–5: questions up to that level */
+  role: z.number().int().min(1).max(5).optional(),
+  /** drills: only questions reported as asked in real interviews */
+  askedOnly: z.boolean().optional(),
   candidateName: z.string().max(80).optional(),
   challengeId: z.string().max(20).optional(),
   assignmentId: z.string().max(40).optional(),

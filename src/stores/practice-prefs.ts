@@ -9,13 +9,18 @@ export interface DrillPrefs {
   timed: boolean;
   pool: 'bank' | 'imported' | 'all';
   difficulty: string;
+  /** only questions reported as asked in real interviews */
+  askedOnly?: boolean;
 }
 
 interface PracticePrefsState {
   drills: Record<string, DrillPrefs>;
   mockDifficulty: Record<string, string>;
+  /** the role the learner is preparing for (1–5); shared across exams */
+  role: number | null;
   saveDrill: (examId: string, prefs: DrillPrefs) => void;
   saveMockDifficulty: (examId: string, difficulty: string) => void;
+  setRole: (role: number | null) => void;
 }
 
 /**
@@ -28,8 +33,10 @@ export const usePracticePrefs = create<PracticePrefsState>()(
     (set) => ({
       drills: {},
       mockDifficulty: {},
+      role: null,
       saveDrill: (examId, prefs) => set((s) => ({ drills: { ...s.drills, [examId]: prefs } })),
       saveMockDifficulty: (examId, difficulty) => set((s) => ({ mockDifficulty: { ...s.mockDifficulty, [examId]: difficulty } })),
+      setRole: (role) => set({ role }),
     }),
     { name: 'quizzmonkey.practice', storage: createJSONStorage(() => localStorage), skipHydration: true },
   ),

@@ -193,6 +193,10 @@ export interface AttemptSettings {
   /** show the answer after each item */
   instant?: boolean;
   candidateName?: string;
+  /** target role level (1–5) the questions were drawn up to */
+  role?: number | null;
+  /** only questions reported as asked in real interviews */
+  askedOnly?: boolean;
   /** adaptive tests: running ability estimate and planned length */
   adaptive?: { theta: number; target: number };
 }
