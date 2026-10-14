@@ -1,0 +1,2073 @@
+[
+  {
+    "id": "JSM-IQ1-PRF-001",
+    "domain": 4,
+    "skill": "performance-memory",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A product page's Largest Contentful Paint (LCP) element is the hero image at the top of the page. Lighthouse also flags 400 KB of JavaScript, most of it for widgets far below the fold. Which two changes improve the initial load? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Load the hero image eagerly (no `loading=\"lazy\"`) and give it `fetchpriority=\"high\"`",
+        "correct": true,
+        "why": "The LCP image is visible straight away. Lazy loading would delay its request, and a high fetch priority starts the download sooner."
+      },
+      {
+        "id": "B",
+        "text": "Add `loading=\"lazy\"` to every image, including the hero, so less is downloaded up front",
+        "correct": false,
+        "why": "Lazy loading is for offscreen images. On the above-the-fold LCP image it delays the request and makes LCP worse."
+      },
+      {
+        "id": "C",
+        "text": "Load the below-the-fold widgets with dynamic `import()` when they are about to be needed",
+        "correct": true,
+        "why": "Code splitting takes that JavaScript out of the initial bundle, so less code is downloaded, parsed and run before the page is usable."
+      },
+      {
+        "id": "D",
+        "text": "Move every `<script>` into the `<head>` without `defer` so the code is ready sooner",
+        "correct": false,
+        "why": "Classic scripts in the head block the parser, which delays the first render."
+      },
+      {
+        "id": "E",
+        "text": "Inline all images as base64 data URLs inside the JavaScript bundle to save requests",
+        "correct": false,
+        "why": "Base64 adds roughly a third to the size, can't be cached or decoded separately, and makes the blocking bundle bigger."
+      }
+    ],
+    "explanation": "When an interviewer asks how you would speed up a page, they want each technique tied to the metric it improves. The LCP resource should be discovered early and fetched with high priority, never lazy-loaded. Script cost is cut by sending less JavaScript up front (code splitting, `defer`, tree shaking) and by loading the rest on demand. Lazy loading still helps, but only for content that starts offscreen.",
+    "reference": "web.dev: Optimize Largest Contentful Paint",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.sg/Interview/Accenture-Interview-E4138-RVW100649385.htm",
+        "https://javascript.plainenglish.io/upstox-sde-2-frontend-interview-experience-july-2025-982df5edc3d9",
+        "https://learnersbucket.com/tech/razorpay-frontend-interview-experience/",
+        "https://leetcode.com/discuss/interview-experience/6869754",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "Accenture",
+        "Upstox",
+        "Razorpay",
+        "Wingify",
+        "LinkedIn",
+        "Flipkart",
+        "Zomato"
+      ]
+    },
+    "source": "interview:js-web-performance"
+  },
+  {
+    "id": "JSM-IQ1-PRF-002",
+    "domain": 4,
+    "skill": "performance-memory",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A dashboard loads its chart code on demand. The user clicks the button twice. What is logged in total?\n\n```js\n// main.js (an ES module)\nbutton.addEventListener('click', async () => {\n  const { renderChart } = await import('./chart.js');\n  renderChart();\n});\n\n// chart.js\nconsole.log('chart module evaluated');\nexport function renderChart() {\n  console.log('render');\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`chart module evaluated` when the page loads, then `render`, `render`",
+        "correct": false,
+        "why": "`import()` is not hoisted like a static `import`. Nothing is fetched until the first click, which is the point of code splitting."
+      },
+      {
+        "id": "B",
+        "text": "`chart module evaluated`, `render`, `render`",
+        "correct": true,
+        "why": "The first click fetches and evaluates the module. The second click gets the same cached module, so its top-level code doesn't run again."
+      },
+      {
+        "id": "C",
+        "text": "`chart module evaluated`, `render`, `chart module evaluated`, `render`",
+        "correct": false,
+        "why": "Modules are cached by URL in the module map. Importing the same module again returns the same namespace without re-running it."
+      },
+      {
+        "id": "D",
+        "text": "`render`, `render`: modules loaded with `import()` skip their top-level code",
+        "correct": false,
+        "why": "A dynamically imported module runs its top-level code like any other module, but only once."
+      }
+    ],
+    "explanation": "Dynamic `import()` is how you lazy-load code: bundlers put the module in its own chunk, and the browser downloads and evaluates it the first time the call runs. Later calls resolve to the same module namespace object. The interviewer is checking that you know the cost moves from the initial load to first use and is paid only once. To hide that first-use delay, you can start the import on hover or focus, or prefetch the chunk.",
+    "reference": "MDN: import()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.sg/Interview/Accenture-Interview-E4138-RVW100649385.htm",
+        "https://javascript.plainenglish.io/upstox-sde-2-frontend-interview-experience-july-2025-982df5edc3d9",
+        "https://learnersbucket.com/tech/razorpay-frontend-interview-experience/",
+        "https://leetcode.com/discuss/interview-experience/6869754",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "Accenture",
+        "Upstox",
+        "Razorpay",
+        "Wingify",
+        "LinkedIn",
+        "Flipkart",
+        "Zomato"
+      ]
+    },
+    "source": "interview:js-web-performance"
+  },
+  {
+    "id": "JSM-IQ1-COD-001",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks for an `Array.prototype.myMap` that behaves like the native `map`: it returns a new array of the same length, calls the callback with `(element, index, array)`, honours the optional `thisArg`, and skips holes in sparse arrays such as `[1, , 3]`. Which line completes the loop?\n\n```js\nArray.prototype.myMap = function (callback, thisArg) {\n  const result = new Array(this.length);\n  for (let i = 0; i < this.length; i++) {\n    // ???\n  }\n  return result;\n};\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`result.push(callback(this[i], i, this));`",
+        "correct": false,
+        "why": "`result` already has `this.length` empty slots, so `push` appends after them and doubles the length. It also ignores `thisArg`."
+      },
+      {
+        "id": "B",
+        "text": "`result[i] = callback.call(thisArg, this[i], i, this);`",
+        "correct": false,
+        "why": "Close, but it calls the callback for holes too, filling them with values. Native `map` skips holes and leaves them empty."
+      },
+      {
+        "id": "C",
+        "text": "`this[i] = callback.call(thisArg, this[i], i, this);`",
+        "correct": false,
+        "why": "This overwrites the source array and returns an array that is still all holes."
+      },
+      {
+        "id": "D",
+        "text": "`if (i in this) result[i] = callback.call(thisArg, this[i], i, this);`",
+        "correct": true,
+        "why": "The `in` check skips holes, `call` passes `thisArg` as `this`, and writing by index keeps every result in its position."
+      }
+    ],
+    "explanation": "A faithful `map` polyfill pre-sizes the result, writes by index, uses `callback.call(thisArg, ...)` and checks `i in this` so holes stay holes. It must also be a regular `function`, not an arrow function, because `this` has to be the array it was called on. Interviewers use this to see whether you know the native contract, not just the happy path.",
+    "reference": "MDN: Array.prototype.map()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/Walmart-Interview-E715-RVW30132371.htm",
+        "https://static.glassdoor.com.br/Interview/front-end-software-engineer-interview-questions-SRCH_KO0,27_IP43.htm",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://dataford.io/interview-guides/phonepe/frontend-engineer",
+        "https://www.greatfrontend.com/interviews/focus-areas/javascript-polyfills"
+      ],
+      "companies": [
+        "Walmart",
+        "Amazon",
+        "PhonePe",
+        "Flipkart",
+        "Apple",
+        "ByteDance",
+        "PayPal",
+        "Adobe"
+      ]
+    },
+    "source": "interview:js-array-method-polyfills"
+  },
+  {
+    "id": "JSM-IQ1-COD-002",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate writes this `filter` polyfill. What does the last line log?\n\n```js\nArray.prototype.myFilter = function (callback) {\n  const result = [];\n  for (let i = 0; i < this.length; i++) {\n    if (callback(this[i], i, this)) result[i] = this[i];\n  }\n  return result;\n};\n\nconst evens = [1, 2, 3, 4].myFilter((n) => n % 2 === 0);\nconsole.log(evens.length);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`2`, the same as native `filter`",
+        "correct": false,
+        "why": "Each match is stored at its original index, so the array has holes and a length of 4."
+      },
+      {
+        "id": "B",
+        "text": "`4`, because matches keep their original index and leave holes; the fix is `result.push(this[i])`",
+        "correct": true,
+        "why": "Writing `result[3]` sets the length to 4, with holes at indexes 0 and 2. `push` packs matches together."
+      },
+      {
+        "id": "C",
+        "text": "`4`, because the callback's result isn't converted to a boolean; the fix is `Boolean(callback(...))`",
+        "correct": false,
+        "why": "`if` already treats the result as truthy or falsy. The bug is where matches are written."
+      },
+      {
+        "id": "D",
+        "text": "It throws a `TypeError`, because you can't assign past the end of an empty array",
+        "correct": false,
+        "why": "Assigning to any index grows a JavaScript array; nothing throws."
+      }
+    ],
+    "explanation": "`filter` returns a packed array of the elements that passed, so the polyfill should `push` them. Writing `result[i]` copies the source indexes and leaves holes, which show up as a wrong `length` and as `null` in `JSON.stringify`. A complete answer also passes `thisArg` and skips holes in the source with `i in this`.",
+    "reference": "MDN: Array.prototype.filter()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/Walmart-Interview-E715-RVW30132371.htm",
+        "https://static.glassdoor.com.br/Interview/front-end-software-engineer-interview-questions-SRCH_KO0,27_IP43.htm",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://dataford.io/interview-guides/phonepe/frontend-engineer",
+        "https://www.greatfrontend.com/interviews/focus-areas/javascript-polyfills"
+      ],
+      "companies": [
+        "Walmart",
+        "Amazon",
+        "PhonePe",
+        "Flipkart",
+        "Apple",
+        "ByteDance",
+        "PayPal",
+        "Adobe"
+      ]
+    },
+    "source": "interview:js-array-method-polyfills"
+  },
+  {
+    "id": "JSM-IQ1-COD-003",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `sum` so that `sum(1)(2)(3)()` returns `6` and `sum(5)()` returns `5`. It must accept any number of calls, treat `0` as a normal number (`sum(1)(0)(2)()` is `3`), and separate chains must not affect each other. Which implementation meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const sum = (a) => (b) => (b ? sum(a + b) : a);`",
+        "correct": false,
+        "why": "`0` is falsy, so `sum(1)(0)` returns `1` and the next call, `1(2)`, throws a `TypeError`."
+      },
+      {
+        "id": "B",
+        "text": "`const sum = (a) => (b) => (b === undefined ? a : sum(a + b));`",
+        "correct": true,
+        "why": "Each call returns a new function that closes over the running total, and only a call with no argument ends the chain."
+      },
+      {
+        "id": "C",
+        "text": "`let total = 0; const sum = (a) => { if (a === undefined) return total; total += a; return sum; };`",
+        "correct": false,
+        "why": "It returns 6 the first time, but `total` is shared, so `sum(5)()` afterwards returns 11."
+      },
+      {
+        "id": "D",
+        "text": "`const sum = (a) => (b) => (c) => () => a + b + c;`",
+        "correct": false,
+        "why": "This only works for exactly three numbers; `sum(5)()` returns a function, not 5."
+      }
+    ],
+    "explanation": "The key idea is that each call returns a new function closing over the total so far, and an empty call returns that total. Check the stop condition with `=== undefined` (or `arguments.length`), not truthiness, so `0` still counts. Keeping the total in a closure rather than an outer variable keeps chains independent. Interviewers often follow up by asking for `sum(1, 2)(3)()`, which you handle with rest parameters.",
+    "reference": "MDN: Closures",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://www.naukri.com/code360/interview-experiences/cars24/interview-experience-frontend-engineer-jul-2024-exp-0-2-years",
+        "https://leetcode.com/discuss/interview-experience/887718/amazon-fee-1-bangalore-oct-2020-offer",
+        "https://javascript.plainenglish.io/upstox-sde-2-frontend-interview-experience-july-2025-982df5edc3d9",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "Paytm",
+        "Cars24",
+        "Amazon",
+        "Upstox",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-infinite-currying-sum"
+  },
+  {
+    "id": "JSM-IQ1-COD-004",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This `sum` passes the interviewer's first test. What do the two lines log?\n\n```js\nlet total = 0;\nfunction sum(n) {\n  if (n === undefined) return total;\n  total += n;\n  return sum;\n}\n\nconsole.log(sum(1)(2)());\nconsole.log(sum(3)());\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`3`, then `3`",
+        "correct": false,
+        "why": "The second chain would need `total` to start again at 0, but nothing resets it."
+      },
+      {
+        "id": "B",
+        "text": "`3`, then `6`",
+        "correct": true,
+        "why": "`total` lives outside the chain, so the second chain adds 3 to the 3 left over from the first."
+      },
+      {
+        "id": "C",
+        "text": "`3`, then a function",
+        "correct": false,
+        "why": "`sum(3)()` is called with no argument, so it returns `total`, a number."
+      },
+      {
+        "id": "D",
+        "text": "A `TypeError` on the second line, because `sum` was already used",
+        "correct": false,
+        "why": "`sum` is an ordinary function and can be called any number of times."
+      }
+    ],
+    "explanation": "Keeping the running total in an outer variable makes every chain share state, so results depend on what ran before. The fix is to keep the total in a closure that each call creates, for example `const sum = (a) => (b) => (b === undefined ? a : sum(a + b));`. The interviewer is probing whether you know where closure state lives.",
+    "reference": "MDN: Closures",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://www.naukri.com/code360/interview-experiences/cars24/interview-experience-frontend-engineer-jul-2024-exp-0-2-years",
+        "https://leetcode.com/discuss/interview-experience/887718/amazon-fee-1-bangalore-oct-2020-offer",
+        "https://javascript.plainenglish.io/upstox-sde-2-frontend-interview-experience-july-2025-982df5edc3d9",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "Paytm",
+        "Cars24",
+        "Amazon",
+        "Upstox",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-infinite-currying-sum"
+  },
+  {
+    "id": "JSM-IQ1-COD-005",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A follow-up asks for a `sum` that needs no empty call at the end and can be used directly as a number. What do the two lines log?\n\n```js\nfunction sum(a) {\n  const next = (b) => sum(a + b);\n  next.valueOf = () => a;\n  return next;\n}\n\nconsole.log(sum(1)(2)(3) + 1);\nconsole.log(sum(1)(2) == 3, sum(1)(2) === 3);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`7`, then `true false`",
+        "correct": true,
+        "why": "`+` and `==` convert the function to a primitive with `valueOf`, which returns the total. `===` never converts, and a function is not a number."
+      },
+      {
+        "id": "B",
+        "text": "`7`, then `true true`",
+        "correct": false,
+        "why": "Strict equality doesn't convert, so a function is never `===` to a number."
+      },
+      {
+        "id": "C",
+        "text": "The function's source text followed by `1`, then `false false`",
+        "correct": false,
+        "why": "`+` uses the default hint, which tries `valueOf` first. Only string conversions, such as a template literal, try `toString` first."
+      },
+      {
+        "id": "D",
+        "text": "`NaN`, then `false false`",
+        "correct": false,
+        "why": "The custom `valueOf` is used, so the function converts to `6`."
+      }
+    ],
+    "explanation": "Overriding `valueOf` (or `Symbol.toPrimitive`) lets a function act like a number wherever JavaScript converts it to a primitive, such as with `+`, `-`, `==` or `<`. It still is a function, so `typeof` gives `'function'`, `===` fails, and `String(sum(1)(2))` gives source text because string conversion tries `toString` first. Interviewers use this variant to check coercion knowledge on top of closures.",
+    "reference": "MDN: Object.prototype.valueOf()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://www.naukri.com/code360/interview-experiences/cars24/interview-experience-frontend-engineer-jul-2024-exp-0-2-years",
+        "https://leetcode.com/discuss/interview-experience/887718/amazon-fee-1-bangalore-oct-2020-offer",
+        "https://javascript.plainenglish.io/upstox-sde-2-frontend-interview-experience-july-2025-982df5edc3d9",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "Paytm",
+        "Cars24",
+        "Amazon",
+        "Upstox",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-infinite-currying-sum"
+  },
+  {
+    "id": "JSM-IQ1-DOM-001",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a vanilla JavaScript todo app, `render()` rebuilds the list from a `todos` array. Editing works like this:\n\n```js\nfunction saveEdit(li, newText) {\n  li.querySelector('.text').textContent = newText;\n}\n```\n\nA user edits \"Buy milk\" to \"Buy oat milk\" and the new text appears. They then tick a different todo, which updates `todos` and calls `render()`, and the edited item shows \"Buy milk\" again. Why?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`textContent` changes are temporary and are undone the next time any part of the DOM updates",
+        "correct": false,
+        "why": "DOM changes persist until something replaces those nodes, which is what `render()` does here."
+      },
+      {
+        "id": "B",
+        "text": "`querySelector` returned a detached copy of the span, so the real element in the list never changed",
+        "correct": false,
+        "why": "`querySelector` returns the live element; that's why the new text appeared at first."
+      },
+      {
+        "id": "C",
+        "text": "The edit changed only the DOM; `render()` rebuilt the list from `todos`, which has the old text",
+        "correct": true,
+        "why": "The array is the source of truth. The fix is to update the todo object in `todos` and then call `render()`."
+      },
+      {
+        "id": "D",
+        "text": "Ticking a todo re-reads the list from `localStorage`, which was saved before the edit",
+        "correct": false,
+        "why": "Nothing in the scenario reads from storage; `render()` uses the in-memory array."
+      }
+    ],
+    "explanation": "In a state-driven UI, every change goes through the state and the view is derived from it: update the todo in `todos`, then render. Changing the DOM directly makes the view and state disagree, and the next render silently undoes the change. Machine-coding rounds look for this split between model, view and event handling.",
+    "reference": "MDN: Introduction to the DOM",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-flipkart-frontend-engineer-sde2",
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://www.jointaro.com/interviews/companies/uber/experiences/frontend-developer-hyderabad-july-1-2024-no-offer-positive-4ea61aab/",
+        "https://leetcode.com/discuss/interview-experience/6650158",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Flipkart",
+        "Paytm",
+        "Uber",
+        "DP World",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-mc-todo-app"
+  },
+  {
+    "id": "JSM-IQ1-DOM-002",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This todo list attaches its click handling inside `render()`. `toggle(id)` flips the todo's `done` flag and calls `render()` again. After a few clicks, ticking an item sometimes appears to do nothing, and the app gets slower with every click. What is the bug?\n\n```js\nfunction render() {\n  list.innerHTML = '';\n  for (const todo of todos) {\n    const li = document.createElement('li');\n    li.textContent = todo.text;\n    li.dataset.id = todo.id;\n    list.append(li);\n  }\n  list.addEventListener('click', (e) => {\n    const li = e.target.closest('li');\n    if (li) toggle(Number(li.dataset.id));\n  });\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`list.innerHTML = ''` removes the list's own listeners, so after the first render the click handler is gone",
+        "correct": false,
+        "why": "Clearing `innerHTML` removes child nodes. Listeners on `list` itself stay, which is exactly the problem."
+      },
+      {
+        "id": "B",
+        "text": "`closest('li')` returns `null` when the click lands on the text inside the `<li>`",
+        "correct": false,
+        "why": "Click targets are elements, and `closest` checks the element itself and then its ancestors, so it finds the `<li>`."
+      },
+      {
+        "id": "C",
+        "text": "`dataset.id` is a string, so `toggle` never finds the matching todo",
+        "correct": false,
+        "why": "`Number(...)` converts it before the lookup."
+      },
+      {
+        "id": "D",
+        "text": "Every `render()` adds one more click listener to `list`, so a click toggles several times",
+        "correct": true,
+        "why": "Listeners pile up on the element that persists. An even number of toggles cancels out, and every extra listener triggers another render."
+      }
+    ],
+    "explanation": "Set up event delegation once, outside `render()`, on a container that is never replaced. Re-render only the children. Calling `addEventListener` in a render function is a common machine-coding bug: the callback is a new function each time, so the browser can't recognise it as a duplicate. Interviewers want to see that you know which nodes persist across renders.",
+    "reference": "MDN: EventTarget.addEventListener()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-flipkart-frontend-engineer-sde2",
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://www.jointaro.com/interviews/companies/uber/experiences/frontend-developer-hyderabad-july-1-2024-no-offer-positive-4ea61aab/",
+        "https://leetcode.com/discuss/interview-experience/6650158",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Flipkart",
+        "Paytm",
+        "Uber",
+        "DP World",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-mc-todo-app"
+  },
+  {
+    "id": "JSM-IQ1-DOM-003",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this todo code log?\n\n```js\nlet todos = [];\n\nfunction addTodo(text) {\n  todos.push({ id: todos.length + 1, text, done: false });\n}\nfunction deleteTodo(id) {\n  todos = todos.filter((t) => t.id !== id);\n}\n\naddTodo('a');\naddTodo('b');\naddTodo('c');\ndeleteTodo(1);\naddTodo('d');\nconsole.log(todos.map((t) => t.id));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[2, 3, 4]`",
+        "correct": false,
+        "why": "After the delete there are two todos, so the new id is `2 + 1`, which is 3, not 4."
+      },
+      {
+        "id": "B",
+        "text": "`[1, 2, 3]`",
+        "correct": false,
+        "why": "Existing todos keep their ids; `filter` doesn't renumber them."
+      },
+      {
+        "id": "C",
+        "text": "`[2, 3, 3]`",
+        "correct": true,
+        "why": "The new id comes from the current length, which collides with an id still in use. Deleting id 3 would now remove two todos."
+      },
+      {
+        "id": "D",
+        "text": "`[2, 3, 1]`",
+        "correct": false,
+        "why": "Nothing reuses the freed id 1; the id is the length plus one."
+      }
+    ],
+    "explanation": "Ids derived from the array length break as soon as items are deleted. Use a counter that only goes up (`let nextId = 1`), or `crypto.randomUUID()`. Duplicate ids make edit, toggle and delete hit the wrong items, a bug interviewers often plant in todo rounds.",
+    "reference": "MDN: Array.prototype.filter()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-flipkart-frontend-engineer-sde2",
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://www.jointaro.com/interviews/companies/uber/experiences/frontend-developer-hyderabad-july-1-2024-no-offer-positive-4ea61aab/",
+        "https://leetcode.com/discuss/interview-experience/6650158",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Flipkart",
+        "Paytm",
+        "Uber",
+        "DP World",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-mc-todo-app"
+  },
+  {
+    "id": "JSM-IQ1-PRM-001",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate's hand-written promise passes simple tests. What does this log, and how does it differ from a native promise?\n\n```js\nclass MyPromise {\n  constructor(executor) {\n    this.state = 'pending';\n    this.handlers = [];\n    const resolve = (value) => {\n      if (this.state !== 'pending') return;\n      this.state = 'fulfilled';\n      this.value = value;\n      this.handlers.forEach((h) => h(value));\n    };\n    executor(resolve);\n  }\n  then(onFulfilled) {\n    if (this.state === 'fulfilled') onFulfilled(this.value);\n    else this.handlers.push(onFulfilled);\n  }\n}\n\nconst p = new MyPromise((resolve) => resolve(1));\np.then((v) => console.log('then', v));\nconsole.log('sync');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`sync`, then `then 1`, the same as a native promise",
+        "correct": false,
+        "why": "`then` runs the handler straight away when the state is already `fulfilled`, so `then 1` comes first."
+      },
+      {
+        "id": "B",
+        "text": "`then 1`, then `sync`; this matches native promises, because the promise had already been resolved",
+        "correct": false,
+        "why": "Native promises always call handlers asynchronously, even when already settled."
+      },
+      {
+        "id": "C",
+        "text": "Only `sync`: the handler is lost because it was added after `resolve` ran",
+        "correct": false,
+        "why": "The state check in `then` catches that case and calls the handler."
+      },
+      {
+        "id": "D",
+        "text": "`then 1` first; native logs `sync` first because it always queues handlers as microtasks",
+        "correct": true,
+        "why": "Queuing every handler as a microtask makes the order the same whether the promise settled before or after `then` was called."
+      }
+    ],
+    "explanation": "The Promises/A+ spec says `then` callbacks must not run until the current code has finished, so a handler never runs synchronously, even on an already-settled promise. Otherwise, code after `.then()` would sometimes run before the handler and sometimes after (the \"Zalgo\" problem). In a from-scratch promise, wrap handler calls in `queueMicrotask` (or `setTimeout` if microtasks aren't available). This is the detail interviewers look for after states and chaining.",
+    "reference": "Promises/A+ specification (2.2.4)",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6869754",
+        "https://www.teamblind.com/post/amazon-frontend-engineer-xgwg26h0",
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02",
+        "https://dev.to/learnersbucket/dream11-sde2-frontend-interview-experience-5a65",
+        "https://www.greatfrontend.com/interviews/company/adobe/questions-guides"
+      ],
+      "companies": [
+        "Wingify",
+        "Amazon",
+        "Meta",
+        "Dream11",
+        "Adobe",
+        "LinkedIn",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-promise-from-scratch"
+  },
+  {
+    "id": "JSM-IQ1-PRM-002",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are writing a promise class from scratch. Which three behaviours must its `then` method have to match native promises? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "It returns `this`, so calls can be chained",
+        "correct": false,
+        "why": "If `then` returned the same promise, every handler in a chain would get the original value and could never transform it."
+      },
+      {
+        "id": "B",
+        "text": "It returns a new promise that fulfils with the handler's return value",
+        "correct": true,
+        "why": "This is what makes `p.then(f).then(g)` pass `f`'s result to `g`."
+      },
+      {
+        "id": "C",
+        "text": "If the handler throws, the promise returned by `then` rejects with the thrown error",
+        "correct": true,
+        "why": "A thrown error becomes a rejection further down the chain, where `catch` can handle it."
+      },
+      {
+        "id": "D",
+        "text": "If the handler returns a promise or thenable, the promise returned by `then` follows its eventual state",
+        "correct": true,
+        "why": "That is how `return fetchNext()` inside a handler makes the chain wait."
+      },
+      {
+        "id": "E",
+        "text": "Calling `resolve` a second time replaces the stored value and runs the handlers again",
+        "correct": false,
+        "why": "A promise settles only once. Later `resolve` or `reject` calls are ignored."
+      },
+      {
+        "id": "F",
+        "text": "The constructor defers the executor to a microtask so that `new` returns first",
+        "correct": false,
+        "why": "The executor runs synchronously inside the constructor; only the handlers are asynchronous."
+      }
+    ],
+    "explanation": "`then` is where most of the work in a promise implementation happens. It creates and returns a new promise, runs the right handler asynchronously, and resolves that new promise with the handler's result. If the result is a thenable, the new promise adopts its state, and if the handler throws, it rejects. Settle-once and a synchronous executor complete the contract. Interviewers check each of these, often by running your class against a short chain.",
+    "reference": "MDN: Promise.prototype.then()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6869754",
+        "https://www.teamblind.com/post/amazon-frontend-engineer-xgwg26h0",
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02",
+        "https://dev.to/learnersbucket/dream11-sde2-frontend-interview-experience-5a65",
+        "https://www.greatfrontend.com/interviews/company/adobe/questions-guides"
+      ],
+      "companies": [
+        "Wingify",
+        "Amazon",
+        "Meta",
+        "Dream11",
+        "Adobe",
+        "LinkedIn",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-promise-from-scratch"
+  },
+  {
+    "id": "JSM-IQ1-DOM-004",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which of these returns a static `NodeList`, one that does not change when more matching elements are added to the page later?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`document.getElementsByClassName('item')`",
+        "correct": false,
+        "why": "This returns a live `HTMLCollection` that updates as matching elements are added or removed."
+      },
+      {
+        "id": "B",
+        "text": "`document.querySelectorAll('.item')`",
+        "correct": true,
+        "why": "`querySelectorAll` returns a static `NodeList`: a snapshot of the matches at the moment of the call."
+      },
+      {
+        "id": "C",
+        "text": "`document.getElementsByTagName('li')`",
+        "correct": false,
+        "why": "Like `getElementsByClassName`, this returns a live `HTMLCollection`."
+      },
+      {
+        "id": "D",
+        "text": "`list.childNodes`",
+        "correct": false,
+        "why": "`childNodes` is a `NodeList`, but a live one that reflects every child added or removed."
+      }
+    ],
+    "explanation": "The `getElementsBy*` methods return live collections, and `childNodes` is a live `NodeList`. `querySelectorAll` returns a static snapshot. The difference matters when you add or remove elements while looping, and when you cache a collection and expect it to stay fixed. A static `NodeList` also has `forEach`, while an `HTMLCollection` does not.",
+    "reference": "MDN: Document.querySelectorAll()",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://www.glassdoor.it/Colloquio/Atlassian-Colloquio-E115699-RVW95696920.htm",
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ],
+      "companies": [
+        "Meta",
+        "LinkedIn",
+        "Atlassian"
+      ]
+    },
+    "source": "interview:js-dom-crud"
+  },
+  {
+    "id": "JSM-IQ1-DOM-005",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "The page contains `<ul id=\"a\"></ul><ul id=\"b\"></ul>`. What does this log?\n\n```js\nconst a = document.getElementById('a');\nconst b = document.getElementById('b');\nconst li = document.createElement('li');\nli.textContent = 'Item';\n\na.append(li);\nb.append(li);\nconsole.log(a.children.length, b.children.length);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`1 1`",
+        "correct": false,
+        "why": "`append` doesn't copy the node; there is still only one `<li>`."
+      },
+      {
+        "id": "B",
+        "text": "`1 0`",
+        "correct": false,
+        "why": "The second `append` isn't ignored; it moves the node to the new parent."
+      },
+      {
+        "id": "C",
+        "text": "`0 1`",
+        "correct": true,
+        "why": "A node can have only one parent, so appending it to `b` removes it from `a` first."
+      },
+      {
+        "id": "D",
+        "text": "It throws a `HierarchyRequestError`, because `li` already has a parent",
+        "correct": false,
+        "why": "Moving a node that already has a parent is allowed; that error is for invalid trees, such as appending an element to itself."
+      }
+    ],
+    "explanation": "`append`, `appendChild`, `prepend` and `insertBefore` all move a node that is already in the document instead of copying it. To show the same content in two places, create two elements or use `li.cloneNode(true)`. Interviewers ask this alongside `createElement`, `remove()` and `replaceWith()` to check you can manipulate the DOM without a framework.",
+    "reference": "MDN: Element.append()",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://www.glassdoor.it/Colloquio/Atlassian-Colloquio-E115699-RVW95696920.htm",
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ],
+      "companies": [
+        "Meta",
+        "LinkedIn",
+        "Atlassian"
+      ]
+    },
+    "source": "interview:js-dom-crud"
+  },
+  {
+    "id": "JSM-IQ1-DOM-006",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You are building infinite scroll for a feed, with an empty sentinel `<div>` after the last item. Requirements: start loading the next page shortly before the user reaches the end, never request the same page twice, and don't run code on every scroll event. Which approach meets all three?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A `scroll` listener on `window` that measures the sentinel with `getBoundingClientRect()` and fetches whenever it is within 300px",
+        "correct": false,
+        "why": "This runs on every scroll event, forces layout reads, and keeps firing while the request is pending, which loads the same page twice."
+      },
+      {
+        "id": "B",
+        "text": "An `IntersectionObserver` on the sentinel whose callback fetches the next page every time it runs",
+        "correct": false,
+        "why": "The callback also runs once when observation starts and when the sentinel leaves view, so without checking `isIntersecting` and an in-flight flag it over-fetches."
+      },
+      {
+        "id": "C",
+        "text": "An `IntersectionObserver` on the sentinel with `rootMargin: '300px'`, loading only if `entry.isIntersecting` and no request is in flight",
+        "correct": true,
+        "why": "The browser reports visibility changes without scroll handlers, the margin starts loading early, and the flag prevents duplicate requests."
+      },
+      {
+        "id": "D",
+        "text": "A `setInterval` every 500 ms that compares `scrollY + innerHeight` with `document.body.scrollHeight - 300`",
+        "correct": false,
+        "why": "Polling wastes work when nothing changes and can still start a second request before the first one finishes."
+      }
+    ],
+    "explanation": "`IntersectionObserver` is the standard tool for infinite scroll and lazy loading. It calls you only when the target crosses a threshold, and `rootMargin` lets you prefetch before the user reaches the end. You still need an `isLoading` guard and a way to stop (unobserve when there are no more pages). Interviewers ask you to justify the choice over a scroll listener: no work on every scroll and no forced layout.",
+    "reference": "MDN: Intersection Observer API",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://www.naukri.com/code360/interview-experiences/thoughts2binary/interview-experience-by-chirag-kumar-on-campus-aug-2025",
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions"
+      ],
+      "companies": [
+        "LinkedIn",
+        "Rippling",
+        "Thoughts2binary",
+        "Adobe"
+      ]
+    },
+    "source": "interview:js-mc-infinite-scroll"
+  },
+  {
+    "id": "JSM-IQ1-DOM-007",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "On a slow network, QA sees the same page of items appended twice after scrolling to the bottom, up a little, and down again. What is the cause, and what is the fix?\n\n```js\nlet page = 1;\nconst observer = new IntersectionObserver(async ([entry]) => {\n  if (!entry.isIntersecting) return;\n  const items = await fetchPage(page);\n  renderItems(items);\n  page++;\n}, { rootMargin: '200px' });\n\nobserver.observe(sentinel);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`IntersectionObserver` keeps firing on every animation frame while the sentinel stays visible; throttle the callback",
+        "correct": false,
+        "why": "The callback runs only when the intersection state crosses a threshold, not continuously."
+      },
+      {
+        "id": "B",
+        "text": "`rootMargin` makes each crossing fire two callbacks; remove it",
+        "correct": false,
+        "why": "`rootMargin` only grows the area that counts as visible; it doesn't double callbacks."
+      },
+      {
+        "id": "C",
+        "text": "Another intersection can fire while a request is pending, and `page` updates only after the `await`; add an in-flight guard",
+        "correct": true,
+        "why": "Scrolling out and back in triggers a new callback that still sees the old `page`. An `isLoading` flag, or incrementing before the `await`, prevents the duplicate."
+      },
+      {
+        "id": "D",
+        "text": "`renderItems` is not awaited, so the same items are rendered twice",
+        "correct": false,
+        "why": "`renderItems` runs synchronously after the data arrives; awaiting it changes nothing."
+      }
+    ],
+    "explanation": "Async callbacks can overlap. Any handler that starts a request on an event needs a guard so a second event doesn't start the same request. Here, set `isLoading = true` before fetching and reset it in `finally`, or reserve the page number before awaiting. Interviewers often add slow network throttling during machine-coding rounds specifically to surface this race.",
+    "reference": "MDN: IntersectionObserver",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://www.naukri.com/code360/interview-experiences/thoughts2binary/interview-experience-by-chirag-kumar-on-campus-aug-2025",
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions"
+      ],
+      "companies": [
+        "LinkedIn",
+        "Rippling",
+        "Thoughts2binary",
+        "Adobe"
+      ]
+    },
+    "source": "interview:js-mc-infinite-scroll"
+  },
+  {
+    "id": "JSM-IQ1-DOM-008",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which three statements about the critical rendering path are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A classic `<script src>` in the `<head>` without `async` or `defer` pauses HTML parsing until it has downloaded and run",
+        "correct": true,
+        "why": "Parser-blocking scripts stop DOM construction, because the script could call `document.write` or read the DOM built so far."
+      },
+      {
+        "id": "B",
+        "text": "A stylesheet in the `<head>` blocks the first render, because the browser won't paint until the CSSOM is built",
+        "correct": true,
+        "why": "Rendering needs both the DOM and the CSSOM, so CSS is render-blocking by default."
+      },
+      {
+        "id": "C",
+        "text": "An inline script placed after a stylesheet waits for that stylesheet to load, because the script might read computed styles",
+        "correct": true,
+        "why": "The HTML spec makes classic scripts wait for pending stylesheets, so slow CSS can block JavaScript too."
+      },
+      {
+        "id": "D",
+        "text": "`async` scripts run in the order they appear in the document",
+        "correct": false,
+        "why": "Each `async` script runs as soon as it has downloaded, so the order is not guaranteed. `defer` keeps the order."
+      },
+      {
+        "id": "E",
+        "text": "Elements with `display: none` are in the render tree but painted transparently",
+        "correct": false,
+        "why": "`display: none` elements are left out of the render tree entirely; `visibility: hidden` elements still take up space."
+      },
+      {
+        "id": "F",
+        "text": "`defer` scripts run after the `DOMContentLoaded` event fires",
+        "correct": false,
+        "why": "Deferred scripts run after parsing finishes but before `DOMContentLoaded`."
+      }
+    ],
+    "explanation": "The critical rendering path goes HTML to DOM, CSS to CSSOM, then combines them into a render tree, then layout, paint and composite. CSS blocks rendering, and classic scripts block parsing and also wait for pending CSS. To shorten the path, use `defer` or `async` for scripts, inline or preload critical CSS, and keep render-blocking resources small. Interviewers ask this as \"what happens after the HTML arrives\".",
+    "reference": "MDN: Critical rendering path",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/zoho-corporation/interview-experience-by-shivam-hurkat-apr-2021-exp-0-2-years-1375",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://leetcode.com/discuss/post/8359475/zomato-sde-1-ui-interview-experience-by-84krj/",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://levelup.gitconnected.com/critical-rendering-path-an-overlooked-frontend-fundamental-still-asked-in-2026-interviews-9fe4d21165e1"
+      ],
+      "companies": [
+        "Zoho",
+        "LinkedIn",
+        "Flipkart",
+        "Zomato"
+      ]
+    },
+    "source": "interview:js-critical-rendering-path"
+  },
+  {
+    "id": "JSM-IQ1-DOM-009",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`late.js` contains `console.log('defer', document.getElementById('app') !== null);`. In what order are the lines logged?\n\n```html\n<head>\n  <script defer src=\"late.js\"></script>\n  <script>\n    console.log('inline', document.getElementById('app') !== null);\n    document.addEventListener('DOMContentLoaded', () => console.log('DOMContentLoaded'));\n  </script>\n</head>\n<body>\n  <div id=\"app\"></div>\n</body>\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`defer false`, `inline false`, `DOMContentLoaded`",
+        "correct": false,
+        "why": "A deferred script doesn't run where it appears; it waits until the whole document has been parsed."
+      },
+      {
+        "id": "B",
+        "text": "`inline false`, `DOMContentLoaded`, `defer true`",
+        "correct": false,
+        "why": "Deferred scripts run before `DOMContentLoaded` fires, not after it."
+      },
+      {
+        "id": "C",
+        "text": "`inline true`, `defer true`, `DOMContentLoaded`",
+        "correct": false,
+        "why": "The inline script runs while the parser is still in the `<head>`, before `#app` exists."
+      },
+      {
+        "id": "D",
+        "text": "`inline false`, `defer true`, `DOMContentLoaded`",
+        "correct": true,
+        "why": "The inline script runs before the body is parsed. The deferred script runs after parsing, and then `DOMContentLoaded` fires."
+      }
+    ],
+    "explanation": "An inline or classic script runs at the point where the parser reaches it, so it sees only the DOM built so far. `defer` scripts download in parallel and run in order once parsing finishes, just before `DOMContentLoaded`. That is why `defer` in the `<head>` is the usual default: early download, no parser blocking, and a complete DOM when the script runs.",
+    "reference": "MDN: <script>: The Script element (defer)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/zoho-corporation/interview-experience-by-shivam-hurkat-apr-2021-exp-0-2-years-1375",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://leetcode.com/discuss/post/8359475/zomato-sde-1-ui-interview-experience-by-84krj/",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://levelup.gitconnected.com/critical-rendering-path-an-overlooked-frontend-fundamental-still-asked-in-2026-interviews-9fe4d21165e1"
+      ],
+      "companies": [
+        "Zoho",
+        "LinkedIn",
+        "Flipkart",
+        "Zomato"
+      ]
+    },
+    "source": "interview:js-critical-rendering-path"
+  },
+  {
+    "id": "JSM-IQ1-COL-001",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nconst orders = [\n  { item: 'pen', qty: 2, price: 10, inStock: true },\n  { item: 'book', qty: 1, price: 250, inStock: true },\n  { item: 'bag', qty: 1, price: 900, inStock: false },\n];\n\nconst total = orders\n  .filter((o) => o.inStock)\n  .map((o) => o.qty * o.price)\n  .reduce((sum, n) => sum + n, 0);\n\nconsole.log(total, orders.length);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`270 3`",
+        "correct": true,
+        "why": "`filter` keeps the pen and the book, `map` gives `[20, 250]`, and `reduce` adds them. None of the three methods changes `orders`."
+      },
+      {
+        "id": "B",
+        "text": "`270 2`",
+        "correct": false,
+        "why": "`filter` returns a new array; the original `orders` still has three items."
+      },
+      {
+        "id": "C",
+        "text": "`1170 3`",
+        "correct": false,
+        "why": "That total includes the bag, which `filter` removed because `inStock` is false."
+      },
+      {
+        "id": "D",
+        "text": "`[20, 250] 3`",
+        "correct": false,
+        "why": "`reduce` folds the array into a single number here; `[20, 250]` is only the intermediate result of `map`."
+      }
+    ],
+    "explanation": "`filter` picks elements, `map` transforms each one, and `reduce` folds the array into a single value. Each returns a new value and leaves the source array unchanged, which is why they chain cleanly. Interviewers ask freshers to explain all three with a small example like this, and often follow up by asking how to group items with `reduce`.",
+    "reference": "MDN: Array.prototype.reduce()",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://fr.glassdoor.ca/Entretien/Capgemini-Entretien-E3803-RVW96675950.htm",
+        "https://www.glassdoor.sg/Interview/Accenture-Interview-E4138-RVW100649385.htm",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ],
+      "companies": [
+        "Capgemini",
+        "LinkedIn",
+        "Accenture"
+      ]
+    },
+    "source": "interview:js-map-filter-reduce"
+  },
+  {
+    "id": "JSM-IQ1-COL-002",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nconst cart = [{ price: 5 }, { price: 7 }];\nconsole.log(cart.reduce((sum, item) => sum + item.price));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`12`",
+        "correct": false,
+        "why": "That needs an initial value of `0`. Without one, `sum` starts as the first object, not a number."
+      },
+      {
+        "id": "B",
+        "text": "`NaN`",
+        "correct": false,
+        "why": "Adding an object and a number doesn't give `NaN`; the object is converted to a string, and the result is string concatenation."
+      },
+      {
+        "id": "C",
+        "text": "`[object Object]7`",
+        "correct": true,
+        "why": "With no initial value, `sum` starts as `{ price: 5 }`. Adding `7` converts the object to `'[object Object]'` and concatenates."
+      },
+      {
+        "id": "D",
+        "text": "It throws a `TypeError`, because the first element isn't a number",
+        "correct": false,
+        "why": "`reduce` only throws for an empty array with no initial value; mixing types is allowed."
+      }
+    ],
+    "explanation": "Without an initial value, `reduce` uses the first element as the accumulator and starts with the second. That is fine for an array of numbers, but wrong when you reduce objects to a number. Always pass the initial value (here `0`); it also stops `reduce` from throwing on an empty array. This is one of the most common `reduce` bugs interviewers ask about.",
+    "reference": "MDN: Array.prototype.reduce()",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://fr.glassdoor.ca/Entretien/Capgemini-Entretien-E3803-RVW96675950.htm",
+        "https://www.glassdoor.sg/Interview/Accenture-Interview-E4138-RVW100649385.htm",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ],
+      "companies": [
+        "Capgemini",
+        "LinkedIn",
+        "Accenture"
+      ]
+    },
+    "source": "interview:js-map-filter-reduce"
+  },
+  {
+    "id": "JSM-IQ1-DOM-010",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`debounce(fn, wait)` is a standard trailing-edge debounce. A user types `react`, about 100 ms between keys. How many times does `search` run?\n\n```js\ninput.addEventListener('input', (e) => {\n  const query = e.target.value;\n  debounce(() => search(query), 300)();\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Once, with `react`, 300 ms after the last key",
+        "correct": false,
+        "why": "That is what a single shared debounced function would do. Here every event makes its own."
+      },
+      {
+        "id": "B",
+        "text": "Five times, once per keystroke, each about 300 ms late",
+        "correct": true,
+        "why": "Each call to `debounce` creates a new timer that nothing else cancels, so every keystroke still triggers a search, just delayed."
+      },
+      {
+        "id": "C",
+        "text": "Never, because each new debounced function clears the previous timer",
+        "correct": false,
+        "why": "Each debounced function has its own `timer` variable, so it can't clear another one's timer."
+      },
+      {
+        "id": "D",
+        "text": "Twice: once for `r` and once for `react`",
+        "correct": false,
+        "why": "That would describe a debounce that fires on both the leading and the trailing edge, which this one doesn't."
+      }
+    ],
+    "explanation": "A debounced function only works if every call goes through the same instance, because the pending timer lives in its closure. Create it once (`const debouncedSearch = debounce(search, 300)`) and call it from the handler. The same bug appears in React when `debounce` is called during render without `useMemo` or `useRef`. Interviewers like this question because the code looks right at a glance.",
+    "reference": "lodash: debounce",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=1018509",
+        "https://www.naukri.com/code360/interview-experiences/tripify/interview-experience-frontend-developer-sep-2024-exp-0-2-years",
+        "https://namastedev.com/topics/how-to-prepare-for-web-developer-interview/frontend-interview-questions-from-top-companies",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer",
+        "https://dataford.io/interview-guides/flipkart/frontend-engineer"
+      ],
+      "companies": [
+        "Sensehawk",
+        "Tripify",
+        "MakeMyTrip",
+        "Razorpay",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-typeahead"
+  },
+  {
+    "id": "JSM-IQ1-DOM-011",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A search box shows results that are always one character behind: typing `rea` searches for `re`. Pasting with the mouse doesn't search at all. What is the best fix?\n\n```js\ninput.addEventListener('keydown', (e) => {\n  debouncedSearch(e.target.value);\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Listen for the `input` event, which fires after the value changes, including on paste",
+        "correct": true,
+        "why": "`input` fires once the value has been updated, whatever caused the change."
+      },
+      {
+        "id": "B",
+        "text": "Listen for `keypress` instead, because it fires after the browser has inserted the typed character",
+        "correct": false,
+        "why": "`keypress` is deprecated, also fires before the value changes, and still misses mouse paste."
+      },
+      {
+        "id": "C",
+        "text": "Append `e.key` to `e.target.value` before searching",
+        "correct": false,
+        "why": "That breaks for Backspace, arrow keys, selected text being replaced, and paste."
+      },
+      {
+        "id": "D",
+        "text": "Increase the debounce delay so the value has time to update",
+        "correct": false,
+        "why": "The value is read during `keydown` and passed in at that moment; waiting longer afterwards doesn't change it."
+      }
+    ],
+    "explanation": "`keydown` fires before the browser inserts the character, so `e.target.value` is still the old text. Keyboard events also miss changes that don't come from keys, such as paste, drag and drop, autofill and voice input. For anything that depends on the field's value, listen for `input`. Keep `keydown` for keys that don't edit, such as arrows, Enter and Escape for keyboard navigation in the suggestion list.",
+    "reference": "MDN: Element: input event",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=1018509",
+        "https://www.naukri.com/code360/interview-experiences/tripify/interview-experience-frontend-developer-sep-2024-exp-0-2-years",
+        "https://namastedev.com/topics/how-to-prepare-for-web-developer-interview/frontend-interview-questions-from-top-companies",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer",
+        "https://dataford.io/interview-guides/flipkart/frontend-engineer"
+      ],
+      "companies": [
+        "Sensehawk",
+        "Tripify",
+        "MakeMyTrip",
+        "Razorpay",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-typeahead"
+  },
+  {
+    "id": "JSM-IQ1-COD-006",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your `allSettled` polyfill must accept plain values as well as promises, never reject, and return `{ status: 'fulfilled', value }` or `{ status: 'rejected', reason }` objects in input order. Which expression completes it?\n\n```js\nfunction allSettled(items) {\n  return Promise.all(\n    items.map((item) => /* ??? */)\n  );\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`item.then((value) => ({ status: 'fulfilled', value })).catch((reason) => ({ status: 'rejected', reason }))`",
+        "correct": false,
+        "why": "Plain values such as `42` have no `then` method, so this throws a `TypeError` before `Promise.all` is even called."
+      },
+      {
+        "id": "B",
+        "text": "`Promise.resolve(item).then((value) => ({ status: 'fulfilled', value }))`",
+        "correct": false,
+        "why": "A rejection passes straight through, so `Promise.all` rejects with the first error."
+      },
+      {
+        "id": "C",
+        "text": "`Promise.resolve(item).then((value) => ({ status: 'fulfilled', value }), (reason) => ({ status: 'rejected', reason }))`",
+        "correct": true,
+        "why": "`Promise.resolve` handles plain values, both outcomes become result objects, and `Promise.all` keeps input order."
+      },
+      {
+        "id": "D",
+        "text": "`Promise.resolve(item).catch((reason) => ({ status: 'rejected', reason }))`",
+        "correct": false,
+        "why": "Rejections are handled, but fulfilled items come back as raw values, not `{ status, value }` objects."
+      }
+    ],
+    "explanation": "The trick in combinator polyfills is to turn every input into a promise that always fulfils, then reuse `Promise.all` for ordering and waiting. Wrapping with `Promise.resolve` supports plain values and thenables. Mapping both branches gives the exact result shape native `allSettled` returns. Writing results with `push` in completion order is the other common mistake; `Promise.all` (or writing by index) avoids it.",
+    "reference": "MDN: Promise.allSettled()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://peerlist.io/govind01/articles/80-frontend-interview-questions-asked-in-most-interviews",
+        "https://thefrontendfeed.beehiiv.com/p/javascript-promise-api-polyfills",
+        "https://medium.com/@opensrc0/interview15-promise-allsettled-polyfill-1b1e9cee8560",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/10-must-know-javascript-coding-interview-questions"
+      ]
+    },
+    "source": "interview:js-promise-combinator-polyfills"
+  },
+  {
+    "id": "JSM-IQ1-COD-007",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Here is a candidate's `Promise.any` polyfill. `delay(ms, value)` fulfils with `value` after `ms`. What happens with `any([delay(50, 'ok'), Promise.reject(new Error('fail'))])`?\n\n```js\nfunction any(promises) {\n  return new Promise((resolve, reject) => {\n    const errors = [];\n    promises.forEach((p, i) => {\n      Promise.resolve(p).then(resolve, (err) => {\n        errors[i] = err;\n        if (errors.length === promises.length) {\n          reject(new AggregateError(errors, 'All promises were rejected'));\n        }\n      });\n    });\n  });\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It fulfils with `'ok'` after 50 ms, like native `Promise.any`",
+        "correct": false,
+        "why": "The early rejection makes the length check pass first, so the promise has already rejected before `'ok'` arrives."
+      },
+      {
+        "id": "B",
+        "text": "It rejects with an `AggregateError` almost at once, because `errors.length` is already 2",
+        "correct": true,
+        "why": "Assigning to index 1 sets the length to 2 even though index 0 is empty. Count rejections with a separate counter instead."
+      },
+      {
+        "id": "C",
+        "text": "It rejects straight away with the `fail` error itself, behaving like `Promise.race` would here",
+        "correct": false,
+        "why": "It rejects with an `AggregateError` wrapping the errors, not with the single error."
+      },
+      {
+        "id": "D",
+        "text": "It never settles, because `errors` has a hole at index 0 and so never fills up completely",
+        "correct": false,
+        "why": "The length check doesn't care about holes; it passes as soon as index 1 is written."
+      }
+    ],
+    "explanation": "Array `length` is one more than the highest index, not the number of stored items, so it can't count settled promises. Use a `rejectedCount` that you increment in each rejection handler. Native `Promise.any` also rejects straight away with an `AggregateError` for an empty array, and this polyfill would never settle in that case. Interviewers often test both edge cases.",
+    "reference": "MDN: Promise.any()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://peerlist.io/govind01/articles/80-frontend-interview-questions-asked-in-most-interviews",
+        "https://thefrontendfeed.beehiiv.com/p/javascript-promise-api-polyfills",
+        "https://medium.com/@opensrc0/interview15-promise-allsettled-polyfill-1b1e9cee8560",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/10-must-know-javascript-coding-interview-questions"
+      ]
+    },
+    "source": "interview:js-promise-combinator-polyfills"
+  },
+  {
+    "id": "JSM-IQ1-COD-008",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "During page load, many components call `getUser(id)` at the same time. `fetchUser(id)` returns a promise for the user. Requirements: concurrent calls for the same id share one network request, later calls reuse the result, and different ids never share data. Given `const cache = new Map();`, which implementation meets all three?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const getUser = (id) => { if (!cache.has(id)) cache.set(id, fetchUser(id)); return cache.get(id); };`",
+        "correct": true,
+        "why": "It caches the promise as soon as the request starts, so callers that arrive while it is in flight get the same promise."
+      },
+      {
+        "id": "B",
+        "text": "`const getUser = async (id) => { if (cache.has(id)) return cache.get(id); const user = await fetchUser(id); cache.set(id, user); return user; };`",
+        "correct": false,
+        "why": "The cache is filled only after the `await`, so every call that arrives while the first request is in flight misses and fetches again."
+      },
+      {
+        "id": "C",
+        "text": "`const getUser = (id) => { cache.set(id, fetchUser(id)); return cache.get(id); };`",
+        "correct": false,
+        "why": "It never checks the cache, so it starts a new request on every call."
+      },
+      {
+        "id": "D",
+        "text": "`let pending = null; const getUser = (id) => (pending ??= fetchUser(id).finally(() => { pending = null; }));`",
+        "correct": false,
+        "why": "One shared `pending` promise ignores the id, so `getUser(2)` can receive user 1's data."
+      }
+    ],
+    "explanation": "Cache the promise, not the resolved value. The entry exists from the moment the request starts, so concurrent callers share it, and once it settles, later callers get the same settled promise. Key the cache by everything that identifies the request. Interviewers then ask about failures (evict rejected promises) and freshness (a TTL), which a real data layer also needs.",
+    "reference": "MDN: Map",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://clear.glassdoor.nl/Interview/Atlassian-Interview-E115699-RVW61833798.htm",
+        "https://www.glassdoor.com.au/Interview/Microsoft-Interview-E1651-RVW89496139.htm",
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/javascript-interview-questions-for-5-years-experience"
+      ],
+      "companies": [
+        "Atlassian",
+        "Microsoft",
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-inflight-dedupe-cache"
+  },
+  {
+    "id": "JSM-IQ1-COD-009",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This top-level-await module caches users by id. What does it log?\n\n```js\nlet calls = 0;\nconst fetchUser = (id) => {\n  calls++;\n  return new Promise((resolve) => setTimeout(() => resolve({ id }), 50));\n};\n\nconst cache = new Map();\nasync function getUser(id) {\n  if (cache.has(id)) return cache.get(id);\n  const user = await fetchUser(id);\n  cache.set(id, user);\n  return user;\n}\n\nawait Promise.all([getUser(1), getUser(1), getUser(1)]);\nawait getUser(1);\nconsole.log(calls);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`1`",
+        "correct": false,
+        "why": "That would need the cache to hold something before the first request finishes, but it is only filled after the `await`."
+      },
+      {
+        "id": "B",
+        "text": "`2`",
+        "correct": false,
+        "why": "All three concurrent calls miss, not just one of them."
+      },
+      {
+        "id": "C",
+        "text": "`3`",
+        "correct": true,
+        "why": "The three concurrent calls all check the cache before any response arrives, so each one fetches. The fourth call finds the cached user."
+      },
+      {
+        "id": "D",
+        "text": "`4`",
+        "correct": false,
+        "why": "By the fourth call the user is in the cache, so no new request starts."
+      }
+    ],
+    "explanation": "Caching the resolved value leaves a gap between starting a request and storing its result, and every concurrent caller falls into it. Storing the promise in the cache right away (`cache.set(id, fetchUser(id))`) closes the gap and turns the three calls into one request. This is the core of request deduplication in data-fetching libraries.",
+    "reference": "MDN: async function",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://clear.glassdoor.nl/Interview/Atlassian-Interview-E115699-RVW61833798.htm",
+        "https://www.glassdoor.com.au/Interview/Microsoft-Interview-E1651-RVW89496139.htm",
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/javascript-interview-questions-for-5-years-experience"
+      ],
+      "companies": [
+        "Atlassian",
+        "Microsoft",
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-inflight-dedupe-cache"
+  },
+  {
+    "id": "JSM-IQ1-COD-010",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A network blip makes the first `cachedFetch('/api/rates')` reject. For the next minute, every call for that key fails at once without touching the network. Which change fixes this and still shares in-flight requests?\n\n```js\nconst cache = new Map();\nfunction cachedFetch(key, ttl = 60_000) {\n  const hit = cache.get(key);\n  if (hit && Date.now() - hit.time < ttl) return hit.promise;\n  const promise = fetchJSON(key);\n  cache.set(key, { promise, time: Date.now() });\n  return promise;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wrap `fetchJSON(key)` in `try`/`catch` and skip `cache.set` when it throws",
+        "correct": false,
+        "why": "`fetchJSON` returns a rejected promise; it doesn't throw synchronously, so the `catch` block never runs."
+      },
+      {
+        "id": "B",
+        "text": "Cache `promise.catch(() => null)` instead of `promise`",
+        "correct": false,
+        "why": "The failure is still cached for a minute, and callers now get `null` instead of an error they can handle."
+      },
+      {
+        "id": "C",
+        "text": "Add `promise.catch(() => { if (cache.get(key)?.promise === promise) cache.delete(key); })` and still return `promise`",
+        "correct": true,
+        "why": "A rejected request removes its own entry, so the next call retries, and callers still see the original error."
+      },
+      {
+        "id": "D",
+        "text": "Lower the TTL to one second so failed entries expire quickly",
+        "correct": false,
+        "why": "Failures are still served for that second, and good data is now refetched far more often."
+      }
+    ],
+    "explanation": "A promise cache must evict rejected promises, or one failure is replayed to every caller until the entry expires. Attach the eviction with `.catch` on the side and return the original promise, so the error still reaches callers. The identity check stops a late rejection from deleting a newer entry for the same key. TTL, eviction on failure and in-flight sharing are the three things a senior interviewer expects in this design.",
+    "reference": "MDN: Promise.prototype.catch()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://clear.glassdoor.nl/Interview/Atlassian-Interview-E115699-RVW61833798.htm",
+        "https://www.glassdoor.com.au/Interview/Microsoft-Interview-E1651-RVW89496139.htm",
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/javascript-interview-questions-for-5-years-experience"
+      ],
+      "companies": [
+        "Atlassian",
+        "Microsoft",
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-inflight-dedupe-cache"
+  },
+  {
+    "id": "JSM-IQ1-DOM-012",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A carousel has 5 slides, and `index` starts at 0. Pressing Previous on the first slide must wrap to the last one. Which expression completes `prev()`?\n\n```js\nfunction prev() {\n  index = /* ??? */;\n  show(index);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`(index - 1) % slides.length`",
+        "correct": false,
+        "why": "In JavaScript, `%` keeps the sign of the left operand, so from 0 this gives `-1`, which is not a valid slide."
+      },
+      {
+        "id": "B",
+        "text": "`(index - 1 + slides.length) % slides.length`",
+        "correct": true,
+        "why": "Adding the length before taking the remainder keeps the value positive, so 0 wraps to 4."
+      },
+      {
+        "id": "C",
+        "text": "`Math.abs(index - 1) % slides.length`",
+        "correct": false,
+        "why": "From 0 this gives 1, so Previous moves forward to the second slide."
+      },
+      {
+        "id": "D",
+        "text": "`index - 1 < 0 ? slides.length : index - 1`",
+        "correct": false,
+        "why": "It wraps to 5, one past the last valid index, which is 4."
+      }
+    ],
+    "explanation": "`%` in JavaScript is a remainder, not a mathematical modulo, so negative inputs give negative results. The usual wrap-around is `(i + n) % n` for any step of size `n` or less, and `(index + 1) % n` for Next. Interviewers ask for it in carousel, tabs and keyboard-navigation rounds.",
+    "reference": "MDN: Remainder (%)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02",
+        "https://www.explainthis.io/en/career/my-amazon-frontend-interview",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://medium.com/@ksonuraj1/machine-coding-questions-s2-844d53812e45",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Meta",
+        "Amazon"
+      ]
+    },
+    "source": "interview:js-mc-carousel"
+  },
+  {
+    "id": "JSM-IQ1-DOM-013",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A carousel has Play and Pause buttons. After clicking Play three times, the slides advance three times as fast, and Pause no longer stops them. What is the fix?\n\n```js\nlet timer;\nplayBtn.addEventListener('click', () => {\n  timer = setInterval(next, 3000);\n});\npauseBtn.addEventListener('click', () => {\n  clearInterval(timer);\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `setTimeout` instead of `setInterval` in the Play handler, so each click schedules one tick",
+        "correct": false,
+        "why": "That advances one slide per click and then stops, so autoplay no longer works."
+      },
+      {
+        "id": "B",
+        "text": "Clear any running interval before starting a new one, or return early if one is running",
+        "correct": true,
+        "why": "Then only one interval exists, and `timer` always holds its id, so Pause can stop it."
+      },
+      {
+        "id": "C",
+        "text": "Declare `timer` with `const` so a second click can't overwrite the first interval's id",
+        "correct": false,
+        "why": "Then the assignment in the Play handler throws a `TypeError`."
+      },
+      {
+        "id": "D",
+        "text": "Call `clearInterval(timer)` twice in the Pause handler",
+        "correct": false,
+        "why": "Both calls clear the same, latest id; the ids of the earlier intervals were lost when `timer` was overwritten."
+      }
+    ],
+    "explanation": "Each `setInterval` call starts an independent timer, and overwriting the variable that held an id doesn't stop that timer. Guard every start with a clear, or check whether a timer is already running. The same rule applies when manual Next or Previous should reset the autoplay countdown, and when the component is removed. Interviewers look for this in carousel and stopwatch rounds.",
+    "reference": "MDN: Window.setInterval()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02",
+        "https://www.explainthis.io/en/career/my-amazon-frontend-interview",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://medium.com/@ksonuraj1/machine-coding-questions-s2-844d53812e45",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Meta",
+        "Amazon"
+      ]
+    },
+    "source": "interview:js-mc-carousel"
+  },
+  {
+    "id": "JSM-IQ1-DOM-014",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The carousel's indicator dots are `<button class=\"dot\" data-index=\"0\">` through `data-index=\"4\"`, and there are 5 slides. Every dot shows the first slide. Why?\n\n```js\ndots.addEventListener('click', (e) => {\n  const dot = e.target.closest('.dot');\n  if (dot) goTo(dot.dataset.index);\n});\n\nfunction goTo(i) {\n  index = (i + slides.length) % slides.length;\n  render();\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`dataset` values are strings: `'3' + 5` is `'35'`, and `'35' % 5` is `0`",
+        "correct": true,
+        "why": "Every concatenated value ends in 5, so the remainder is always 0. Convert with `Number(dot.dataset.index)`."
+      },
+      {
+        "id": "B",
+        "text": "`closest('.dot')` returns the `dots` container, so `dataset.index` is `undefined`",
+        "correct": false,
+        "why": "`closest` starts at the clicked button itself. And `undefined` would give `NaN`, not the first slide."
+      },
+      {
+        "id": "C",
+        "text": "`%` returns 0 whenever the left operand is larger than the right one",
+        "correct": false,
+        "why": "`7 % 5` is 2; the remainder is only 0 for exact multiples, which `'05'` to `'45'` happen to be."
+      },
+      {
+        "id": "D",
+        "text": "`data-index` is exposed as `dataset.dataIndex`, so `dataset.index` is `undefined`",
+        "correct": false,
+        "why": "The `data-` prefix is dropped: `data-index` becomes `dataset.index`."
+      }
+    ],
+    "explanation": "`dataset` values and attributes are always strings, and `+` with a string concatenates. Convert data attributes with `Number()` before doing arithmetic. Here the bug is hidden because `%` then converts the string back to a number, so no error appears. Interviewers plant this kind of bug in carousel and tab components.",
+    "reference": "MDN: HTMLElement.dataset",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02",
+        "https://www.explainthis.io/en/career/my-amazon-frontend-interview",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://medium.com/@ksonuraj1/machine-coding-questions-s2-844d53812e45",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Meta",
+        "Amazon"
+      ]
+    },
+    "source": "interview:js-mc-carousel"
+  },
+  {
+    "id": "JSM-IQ1-DOM-015",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `getByClass(root, className)` without the built-in method. It must return the same elements in the same order as `root.getElementsByClassName(className)` for a single class name, including matches nested inside other matches. Which line completes the loop?\n\n```js\nfunction getByClass(root, className) {\n  const result = [];\n  function walk(node) {\n    for (const child of node.children) {\n      // ???\n    }\n  }\n  walk(root);\n  return result;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`if (child.classList.contains(className)) { result.push(child); continue; } walk(child);`",
+        "correct": false,
+        "why": "It stops descending at a match, so a `.card` inside another `.card` is never found."
+      },
+      {
+        "id": "B",
+        "text": "`if (child.classList.contains(className)) result.push(child);`",
+        "correct": false,
+        "why": "Without recursion it checks only the direct children of `root`."
+      },
+      {
+        "id": "C",
+        "text": "`walk(child); if (child.classList.contains(className)) result.push(child);`",
+        "correct": false,
+        "why": "It finds every match, but children are added before their parents, which is not document order."
+      },
+      {
+        "id": "D",
+        "text": "`if (child.classList.contains(className)) result.push(child); walk(child);`",
+        "correct": true,
+        "why": "It checks each element before its descendants and always recurses, which gives every match in document order."
+      }
+    ],
+    "explanation": "`getElementsByClassName` returns the matching descendants of the root (not the root itself) in tree order, which is a pre-order depth-first traversal. Check the node, add it, then recurse into its children, whether or not it matched. Using `classList.contains` matches whole class tokens. Interviewers follow up with multiple class names or an iterative version that uses a stack.",
+    "reference": "MDN: Element.getElementsByClassName()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ],
+      "companies": [
+        "Amazon",
+        "Meta",
+        "Dropbox"
+      ]
+    },
+    "source": "interview:js-get-elements-by-classname"
+  },
+  {
+    "id": "JSM-IQ1-DOM-016",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate's traversal matches classes with `child.className.includes(className)` and otherwise walks every descendant correctly. Given this markup, how many elements does it return for `'card'`, and how many does `root.getElementsByClassName('card')` return?\n\n```html\n<div id=\"root\">\n  <div class=\"card active\">\n    <p class=\"card-title\">Title</p>\n    <div class=\"card\">\n      <span class=\"active card\">New</span>\n    </div>\n  </div>\n  <section class=\"cardholder\"></section>\n</div>\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "3 and 3",
+        "correct": false,
+        "why": "`includes` is a substring test, so `card-title` and `cardholder` also match."
+      },
+      {
+        "id": "B",
+        "text": "5 and 5",
+        "correct": false,
+        "why": "The native method matches whole class names, so `card-title` and `cardholder` don't count."
+      },
+      {
+        "id": "C",
+        "text": "4 and 3",
+        "correct": false,
+        "why": "Both `card-title` and `cardholder` contain the text `card`, so the substring test adds two extra elements, not one."
+      },
+      {
+        "id": "D",
+        "text": "5 and 3",
+        "correct": true,
+        "why": "The substring test matches all five elements. The native method matches only the three whose class list contains the token `card`."
+      }
+    ],
+    "explanation": "`className` is one string, so substring checks give false positives such as `card-title` and `cardholder`. Compare whole tokens with `classList.contains(name)`, or split `className` on whitespace. Interviewers ask for this traversal to see recursion on a real tree, and this edge case separates careful answers from quick ones.",
+    "reference": "MDN: Element.classList",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ],
+      "companies": [
+        "Amazon",
+        "Meta",
+        "Dropbox"
+      ]
+    },
+    "source": "interview:js-get-elements-by-classname"
+  },
+  {
+    "id": "JSM-IQ1-DOM-017",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Extend `getByClass` to accept several space-separated names, like the native method: `getByClass(root, ' card  active ')` (note the extra spaces) must return the elements that have both classes, whatever their order in the `class` attribute. `classNames` is the second argument. Which condition completes the check?\n\n```js\nfor (const child of node.children) {\n  if (/* ??? */) result.push(child);\n  walk(child);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`classNames.split(' ').every((n) => child.classList.contains(n))`",
+        "correct": false,
+        "why": "Splitting on single spaces produces empty strings, and `classList.contains('')` is always false, so nothing matches."
+      },
+      {
+        "id": "B",
+        "text": "`classNames.trim().split(/\\s+/).every((n) => child.classList.contains(n))`",
+        "correct": true,
+        "why": "Trimming and splitting on any whitespace gives `['card', 'active']`, and `every` requires both, in any order."
+      },
+      {
+        "id": "C",
+        "text": "`classNames.trim().split(/\\s+/).some((n) => child.classList.contains(n))`",
+        "correct": false,
+        "why": "`some` matches elements with either class, but the native method requires all of them."
+      },
+      {
+        "id": "D",
+        "text": "`child.className.includes(classNames.trim())`",
+        "correct": false,
+        "why": "A substring test depends on order and spacing, so it misses `class=\"active card\"`, and the double space here means it matches nothing at all."
+      }
+    ],
+    "explanation": "The native method splits its argument on ASCII whitespace, ignores empty tokens, and returns elements that have every listed class. Normalising the input with `trim().split(/\\s+/)` and checking with `every` reproduces that. Handling messy input such as extra spaces is the kind of edge case interviewers add after the basic traversal works.",
+    "reference": "MDN: Document.getElementsByClassName()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ],
+      "companies": [
+        "Amazon",
+        "Meta",
+        "Dropbox"
+      ]
+    },
+    "source": "interview:js-get-elements-by-classname"
+  },
+  {
+    "id": "JSM-IQ1-DOM-018",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An autocomplete debounces input by 250 ms and then calls `fetch('/search?q=' + encodeURIComponent(query))`. Users who type `rea`, pause, then type `ct` sometimes see results for `rea` under the text `react`. Which change fixes this?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Raise the debounce delay to one second, so the request for `rea` always finishes before `react` is sent",
+        "correct": false,
+        "why": "On a slow network they still overlap, and every search now feels slower."
+      },
+      {
+        "id": "B",
+        "text": "Cache each response by its query string, so repeated queries are answered without touching the network",
+        "correct": false,
+        "why": "Caching helps speed, but an older response can still arrive last and overwrite the newer results."
+      },
+      {
+        "id": "C",
+        "text": "Abort the previous request with `AbortController` and ignore any response whose query isn't the latest",
+        "correct": true,
+        "why": "Old requests are cancelled where possible, and any response that still arrives late is ignored, so only the latest query is shown."
+      },
+      {
+        "id": "D",
+        "text": "Switch from debouncing to throttling so requests go out at a steady rate",
+        "correct": false,
+        "why": "Throttling sends more requests while the user types, which creates more chances for responses to arrive out of order."
+      }
+    ],
+    "explanation": "Network responses can arrive in any order, so the UI must decide which one is current. Cancel stale requests with `AbortController` (the `fetch` promise rejects with an `AbortError`, which you ignore), and also compare a request id or the query before rendering. Debouncing reduces traffic but doesn't fix ordering. This race is the core of the autocomplete system-design question.",
+    "reference": "MDN: AbortController",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://leetcode.com/discuss/post/8101510/sde-2-frontend-hiver-interview-experienc-6twg/",
+        "https://namastedev.com/topics/how-to-prepare-for-web-developer-interview/frontend-interview-questions-from-top-companies",
+        "https://www.greatfrontend.com/blog/data-structures-interview-questions-for-senior-frontend-engineers",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer"
+      ],
+      "companies": [
+        "LinkedIn",
+        "Hiver",
+        "MakeMyTrip",
+        "Razorpay"
+      ]
+    },
+    "source": "interview:js-sd-autocomplete"
+  },
+  {
+    "id": "JSM-IQ1-DOM-019",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are designing a listbox-style autocomplete for a large product catalogue. Which three choices belong in a strong design? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep DOM focus in the input and point `aria-activedescendant` at the highlighted option as the user presses the arrow keys",
+        "correct": true,
+        "why": "This follows the WAI-ARIA combobox pattern: the user can keep typing, and screen readers announce the active option."
+      },
+      {
+        "id": "B",
+        "text": "Cache results per query in memory with a size limit, so deleting back from `react` to `rea` shows results instantly",
+        "correct": true,
+        "why": "A bounded in-memory cache avoids repeat requests without growing forever."
+      },
+      {
+        "id": "C",
+        "text": "Skip the request when the trimmed query is shorter than a minimum length, such as 2 characters",
+        "correct": true,
+        "why": "One-letter queries are expensive and rarely useful, so a minimum length cuts load."
+      },
+      {
+        "id": "D",
+        "text": "Send a request on every keystroke without debouncing, so results are never stale",
+        "correct": false,
+        "why": "That multiplies server load and creates more out-of-order responses, which makes results more likely to be stale."
+      },
+      {
+        "id": "E",
+        "text": "Move DOM focus into the first `<li>` when the user presses ArrowDown, so screen readers announce it",
+        "correct": false,
+        "why": "Moving focus out of the input stops the user from typing; the listbox pattern uses `aria-activedescendant` instead."
+      },
+      {
+        "id": "F",
+        "text": "Store every response in `localStorage` with no expiry, so results load instantly on every visit",
+        "correct": false,
+        "why": "Results go stale, storage fills up, and synchronous `localStorage` reads can block the main thread."
+      }
+    ],
+    "explanation": "A good autocomplete answer covers the network (debounce, minimum length, cancelling stale requests), data (a bounded cache, perhaps a trie for client-side prefixes), and the UI (`role=\"combobox\"`, `aria-expanded`, `aria-activedescendant`, Escape to close). Senior interviewers score how well you balance these, not any single trick.",
+    "reference": "WAI-ARIA Authoring Practices: Combobox pattern",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://leetcode.com/discuss/post/8101510/sde-2-frontend-hiver-interview-experienc-6twg/",
+        "https://namastedev.com/topics/how-to-prepare-for-web-developer-interview/frontend-interview-questions-from-top-companies",
+        "https://www.greatfrontend.com/blog/data-structures-interview-questions-for-senior-frontend-engineers",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer"
+      ],
+      "companies": [
+        "LinkedIn",
+        "Hiver",
+        "MakeMyTrip",
+        "Razorpay"
+      ]
+    },
+    "source": "interview:js-sd-autocomplete"
+  },
+  {
+    "id": "JSM-IQ1-COD-011",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this runs?\n\n```js\nfunction countdown(n) {\n  console.log(n);\n  if (n === 0) return;\n  countdown(n - 2);\n}\n\ncountdown(5);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It logs 5, 3, 1 and stops",
+        "correct": false,
+        "why": "Nothing stops it at 1; the only exit is `n === 0`, and the next value is -1."
+      },
+      {
+        "id": "B",
+        "text": "It logs 5, 3, 1, 0",
+        "correct": false,
+        "why": "Counting down by 2 from an odd number never produces 0."
+      },
+      {
+        "id": "C",
+        "text": "It logs 5, 3, 1, -1, … until the stack overflows with a `RangeError`",
+        "correct": true,
+        "why": "The base case is never reached, so each call adds a stack frame until the engine's limit is hit."
+      },
+      {
+        "id": "D",
+        "text": "It keeps logging forever without an error, just like an endless `while (true)` loop",
+        "correct": false,
+        "why": "Unlike a loop, each recursive call uses a new stack frame, so the stack runs out and an error is thrown."
+      }
+    ],
+    "explanation": "Every recursive function needs a base case that every input actually reaches. Here `n === 0` is skipped by odd inputs, so `n <= 0` is the safe check. V8 (Chrome, Node.js) throws `RangeError: Maximum call stack size exceeded`; Firefox throws an `InternalError` (\"too much recursion\"). Interviewers ask freshers to explain the base case and what happens without one.",
+    "reference": "MDN: Recursion (Glossary)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/flipkart/work-experiences/ui-engineer-march-12-2024-4-6ea41f07",
+        "https://leetcode.com/discuss/interview-experience/1618037/intuit-sde2-frontend-bangalore-october-2021-offer",
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience"
+      ],
+      "companies": [
+        "Flipkart",
+        "Intuit",
+        "Swiggy"
+      ]
+    },
+    "source": "interview:js-recursion-basics"
+  },
+  {
+    "id": "JSM-IQ1-COD-012",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A file explorer stores folders as objects with a `children` array; files have no `children`. Which `countFiles` returns `5` for this tree?\n\n```js\nconst tree = {\n  name: 'root',\n  children: [\n    { name: 'README.md' },\n    {\n      name: 'src',\n      children: [\n        { name: 'index.js' },\n        { name: 'app.js' },\n        { name: 'utils', children: [{ name: 'math.js' }, { name: 'format.js' }] },\n      ],\n    },\n    { name: 'assets', children: [] },\n  ],\n};\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const countFiles = (node) => node.children ? 1 + node.children.reduce((sum, c) => sum + countFiles(c), 0) : 1;`",
+        "correct": false,
+        "why": "The `1 +` counts every folder too, so this returns 9."
+      },
+      {
+        "id": "B",
+        "text": "`function countFiles(node) { if (!node.children) return 1; let count = 0; node.children.forEach((c) => { countFiles(c); count++; }); return count; }`",
+        "correct": false,
+        "why": "The recursive result is thrown away, so it counts only the root's direct children and returns 3."
+      },
+      {
+        "id": "C",
+        "text": "`const countFiles = (node) => node.children ? node.children.reduce((sum, c) => sum + countFiles(c), 0) : 1;`",
+        "correct": true,
+        "why": "A file is the base case and counts 1. A folder returns the sum of its children's counts, so an empty folder counts 0."
+      },
+      {
+        "id": "D",
+        "text": "`function countFiles(node) { let count = 0; for (const c of node.children) count += c.children ? c.children.length : 1; return count; }`",
+        "correct": false,
+        "why": "It looks only one level down and counts the `utils` folder as a file, so it returns 4."
+      }
+    ],
+    "explanation": "Recursive tree code has two parts: a base case for leaves (a file counts 1) and a recursive case that combines the children's results (a folder sums them). The common bugs are ignoring the value a recursive call returns and counting nodes at the wrong level. The same pattern drives the nested file explorer, comment threads and menu rendering asked in frontend rounds.",
+    "reference": "MDN: Recursion (Glossary)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/flipkart/work-experiences/ui-engineer-march-12-2024-4-6ea41f07",
+        "https://leetcode.com/discuss/interview-experience/1618037/intuit-sde2-frontend-bangalore-october-2021-offer",
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience"
+      ],
+      "companies": [
+        "Flipkart",
+        "Intuit",
+        "Swiggy"
+      ]
+    },
+    "source": "interview:js-recursion-basics"
+  }
+]

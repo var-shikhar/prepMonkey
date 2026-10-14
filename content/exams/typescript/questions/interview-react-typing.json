@@ -1,0 +1,1932 @@
+[
+  {
+    "id": "TSM-IQ1-APP-001",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks you to type a `Button` that takes a required `label` string and an optional click handler that receives no arguments. Callers that omit `label` or pass a number should get a compile error. Which version meets every requirement under `strict`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```tsx\ntype ButtonProps = { label: string; onClick?: () => void };\nfunction Button({ label, onClick }: ButtonProps) {\n  return <button onClick={onClick}>{label}</button>;\n}\n```",
+        "correct": true,
+        "why": "Props arrive as one object, so you type that object. `onClick?` makes the handler optional, and `label: string` rejects a missing or numeric label."
+      },
+      {
+        "id": "B",
+        "text": "```tsx\nfunction Button(label: string, onClick?: () => void) {\n  return <button onClick={onClick}>{label}</button>;\n}\n```",
+        "correct": false,
+        "why": "React calls a component with a single props object, not with positional arguments. `<Button label=\"Save\" />` is rejected because the first parameter is typed `string`."
+      },
+      {
+        "id": "C",
+        "text": "```tsx\nconst Button = ({ label, onClick }) => (\n  <button onClick={onClick}>{label}</button>\n);\n```",
+        "correct": false,
+        "why": "With no annotation, the destructured props are implicitly `any`. Under `strict` (`noImplicitAny`) this is a compile error, and even without it nothing would be checked."
+      },
+      {
+        "id": "D",
+        "text": "```tsx\ntype ButtonProps = { label: string; onClick: () => void | undefined };\nfunction Button({ label, onClick }: ButtonProps) {\n  return <button onClick={onClick}>{label}</button>;\n}\n```",
+        "correct": false,
+        "why": "`() => void | undefined` is a required function whose return type is `void | undefined`. The prop itself is not optional, so `<Button label=\"Save\" />` fails."
+      }
+    ],
+    "explanation": "A function component receives a single props object, so you type it with an object type and destructure it. Optional props use `?`. Interviewers asking this at the junior level want to see that you type the props object (not positional parameters), know where the `?` goes, and avoid leaving props as implicit `any`.",
+    "reference": "https://react.dev/learn/typescript#typing-component-props",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm",
+        "https://dev.to/suraj_kumar_fb57ae0928df2/most-common-typescript-interview-questions-for-frontend-developers-5cpo",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techprep.app/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-props-state"
+  },
+  {
+    "id": "TSM-IQ1-APP-002",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This component compiles until the marked line. What is the type of `items`, and why does the last line fail under `strict`?\n\n```tsx\nfunction TagList() {\n  const [items, setItems] = useState([]);\n  // ...\n  setItems([\"react\", \"ts\"]); // error\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`any[]`; the error comes from `noImplicitAny` because the array has no element type",
+        "correct": false,
+        "why": "With `strictNullChecks` on, an empty array literal is inferred as `never[]`, not `any[]`. An `any[]` state would accept the strings."
+      },
+      {
+        "id": "B",
+        "text": "`never[]`, so no string can ever be assigned to it",
+        "correct": true,
+        "why": "`useState` infers its state type from the initial value. `[]` is `never[]` under strict mode, so the setter only accepts `never[]`. Writing `useState<string[]>([])` fixes it."
+      },
+      {
+        "id": "C",
+        "text": "`unknown[]`; strings must be narrowed before they can be stored",
+        "correct": false,
+        "why": "TypeScript never infers `unknown[]` from `[]`. And `unknown[]` would accept strings without narrowing."
+      },
+      {
+        "id": "D",
+        "text": "`string[]`; the error is that `setItems` needs a callback form `prev => [...]`",
+        "correct": false,
+        "why": "The state is not `string[]`, and the setter accepts a plain value as well as an updater function."
+      }
+    ],
+    "explanation": "`useState` infers the state type from its initial value. When that value does not describe the full type (an empty array, `null`, `undefined`), pass the type argument explicitly: `useState<string[]>([])`. This is one of the most common React-with-TypeScript mistakes interviewers ask about.",
+    "reference": "https://react.dev/learn/typescript#typing-usestate",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm",
+        "https://dev.to/suraj_kumar_fb57ae0928df2/most-common-typescript-interview-questions-for-frontend-developers-5cpo",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techprep.app/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-props-state"
+  },
+  {
+    "id": "TSM-IQ1-APP-003",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A component is typed like this:\n\n```tsx\nfunction Avatar({ src, size = 40 }: { src: string; size?: number }) {\n  return <img src={src} width={size} height={size} />;\n}\n```\n\nWhich statements are true with React 19, current `@types/react` and `strict: true`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Inside the component, `size` has type `number`, because the default value removes `undefined`",
+        "correct": true,
+        "why": "A destructuring default replaces `undefined`, so TypeScript types the local binding as `number`."
+      },
+      {
+        "id": "B",
+        "text": "Callers cannot write `<Avatar src=\"a.png\" size={undefined} />`, because optional props reject an explicit `undefined`",
+        "correct": false,
+        "why": "Without `exactOptionalPropertyTypes`, `size?: number` means `number | undefined`, so an explicit `undefined` is allowed (and the default applies)."
+      },
+      {
+        "id": "C",
+        "text": "Destructuring defaults are the way to give function components default props; React 19 no longer applies `defaultProps` to function components",
+        "correct": true,
+        "why": "The React 19 upgrade guide removed `defaultProps` for function components in favour of ES6 default parameters."
+      },
+      {
+        "id": "D",
+        "text": "Typing the component as `React.FC<{ src: string; size?: number }>` would also let it accept `children` without declaring them",
+        "correct": false,
+        "why": "`React.FC` stopped adding an implicit `children` prop in the React 18 types. You must declare `children` yourself."
+      },
+      {
+        "id": "E",
+        "text": "The props type must be written as an `interface`; JSX attribute checking does not work with an inline object type",
+        "correct": false,
+        "why": "JSX checks attributes against any object type: inline, `type` alias or `interface`."
+      }
+    ],
+    "explanation": "Optional props are marked with `?`, and defaults belong in the destructuring pattern, which also narrows the local variable to the non-`undefined` type. Interviewers use this to check that you know current React typing: no implicit `children` on `React.FC`, and no `defaultProps` for function components in React 19.",
+    "reference": "https://react.dev/blog/2024/04/25/react-19-upgrade-guide",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm",
+        "https://dev.to/suraj_kumar_fb57ae0928df2/most-common-typescript-interview-questions-for-frontend-developers-5cpo",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techprep.app/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-props-state"
+  },
+  {
+    "id": "TSM-IQ1-APP-004",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A profile page starts with no user and loads one later:\n\n```tsx\ntype User = { id: string; name: string };\n\nfunction Profile() {\n  const [user, setUser] = useState(null);\n  useEffect(() => {\n    fetchUser().then((u: User) => setUser(u)); // error\n  }, []);\n  return <p>{user?.name}</p>;\n}\n```\n\nWhat is the correct fix?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Change it to `useState<User>(null)` so the state is a `User`",
+        "correct": false,
+        "why": "Under `strictNullChecks`, `null` is not assignable to `User`, so this initial value is rejected."
+      },
+      {
+        "id": "B",
+        "text": "Change it to `useState<User | null>(null)` so the state can hold either",
+        "correct": true,
+        "why": "The type argument describes every value the state will hold. `useState(null)` alone infers the type `null`, so no `User` can ever be stored."
+      },
+      {
+        "id": "C",
+        "text": "Keep `useState(null)` and write `setUser(u as null)`",
+        "correct": false,
+        "why": "This silences the error by lying about the value. `user` stays typed as `null`, so reading `user.name` would still fail to type-check."
+      },
+      {
+        "id": "D",
+        "text": "Change it to `useState<any>(null)` because the user arrives asynchronously",
+        "correct": false,
+        "why": "It compiles, but it switches off checking for every use of `user`, which is the opposite of what the interviewer wants."
+      }
+    ],
+    "explanation": "`useState` infers its type from the initial value, and `useState(null)` infers `null`. When the initial value is a placeholder, write the full type: `useState<User | null>(null)`. Consumers then have to handle `null` before rendering, which is the point.",
+    "reference": "https://react.dev/learn/typescript#typing-usestate",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-hooks-typing"
+  },
+  {
+    "id": "TSM-IQ1-APP-005",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `useRef` are true with React 19 and its current `@types/react` under `strict`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const inputRef = useRef<HTMLInputElement>(null)` has type `RefObject<HTMLInputElement | null>`, so you call `inputRef.current?.focus()`",
+        "correct": true,
+        "why": "The `null` overload adds `| null` to `current`, which matches the time before the element is mounted."
+      },
+      {
+        "id": "B",
+        "text": "`useRef<number>()` with no argument is a compile error; you write `useRef<number | null>(null)` or pass an initial value",
+        "correct": true,
+        "why": "React 19's types made the argument required, so every `useRef` call must pass an initial value."
+      },
+      {
+        "id": "C",
+        "text": "`inputRef.current.focus()` compiles inside a click handler, because the compiler knows the ref is set after mount",
+        "correct": false,
+        "why": "The compiler has no idea when React attaches the ref. `current` is still `HTMLInputElement | null`, so this is a \"possibly null\" error."
+      },
+      {
+        "id": "D",
+        "text": "A DOM ref must be created with `React.MutableRefObject` or it cannot be passed to the `ref` attribute",
+        "correct": false,
+        "why": "React 19 uses a single mutable `RefObject` type, and `MutableRefObject` is deprecated. `useRef<HTMLInputElement>(null)` can be passed to `ref` directly."
+      },
+      {
+        "id": "E",
+        "text": "The `current` property of a DOM ref is `readonly` in React 19, so `timerRef.current = id` needs a separate hook",
+        "correct": false,
+        "why": "In React 19's types `RefObject.current` is mutable, so the same `useRef` can hold DOM nodes and mutable values such as timer ids."
+      }
+    ],
+    "explanation": "For DOM refs, pass the element type and `null`: `useRef<HTMLInputElement>(null)`. Then access `current` with optional chaining or a null check. React 19 requires an argument for `useRef` and treats every ref as mutable. Interviewers probe whether you know refs are empty until React attaches them.",
+    "reference": "https://react.dev/blog/2024/04/25/react-19-upgrade-guide",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-hooks-typing"
+  },
+  {
+    "id": "TSM-IQ1-APP-006",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A counter uses `useReducer`. The team wants `dispatch({ type: \"add\" })` (missing `amount`) and typos such as `dispatch({ type: \"incremnt\" })` to fail at compile time. Which `Action` type gives both?\n\n```tsx\ntype State = { count: number };\nfunction reducer(state: State, action: Action): State { /* switch on action.type */ }\nconst [state, dispatch] = useReducer(reducer, { count: 0 });\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`type Action = { type: string; amount?: number };`",
+        "correct": false,
+        "why": "Any string is a valid `type`, so typos compile. `amount` is optional everywhere, so a missing amount compiles too."
+      },
+      {
+        "id": "B",
+        "text": "`type Action = { type: \"increment\" | \"add\" | \"reset\"; amount?: number };`",
+        "correct": false,
+        "why": "This catches typos, but `amount` is still optional for every action, so `{ type: \"add\" }` compiles."
+      },
+      {
+        "id": "C",
+        "text": "`type Action = { type: \"increment\" } | { type: \"add\"; amount: number } | { type: \"reset\" };`",
+        "correct": true,
+        "why": "A discriminated union ties each `type` to its own payload, so `\"add\"` requires `amount` and unknown `type` strings are rejected."
+      },
+      {
+        "id": "D",
+        "text": "`type Action = Record<string, unknown>;`",
+        "correct": false,
+        "why": "Any object is accepted, and inside the reducer every field is `unknown`. No mistakes are caught at the call site."
+      }
+    ],
+    "explanation": "Type reducer actions as a discriminated union on `type`. `dispatch` is inferred from the reducer, so each call is checked against the exact action shapes, and the reducer's `switch` narrows `action` so that `action.amount` is a `number` in the `\"add\"` case.",
+    "reference": "https://react.dev/learn/typescript#typing-usereducer",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-hooks-typing"
+  },
+  {
+    "id": "TSM-IQ1-APP-007",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You extract a text input's change handler into its own function. Which parameter type lets `e.target.value` type-check as a `string` and is accepted by `<input onChange={handleChange} />`?\n\n```tsx\nfunction handleChange(e: /* ? */) {\n  setQuery(e.target.value);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Event`",
+        "correct": false,
+        "why": "That is the DOM `Event` type, not React's synthetic event. React's `onChange` prop rejects a handler that expects a DOM `Event`."
+      },
+      {
+        "id": "B",
+        "text": "`React.MouseEvent<HTMLInputElement, MouseEvent>`",
+        "correct": false,
+        "why": "A mouse event type does not match `onChange`, which passes a `ChangeEvent`. The handler is rejected."
+      },
+      {
+        "id": "C",
+        "text": "`React.ChangeEvent<HTMLElement>`",
+        "correct": false,
+        "why": "The prop accepts this handler, but `e.target` is then an `HTMLElement`, which has no `value`, so `e.target.value` fails."
+      },
+      {
+        "id": "D",
+        "text": "`React.ChangeEvent<HTMLInputElement>`",
+        "correct": true,
+        "why": "This is the event type `onChange` passes for an `<input>`. Its `target` is typed as the input, so `value` is a `string`."
+      }
+    ],
+    "explanation": "React handlers receive React's synthetic event types, which are generic over the element: `React.ChangeEvent<HTMLInputElement>`, `React.MouseEvent<HTMLButtonElement>` and so on. A quick trick in interviews: write the handler inline first, hover the parameter to see the inferred type, then extract it.",
+    "reference": "https://react.dev/learn/typescript#typing-dom-events",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-event-handlers"
+  },
+  {
+    "id": "TSM-IQ1-APP-008",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A login form's submit handler is extracted into a function:\n\n```tsx\nfunction handleSubmit(e: /* ? */) {\n  e.preventDefault();\n  // ...\n}\n// <form onSubmit={handleSubmit}>\n```\n\nWith React 19 and `@types/react` 19.2 or later, which parameter types does `onSubmit={handleSubmit}` accept? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`React.SubmitEvent<HTMLFormElement>`",
+        "correct": true,
+        "why": "Recent `@types/react` types `onSubmit` with React's own `SubmitEvent`, so this matches exactly."
+      },
+      {
+        "id": "B",
+        "text": "`React.FormEvent<HTMLFormElement>`",
+        "correct": true,
+        "why": "It still compiles, because `FormEvent` is structurally a plain synthetic event. Newer `@types/react` marks it deprecated in favour of `SubmitEvent` or `ChangeEvent`."
+      },
+      {
+        "id": "C",
+        "text": "`SubmitEvent` with no `React.` prefix",
+        "correct": false,
+        "why": "Without the namespace this is the DOM's global `SubmitEvent`, not React's synthetic event, and the prop rejects it."
+      },
+      {
+        "id": "D",
+        "text": "`React.MouseEvent<HTMLFormElement>`",
+        "correct": false,
+        "why": "A submit is not a mouse event. The mouse-specific properties are missing from the submit event, so the handler is rejected."
+      },
+      {
+        "id": "E",
+        "text": "`Event`",
+        "correct": false,
+        "why": "This is the DOM `Event` type. React passes its own synthetic event, which is not assignable to the DOM type."
+      }
+    ],
+    "explanation": "Most tutorials and interview answers use `React.FormEvent<HTMLFormElement>`, and it still works. Newer `@types/react` adds `React.SubmitEvent` (and deprecates `FormEvent`) to match the event React actually passes. The real trap is forgetting the `React.` prefix and getting the DOM's global `SubmitEvent` or `Event` instead.",
+    "reference": "https://react.dev/learn/typescript#typing-dom-events",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-event-handlers"
+  },
+  {
+    "id": "TSM-IQ1-APP-009",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A reviewer asks when you need to annotate React event handler parameters. Which statements are true under `strict`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "An inline handler such as `onChange={(e) => setQuery(e.target.value)}` needs no annotation; `e` is contextually typed from the `onChange` prop",
+        "correct": true,
+        "why": "The prop's type flows into the arrow function, so `e` is `React.ChangeEvent<HTMLInputElement>` for an `<input>`."
+      },
+      {
+        "id": "B",
+        "text": "A handler declared on its own, such as `const onChange = (e) => ...`, is inferred from the JSX element it is later passed to",
+        "correct": false,
+        "why": "Inference does not flow backwards from a later use. The parameter is implicitly `any`, which `strict` reports as an error."
+      },
+      {
+        "id": "C",
+        "text": "A handler declared on its own can be typed as a whole, for example `const onChange: React.ChangeEventHandler<HTMLInputElement> = (e) => ...`",
+        "correct": true,
+        "why": "Annotating the variable with a handler type gives the arrow function a contextual type, so `e` needs no separate annotation."
+      },
+      {
+        "id": "D",
+        "text": "Typing `e` as `any` is recommended, because synthetic events do not match any DOM type",
+        "correct": false,
+        "why": "React ships precise synthetic event types. `any` throws away the checks on `e.target` and `e.currentTarget`."
+      },
+      {
+        "id": "E",
+        "text": "`React.MouseEvent` and `React.ChangeEvent` are interchangeable, because both extend the synthetic event base type",
+        "correct": false,
+        "why": "They share a base, but each prop expects its own event type. A `MouseEvent` handler is rejected by `onChange`."
+      }
+    ],
+    "explanation": "Inline handlers are typed for free by contextual typing. Once a handler is pulled out into a variable, annotate either the parameter (`e: React.ChangeEvent<HTMLInputElement>`) or the whole function (`React.ChangeEventHandler<HTMLInputElement>`). Interviewers ask this to see whether you understand where the types come from.",
+    "reference": "https://react.dev/learn/typescript#typing-dom-events",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-event-handlers"
+  },
+  {
+    "id": "TSM-IQ1-APP-010",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `Layout` component wraps whatever its parent passes: text, numbers, one or more elements, or nothing conditionally (`{isAdmin && <AdminBar />}`). Which `children` type accepts all of these?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`children: React.JSX.Element`",
+        "correct": false,
+        "why": "That is a single element only. Text, numbers, `false`, `null` and several sibling elements are all rejected."
+      },
+      {
+        "id": "B",
+        "text": "`children: React.ReactNode`",
+        "correct": true,
+        "why": "`ReactNode` is the union of everything React can render: elements, strings, numbers, booleans, `null`, `undefined` and arrays of these."
+      },
+      {
+        "id": "C",
+        "text": "`children: React.ReactElement[]`",
+        "correct": false,
+        "why": "Only arrays of elements are allowed. A single child, plain text and `null` are all rejected."
+      },
+      {
+        "id": "D",
+        "text": "`children: string | React.ReactElement`",
+        "correct": false,
+        "why": "This misses numbers, `null`, `false` from `&&`, and several children (which arrive as an array)."
+      }
+    ],
+    "explanation": "`React.ReactNode` is the standard type for `children` that can be anything renderable. Narrower types such as `React.JSX.Element` only fit when you really require exactly one element, for example when you clone it.",
+    "reference": "https://react.dev/learn/typescript#typing-children",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm"
+      ]
+    },
+    "source": "interview:ts-react-children-prop"
+  },
+  {
+    "id": "TSM-IQ1-APP-011",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `Props` resolve to here, with current `@types/react`?\n\n```tsx\nimport type { PropsWithChildren } from \"react\";\ntype Props = PropsWithChildren<{ title: string }>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`{ title: string } & { children: React.ReactNode }`, so every caller must pass children",
+        "correct": false,
+        "why": "The `children` that `PropsWithChildren` adds is optional, not required."
+      },
+      {
+        "id": "B",
+        "text": "`{ title: string } & { children?: React.JSX.Element }`, so only one element child is allowed",
+        "correct": false,
+        "why": "The added `children` is typed as `ReactNode`, which is far wider than a single element."
+      },
+      {
+        "id": "C",
+        "text": "`{ title: string } & { children?: React.ReactNode | undefined }`",
+        "correct": true,
+        "why": "`PropsWithChildren<P>` is `P & { children?: ReactNode | undefined }`: optional children of any renderable type."
+      },
+      {
+        "id": "D",
+        "text": "`{ title: string }`, because `children` is added automatically by `React.FC`",
+        "correct": false,
+        "why": "`PropsWithChildren` itself adds `children`. And `React.FC` has not added implicit `children` since the React 18 types."
+      }
+    ],
+    "explanation": "`PropsWithChildren` is a helper that adds an optional `children?: ReactNode`. If children are required, or must be a narrower type, declare `children` yourself instead. Interviewers like this because many people still believe `React.FC` adds `children` for you.",
+    "reference": "https://react.dev/learn/typescript#typing-children",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm"
+      ]
+    },
+    "source": "interview:ts-react-children-prop"
+  },
+  {
+    "id": "TSM-IQ1-APP-012",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A `Card` declares its children narrowly:\n\n```tsx\nfunction Card({ children }: { children: React.JSX.Element }) {\n  return <div className=\"card\">{children}</div>;\n}\n```\n\nWhich usages compile? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`<Card><p>Hi</p></Card>`",
+        "correct": true,
+        "why": "Exactly one element child matches `React.JSX.Element`."
+      },
+      {
+        "id": "B",
+        "text": "`<Card>Hello {name}</Card>`",
+        "correct": false,
+        "why": "Text plus an expression become an array of children, and strings are not `JSX.Element`s."
+      },
+      {
+        "id": "C",
+        "text": "`<Card>{isWide ? <Wide /> : <Narrow />}</Card>`",
+        "correct": true,
+        "why": "Both branches are elements, so the single child is still a `JSX.Element`."
+      },
+      {
+        "id": "D",
+        "text": "`<Card><h2>Title</h2><p>Body</p></Card>`",
+        "correct": false,
+        "why": "Two sibling children arrive as an array, which is not assignable to a single `JSX.Element`."
+      },
+      {
+        "id": "E",
+        "text": "`<Card>{null}</Card>`",
+        "correct": false,
+        "why": "`null` is a valid React node, but it is not a `JSX.Element`, so it is rejected."
+      }
+    ],
+    "explanation": "`React.JSX.Element` means exactly one element. Text, `null` and multiple siblings all fail. That restriction is sometimes intended, but it is usually a bug for a wrapper component, and `React.ReactNode` is the right choice. Interviewers use this to check that you know what JSX children compile to.",
+    "reference": "https://react.dev/learn/typescript#typing-children",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/united-states-react-developer-with-typescript-interview-questions-SRCH_IL.0,13_KO14,45.htm"
+      ]
+    },
+    "source": "interview:ts-react-children-prop"
+  },
+  {
+    "id": "TSM-IQ1-APP-013",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does the marked line fail to compile?\n\n```tsx\nfunction useToggle(initial = false) {\n  const [on, setOn] = useState(initial);\n  const toggle = useCallback(() => setOn((v) => !v), []);\n  return [on, toggle];\n}\n\nconst [open, toggleOpen] = useToggle();\ntoggleOpen(); // error\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`useCallback` returns `unknown` unless you pass a type argument",
+        "correct": false,
+        "why": "`useCallback` keeps the type of the function you give it, here `() => void`."
+      },
+      {
+        "id": "B",
+        "text": "The return type is `(boolean | (() => void))[]`, so `toggleOpen` might be a `boolean`",
+        "correct": true,
+        "why": "An array literal is inferred as an array of the union of its elements, not as a tuple, so each destructured item has the union type."
+      },
+      {
+        "id": "C",
+        "text": "Hooks cannot return arrays; only `useState` is allowed to return a tuple",
+        "correct": false,
+        "why": "Custom hooks can return anything. The problem is only how TypeScript infers the array literal."
+      },
+      {
+        "id": "D",
+        "text": "`toggleOpen` is `undefined` at runtime, because a custom hook's return value is not memoized between renders",
+        "correct": false,
+        "why": "The value exists at runtime. This is a compile-time error about the inferred type, not a runtime problem."
+      }
+    ],
+    "explanation": "TypeScript infers `[a, b]` as an array of `A | B`, not as the tuple `[A, B]`, so positions lose their individual types. A custom hook that returns a `useState`-style pair needs `as const` or an explicit tuple return type. This is the classic custom-hook typing question.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/objects.html#tuple-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-custom-hook-tuple"
+  },
+  {
+    "id": "TSM-IQ1-APP-014",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Following on from a `useToggle` hook that ends with `return [on, toggle];`, which changes let callers write `const [open, toggle] = useToggle(); toggle();` with `open: boolean`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "End the hook with `return [on, toggle] as const;`",
+        "correct": true,
+        "why": "`as const` infers the readonly tuple `readonly [boolean, () => void]`, so each position keeps its own type."
+      },
+      {
+        "id": "B",
+        "text": "Annotate the hook's return type as `[boolean, () => void]`",
+        "correct": true,
+        "why": "An explicit tuple return type gives the array literal a tuple context and documents the API."
+      },
+      {
+        "id": "C",
+        "text": "End the hook with `return [on, toggle] as Array<boolean | (() => void)>;`",
+        "correct": false,
+        "why": "That is the same union array that caused the problem. `toggle` would still not be callable."
+      },
+      {
+        "id": "D",
+        "text": "Call `useState<[boolean, () => void]>(initial)` inside the hook",
+        "correct": false,
+        "why": "That types the state itself as a tuple, which is wrong and does not compile with a `boolean` initial value."
+      },
+      {
+        "id": "E",
+        "text": "Mark the hook with `useCallback` so React preserves the tuple type",
+        "correct": false,
+        "why": "`useCallback` memoizes a function. It has no effect on how the returned array literal is typed."
+      }
+    ],
+    "explanation": "Either `as const` or an explicit tuple return type turns the result into a tuple. `as const` also makes it `readonly`, which is harmless for destructuring. Returning an object (`{ on, toggle }`) is the other common answer once a hook returns more than two values.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://lets-code.co.in/articles/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-custom-hook-tuple"
+  },
+  {
+    "id": "TSM-IQ1-APP-015",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Write the props for a reusable `List` so that `renderItem` and `getKey` are typed from whatever `items` contains:\n\n```tsx\n<List items={users} renderItem={(u) => u.name} getKey={(u) => u.id} />\n// u should be User, and u.email should be an error if User has no email\n```\n\nWhich definition does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```tsx\ntype ListProps = { items: any[]; renderItem: (item: any) => React.ReactNode; getKey: (item: any) => string };\nfunction List(props: ListProps) { /* ... */ }\n```",
+        "correct": false,
+        "why": "With `any`, `u` is `any`, so `u.email` compiles and nothing ties the callbacks to the items."
+      },
+      {
+        "id": "B",
+        "text": "```tsx\ntype ListProps<T> = { items: T[]; renderItem: (item: T) => React.ReactNode; getKey: (item: T) => string };\nfunction List<T>(props: ListProps<T>) { /* ... */ }\n```",
+        "correct": true,
+        "why": "`T` is inferred from `items` at each use, so the callbacks receive `User` and misspelled properties are errors."
+      },
+      {
+        "id": "C",
+        "text": "```tsx\ntype ListProps = { items: object[]; renderItem: (item: object) => React.ReactNode; getKey: (item: object) => string };\nfunction List(props: ListProps) { /* ... */ }\n```",
+        "correct": false,
+        "why": "`u` is `object`, so even `u.name` is an error. The element type of `items` is lost."
+      },
+      {
+        "id": "D",
+        "text": "```tsx\ntype ListProps<T> = { items: T[]; renderItem: (item: unknown) => React.ReactNode; getKey: (item: unknown) => string };\nfunction List<T>(props: ListProps<T>) { /* ... */ }\n```",
+        "correct": false,
+        "why": "`T` is declared but the callbacks take `unknown`, so `u.name` does not compile without a cast."
+      }
+    ],
+    "explanation": "A generic component is a generic function: declare a type parameter, use it in the props, and TypeScript infers it from the JSX attributes. You can also pass it explicitly as `<List<User> ... />`. The interviewer is checking that the type flows from the data into the callbacks.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/generics.html",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://lets-code.co.in/articles/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-generic-component"
+  },
+  {
+    "id": "TSM-IQ1-APP-016",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "In a `.tsx` file, this line fails with \"JSX element 'T' has no corresponding closing tag\":\n\n```tsx\nconst List = <T>(props: ListProps<T>) => { /* ... */ };\n```\n\nWhich declarations give you a working generic component in the same `.tsx` file? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const List = <T,>(props: ListProps<T>) => { /* ... */ };`",
+        "correct": true,
+        "why": "The trailing comma tells the parser this is a type parameter list, not a JSX tag."
+      },
+      {
+        "id": "B",
+        "text": "`const List = <T extends unknown>(props: ListProps<T>) => { /* ... */ };`",
+        "correct": true,
+        "why": "An `extends` clause also removes the ambiguity with a JSX opening tag."
+      },
+      {
+        "id": "C",
+        "text": "`function List<T>(props: ListProps<T>) { /* ... */ }`",
+        "correct": true,
+        "why": "Function declarations have no JSX ambiguity, so plain `<T>` works there."
+      },
+      {
+        "id": "D",
+        "text": "`const List: React.FC<ListProps<T>> = (props) => { /* ... */ };`",
+        "correct": false,
+        "why": "`T` is not declared anywhere, so this is \"Cannot find name 'T'\". `React.FC` cannot introduce a type parameter for you."
+      },
+      {
+        "id": "E",
+        "text": "Add `\"jsx\": \"preserve\"` to `tsconfig.json` so `<T>` is no longer parsed as JSX",
+        "correct": false,
+        "why": "The `jsx` option controls output, not parsing. Any `.tsx` file parses `<T>(...) =>` as JSX."
+      }
+    ],
+    "explanation": "In `.tsx`, `<T>` at the start of an arrow function looks like a JSX tag. Use `<T,>`, `<T extends unknown>`, or a function declaration. This catches out many candidates who have only written generics in `.ts` files.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/jsx.html",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://lets-code.co.in/articles/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-generic-component"
+  },
+  {
+    "id": "TSM-IQ1-APP-017",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate types a generic list with `React.FC` because the codebase \"always uses FC\":\n\n```tsx\ntype ListProps<T> = { items: T[]; renderItem: (item: T) => React.ReactNode };\nconst List: React.FC<ListProps<unknown>> = ({ items, renderItem }) => (\n  <ul>{items.map((it, i) => <li key={i}>{renderItem(it)}</li>)}</ul>\n);\n\n<List items={users} renderItem={(u) => u.name} />;\n```\n\nWhat happens at the call site?",
+    "options": [
+      {
+        "id": "A",
+        "text": "It compiles, and `u` is inferred as `User` from `items`",
+        "correct": false,
+        "why": "`T` is fixed to `unknown` by the annotation, so there is nothing left to infer from `items`."
+      },
+      {
+        "id": "B",
+        "text": "`u` is `unknown`, so `u.name` is a compile error",
+        "correct": true,
+        "why": "`React.FC<ListProps<unknown>>` is not generic. Every caller gets `unknown`, and the component has to be a generic function to infer `User`."
+      },
+      {
+        "id": "C",
+        "text": "`u` is `any`, so it compiles but nothing is checked",
+        "correct": false,
+        "why": "That would happen with `ListProps<any>`. Here it is `unknown`, which blocks property access."
+      },
+      {
+        "id": "D",
+        "text": "The annotation itself fails, because `React.FC` cannot take a generic props type",
+        "correct": false,
+        "why": "`React.FC` accepts any props type. The annotation is valid; it just fixes `T` to one type."
+      }
+    ],
+    "explanation": "`React.FC<P>` describes one concrete props type. It cannot express \"for any `T`\", so generic components are written as generic functions (`function List<T>(...)` or `<T,>(...) =>`). Pick `unknown` and callers lose the types; pick `any` and they lose the checks.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/generics.html",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://lets-code.co.in/articles/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-generic-component"
+  },
+  {
+    "id": "TSM-IQ1-APP-018",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An auth context has no sensible default. Consumers should get an `Auth` value (never `null`), and using the context outside the provider should fail loudly. Which implementation does that?\n\n```tsx\ntype Auth = { user: User; logout: () => void };\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```tsx\nconst AuthContext = createContext<Auth>({} as Auth);\nexport const useAuth = () => useContext(AuthContext);\n```",
+        "correct": false,
+        "why": "This compiles, but outside a provider consumers get `{}` typed as `Auth`, so the failure shows up later as `undefined` fields."
+      },
+      {
+        "id": "B",
+        "text": "```tsx\nconst AuthContext = createContext<Auth | null>(null);\nexport const useAuth = () => useContext(AuthContext)!;\n```",
+        "correct": false,
+        "why": "The `!` hides `null` from the type but not at runtime. Outside a provider this returns `null`, and the crash happens wherever it is first used."
+      },
+      {
+        "id": "C",
+        "text": "```tsx\nconst AuthContext = createContext<Auth | null>(null);\nexport function useAuth(): Auth {\n  const ctx = useContext(AuthContext);\n  if (!ctx) throw new Error(\"useAuth must be used inside <AuthProvider>\");\n  return ctx;\n}\n```",
+        "correct": true,
+        "why": "The null check narrows `ctx` to `Auth`, so consumers never see `null`, and missing providers fail immediately with a clear message."
+      },
+      {
+        "id": "D",
+        "text": "```tsx\nconst AuthContext = createContext<Auth | null>(null);\nexport const useAuth = () => useContext(AuthContext);\n// consumers write auth?.user.name everywhere\n```",
+        "correct": false,
+        "why": "It is type-safe, but every consumer has to handle `null`, which is exactly the noise the interviewer asked you to remove."
+      }
+    ],
+    "explanation": "The common pattern is: create the context with `T | null`, then expose a custom hook that checks for `null`, throws a helpful error, and returns `T`. Consumers get a clean type, and a missing provider fails at the right place instead of deep inside the UI.",
+    "reference": "https://react.dev/learn/typescript#typing-usecontext",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026"
+      ]
+    },
+    "source": "interview:ts-react-context-typing"
+  },
+  {
+    "id": "TSM-IQ1-APP-019",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This compiles under `strict`:\n\n```tsx\ntype Theme = { colors: { primary: string } };\nconst ThemeContext = createContext<Theme>({} as Theme);\n\nfunction BrandButton() {\n  const theme = useContext(ThemeContext);\n  return <button style={{ color: theme.colors.primary }}>Buy</button>;\n}\n```\n\nA developer renders `<BrandButton />` in a test without wrapping it in a `ThemeContext` provider. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A compile error, because TypeScript checks that every `useContext` call has a provider above it",
+        "correct": false,
+        "why": "TypeScript does not know the component tree. Provider placement is never checked at compile time."
+      },
+      {
+        "id": "B",
+        "text": "React logs a \"missing provider\" warning in development and renders the button with no colour",
+        "correct": false,
+        "why": "React silently uses the default value. It has no idea that `{}` is not a real `Theme`."
+      },
+      {
+        "id": "C",
+        "text": "`useContext` returns `undefined`, and the button renders without styles",
+        "correct": false,
+        "why": "With no provider, `useContext` returns the default value passed to `createContext`, here `{}`, not `undefined`."
+      },
+      {
+        "id": "D",
+        "text": "It throws a `TypeError` while rendering, because `theme.colors` is `undefined`",
+        "correct": true,
+        "why": "The default `{}` was asserted to be a `Theme`, so the compiler trusts `theme.colors`, but at runtime it does not exist."
+      }
+    ],
+    "explanation": "`{} as Theme` is a type assertion that lies to the compiler. It is a common shortcut that turns a missing provider into a confusing runtime crash. Either supply a real default value or use `Theme | null` with a checking hook.",
+    "reference": "https://react.dev/reference/react/createContext",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026"
+      ]
+    },
+    "source": "interview:ts-react-context-typing"
+  },
+  {
+    "id": "TSM-IQ1-APP-020",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about typing context are true with React 19 and its current `@types/react`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`createContext<string>()` with no argument is a compile error; a default value is always required",
+        "correct": true,
+        "why": "The type definition requires `defaultValue`. You pass `null` (typed as `T | null`) when there is no sensible default."
+      },
+      {
+        "id": "B",
+        "text": "You can render the context itself as a provider, such as `<AuthContext value={auth}>`, and its `value` is checked against the context's type",
+        "correct": true,
+        "why": "React 19 lets the context object act as a provider, and the types check `value` against `T`."
+      },
+      {
+        "id": "C",
+        "text": "`<AuthContext.Provider>` no longer type-checks in React 19 and must be migrated before upgrading",
+        "correct": false,
+        "why": "`Context.Provider` still works and is still typed. React plans to deprecate it later."
+      },
+      {
+        "id": "D",
+        "text": "`useContext(ctx)` automatically returns `T | undefined` so that a missing provider is visible in the type",
+        "correct": false,
+        "why": "`useContext` returns `T`. Without a provider it returns the default value, so the type only includes `null` if you put it there."
+      },
+      {
+        "id": "E",
+        "text": "If a provider passes `value={undefined}`, consumers fall back to the default value from `createContext`",
+        "correct": false,
+        "why": "The default is only used when there is no provider above. A provider with `value={undefined}` provides `undefined`."
+      }
+    ],
+    "explanation": "The context type comes from `createContext<T>(defaultValue)`, and `useContext` simply returns `T`. To make a missing provider visible, put `null` in `T` and wrap the read in a checking hook. React 19 also lets you render `<Ctx value={...}>` directly.",
+    "reference": "https://react.dev/reference/react/createContext",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026"
+      ]
+    },
+    "source": "interview:ts-react-context-typing"
+  },
+  {
+    "id": "TSM-IQ1-APP-021",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A team's style guide says \"props use `interface`\". Which of these props types cannot be written as a single `interface`, so it needs a `type` alias?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Props that extend the native button attributes, written as `ComponentProps<\"button\">` plus a `variant: \"primary\" | \"ghost\"` prop",
+        "correct": false,
+        "why": "`interface ButtonProps extends ComponentProps<\"button\"> { variant: ... }` works. An interface can extend an object type alias."
+      },
+      {
+        "id": "B",
+        "text": "Props with an optional callback: `{ onClose?: () => void }`",
+        "correct": false,
+        "why": "Optional members and function types are ordinary interface members."
+      },
+      {
+        "id": "C",
+        "text": "Props that are one of two shapes: `{ kind: \"info\"; message: string } | { kind: \"error\"; message: string; retry: () => void }`",
+        "correct": true,
+        "why": "A union of shapes is not an object type, and an interface can only describe a single object type."
+      },
+      {
+        "id": "D",
+        "text": "Props where one property is a union: `{ size: \"sm\" | \"md\" | \"lg\" }`",
+        "correct": false,
+        "why": "Union-typed properties are fine inside an interface. Only a union of whole prop objects needs a type alias."
+      }
+    ],
+    "explanation": "For plain object props, `interface` and `type` are interchangeable, so consistency matters more than the choice. A `type` alias is required when props are a union (discriminated variants, mutually exclusive props) or are computed with mapped or conditional types.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2"
+      ]
+    },
+    "source": "interview:ts-react-props-interface-or-type"
+  },
+  {
+    "id": "TSM-IQ1-APP-022",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "An interviewer asks: \"`interface` or `type` for React props, and does it matter?\" Which statements would be accurate parts of your answer? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "For an ordinary object of props, both work the same in JSX checking, so pick one convention and stay consistent",
+        "correct": true,
+        "why": "JSX checks attributes structurally against any object type, however it was declared."
+      },
+      {
+        "id": "B",
+        "text": "`interface Props extends ComponentProps<\"input\"> { onChange: (v: string) => void }` reports the conflicting `onChange` at the declaration, while `ComponentProps<\"input\"> & { onChange: ... }` combines the two types without any error",
+        "correct": true,
+        "why": "Interface `extends` checks member compatibility; an intersection just merges members, which for conflicting primitives silently gives `never`."
+      },
+      {
+        "id": "C",
+        "text": "Only interfaces can be used as the props of a generic component",
+        "correct": false,
+        "why": "Generic type aliases (`type ListProps<T> = ...`) work just as well."
+      },
+      {
+        "id": "D",
+        "text": "Type aliases are not supported by `React.FC`",
+        "correct": false,
+        "why": "`React.FC<P>` accepts any object type for `P`, including aliases."
+      },
+      {
+        "id": "E",
+        "text": "Interfaces can describe a union of prop shapes if you list each shape as a separate `extends`",
+        "correct": false,
+        "why": "Extending several interfaces combines them into one object type (all members), which is the opposite of a union."
+      }
+    ],
+    "explanation": "The honest answer is \"mostly no\": both work for object props. The real differences are that only `type` can express unions and computed types, interfaces can be merged and extended with conflict checking, and intersections can hide conflicts. Interviewers want those trade-offs, not a strong opinion.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2"
+      ]
+    },
+    "source": "interview:ts-react-props-interface-or-type"
+  },
+  {
+    "id": "TSM-IQ1-APP-023",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `Tooltip` has a `content` prop that callers fill with a plain string, a number, an element such as `<strong>Pro</strong>`, or `null` to show nothing. Which type should `content` have?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`React.JSX.Element`",
+        "correct": false,
+        "why": "That only accepts a single element. Strings, numbers and `null` are rejected."
+      },
+      {
+        "id": "B",
+        "text": "`React.ReactElement`",
+        "correct": false,
+        "why": "A `ReactElement` is an element object. Strings, numbers and `null` are not elements."
+      },
+      {
+        "id": "C",
+        "text": "`React.ReactNode`",
+        "correct": true,
+        "why": "`ReactNode` is everything React can render, including strings, numbers, elements, `null` and `undefined`."
+      },
+      {
+        "id": "D",
+        "text": "`string | React.JSX.Element`",
+        "correct": false,
+        "why": "Numbers and `null` are still rejected, so this is too narrow for the stated uses."
+      }
+    ],
+    "explanation": "Use `React.ReactNode` for any prop that is rendered as content. `React.ReactElement` and `React.JSX.Element` are for when you need an actual element object, for example to clone it or read its props.",
+    "reference": "https://react.dev/learn/typescript#typing-children",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2"
+      ]
+    },
+    "source": "interview:ts-react-element-vs-node"
+  },
+  {
+    "id": "TSM-IQ1-APP-024",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `React.JSX.Element`, `React.ReactElement` and `React.ReactNode` are true with TypeScript 5.1+ and React 19's types? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`React.JSX.Element` is a `ReactElement<any, any>`: the object a JSX expression produces, so strings and `null` are not assignable to it",
+        "correct": true,
+        "why": "It is an alias for an element object, which is why it is too narrow for `children` or content props."
+      },
+      {
+        "id": "B",
+        "text": "`React.ReactNode` includes `string`, `number`, `bigint`, `boolean`, `null`, `undefined`, elements, and iterables of nodes",
+        "correct": true,
+        "why": "That union is what React can render, which is why it is the type for `children`."
+      },
+      {
+        "id": "C",
+        "text": "A component annotated `function Empty(): React.JSX.Element` may `return null`",
+        "correct": false,
+        "why": "`null` is not a `JSX.Element`, so the annotation rejects it. Use `React.ReactNode` as the return type, or let it be inferred."
+      },
+      {
+        "id": "D",
+        "text": "`function Hello() { return \"hi\"; }` cannot be used as `<Hello />`, because components must return an element",
+        "correct": false,
+        "why": "Since TypeScript 5.1 and the React 18 types, a component may return any `ReactNode`, including a string."
+      },
+      {
+        "id": "E",
+        "text": "In React 19's types the global `JSX.Element` is the recommended spelling and `React.JSX` is deprecated",
+        "correct": false,
+        "why": "It is the other way round: React 19's types removed the global `JSX` namespace. Use `React.JSX.Element`."
+      }
+    ],
+    "explanation": "`ReactNode` is the wide \"anything renderable\" type, and `ReactElement` / `React.JSX.Element` are element objects only. Modern TypeScript lets components return any `ReactNode`, so annotating return types as `JSX.Element` mostly creates errors. In React 19, use the `React.JSX` namespace rather than the global `JSX`.",
+    "reference": "https://react.dev/blog/2024/04/25/react-19-upgrade-guide",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2"
+      ]
+    },
+    "source": "interview:ts-react-element-vs-node"
+  },
+  {
+    "id": "TSM-IQ1-APP-025",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Some users have no address, and this card crashes in production with \"Cannot read properties of undefined (reading 'city')\". It compiled cleanly:\n\n```tsx\ntype User = { name: string; address: { city: string } };\n\nfunction UserCard({ user }: { user: User }) {\n  return <p>{user.name} from {user.address.city}</p>;\n}\n```\n\nWhich change makes TypeScript catch this class of bug?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Make `address` optional (`address?: ...`) so the compiler forces `user.address?.city` or a check",
+        "correct": true,
+        "why": "Once the type admits the missing case, `user.address.city` becomes a \"possibly undefined\" error until you handle it."
+      },
+      {
+        "id": "B",
+        "text": "Add `user.address!.city`, telling TypeScript the address is always present",
+        "correct": false,
+        "why": "This asserts the bug away. The compiler stops checking and the crash still happens."
+      },
+      {
+        "id": "C",
+        "text": "Wrap the component in a React error boundary, so that a missing address can no longer crash the whole page",
+        "correct": false,
+        "why": "An error boundary contains the crash at runtime. The types still say the address always exists, so the compiler still cannot help."
+      },
+      {
+        "id": "D",
+        "text": "Change `user: User` to `user: any` while the API is unstable",
+        "correct": false,
+        "why": "This removes all checking, so the same mistake goes unnoticed everywhere."
+      }
+    ],
+    "explanation": "Types only help if they describe the real data. If the API can omit a field, mark it optional, and `strictNullChecks` then forces every read to handle the missing case. The interviewer wants to hear that the type was wrong, not that the component needs a try/catch.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#optional-properties",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-optional-api-data"
+  },
+  {
+    "id": "TSM-IQ1-APP-026",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Under `strict`, which line is a compile error?\n\n```tsx\ntype User = { name: string };\n\nfunction Profile() {\n  const [user, setUser] = useState<User>();       // line 1\n  useEffect(() => { loadUser().then(setUser); }, []); // line 2\n  const title = user.name.toUpperCase();          // line 3\n  if (!user) return <p>Loading...</p>;            // line 4\n  return <h1>{user.name}</h1>;                    // line 5\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Line 1: `useState<User>()` needs an initial value",
+        "correct": false,
+        "why": "`useState` with no argument is allowed and gives a state of type `User | undefined`."
+      },
+      {
+        "id": "B",
+        "text": "Line 3: `user` is `User | undefined`, so `user.name` is \"possibly undefined\"",
+        "correct": true,
+        "why": "Line 3 reads the state before the loading check, when `user` may still be `undefined`."
+      },
+      {
+        "id": "C",
+        "text": "Line 5: `user` may still be `undefined` inside the returned JSX, because narrowing does not reach JSX",
+        "correct": false,
+        "why": "The early return on line 4 narrows `user` to `User` for the rest of the function."
+      },
+      {
+        "id": "D",
+        "text": "Line 2: `setUser` cannot be passed directly to `then`",
+        "correct": false,
+        "why": "`setUser` accepts a `User`, which is what `loadUser()` resolves with, so passing it directly is fine."
+      }
+    ],
+    "explanation": "`useState<User>()` with no initial value is typed `User | undefined`, so the compiler forces you to handle the loading state before reading fields. Moving line 3 below the guard fixes it. This is exactly how types prevent the \"undefined API data\" crash.",
+    "reference": "https://react.dev/learn/typescript#typing-usestate",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-optional-api-data"
+  },
+  {
+    "id": "TSM-IQ1-APP-027",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `useBoolean(initial?)` returning `value` plus `setTrue`, `setFalse` and `toggle`. Callers should be able to call each function with full type safety, and the functions should be stable between renders. Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```tsx\nfunction useBoolean(initial = false) {\n  const [value, setValue] = useState(initial);\n  return [value, () => setValue(true), () => setValue(false), () => setValue(v => !v)];\n}\n```",
+        "correct": false,
+        "why": "The array literal is inferred as `(boolean | (() => void))[]`, so a destructured `setTrue()` is a compile error. The functions are also recreated every render."
+      },
+      {
+        "id": "B",
+        "text": "```tsx\nfunction useBoolean(initial = false) {\n  const [value, setValue] = useState(initial);\n  const setTrue = useCallback(() => setValue(true), []);\n  const setFalse = useCallback(() => setValue(false), []);\n  const toggle = useCallback(() => setValue(v => !v), []);\n  return { value, setTrue, setFalse, toggle };\n}\n```",
+        "correct": true,
+        "why": "The return type is inferred as `{ value: boolean; setTrue: () => void; ... }`, and the functional updater lets `toggle` be stable with empty dependencies."
+      },
+      {
+        "id": "C",
+        "text": "```tsx\nfunction useBoolean(initial = false) {\n  const [value, setValue] = useState(initial);\n  const toggle = useCallback(() => setValue(!value), []);\n  return { value, toggle, setTrue: () => setValue(true), setFalse: () => setValue(false) };\n}\n```",
+        "correct": false,
+        "why": "It type-checks, but `toggle` closes over the first render's `value` because of the empty dependency list, so it always sets `!initial`."
+      },
+      {
+        "id": "D",
+        "text": "```tsx\nfunction useBoolean(initial = false): Record<string, boolean | (() => void)> {\n  const [value, setValue] = useState(initial);\n  return { value, toggle: () => setValue(v => !v) };\n}\n```",
+        "correct": false,
+        "why": "The annotation widens every property to `boolean | (() => void)`, so `toggle()` does not compile, and typos like `b.togle` are allowed."
+      }
+    ],
+    "explanation": "Small hooks are a common warm-up. The interviewer checks that the return type is precise (an object, or a tuple with `as const`), that you do not annotate it more loosely than inference would, and that stable callbacks use the functional state updater instead of a stale value.",
+    "reference": "https://react.dev/learn/reusing-logic-with-custom-hooks",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-small-hooks"
+  },
+  {
+    "id": "TSM-IQ1-APP-028",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `useDefault(defaultValue, initialValue?)`: it behaves like `useState`, but whenever the state is `null` or `undefined` it returns `defaultValue` instead. The returned value must be typed as `T` (never `null` or `undefined`), and valid values such as `0` or `\"\"` must be kept. Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```tsx\nfunction useDefault<T>(defaultValue: T, initialValue?: T | null) {\n  const [value, setValue] = useState<T | null | undefined>(initialValue);\n  return [value ?? defaultValue, setValue] as const;\n}\n```",
+        "correct": true,
+        "why": "`??` only falls back on `null` or `undefined`, so `0` and `\"\"` survive, and `value ?? defaultValue` is typed `T`."
+      },
+      {
+        "id": "B",
+        "text": "```tsx\nfunction useDefault<T>(defaultValue: T, initialValue?: T | null) {\n  const [value, setValue] = useState<T | null | undefined>(initialValue);\n  return [value || defaultValue, setValue] as const; // fall back when empty\n}\n```",
+        "correct": false,
+        "why": "`||` also replaces `0`, `\"\"` and `false` with the default, which breaks the requirement to keep valid falsy values."
+      },
+      {
+        "id": "C",
+        "text": "```tsx\nfunction useDefault<T>(defaultValue: T, initialValue?: T | null) {\n  const [value, setValue] = useState<T | null | undefined>(initialValue);\n  return [value, setValue] as const;\n}\n```",
+        "correct": false,
+        "why": "The default is never applied, and callers get `T | null | undefined` instead of `T`."
+      },
+      {
+        "id": "D",
+        "text": "```tsx\nfunction useDefault<T>(defaultValue: T, initialValue?: T | null) {\n  const [value, setValue] = useState<T>(initialValue ?? defaultValue);\n  return [value, setValue] as const;\n}\n```",
+        "correct": false,
+        "why": "It types as `T`, but the default only applies to the first render. A later `setValue(null)` does not compile, so the state can never be reset to the default."
+      }
+    ],
+    "explanation": "Keep the state type wide (`T | null | undefined`) so callers can clear it, and narrow the returned value with `??`, which TypeScript understands removes `null` and `undefined`. Mixing up `||` and `??` is the bug interviewers are looking for here.",
+    "reference": "https://react.dev/learn/reusing-logic-with-custom-hooks",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-small-hooks"
+  },
+  {
+    "id": "TSM-IQ1-APP-029",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "In a code review of a React + TypeScript codebase, which of these are real mistakes? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const [tags, setTags] = useState([]);` for a list of strings",
+        "correct": true,
+        "why": "The state is inferred as `never[]`, so adding any string is a compile error. Write `useState<string[]>([])`."
+      },
+      {
+        "id": "B",
+        "text": "`useEffect(async () => { const data = await load(); setData(data); }, []);`",
+        "correct": true,
+        "why": "An async function returns a promise, and an effect must return nothing or a cleanup function. The types reject it; call an inner async function instead."
+      },
+      {
+        "id": "C",
+        "text": "`function Panel({ children }: { children: React.JSX.Element })` for a wrapper that receives text and several elements",
+        "correct": true,
+        "why": "`React.JSX.Element` accepts exactly one element. A general wrapper should use `React.ReactNode`."
+      },
+      {
+        "id": "D",
+        "text": "`const inputRef = useRef<HTMLInputElement>(null);` for a ref passed to `<input ref={inputRef} />`",
+        "correct": false,
+        "why": "This is the recommended way to type a DOM ref in React 19."
+      },
+      {
+        "id": "E",
+        "text": "`const [count, setCount] = useState(0);` with no type argument",
+        "correct": false,
+        "why": "The initial value already describes the full type, so inferring `number` is correct and idiomatic."
+      },
+      {
+        "id": "F",
+        "text": "`onChange={(e) => setQuery(e.target.value)}` with no annotation on `e`",
+        "correct": false,
+        "why": "Inline handlers are contextually typed from the prop, so `e` is already a `ChangeEvent<HTMLInputElement>`."
+      }
+    ],
+    "explanation": "Most React + TypeScript mistakes come from types that do not match what React does: empty initial state inferring `never[]`, async effect callbacks, and children typed too narrowly. Interviewers also want you to recognise where inference is already correct, so you do not over-annotate.",
+    "reference": "https://react.dev/learn/typescript",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-common-mistakes"
+  },
+  {
+    "id": "TSM-IQ1-APP-030",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does this effect fail to type-check, and what is the usual fix?\n\n```tsx\nuseEffect(async () => {\n  const res = await fetch(`/api/users/${id}`);\n  setUser(await res.json());\n}, [id]);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`useEffect` callbacks must be typed with `React.EffectCallback`; add that annotation",
+        "correct": false,
+        "why": "The callback is already checked against `EffectCallback`. That check is what fails, so annotating it does not help."
+      },
+      {
+        "id": "B",
+        "text": "The callback returns a `Promise`, but an effect may only return nothing or a cleanup function; define an async function inside the effect and call it",
+        "correct": true,
+        "why": "`() => Promise<void>` is not assignable to `() => void | Destructor`. An inner async function keeps the effect itself synchronous."
+      },
+      {
+        "id": "C",
+        "text": "`await` is not allowed in the body of a component; move the fetch into an event handler",
+        "correct": false,
+        "why": "`await` is fine inside any async function, including one declared inside an effect."
+      },
+      {
+        "id": "D",
+        "text": "`res.json()` returns `any`, so `setUser` rejects it",
+        "correct": false,
+        "why": "`any` is assignable to the setter's parameter type. That part compiles (unsafely)."
+      }
+    ],
+    "explanation": "React uses the effect's return value as its cleanup function, so the types only allow `void` or a function. Declare `async function load() { ... }` inside the effect, call it, and use a flag or `AbortController` in the cleanup to ignore stale responses.",
+    "reference": "https://react.dev/reference/react/useEffect",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-common-mistakes"
+  },
+  {
+    "id": "TSM-IQ1-APP-031",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `TextField` should accept every native input prop, but its `onChange` should receive the new string value instead of an event:\n\n```tsx\ninterface TextFieldProps extends React.ComponentProps<\"input\"> {\n  onChange: (value: string) => void;\n}\n```\n\nThe compiler reports \"Interface 'TextFieldProps' incorrectly extends interface ...\". Which fix is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Switch to `type TextFieldProps = React.ComponentProps<\"input\"> & { onChange: (value: string) => void }` so the two are merged",
+        "correct": false,
+        "why": "The intersection hides the error, but `onChange` becomes both signatures at once, so the conflict is still there in a confusing form."
+      },
+      {
+        "id": "B",
+        "text": "Keep the interface and add `// @ts-expect-error` above the `onChange` line",
+        "correct": false,
+        "why": "That silences the check without fixing the conflicting type, so the component and its callers still disagree."
+      },
+      {
+        "id": "C",
+        "text": "Use `interface TextFieldProps extends Omit<React.ComponentProps<\"input\">, \"onChange\"> { onChange: (value: string) => void }`",
+        "correct": true,
+        "why": "Removing the native `onChange` first lets you redefine it with your own signature, with no conflict."
+      },
+      {
+        "id": "D",
+        "text": "Rename the prop to `onchange` so it does not clash with the native one",
+        "correct": false,
+        "why": "This avoids the clash with a confusing name, and the native `onChange` is still accepted with the event signature."
+      }
+    ],
+    "explanation": "When a wrapper changes the meaning of a native prop, `Omit` the native one and declare your own. Interface `extends` usefully reports the conflict, while an intersection would quietly combine the two. Interviewers ask this to see whether you can extend DOM props safely.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html#omittype-keys",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-common-mistakes"
+  },
+  {
+    "id": "TSM-IQ1-APP-032",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are building a small `useQuery` hook. Consumers should only be able to read `data` after checking that the request succeeded, and only read `error` after checking that it failed. Which state type does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`type QueryState<T> = { loading: boolean; error?: Error; data?: T };`",
+        "correct": false,
+        "why": "Every field is always available. After checking `!loading && !error`, `data` is still `T | undefined`, and impossible combinations like loading-with-error are allowed."
+      },
+      {
+        "id": "B",
+        "text": "`type QueryState<T> = { status: \"loading\" | \"error\" | \"success\"; data: T | null; error: Error | null };`",
+        "correct": false,
+        "why": "Checking `status` does not narrow `data` or `error`, because they are not tied to a specific status."
+      },
+      {
+        "id": "C",
+        "text": "`type QueryState<T> = [T | undefined, Error | undefined, boolean];`",
+        "correct": false,
+        "why": "A tuple has the same problem as the loose object: checking one slot says nothing to the compiler about the others."
+      },
+      {
+        "id": "D",
+        "text": "`type QueryState<T> = { status: \"loading\" } | { status: \"error\"; error: Error } | { status: \"success\"; data: T };`",
+        "correct": true,
+        "why": "A discriminated union means `data` only exists in the success branch, so the compiler forces the status check before it is read."
+      }
+    ],
+    "explanation": "Model fetch state as a discriminated union on `status`. Each branch carries only the fields that make sense, impossible states cannot be built, and `switch (q.status)` narrows correctly. This is what the interviewer is looking for in a \"typed useFetch\" machine-coding round.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-typed-fetch-hook"
+  },
+  {
+    "id": "TSM-IQ1-APP-033",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With this hook signature, which line in the component is a compile error?\n\n```tsx\ntype QueryState<T> =\n  | { status: \"loading\" }\n  | { status: \"error\"; error: Error }\n  | { status: \"success\"; data: T };\ndeclare function useQuery<T>(fetcher: () => Promise<T>): QueryState<T>;\ndeclare function fetchUser(id: string): Promise<{ name: string }>;\n\nfunction UserName({ id }: { id: string }) {\n  const q = useQuery(() => fetchUser(id));             // line 1\n  const cached = q.data;                                // line 2\n  if (q.status === \"loading\") return <Spinner />;     // line 3\n  if (q.status === \"error\") return <p>{q.error.message}</p>; // line 4\n  return <p>{q.data.name}</p>;                          // line 5\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Line 1, because `T` cannot be inferred from a callback's return type",
+        "correct": false,
+        "why": "`T` is inferred from the callback's return type `Promise<{ name: string }>`, so `T` is `{ name: string }`."
+      },
+      {
+        "id": "B",
+        "text": "Line 4, because `q` could still be `\"success\"` there",
+        "correct": false,
+        "why": "After the `\"loading\"` return, `q` is the error or success member, and the `=== \"error\"` check narrows it to the error member."
+      },
+      {
+        "id": "C",
+        "text": "Line 5, because `q.data` may be `undefined`",
+        "correct": false,
+        "why": "By line 5 the loading and error members have been ruled out, so `q` is the success member and `data` is present."
+      },
+      {
+        "id": "D",
+        "text": "Line 2, because `data` is not on every member of the union",
+        "correct": true,
+        "why": "Before any check, `q` may be loading or error, and those members have no `data` property."
+      }
+    ],
+    "explanation": "With a discriminated union you can only touch branch-specific fields after narrowing on the discriminant. Early returns narrow the rest of the function. Inferring `T` from the fetcher's `Promise<T>` saves callers from writing type arguments.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-typed-fetch-hook"
+  },
+  {
+    "id": "TSM-IQ1-APP-034",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Callers should write `useQuery(() => fetchUser(id))` with no type arguments and get `QueryState<User>` back, where `fetchUser` returns `Promise<User>`. Which signature does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function useQuery<T>(url: string): QueryState<T>`",
+        "correct": false,
+        "why": "Nothing in the arguments mentions `T`, so it cannot be inferred and defaults to `unknown`. It also takes a URL, not a fetcher."
+      },
+      {
+        "id": "B",
+        "text": "`function useQuery<T>(fetcher: () => T): QueryState<T>`",
+        "correct": false,
+        "why": "`T` is inferred as `Promise<User>`, so `data` would be typed as a promise rather than the user."
+      },
+      {
+        "id": "C",
+        "text": "`function useQuery<T>(fetcher: () => Promise<T>): QueryState<T>`",
+        "correct": true,
+        "why": "Matching `Promise<User>` against `Promise<T>` infers `T` as `User`, so `data` is a `User`."
+      },
+      {
+        "id": "D",
+        "text": "`function useQuery(fetcher: () => Promise<unknown>): QueryState<unknown>`",
+        "correct": false,
+        "why": "It accepts the call, but every consumer gets `unknown` data and has to cast."
+      }
+    ],
+    "explanation": "Put the type parameter where TypeScript can see it in the arguments, and shape the parameter (`() => Promise<T>`) so that inference unwraps the promise. A generic used only in the return type, like `useQuery<T>(url)`, is just a hidden cast.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/generics.html",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-react-typed-fetch-hook"
+  },
+  {
+    "id": "TSM-IQ1-APP-035",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement a typed `cn(...args)` (like the `classnames` package). It must accept strings, falsy values from conditions such as `isActive && \"active\"`, objects such as `{ disabled: isDisabled }`, and arrays nested to any depth. Which argument type does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype ClassValue = string | Record<string, boolean>\n  | Array<string | Record<string, boolean>>;\n```",
+        "correct": false,
+        "why": "This accepts only one level of array, and it rejects the `false` produced by `isActive && \"active\"`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype ClassValue = string | object;\n```",
+        "correct": false,
+        "why": "This accepts the right inputs, but also any object, function or array of anything, so mistakes are not caught."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype ClassValue = string;\n```",
+        "correct": false,
+        "why": "Objects, arrays and the `false` from a condition are all rejected."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype ClassDict = Record<string, boolean | null | undefined>;\ntype ClassValue = string | number | null | undefined | false\n  | ClassDict | ClassValue[];\n```",
+        "correct": true,
+        "why": "The falsy members cover conditional strings, `ClassDict` covers object syntax, and the recursive `ClassValue[]` covers arrays at any depth."
+      }
+    ],
+    "explanation": "A recursive type alias (`ClassValue[]` inside `ClassValue`) describes arbitrarily nested arrays. Including the falsy types lets callers write `cond && \"cls\"` directly. Interviewers use this to test recursive types and the difference between a precise union and `object`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#more-recursive-type-aliases",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-typed-classnames"
+  },
+  {
+    "id": "TSM-IQ1-APP-036",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Given this typed helper (with `isOn: boolean` and `maybe: string | undefined`):\n\n```ts\ntype ClassDict = Record<string, boolean | null | undefined>;\ntype ClassValue = string | number | null | undefined | false | ClassDict | ClassValue[];\ndeclare function cn(...args: ClassValue[]): string;\n```\n\nWhich calls are compile errors? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`cn(\"btn\", isOn && \"btn-on\")`",
+        "correct": false,
+        "why": "`isOn && \"btn-on\"` is `false | \"btn-on\"`, and both members are in `ClassValue`."
+      },
+      {
+        "id": "B",
+        "text": "`cn({ active: 1 })`",
+        "correct": true,
+        "why": "Object values must be `boolean`, `null` or `undefined`. A number is rejected."
+      },
+      {
+        "id": "C",
+        "text": "`cn([\"a\", [\"b\", { c: true }]])`",
+        "correct": false,
+        "why": "The recursive `ClassValue[]` accepts arrays nested inside arrays, including objects inside them."
+      },
+      {
+        "id": "D",
+        "text": "`cn(isOn)`",
+        "correct": true,
+        "why": "`isOn` is `boolean`, which includes `true`. Only `false` is in the union, so a bare boolean is rejected."
+      },
+      {
+        "id": "E",
+        "text": "`cn(maybe, null)`",
+        "correct": false,
+        "why": "`string | undefined` and `null` are both part of `ClassValue`."
+      }
+    ],
+    "explanation": "Including `false` but not `true` is a deliberate design choice: `cond && \"cls\"` type-checks, while a bare boolean (almost always a bug) does not. The `ClassDict` value type keeps object syntax honest.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-typed-classnames"
+  },
+  {
+    "id": "TSM-IQ1-APP-037",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Design the props for a `Button` that renders a link when given `href` and a button when given `onClick`. Passing both, or neither, must be a compile error. Which props type does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```tsx\ntype ButtonProps = { children: React.ReactNode } &\n  ({ href: string } | { onClick: () => void });\n```",
+        "correct": false,
+        "why": "Excess property checks accept a property if any member of the union has it, so `href` plus `onClick` together compiles."
+      },
+      {
+        "id": "B",
+        "text": "```tsx\ntype ButtonProps = { children: React.ReactNode } &\n  Partial<{ href: string; onClick: () => void }>;\n```",
+        "correct": false,
+        "why": "Both props are optional and independent, so both and neither are allowed."
+      },
+      {
+        "id": "C",
+        "text": "```tsx\ntype ButtonProps = { children: React.ReactNode } &\n  ({ href: string; onClick?: never } | { onClick: () => void; href?: never });\n```",
+        "correct": true,
+        "why": "Each member forbids the other prop with `?: never`, so both together match neither member, and neither prop matches neither member."
+      },
+      {
+        "id": "D",
+        "text": "```tsx\ntype ButtonProps = { children: React.ReactNode; href: string; onClick: () => void };\n```",
+        "correct": false,
+        "why": "This requires both props, which is the opposite of mutually exclusive."
+      }
+    ],
+    "explanation": "A plain union is not exclusive in TypeScript, because object types are open. Adding `otherProp?: never` to each member makes the shapes exclusive. This is the pattern senior candidates are expected to reach for when asked to make invalid prop combinations impossible.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-never-type",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-mutually-exclusive-props"
+  },
+  {
+    "id": "TSM-IQ1-APP-038",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 4,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "With these props (`f` is a `() => void`):\n\n```tsx\ntype LinkProps = { href: string; onClick?: never };\ntype ActionProps = { onClick: () => void; href?: never };\ntype ButtonProps = { children: React.ReactNode } & (LinkProps | ActionProps);\ndeclare function Button(props: ButtonProps): React.ReactNode;\n```\n\nWhich usages are compile errors under `strict` (without `exactOptionalPropertyTypes`)? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`<Button href=\"/pricing\">Pricing</Button>`",
+        "correct": false,
+        "why": "This matches `LinkProps`; `onClick` is simply absent."
+      },
+      {
+        "id": "B",
+        "text": "`<Button href=\"/pricing\" onClick={f}>Pricing</Button>`",
+        "correct": true,
+        "why": "`onClick: () => void` is not assignable to `never` in `LinkProps`, and `href` is not assignable to `never` in `ActionProps`."
+      },
+      {
+        "id": "C",
+        "text": "`<Button>Pricing</Button>`",
+        "correct": true,
+        "why": "Neither member matches: `LinkProps` needs `href` and `ActionProps` needs `onClick`."
+      },
+      {
+        "id": "D",
+        "text": "`<Button href=\"/pricing\" onClick={undefined}>Pricing</Button>`",
+        "correct": false,
+        "why": "`onClick?: never` means `undefined` is allowed when `exactOptionalPropertyTypes` is off, so this matches `LinkProps`."
+      },
+      {
+        "id": "E",
+        "text": "`<Button onClick={f}>Buy</Button>`",
+        "correct": false,
+        "why": "This matches `ActionProps`; `href` is simply absent."
+      }
+    ],
+    "explanation": "`prop?: never` really means \"absent or `undefined`\", so passing `undefined` explicitly is allowed unless `exactOptionalPropertyTypes` is on. The union still catches the real mistakes: both props, or neither. Inside the component, checking `props.href !== undefined` narrows `props` to one member.",
+    "reference": "https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-mutually-exclusive-props"
+  },
+  {
+    "id": "TSM-IQ1-APP-039",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 4,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate's first attempt at exclusive props compiles a call they expected to fail:\n\n```tsx\ntype Props = { children: React.ReactNode } & ({ href: string } | { onClick: () => void });\ndeclare function Button(props: Props): React.ReactNode;\n\n<Button href=\"/x\" onClick={() => {}}>Go</Button>; // no error\n```\n\nWhy is there no error?",
+    "options": [
+      {
+        "id": "A",
+        "text": "JSX attributes are not checked for excess properties at all, unlike object literals",
+        "correct": false,
+        "why": "JSX attributes do get excess property checks; `<Button foo=\"x\">` would be an error here."
+      },
+      {
+        "id": "B",
+        "text": "The intersection with `{ children: React.ReactNode }` collapses the union into a single object type in which both props become optional",
+        "correct": false,
+        "why": "Intersecting with an object distributes over the union; it does not merge the members or make props optional."
+      },
+      {
+        "id": "C",
+        "text": "For a union target, a property only counts as excess if no member of the union declares it, and both `href` and `onClick` are declared by some member",
+        "correct": true,
+        "why": "The value matches the `href` member structurally, and the extra `onClick` is known to the other member, so it is not flagged."
+      },
+      {
+        "id": "D",
+        "text": "Union types in props are checked only against the first member, which accepts the call",
+        "correct": false,
+        "why": "TypeScript checks against all members. The issue is that extra properties are allowed when another member declares them."
+      }
+    ],
+    "explanation": "Object types are open: a value with extra properties still matches. Excess property checking is a narrower lint for fresh object literals, and for unions it only flags properties no member knows about. That is why exclusive props need `?: never` (or a discriminant) on each member.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/objects.html",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-mutually-exclusive-props"
+  },
+  {
+    "id": "TSM-IQ1-APP-040",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 4,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A design system maps button variants to class strings:\n\n```ts\ntype Variant = \"primary\" | \"secondary\" | \"danger\";\nconst styles = {\n  primary: \"bg-blue-600 text-white\",\n  secondary: \"bg-gray-100 text-gray-900\",\n  danger: \"bg-red-600 text-white\",\n} /* ? */;\n```\n\nTwo requirements: adding a new member to `Variant` without a matching key must be a compile error, and `typeof styles.primary` must stay the literal `\"bg-blue-600 text-white\"` (other types are derived from it). What goes in place of the comment?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`as const satisfies Record<Variant, string>`",
+        "correct": true,
+        "why": "`satisfies` checks that every variant has a string, and `as const` keeps each value as its literal type."
+      },
+      {
+        "id": "B",
+        "text": "Nothing; annotate the variable instead: `const styles: Record<Variant, string> = { ... }`",
+        "correct": false,
+        "why": "This catches a missing variant, but the annotation becomes the type, so `styles.primary` is widened to `string`."
+      },
+      {
+        "id": "C",
+        "text": "`as Record<Variant, string>`",
+        "correct": false,
+        "why": "An assertion does not report missing keys (the types only need to be comparable), and the values are widened to `string`."
+      },
+      {
+        "id": "D",
+        "text": "`as const`",
+        "correct": false,
+        "why": "This keeps the literals, but nothing compares the keys with `Variant`, so a new variant goes unnoticed."
+      }
+    ],
+    "explanation": "`satisfies` validates a value against a type without replacing the value's inferred type, and `as const` keeps literal values. Together they give exhaustive coverage of the variant union plus precise derived types, which is the behaviour design-system maintainers want when a variant is added.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-design-system-variant-map"
+  }
+]

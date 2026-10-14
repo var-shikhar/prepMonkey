@@ -1,0 +1,1832 @@
+[
+  {
+    "id": "JSM-IQ5-COD-001",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This finds the longest run of 1s when you may flip at most `k` zeros. For `[1, 1, 0, 1, 1, 0, 1, 1, 1]` with `k = 1` it must return 6. Which line belongs inside the `while` loop?\n\n```js\nfunction longestOnes(nums, k) {\n  let left = 0, zeros = 0, best = 0;\n  for (let right = 0; right < nums.length; right++) {\n    if (nums[right] === 0) zeros++;\n    while (zeros > k) {\n      // ???\n    }\n    best = Math.max(best, right - left + 1);\n  }\n  return best;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`if (nums[left] === 0) zeros--; left++;`",
+        "correct": true,
+        "why": "The window shrinks from the left, and the zero count only drops when a zero actually leaves the window. This returns 6."
+      },
+      {
+        "id": "B",
+        "text": "`zeros--; left++;`",
+        "correct": false,
+        "why": "This decrements even when a 1 leaves the window, so the count drifts below the real number of zeros. The window then holds two zeros and the function returns 8."
+      },
+      {
+        "id": "C",
+        "text": "`left = right; zeros = nums[right] === 0 ? 1 : 0;`",
+        "correct": false,
+        "why": "Jumping to `right` throws away the valid part of the window between the previous zero and `right`. This returns 5."
+      },
+      {
+        "id": "D",
+        "text": "`left++;`",
+        "correct": false,
+        "why": "`zeros` never decreases, so `zeros > k` stays true and the loop never ends."
+      }
+    ],
+    "explanation": "This is the variable-size sliding window. Grow the right edge. While the window breaks the rule (more than k zeros), move the left edge and undo the leaving element's contribution. Each index enters and leaves the window once, so the whole thing is O(n). The interviewer is checking that you keep the window state (the zero count) in sync with both edges.",
+    "reference": "LeetCode 1004: Max Consecutive Ones III",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://javascript.plainenglish.io/upstox-sde-2-frontend-interview-experience-july-2025-982df5edc3d9"
+      ],
+      "companies": [
+        "Upstox"
+      ]
+    },
+    "source": "interview:js-max-consecutive-ones"
+  },
+  {
+    "id": "JSM-IQ5-COD-002",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`resolveValues` must return a **new** object in which every function, at any depth, is replaced by its return value. All other values are kept. For the input `{ a: () => 1, b: { c: () => 2, d: null }, e: 'x' }` the result should be `{ a: 1, b: { c: 2, d: null }, e: 'x' }`. Which expression completes it?\n\n```js\nfunction resolveValues(obj) {\n  const out = {};\n  for (const [key, value] of Object.entries(obj)) {\n    out[key] = /* ??? */;\n  }\n  return out;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`typeof value === 'function' ? value() : value !== null && typeof value === 'object' ? resolveValues(value) : value`",
+        "correct": true,
+        "why": "Functions are called, real objects are recursed into, and everything else (including `null`) is copied as is."
+      },
+      {
+        "id": "B",
+        "text": "`typeof value === 'function' ? value() : typeof value === 'object' ? resolveValues(value) : value`",
+        "correct": false,
+        "why": "`typeof null` is `'object'`, so `d: null` reaches `Object.entries(null)`, which throws a TypeError."
+      },
+      {
+        "id": "C",
+        "text": "`typeof value === 'function' ? value() : value`",
+        "correct": false,
+        "why": "This only handles the top level. `b` is copied by reference, so `b.c` is still a function."
+      },
+      {
+        "id": "D",
+        "text": "`typeof value === 'object' ? resolveValues(value) : value()`",
+        "correct": false,
+        "why": "This calls every non-object as a function. It throws on `null` and would throw on `'x'` too."
+      }
+    ],
+    "explanation": "The pattern is recursion with three cases: function, plain object and leaf. The interviewer is watching for the `typeof null === 'object'` trap, and for whether you build new objects instead of overwriting the input in place. In a fuller answer you would also decide how to treat arrays, Dates and cycles.",
+    "reference": "MDN: typeof",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-flipkart-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-resolve-function-values"
+  },
+  {
+    "id": "JSM-IQ5-COD-003",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nlet calls = 0;\nconst make = (n) => () => {\n  calls++;\n  return n === 0 ? 'done' : make(n - 1);\n};\n\nfunction unwrap(value) {\n  while (typeof value === 'function') value = value();\n  return value;\n}\n\nconsole.log(unwrap(make(2)), calls);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`done 3`",
+        "correct": true,
+        "why": "`make(2)`, `make(1)` and `make(0)` each return a function that gets called once, so there are three calls. Arguments are evaluated left to right, so `calls` is read after `unwrap` finishes."
+      },
+      {
+        "id": "B",
+        "text": "`done 2`",
+        "correct": false,
+        "why": "The innermost function also has to be called to produce `'done'`, so there are three calls, not two."
+      },
+      {
+        "id": "C",
+        "text": "`done 0`",
+        "correct": false,
+        "why": "Arguments are evaluated left to right. `unwrap(...)` runs before `calls` is read."
+      },
+      {
+        "id": "D",
+        "text": "`[Function (anonymous)] 1`",
+        "correct": false,
+        "why": "The `while` loop keeps calling until the value stops being a function. It does not stop after one call."
+      }
+    ],
+    "explanation": "A loop (or recursion) that calls the value while `typeof value === 'function'` unwraps any depth of nested thunks. A loop also avoids growing the stack. The snippet also probes argument evaluation order: JavaScript evaluates call arguments strictly left to right.",
+    "reference": "MDN: Functions",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=413789"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-call-until-non-function"
+  },
+  {
+    "id": "JSM-IQ5-DOM-001",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Without using `Node.contains()`, write `isDescendant(ancestor, node)`. It should return `true` when `node` is strictly inside `ancestor`, including when `node` is a text node. It should run in time proportional to the depth of `node`, not the size of the page. Which approach fits?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Start at `node.parentNode` and walk up `parentNode` until `null`, returning `true` if you reach `ancestor`",
+        "correct": true,
+        "why": "Each node has one parent, so this costs O(depth). `parentNode` works for text nodes, and starting from the parent excludes the node itself."
+      },
+      {
+        "id": "B",
+        "text": "Run a DFS over `ancestor.children` and return `true` when an element equals `node`",
+        "correct": false,
+        "why": "This costs O(size of the subtree), not O(depth). `children` also skips text nodes, so a text node is never found."
+      },
+      {
+        "id": "C",
+        "text": "Return `node.parentElement === ancestor`",
+        "correct": false,
+        "why": "This only detects direct children. Grandchildren and deeper nodes return `false`."
+      },
+      {
+        "id": "D",
+        "text": "Return `ancestor.innerHTML.includes(node.outerHTML)`",
+        "correct": false,
+        "why": "This compares markup, not identity, so an identical element elsewhere gives a false positive. Text nodes have no `outerHTML`."
+      }
+    ],
+    "explanation": "Walking up is the key insight: the parent chain is a linked list, so the check is O(depth). Searching down visits the whole subtree. Note that the built-in `contains()` returns `true` for the node itself, so say which behaviour you want. Checked against the DOM spec's parent and children definitions and a mock tree in Node, because jsdom is not installed in this repo.",
+    "reference": "MDN: Node.parentNode",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer"
+      ],
+      "companies": [
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-dom-is-descendant"
+  },
+  {
+    "id": "JSM-IQ5-DOM-002",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `height(document.getElementById('root'))` return for this markup?\n\n```html\n<div id=\"root\">\n  <ul>\n    <li><a href=\"#\">One</a></li>\n    <li>Two</li>\n  </ul>\n  <p>Text</p>\n</div>\n```\n\n```js\nfunction height(el) {\n  let max = 0;\n  for (const child of el.children) max = Math.max(max, height(child));\n  return max + 1;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "4",
+        "correct": true,
+        "why": "The deepest path is `div > ul > li > a`, which is four elements. A leaf returns 1 and each level adds 1."
+      },
+      {
+        "id": "B",
+        "text": "5",
+        "correct": false,
+        "why": "That would count the text node inside `<a>`. `children` only holds elements, so text nodes are never visited."
+      },
+      {
+        "id": "C",
+        "text": "3",
+        "correct": false,
+        "why": "Three is the number of edges on the deepest path. This function counts nodes, because a leaf returns 1, not 0."
+      },
+      {
+        "id": "D",
+        "text": "2",
+        "correct": false,
+        "why": "This is the height if you only look at `root`'s direct children. The function recurses all the way down."
+      }
+    ],
+    "explanation": "Tree height is a post-order recursion: the height of a node is 1 plus the maximum height of its children. Interviewers check whether you count nodes or edges, and whether you use `children` (elements only) or `childNodes` (which includes whitespace text nodes). Verified with a mock tree in Node, because jsdom is not installed in this repo.",
+    "reference": "MDN: Element.children",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6869754"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-dom-tree-height"
+  },
+  {
+    "id": "JSM-IQ5-DOM-003",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`getScript(src)` must return a promise that resolves after the script has downloaded **and run**, and rejects if it fails to load (for example, a 404). Which line completes it?\n\n```js\nfunction getScript(src) {\n  return new Promise((resolve, reject) => {\n    const s = document.createElement('script');\n    s.src = src;\n    // ???\n    document.head.append(s);\n  });\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`s.onload = () => resolve(s); s.onerror = () => reject(new Error('Failed to load ' + src));`",
+        "correct": true,
+        "why": "For an external classic script, `load` fires after the script has executed, and `error` fires on a network or HTTP failure. The promise settles either way."
+      },
+      {
+        "id": "B",
+        "text": "`s.onload = () => resolve(s);`",
+        "correct": false,
+        "why": "This resolves on success, but on a 404 only `error` fires, so the promise stays pending forever."
+      },
+      {
+        "id": "C",
+        "text": "`resolve(s);`",
+        "correct": false,
+        "why": "This resolves at once, before the browser has even requested the file. Code waiting on the promise would run before the script."
+      },
+      {
+        "id": "D",
+        "text": "`s.onreadystatechange = () => resolve(s);`",
+        "correct": false,
+        "why": "`readystatechange` on script elements was an old Internet Explorer feature. Current browsers never fire it on scripts."
+      }
+    ],
+    "explanation": "A script inserted from JavaScript is async by default. The HTML spec runs the script and then fires `load` on the element, so `load` means it has executed. Always handle `error` too, or a missing file hangs the promise forever. Good answers also mention caching the promise per `src`, so the same file isn't loaded twice. Reasoned from the HTML spec and MDN, because jsdom is not installed here.",
+    "reference": "MDN: HTMLScriptElement",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=413789"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-get-script"
+  },
+  {
+    "id": "JSM-IQ5-DOM-004",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This should call `onTripleBackspace()` only when Backspace is pressed three times **in a row**. QA reports that typing Backspace, `x`, Backspace, Backspace also triggers it. What is the fix?\n\n```js\nlet count = 0;\ndocument.addEventListener('keydown', (e) => {\n  if (e.key === 'Backspace') {\n    count++;\n    if (count === 3) {\n      onTripleBackspace();\n      count = 0;\n    }\n  }\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add an `else` branch that sets `count = 0` whenever any other key is pressed",
+        "correct": true,
+        "why": "A different key breaks the sequence. Without the reset, Backspace presses separated by other keys keep adding to the same count."
+      },
+      {
+        "id": "B",
+        "text": "Listen to `keyup` instead of `keydown` so each press is counted only once",
+        "correct": false,
+        "why": "The bug is not double counting. The x press never resets the counter, whichever event you use."
+      },
+      {
+        "id": "C",
+        "text": "Call `e.preventDefault()` so the browser does not handle the Backspace itself",
+        "correct": false,
+        "why": "That stops the deletion, but it does not change how presses are counted."
+      },
+      {
+        "id": "D",
+        "text": "Compare `e.keyCode === 8` instead of `e.key`, because `key` is unreliable for Backspace",
+        "correct": false,
+        "why": "`e.key` reliably reports `'Backspace'`, and `keyCode` is deprecated. The missing reset is the problem."
+      }
+    ],
+    "explanation": "Sequence detection is a small state machine: advance on the expected key and reset on anything else. Follow-ups usually add a time limit (reset if more than N ms pass between presses) and ignore auto-repeat with `e.repeat`. The faulty run was reproduced by dispatching events to an `EventTarget` in Node.",
+    "reference": "MDN: KeyboardEvent.key",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6869754"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-key-sequence-detect"
+  },
+  {
+    "id": "JSM-IQ5-DOM-005",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A design-system team ships `<fancy-button>` as a custom element with an open shadow root. Which three statements about its Shadow DOM are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A page rule such as `.label { color: red }` does not match a `.label` element inside the shadow root",
+        "correct": true,
+        "why": "Selectors in the document's stylesheets do not reach into shadow trees. That style isolation is the main reason to use Shadow DOM."
+      },
+      {
+        "id": "B",
+        "text": "Inherited properties such as `color` and `font-family` set on the host still flow into the shadow tree",
+        "correct": true,
+        "why": "Encapsulation blocks selectors, not inheritance. Shadow content inherits from the host like any other child."
+      },
+      {
+        "id": "C",
+        "text": "An `id` used inside the shadow root does not clash with the same `id` in the main document",
+        "correct": true,
+        "why": "Each shadow root is its own tree scope, so `id`s only need to be unique within it."
+      },
+      {
+        "id": "D",
+        "text": "`document.querySelector('.label')` finds the `.label` element inside the open shadow root",
+        "correct": false,
+        "why": "Document queries do not pierce shadow roots. You need `host.shadowRoot.querySelector(...)`."
+      },
+      {
+        "id": "E",
+        "text": "Using `mode: 'closed'` is a security boundary that stops page scripts from reading the component",
+        "correct": false,
+        "why": "Closed mode only makes `element.shadowRoot` return `null`. Code on the same page can still reach the internals, for example by patching `attachShadow`."
+      },
+      {
+        "id": "F",
+        "text": "`<style>` rules inside the shadow root also apply to matching elements in the light DOM",
+        "correct": false,
+        "why": "Isolation works both ways. Styles defined in the shadow root only apply inside it, apart from `:host` and `::slotted`."
+      }
+    ],
+    "explanation": "Shadow DOM gives a component its own DOM subtree with scoped CSS and scoped ids. Inherited properties, CSS custom properties and `::part()` are the official ways to theme it from outside. The interviewer wants to hear that it is for encapsulation, as in web components and design systems, and that closed mode is not a security feature. Reasoned from MDN and the DOM spec, because jsdom is not installed here.",
+    "reference": "MDN: Using shadow DOM",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6650158"
+      ],
+      "companies": [
+        "DP World"
+      ]
+    },
+    "source": "interview:js-shadow-dom"
+  },
+  {
+    "id": "JSM-IQ5-DOM-006",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A calendar view needs the number of days in a month and the weekday the month starts on (0 is Sunday). What does this log?\n\n```js\nfunction monthInfo(year, month) { // month is 0-based\n  const daysInMonth = new Date(year, month + 1, 0).getDate();\n  const firstWeekday = new Date(year, month, 1).getDay();\n  return [daysInMonth, firstWeekday];\n}\nconsole.log(monthInfo(2024, 1));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[ 29, 4 ]`",
+        "correct": true,
+        "why": "Month 1 is February. Day 0 of March rolls back to 29 February 2024 (a leap year), and 1 February 2024 was a Thursday."
+      },
+      {
+        "id": "B",
+        "text": "`[ 28, 4 ]`",
+        "correct": false,
+        "why": "2024 is a leap year, and day 0 of March correctly lands on the 29th."
+      },
+      {
+        "id": "C",
+        "text": "`[ 31, 5 ]`",
+        "correct": false,
+        "why": "That is March 2024. Months are 0-based in the `Date` constructor, so 1 means February."
+      },
+      {
+        "id": "D",
+        "text": "`[ 0, 4 ]`",
+        "correct": false,
+        "why": "Day 0 is not kept as 0. The constructor normalises it to the last day of the previous month."
+      }
+    ],
+    "explanation": "The `Date` constructor normalises out-of-range values, so `new Date(y, m + 1, 0)` is the standard trick for \"last day of month m\". `getDay()` on the 1st tells you how many blank cells to put before day 1 in a grid that starts on Sunday. Interviewers check for 0-based months and leap years.",
+    "reference": "MDN: Date() constructor",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://risingbrain.org/interview/microsoft-sde-2-frontend-dsa-js-fundamentals-and-a-collabora-oklzp5"
+      ],
+      "companies": [
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-mc-calendar"
+  },
+  {
+    "id": "JSM-IQ5-COD-004",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A client-side SDK must allow an **average** of 10 requests per second, but brief bursts of up to 20 are fine (for example, on page load). You must also avoid the problem where 20 requests squeeze in around a window boundary while a burst should be rejected. Which algorithm fits best?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A token bucket with capacity 20 that refills at 10 tokens per second, where each request takes one token",
+        "correct": true,
+        "why": "A full bucket allows a burst of 20, and the refill rate caps the long-run average at 10 per second."
+      },
+      {
+        "id": "B",
+        "text": "A fixed-window counter that allows 10 requests per calendar second and resets the count when each new second starts",
+        "correct": false,
+        "why": "This allows no burst above 10, yet it can still let 20 through in a few milliseconds across a window boundary."
+      },
+      {
+        "id": "C",
+        "text": "A leaky bucket that queues requests and sends exactly one every 100 ms",
+        "correct": false,
+        "why": "This smooths output to a constant rate, so the allowed burst of 20 is delayed instead of sent."
+      },
+      {
+        "id": "D",
+        "text": "A sliding-window log that rejects a request if 10 timestamps fall within the last second",
+        "correct": false,
+        "why": "This is precise and has no boundary problem, but it caps every one-second span at 10, so bursts are never allowed. It also stores one timestamp per request."
+      }
+    ],
+    "explanation": "Know the four classic limiters. A fixed window is simple but leaky at boundaries. A sliding log is exact but costs memory. A sliding-window counter is a cheap approximation of the log. A token bucket allows controlled bursts, and a leaky bucket smooths traffic. A token bucket only needs two numbers (tokens and the last refill time), refilled lazily on each call. The interviewer wants you to match the algorithm to the stated burst requirement.",
+    "reference": "MDN: 429 Too Many Requests",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6869754"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-rate-limiter"
+  },
+  {
+    "id": "JSM-IQ5-DOM-007",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about this lowest-common-ancestor function are true? (Choose two.)\n\n```js\nfunction lca(a, b) {\n  const seen = new Set();\n  for (let n = a; n; n = n.parentNode) seen.add(n);\n  for (let n = b; n; n = n.parentNode) if (seen.has(n)) return n;\n  return null;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "If `b` is inside `a`, it returns `a` itself",
+        "correct": true,
+        "why": "`a` is the first entry added to the set, and walking up from `b` reaches `a` before any higher ancestor."
+      },
+      {
+        "id": "B",
+        "text": "It runs in O(depth(a) + depth(b)) time, because `Set` lookups are O(1) on average",
+        "correct": true,
+        "why": "Each chain is walked once, and every membership check is constant time."
+      },
+      {
+        "id": "C",
+        "text": "It returns `null` when `a` and `b` are the same node",
+        "correct": false,
+        "why": "The node is in the set and is the first one checked, so it returns that node."
+      },
+      {
+        "id": "D",
+        "text": "Replacing the `Set` with an array and `includes()` keeps the same complexity",
+        "correct": false,
+        "why": "`includes` is a linear scan, so the second loop becomes O(depth(a) × depth(b))."
+      },
+      {
+        "id": "E",
+        "text": "It always returns `document.body` for nodes in different sections of the page",
+        "correct": false,
+        "why": "It returns the closest shared ancestor. That is `body` only when nothing deeper is shared."
+      }
+    ],
+    "explanation": "There are two standard approaches. One stores one node's ancestors in a Set and walks up from the other. The other aligns both nodes to the same depth and then steps up together, which needs O(1) extra memory. The interviewer wants you to see that DOM nodes have parent pointers, so you never need to search down from the root. Verified with a mock tree in Node, because jsdom is not installed here.",
+    "reference": "MDN: Node.parentNode",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-question/691075/Amazon-Frontend-SDE2"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "source": "interview:js-dom-lca"
+  },
+  {
+    "id": "JSM-IQ5-DOM-008",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This builds a selector such as `#menu > li:nth-child(2)` that matches exactly one element. Assume the element always has an ancestor with an `id`. Which line should replace the comment so that siblings with the same tag are told apart?\n\n```js\nfunction selectorPath(el) {\n  const parts = [];\n  while (el && el.nodeType === Node.ELEMENT_NODE) {\n    if (el.id) { parts.unshift('#' + CSS.escape(el.id)); break; }\n    let part = el.tagName.toLowerCase();\n    // ???\n    parts.unshift(part);\n    el = el.parentElement;\n  }\n  return parts.join(' > ');\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`part += ':nth-child(' + ([...el.parentElement.children].indexOf(el) + 1) + ')';`",
+        "correct": true,
+        "why": "`:nth-child` is 1-based and counts only element siblings, which matches `children` plus 1."
+      },
+      {
+        "id": "B",
+        "text": "`part += ':nth-child(' + ([...el.parentNode.childNodes].indexOf(el) + 1) + ')';`",
+        "correct": false,
+        "why": "`childNodes` includes whitespace text nodes, so the index is inflated. In formatted HTML the second `<li>` is at position 4, not 2."
+      },
+      {
+        "id": "C",
+        "text": "`part += ':nth-child(' + [...el.parentElement.children].indexOf(el) + ')';`",
+        "correct": false,
+        "why": "This is 0-based, but `:nth-child` counts from 1, so it selects the previous sibling (or nothing for the first one)."
+      },
+      {
+        "id": "D",
+        "text": "`if (el.classList.length) part += '.' + [...el.classList].map(CSS.escape).join('.');`",
+        "correct": false,
+        "why": "Classes are usually shared between siblings, so the selector can still match several elements."
+      }
+    ],
+    "explanation": "Without a position, a selector like `#menu > li` matches every sibling. `:nth-child(n)` counts every element sibling from 1, while `:nth-of-type` counts only siblings with the same tag, so the index you compute must match the pseudo-class you use. Stopping at the nearest `id` (escaped with `CSS.escape`) keeps the path short. The index arithmetic was checked on a mock tree in Node. The selector rules come from MDN and the Selectors spec, because jsdom is not installed here.",
+    "reference": "MDN: :nth-child()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=413789"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-css-selector-path"
+  },
+  {
+    "id": "JSM-IQ5-COD-005",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This adds the closing tags needed to make a fragment well-formed. Assume every closing tag has a matching opening tag earlier in the string. What does it log?\n\n```js\nfunction fixTags(html) {\n  const stack = [];\n  let out = '';\n  for (const tok of html.match(/<\\/?\\w+>|[^<]+/g)) {\n    const open = /^<(\\w+)>$/.exec(tok);\n    const close = /^<\\/(\\w+)>$/.exec(tok);\n    if (open) { stack.push(open[1]); out += tok; }\n    else if (close) {\n      while (stack.at(-1) !== close[1]) out += '</' + stack.pop() + '>';\n      stack.pop();\n      out += tok;\n    } else out += tok;\n  }\n  while (stack.length) out += '</' + stack.pop() + '>';\n  return out;\n}\nconsole.log(fixTags('<b><i>hi</b>there<u>x'));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`<b><i>hi</i></b>there<u>x</u>`",
+        "correct": true,
+        "why": "At `</b>` the stack is `[b, i]`, so `</i>` is popped and emitted first. The leftover `u` is closed at the end."
+      },
+      {
+        "id": "B",
+        "text": "`<b><i>hi</b></i>there<u>x</u>`",
+        "correct": false,
+        "why": "That closes tags in the order they were opened, as a queue would. Well-formed HTML closes the most recent tag first."
+      },
+      {
+        "id": "C",
+        "text": "`<b><i>hi</b>there<u>x</u></i>`",
+        "correct": false,
+        "why": "The loop closes `i` as soon as it sees `</b>`. It does not wait until the end of the string."
+      },
+      {
+        "id": "D",
+        "text": "`<b><i>hi</i></b>there<u>x`",
+        "correct": false,
+        "why": "The final `while` loop closes every tag still on the stack, including `u`."
+      }
+    ],
+    "explanation": "Nested tags follow last-in, first-out order, so a stack of open tag names is the right structure. On a closing tag, pop and close everything above its match. At the end, close whatever is left. The interviewer usually extends this with stray closing tags (insert a matching opener, or drop the tag) and self-closing elements.",
+    "reference": "MDN: Array.prototype.pop()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-min-html-tags"
+  },
+  {
+    "id": "JSM-IQ5-DOM-009",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You embed an untrusted third-party widget. It must run its own scripts, but it must not read your cookies or storage, touch your DOM, or navigate your page. It reports its height to you so you can resize it. Which setup is the safest?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`<iframe sandbox=\"allow-scripts\">` from the vendor's origin, sending messages with an explicit target origin and checking `event.origin` and `event.source` on received messages",
+        "correct": true,
+        "why": "Without `allow-same-origin` the frame gets an opaque origin, and without `allow-top-navigation` it cannot navigate your page. Checked `postMessage` is the only channel between the two."
+      },
+      {
+        "id": "B",
+        "text": "`<iframe sandbox=\"allow-scripts allow-same-origin\">` served from your own origin, so it can use `localStorage`",
+        "correct": false,
+        "why": "A same-origin frame with both flags can reach into its parent and remove its own sandbox attribute, which defeats the sandbox."
+      },
+      {
+        "id": "C",
+        "text": "Load the vendor's script with a `<script>` tag and wrap its entry point in `try/catch`",
+        "correct": false,
+        "why": "A third-party script in your page runs with your origin. It has full access to your DOM, cookies and storage."
+      },
+      {
+        "id": "D",
+        "text": "A cross-origin `<iframe>` with no sandbox, sending data with `postMessage(data, '*')`",
+        "correct": false,
+        "why": "With `'*'` the data goes to whatever document is in the frame, even after it navigates elsewhere. Without a sandbox, the frame keeps abilities such as opening popups."
+      }
+    ],
+    "explanation": "Iframes isolate by origin, and `sandbox` strips capabilities until you add them back one by one. Never combine `allow-scripts` with `allow-same-origin` for content from your own origin. For messages, always set a target origin when sending, and validate `event.origin` (and the shape of the data) when receiving. A staff-level answer also covers CSP `frame-src`, performance (lazy-loading the iframe) and `Permissions-Policy` through the `allow` attribute.",
+    "reference": "MDN: <iframe>: The Inline Frame element",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer"
+      ],
+      "companies": [
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-third-party-iframes"
+  },
+  {
+    "id": "JSM-IQ5-COL-001",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nconst a = [10, 20, 30, 40, 50];\nconst s1 = a.slice(1, 2);\nconst s2 = a.splice(1, 2);\nconsole.log(s1, s2, a);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[ 20 ] [ 20, 30 ] [ 10, 40, 50 ]`",
+        "correct": true,
+        "why": "`slice(1, 2)` copies index 1 up to, but not including, index 2. `splice(1, 2)` removes two items starting at index 1 and returns them."
+      },
+      {
+        "id": "B",
+        "text": "`[ 20 ] [ 20 ] [ 10, 30, 40, 50 ]`",
+        "correct": false,
+        "why": "The second argument of `splice` is a count, not an end index, so two items are removed."
+      },
+      {
+        "id": "C",
+        "text": "`[ 20, 30 ] [ 20, 30 ] [ 10, 20, 30, 40, 50 ]`",
+        "correct": false,
+        "why": "`slice` stops before its end index. `splice` also changes the original array."
+      },
+      {
+        "id": "D",
+        "text": "`[ 20 ] [ 10, 40, 50 ] [ 10, 40, 50 ]`",
+        "correct": false,
+        "why": "`splice` returns the removed items, not the array that is left."
+      }
+    ],
+    "explanation": "`slice(start, end)` is non-mutating and its end index is exclusive. `splice(start, deleteCount, ...items)` mutates the array in place and returns what it removed. ES2023 added `toSpliced()`, a non-mutating version of `splice`.",
+    "reference": "MDN: Array.prototype.splice()",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/sudheerj/javascript-interview-questions"
+      ]
+    },
+    "source": "interview:js-slice-vs-splice"
+  },
+  {
+    "id": "JSM-IQ5-DOM-010",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements comparing `querySelector`/`querySelectorAll` with `getElementById`/`getElementsByClassName` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`querySelectorAll('.item')` returns a static `NodeList`, while `getElementsByClassName('item')` returns a live `HTMLCollection`",
+        "correct": true,
+        "why": "A static list is a snapshot. A live collection updates as matching elements are added or removed."
+      },
+      {
+        "id": "B",
+        "text": "`document.querySelector('#1st')` throws a `SyntaxError`, while `document.getElementById('1st')` works",
+        "correct": true,
+        "why": "A CSS id selector can't start with a digit unless it is escaped, but `getElementById` takes the raw id string."
+      },
+      {
+        "id": "C",
+        "text": "`querySelectorAll` returns `null` when nothing matches",
+        "correct": false,
+        "why": "It returns an empty `NodeList`. `querySelector` and `getElementById` are the ones that return `null`."
+      },
+      {
+        "id": "D",
+        "text": "`getElementsByClassName` returns an array, so you can call `.map()` on it directly",
+        "correct": false,
+        "why": "An `HTMLCollection` has no `map`. Convert it first with `Array.from` or spread syntax."
+      },
+      {
+        "id": "E",
+        "text": "`querySelector` returns every matching element, in document order",
+        "correct": false,
+        "why": "It returns only the first match. `querySelectorAll` returns all of them."
+      }
+    ],
+    "explanation": "The `get*` methods take a raw name and return a single element or a live collection. The `query*` methods take any CSS selector and return the first match or a static `NodeList`. `getElementById` is a direct lookup and is very fast, but the difference rarely matters. Live collections can surprise you in loops that change the DOM. Reasoned from MDN and the DOM spec, because jsdom is not installed here.",
+    "reference": "MDN: Document.querySelectorAll()",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-queryselector-vs-getelementbyid"
+  },
+  {
+    "id": "JSM-IQ5-COD-006",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`count(thread)` must return the total number of comments, including replies at any depth. For the thread below that is 5. Which function body is correct?\n\n```js\nconst thread = [\n  { id: 1, replies: [\n    { id: 2, replies: [] },\n    { id: 3, replies: [{ id: 4, replies: [] }] },\n  ] },\n  { id: 5, replies: [] },\n];\nfunction count(comments) {\n  return /* ??? */;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`comments.reduce((n, c) => n + 1 + count(c.replies), 0)`",
+        "correct": true,
+        "why": "Each comment adds 1 for itself plus the count of its subtree, and the empty list is the base case. This returns 5."
+      },
+      {
+        "id": "B",
+        "text": "`comments.reduce((n, c) => n + count(c.replies), 0)`",
+        "correct": false,
+        "why": "Nothing ever adds 1, so every level adds up zeros. This returns 0."
+      },
+      {
+        "id": "C",
+        "text": "`comments.length + comments.reduce((n, c) => n + c.replies.length, 0)`",
+        "correct": false,
+        "why": "This only looks two levels deep, so comment 4 is missed. It returns 4."
+      },
+      {
+        "id": "D",
+        "text": "`comments.reduce((n, c) => n + 1 + count(c.replies), comments.length)`",
+        "correct": false,
+        "why": "Starting the sum at `comments.length` counts each comment twice at every level. It returns 10."
+      }
+    ],
+    "explanation": "Counting nodes in a tree is \"1 for me plus the counts of my children\". Interviewers often follow up with an iterative version that uses an explicit stack, for very deep threads, or with counting only replies by a given author.",
+    "reference": "MDN: Array.prototype.reduce()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides"
+      ],
+      "companies": [
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-count-nested-comments"
+  },
+  {
+    "id": "JSM-IQ5-COD-007",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log, and what is missing?\n\n```js\nfunction merge(ranges) {\n  const out = [];\n  for (const [s, e] of ranges) {\n    const last = out.at(-1);\n    if (last && s <= last[1]) last[1] = Math.max(last[1], e);\n    else out.push([s, e]);\n  }\n  return out;\n}\nconsole.log(JSON.stringify(merge([[1, 3], [8, 10], [2, 6], [9, 12]])));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[[1,3],[8,12]]`. The ranges must be sorted by start first, which would give `[[1,6],[8,12]]`",
+        "correct": true,
+        "why": "`[2, 6]` is compared with `[8, 10]`, and `2 <= 10` swallows it. After sorting by start, it merges with `[1, 3]` instead."
+      },
+      {
+        "id": "B",
+        "text": "`[[1,6],[8,12]]`. Nothing is missing",
+        "correct": false,
+        "why": "That is the right answer, but this code compares each range only with the last one pushed, and the input is not sorted."
+      },
+      {
+        "id": "C",
+        "text": "`[[1,3],[8,10],[2,6],[9,12]]`. The overlap check should use `<` instead of `<=`",
+        "correct": false,
+        "why": "Merges do happen. `[2, 6]` and `[9, 12]` are both folded into `[8, ...]`."
+      },
+      {
+        "id": "D",
+        "text": "`[[1,12]]`. The ranges chain into one overlapping block, and the fix is to sort them by end before merging",
+        "correct": false,
+        "why": "`[1, 3]` never overlaps the `[8, ...]` range, so the output can't be one block. Sorting by end is also not a general fix: `[[2, 3], [1, 10]]` would merge into `[2, 10]` and lose the start at 1."
+      }
+    ],
+    "explanation": "Merge intervals is \"sort by start, then sweep\". After sorting, any overlap can only be with the last merged range, so the sweep is O(n). The total is O(n log n). Copy the input before sorting it if the caller's array must stay unchanged, and decide whether touching ranges like `[1,3]` and `[3,5]` should merge.",
+    "reference": "MDN: Array.prototype.sort()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides"
+      ],
+      "companies": [
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-merge-intervals"
+  },
+  {
+    "id": "JSM-IQ5-EVL-001",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A user double-clicks **Resume**. The countdown now drops by 2 every second, Pause no longer stops it, and it goes below zero. What is the correct fix?\n\n```js\nfunction createCountdown(seconds, onTick) {\n  let left = seconds, id = null;\n  const tick = () => {\n    left--;\n    onTick(left);\n    if (left === 0) clearInterval(id);\n  };\n  return {\n    start()  { id = setInterval(tick, 1000); },\n    pause()  { clearInterval(id); },\n    resume() { id = setInterval(tick, 1000); },\n  };\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Return early from `start`/`resume` when `id !== null`, and set `id = null` after every `clearInterval`",
+        "correct": true,
+        "why": "Only one interval can then exist. The second click does nothing, and pause or reaching zero always clears the one live handle."
+      },
+      {
+        "id": "B",
+        "text": "Switch to a recursive `setTimeout` instead of `setInterval`",
+        "correct": false,
+        "why": "Two resumes would still start two independent timeout chains, and only one handle would be kept."
+      },
+      {
+        "id": "C",
+        "text": "Call `clearInterval(id)` twice in `pause`",
+        "correct": false,
+        "why": "`id` only holds the second handle, so the first interval is unreachable however often you clear `id`."
+      },
+      {
+        "id": "D",
+        "text": "Check `Date.now()` in `tick` to correct timer drift",
+        "correct": false,
+        "why": "Drift correction is a good extra, but it does not stop two intervals from running at once."
+      }
+    ],
+    "explanation": "Each `setInterval` call creates a new timer. Overwriting the only variable that holds its handle leaks the old one, and it can never be cleared. Guard against starting twice, and reset the handle when you stop. A robust countdown also stores the remaining time and recomputes from `Date.now()`, because timers can be delayed or throttled in background tabs. The faulty behaviour was reproduced in Node with short intervals.",
+    "reference": "MDN: setInterval() global function",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-pausable-timer"
+  },
+  {
+    "id": "JSM-IQ5-EVL-002",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A traffic light must show red for 4 s, green for 3 s and yellow for 1 s, and repeat forever. Here is a working version:\n\n```js\nconst states = [['red', 4000], ['green', 3000], ['yellow', 1000]];\nlet timer;\nfunction run(i = 0) {\n  const [color, ms] = states[i];\n  render(color);\n  timer = setTimeout(() => run((i + 1) % states.length), ms);\n}\n```\n\nA teammate wants to change `setTimeout` to `setInterval` inside `run`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Every call to `run` adds another repeating interval, so the intervals pile up and the colours change faster and faster",
+        "correct": true,
+        "why": "Each state starts an interval that keeps calling `run`, and each of those calls starts another one. The number of calls grows quickly."
+      },
+      {
+        "id": "B",
+        "text": "Nothing changes, because `setInterval` and `setTimeout` behave the same when every call to `run` passes a different delay for the next state",
+        "correct": false,
+        "why": "`setInterval` repeats until it is cleared. It never replaces a timer started by an earlier call."
+      },
+      {
+        "id": "C",
+        "text": "The light freezes on red, because `setInterval` waits for the previous callback to return",
+        "correct": false,
+        "why": "Intervals do fire. The problem is that too many of them fire."
+      },
+      {
+        "id": "D",
+        "text": "It works, but the light drifts by a few milliseconds every cycle",
+        "correct": false,
+        "why": "Drift is a minor issue with any timer. Here the timers multiply, which is far worse."
+      }
+    ],
+    "explanation": "For states with different durations, chain one `setTimeout` per state and keep a single handle so `stop()` can clear it. Use `setInterval` only for a fixed period. In a quick Node test with short delays, the `setInterval` version made about ten times as many calls as the `setTimeout` version in the same time. A data-driven state list also makes adding or reordering states trivial, which interviewers like to see.",
+    "reference": "MDN: setTimeout() global function",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-mc-traffic-light"
+  },
+  {
+    "id": "JSM-IQ5-COD-008",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Card numbers can exceed `Number.MAX_SAFE_INTEGER`, so you add them as digit strings. What does `addStrings('999', '1')` return with this implementation?\n\n```js\nfunction addStrings(a, b) {\n  let i = a.length - 1, j = b.length - 1, carry = 0, out = '';\n  while (i >= 0 || j >= 0) {\n    const sum = (Number(a[i]) || 0) + (Number(b[j]) || 0) + carry;\n    out = (sum % 10) + out;\n    carry = Math.floor(sum / 10);\n    i--; j--;\n  }\n  return out;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`'000'`, because the final carry is dropped when the loop ends",
+        "correct": true,
+        "why": "Each column produces 0 with a carry of 1. The loop stops when both strings run out, so the last carry is never written. The condition needs `|| carry`."
+      },
+      {
+        "id": "B",
+        "text": "`'1000'`, the correct sum, because the carry is added in the last pass",
+        "correct": false,
+        "why": "That needs one more loop pass for the leftover carry, which this condition does not allow."
+      },
+      {
+        "id": "C",
+        "text": "`'0001'`, because digits are prepended in the wrong order",
+        "correct": false,
+        "why": "Prepending with `(sum % 10) + out` is right for a right-to-left walk. The missing digit is the carry."
+      },
+      {
+        "id": "D",
+        "text": "`'NaN'`, because `a[-1]` is `undefined`",
+        "correct": false,
+        "why": "`Number(undefined)` is `NaN`, but `NaN || 0` falls back to 0, so the shorter string is padded correctly."
+      }
+    ],
+    "explanation": "Grade-school addition walks from the right with a carry, padding the shorter number with zeros. The loop must continue while either string has digits **or** a carry remains. In production you would just use `BigInt`, but interviewers ask this to test careful loop conditions. They often follow up with subtraction or multiplication of digit strings.",
+    "reference": "MDN: Number.MAX_SAFE_INTEGER",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-big-number-add"
+  },
+  {
+    "id": "JSM-IQ5-COD-009",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Without `toLocaleString` or `Intl`, `format(n)` must give `'-1,234,567.891'` for `-1234567.891` and `'1,234.5678'` for `1234.5678`. It must keep every decimal digit and never insert commas in the decimal part. Which implementation does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const [int, dec] = String(n).split('.'); return int.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',') + (dec ? '.' + dec : '');`",
+        "correct": true,
+        "why": "Only the integer part is grouped, and `\\B` stops a comma appearing right after the minus sign. Both inputs format correctly."
+      },
+      {
+        "id": "B",
+        "text": "`return String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');`",
+        "correct": false,
+        "why": "It also groups digits after the point, so `1234.5678` becomes `'1,234.5,678'`."
+      },
+      {
+        "id": "C",
+        "text": "`return n.toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');`",
+        "correct": false,
+        "why": "`toFixed(2)` rounds the decimals, giving `'-1,234,567.89'` and `'1,234.57'`."
+      },
+      {
+        "id": "D",
+        "text": "Reverse the string, split it into chunks of 3 characters, join them with commas and reverse it again",
+        "correct": false,
+        "why": "This treats the minus sign and the point as digits, producing results like `'-,123,456'` for `-123456`."
+      }
+    ],
+    "explanation": "Split off the sign and decimals first, then group the integer digits. The lookahead `(?=(\\d{3})+(?!\\d))` matches positions followed by a multiple of three digits, and `\\B` stops a comma at the start of the number. In real code, `Intl.NumberFormat` handles locales such as the Indian 12,34,567 grouping. Interviewers ask this to see how you handle edge cases.",
+    "reference": "MDN: Regular expressions: Lookahead assertion",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-number-format"
+  },
+  {
+    "id": "JSM-IQ5-COD-010",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nfunction compare(a, b) {\n  const pa = a.split('.').map(Number);\n  const pb = b.split('.').map(Number);\n  for (let i = 0; i < 3; i++) {\n    if (pa[i] !== pb[i]) return pa[i] > pb[i] ? 1 : -1;\n  }\n  return 0;\n}\nconsole.log('1.10.0' > '1.9.0', compare('1.10.0', '1.9.0'));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`false 1`",
+        "correct": true,
+        "why": "Strings are compared character by character, and `'1'` is less than `'9'`. The numeric comparison correctly sees 10 > 9."
+      },
+      {
+        "id": "B",
+        "text": "`true 1`",
+        "correct": false,
+        "why": "String comparison does not understand numbers. At the third character, `'1'` comes before `'9'`."
+      },
+      {
+        "id": "C",
+        "text": "`false -1`",
+        "correct": false,
+        "why": "`map(Number)` turns `'10'` into 10, so the minor versions compare as numbers."
+      },
+      {
+        "id": "D",
+        "text": "`true -1`",
+        "correct": false,
+        "why": "Both results are reversed. The string comparison is `false`, and the numeric comparison returns 1."
+      }
+    ],
+    "explanation": "Version strings must be compared one numeric part at a time. Comparing them as strings breaks as soon as a part reaches two digits. Follow-ups include versions of different lengths (`1.2` vs `1.2.0`: treat missing parts as 0) and pre-release tags like `-beta.1`, which sort before the release under the semver rules.",
+    "reference": "MDN: Less than (<)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-semver-compare"
+  },
+  {
+    "id": "JSM-IQ5-COL-002",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Which expression for `j` makes this a fair Fisher–Yates shuffle, where all n! orderings are equally likely?\n\n```js\nfunction shuffle(arr) {\n  const a = [...arr];\n  for (let i = a.length - 1; i > 0; i--) {\n    const j = /* ??? */;\n    [a[i], a[j]] = [a[j], a[i]];\n  }\n  return a;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Math.floor(Math.random() * (i + 1))`",
+        "correct": true,
+        "why": "`j` is uniform over 0..i, including i itself, so each position is filled with an equally likely remaining element."
+      },
+      {
+        "id": "B",
+        "text": "`Math.floor(Math.random() * i)`",
+        "correct": false,
+        "why": "Excluding `i` gives Sattolo's algorithm, which only produces cyclic permutations. No element can stay in place, and for 3 items only 2 of the 6 orders appear."
+      },
+      {
+        "id": "C",
+        "text": "`Math.floor(Math.random() * a.length)`",
+        "correct": false,
+        "why": "Picking from the whole array gives n^n equally likely swap sequences, which can't divide evenly into n! orders. Some orders come up about twice as often."
+      },
+      {
+        "id": "D",
+        "text": "`Math.round(Math.random() * i)`",
+        "correct": false,
+        "why": "Rounding gives the endpoints 0 and i only half the chance of the middle values, which biases the result."
+      }
+    ],
+    "explanation": "Fisher–Yates walks from the end and swaps each slot with a random slot from the unshuffled part, including itself. It runs in O(n) and is unbiased. Each variant was run 60,000 times on `[1, 2, 3]`: only the correct one gave six roughly equal counts. Interviewers pair this with `chunk(arr, size)` and the `sort(() => Math.random() - 0.5)` anti-pattern.",
+    "reference": "MDN: Math.random()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-chunk-shuffle"
+  },
+  {
+    "id": "JSM-IQ5-COD-011",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nfunction set(obj, path, value) {\n  const keys = path.replace(/\\[(\\w+)\\]/g, '.$1').split('.');\n  let cur = obj;\n  keys.forEach((key, i) => {\n    if (i === keys.length - 1) { cur[key] = value; return; }\n    if (cur[key] == null) cur[key] = /^\\d+$/.test(keys[i + 1]) ? [] : {};\n    cur = cur[key];\n  });\n  return obj;\n}\nconst o = set({}, 'a[0].b', 1);\nconsole.log(Array.isArray(o.a), JSON.stringify(o));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`true {\"a\":[{\"b\":1}]}`",
+        "correct": true,
+        "why": "The path becomes `['a', '0', 'b']`. The key after `a` is numeric, so an array is created, and `b` is not, so index 0 holds an object."
+      },
+      {
+        "id": "B",
+        "text": "`false {\"a\":{\"0\":{\"b\":1}}}`",
+        "correct": false,
+        "why": "That is what you get if you always create `{}`. This code checks whether the next key is numeric."
+      },
+      {
+        "id": "C",
+        "text": "`false {\"a[0]\":{\"b\":1}}`",
+        "correct": false,
+        "why": "The `replace` turns `[0]` into `.0` before splitting, so `a[0]` is not used as a single key."
+      },
+      {
+        "id": "D",
+        "text": "`true {\"a\":[1]}`",
+        "correct": false,
+        "why": "`b` is the last key, so the value is assigned to `a[0].b`, not to `a[0]`."
+      }
+    ],
+    "explanation": "A lodash-style `set` normalises bracket notation to dot notation, walks the path, and creates any missing container. If the next key looks like an index it creates an array, otherwise an object. Interviewers also expect you to guard against `__proto__` and `constructor` keys (prototype pollution) and to keep existing values that are not empty.",
+    "reference": "MDN: Property accessors",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-set-path"
+  },
+  {
+    "id": "JSM-IQ5-DOM-011",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Machine-coding task: a 3×3 grid of cells. Clicking a cell lights it, and clicking a lit cell does nothing. Once all 9 are lit, they switch off one every 300 ms, in the **reverse** order of how they were lit. Clicks are ignored while they switch off. Which approach meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Push a cell's index onto an array only if it is unlit. When the array holds 9 entries, set a flag and pop one index every 300 ms until it is empty.",
+        "correct": true,
+        "why": "The array used as a stack records the activation order, and popping reverses it. The unlit check and the flag handle repeat clicks and clicks during switch-off."
+      },
+      {
+        "id": "B",
+        "text": "Push the index on every click, and pop one every 300 ms when the array length reaches 9",
+        "correct": false,
+        "why": "A repeated click pushes the same cell twice. Switch-off can then start before all cells are lit and turn one cell off twice."
+      },
+      {
+        "id": "C",
+        "text": "Add lit indexes to a `Set` and switch them off by iterating the `Set` with `setTimeout`",
+        "correct": false,
+        "why": "A Set iterates in insertion order, so the first cell lit is the first switched off. That is the opposite of what is required."
+      },
+      {
+        "id": "D",
+        "text": "Keep a boolean array of lit cells and switch them off by scanning from the last cell to the first",
+        "correct": false,
+        "why": "This reverses grid position, not click order. A user who clicks cells out of order sees the wrong sequence."
+      }
+    ],
+    "explanation": "The requirement \"undo in reverse order\" points to a stack. Keep the lit state separate from the order so repeat clicks are cheap to reject. Use a single chained timer for the switch-off sequence, and lock input while it runs. This was asked in Uber's frontend loop. It tests choosing a data structure inside a UI task.",
+    "reference": "MDN: Array.prototype.pop()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides"
+      ],
+      "companies": [
+        "Uber"
+      ]
+    },
+    "source": "interview:js-mc-lights-grid"
+  },
+  {
+    "id": "JSM-IQ5-DOM-012",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This `localStorage` wrapper should return `null` for expired entries. Which expression should `set` store?\n\n```js\nconst store = {\n  set(key, value, ttlMs) {\n    localStorage.setItem(key, /* ??? */);\n  },\n  get(key) {\n    const raw = localStorage.getItem(key);\n    if (raw === null) return null;\n    const { value, expires } = JSON.parse(raw);\n    if (Date.now() > expires) { localStorage.removeItem(key); return null; }\n    return value;\n  },\n};\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`JSON.stringify({ value, expires: Date.now() + ttlMs })`",
+        "correct": true,
+        "why": "Storage only holds strings, so the record is serialised. `expires` is an absolute timestamp in milliseconds, which `Date.now()` can be compared with."
+      },
+      {
+        "id": "B",
+        "text": "`{ value, expires: Date.now() + ttlMs }`",
+        "correct": false,
+        "why": "`setItem` converts the object to the string `\"[object Object]\"`, and `JSON.parse` then throws a SyntaxError."
+      },
+      {
+        "id": "C",
+        "text": "`JSON.stringify({ value, expires: ttlMs })`",
+        "correct": false,
+        "why": "A duration such as 60000 is far smaller than `Date.now()`, so every entry counts as expired straight away."
+      },
+      {
+        "id": "D",
+        "text": "`JSON.stringify({ value, expires: new Date(Date.now() + ttlMs) })`",
+        "correct": false,
+        "why": "The Date becomes an ISO string. `Date.now() > '2026-…'` turns the string into `NaN`, so the comparison is always false and entries never expire."
+      }
+    ],
+    "explanation": "Web Storage keys and values are always strings. Wrap the value with an absolute expiry time and expire entries lazily on read, with an optional sweep on start-up. Round-tripping through JSON also loses Dates, Maps and `undefined`, so be ready to discuss that. Each variant was checked in Node against a Map-backed mock of `localStorage` that stores strings the way browsers do.",
+    "reference": "MDN: Storage.setItem()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-storage-expiry"
+  },
+  {
+    "id": "JSM-IQ5-PRM-001",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "This Jest test passes even when `fetchUser` resolves with `{ name: 'Bob' }`. Which two changes make the test actually wait for the assertion? (Choose two.)\n\n```js\ntest('loads the user', () => {\n  fetchUser(1).then((user) => {\n    expect(user.name).toBe('Ada');\n  });\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Return the promise: `return fetchUser(1).then(...)`",
+        "correct": true,
+        "why": "When a test returns a promise, Jest waits for it and fails the test if it rejects, including a failed `expect` inside `then`."
+      },
+      {
+        "id": "B",
+        "text": "Make the callback `async` and write `const user = await fetchUser(1);` before the `expect`",
+        "correct": true,
+        "why": "An async test function returns a promise, so Jest waits for the awaited value before the test finishes."
+      },
+      {
+        "id": "C",
+        "text": "Wrap the `fetchUser` call in `try/catch` and rethrow any error",
+        "correct": false,
+        "why": "The `then` callback runs after the synchronous test body has returned, so a `try/catch` around the call never sees the failure."
+      },
+      {
+        "id": "D",
+        "text": "Call `jest.useFakeTimers()` at the top of the test",
+        "correct": false,
+        "why": "Fake timers control `setTimeout` and similar functions. They do not make Jest wait for a promise the test ignores."
+      },
+      {
+        "id": "E",
+        "text": "Add a `done` parameter but keep the body unchanged",
+        "correct": false,
+        "why": "If `done` is never called, the test fails with a timeout. That is not a working async test."
+      }
+    ],
+    "explanation": "Jest knows a test is async only if it returns a promise, is an `async` function, or takes a `done` callback that it calls. Otherwise the test ends when the synchronous body returns, and later assertion failures are lost or reported against the wrong test. `await expect(p).resolves...` also works, as does `expect.assertions(n)` to catch skipped assertions. Fake timers with `jest.advanceTimersByTime` are for timer-based code. Reasoned from the Jest documentation, because Jest is not installed in this repo.",
+    "reference": "Jest docs: Testing Asynchronous Code",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-testing-async"
+  },
+  {
+    "id": "JSM-IQ5-COD-012",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`highlight('foobarbaz', ['foo', 'oba', 'baz'])` must wrap every keyword match in `<em>`. Overlapping matches merge into one tag, so the expected result is `'<em>fooba</em>r<em>baz</em>'`. Which approach produces it?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mark every character index covered by any match in a boolean array, then wrap each run of marked characters in one `<em>`",
+        "correct": true,
+        "why": "Overlapping and adjacent matches become one run, so `foo` and `oba` merge into `fooba`. This gives the expected output."
+      },
+      {
+        "id": "B",
+        "text": "For each keyword, run `text = text.replaceAll(kw, '<em>' + kw + '</em>')`",
+        "correct": false,
+        "why": "After `foo` is wrapped the text contains `foo</em>bar`, so `oba` is never found. The result is `<em>foo</em>bar<em>baz</em>`."
+      },
+      {
+        "id": "C",
+        "text": "Build `new RegExp(keywords.join('|'), 'g')` and wrap each match",
+        "correct": false,
+        "why": "A regex match consumes its characters, so the overlapping `oba` is skipped. Special characters in keywords would also need escaping."
+      },
+      {
+        "id": "D",
+        "text": "Sort keywords by length, longest first, then `replaceAll` each one",
+        "correct": false,
+        "why": "The keywords here all have the same length, and each replacement still breaks the overlapping matches. The output is still `<em>foo</em>bar<em>baz</em>`."
+      }
+    ],
+    "explanation": "Treat highlighting as an interval problem: find every match range, merge overlapping or touching ranges, then build the output in one pass. A boolean mask is the simplest way to merge. Sorting the ranges and merging them is the O(m log m) alternative. Replacing text in place corrupts later searches. All four approaches were run in Node.",
+    "reference": "MDN: String.prototype.indexOf()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-highlight-keywords"
+  },
+  {
+    "id": "JSM-IQ5-FUN-001",
+    "domain": 2,
+    "skill": "functions-closures",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You must record every `console.log` call in `logs` and still print it normally, with all its arguments. Which assignment does that?\n\n```js\nconst logs = [];\nconst original = console.log;\nconsole.log = /* ??? */;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function (...args) { logs.push(args); return original.apply(this, args); }`",
+        "correct": true,
+        "why": "It captures every argument, then calls the saved original with the same `this` and arguments, so output is unchanged."
+      },
+      {
+        "id": "B",
+        "text": "`(...args) => { logs.push(args); console.log(...args); }`",
+        "correct": false,
+        "why": "`console.log` now points to this wrapper, so it calls itself until a `RangeError: Maximum call stack size exceeded` is thrown."
+      },
+      {
+        "id": "C",
+        "text": "`function (message) { logs.push([message]); return original.call(console, message); }`",
+        "correct": false,
+        "why": "Only the first argument is recorded and printed, so `console.log('id', 42)` loses the `42`."
+      },
+      {
+        "id": "D",
+        "text": "`original.bind(console, logs)`",
+        "correct": false,
+        "why": "This records nothing. It just prints the `logs` array in front of every message."
+      }
+    ],
+    "explanation": "Monkey-patching follows a fixed pattern: save the original, replace it with a wrapper that forwards `this` and all arguments, and keep a way to restore it. Calling the patched name inside the wrapper is the classic infinite-recursion bug. The same pattern is used for `fetch` and `XMLHttpRequest` interceptors, which is the usual follow-up. All four were run in Node.",
+    "reference": "MDN: Function.prototype.apply()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-console-log-intercept"
+  },
+  {
+    "id": "JSM-IQ5-COD-013",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This chainable request builder is shared as a base client. What does the last line log?\n\n```js\nclass Request {\n  constructor(base) { this.url = base; this.headers = {}; }\n  path(p) { this.url += p; return this; }\n  header(k, v) { this.headers[k] = v; return this; }\n}\nconst api = new Request('https://api.example.com').header('Authorization', 'Bearer t');\nconst users = api.path('/users');\nconst posts = api.path('/posts');\nconsole.log(users.url, posts.url);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`https://api.example.com/users/posts` twice",
+        "correct": true,
+        "why": "`path` mutates the object and returns the same `this`, so `api`, `users` and `posts` are all the same object."
+      },
+      {
+        "id": "B",
+        "text": "`https://api.example.com/users` and `https://api.example.com/posts`",
+        "correct": false,
+        "why": "That needs each method to return a new builder. Here every call changes and returns the shared one."
+      },
+      {
+        "id": "C",
+        "text": "`https://api.example.com/users` twice",
+        "correct": false,
+        "why": "The second `path` call appends `/posts` to the same URL string."
+      },
+      {
+        "id": "D",
+        "text": "A TypeError, because `path` cannot be called on a builder that already has headers",
+        "correct": false,
+        "why": "Each method returns `this`, so chaining and repeated calls work. The issue is shared state, not an error."
+      }
+    ],
+    "explanation": "Returning `this` is what makes a fluent API chainable. If the builder is meant to be reused as a template, each method should return a copy instead, for example `return new Request(...)` with copied fields. That way a configured base client is never changed. Senior interviewers often follow up on this mutable-builder bug once the basic chaining works.",
+    "reference": "MDN: Classes",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:js-chainable-api-client"
+  },
+  {
+    "id": "JSM-IQ5-COD-014",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nclass Store {\n  constructor() { this.data = new Map(); this.stack = []; }\n  get(k) {\n    for (let i = this.stack.length - 1; i >= 0; i--) {\n      if (this.stack[i].has(k)) return this.stack[i].get(k);\n    }\n    return this.data.get(k);\n  }\n  set(k, v) { (this.stack.at(-1) ?? this.data).set(k, v); }\n  begin() { this.stack.push(new Map()); }\n  rollback() { this.stack.pop(); }\n  commit() {\n    const top = this.stack.pop();\n    const target = this.stack.at(-1) ?? this.data;\n    for (const [k, v] of top) target.set(k, v);\n  }\n}\nconst s = new Store();\ns.set('a', 1);\ns.begin(); s.set('a', 2);\ns.begin(); s.set('a', 3);\ns.commit();\nconsole.log(s.get('a'));\ns.rollback();\nconsole.log(s.get('a'));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`3` then `1`",
+        "correct": true,
+        "why": "The inner commit merges `a = 3` into the outer transaction, not into `data`. Rolling back the outer transaction discards it, leaving the committed 1."
+      },
+      {
+        "id": "B",
+        "text": "`3` then `3`",
+        "correct": false,
+        "why": "A nested commit only reaches its parent transaction. Nothing reaches `data` until the outermost transaction commits."
+      },
+      {
+        "id": "C",
+        "text": "`3` then `2`",
+        "correct": false,
+        "why": "The inner commit replaced `a = 2` with 3 in the outer layer. Rolling back that layer removes both changes."
+      },
+      {
+        "id": "D",
+        "text": "`2` then `1`",
+        "correct": false,
+        "why": "After the commit, the outer layer holds `a = 3`, and `get` reads the top layer first."
+      }
+    ],
+    "explanation": "Nested transactions are a stack of change layers. Reads go from the top layer down to the base data, writes go to the top layer, commit merges into the layer below, and rollback drops the top layer. The usual extension is `delete` inside a transaction, which needs a tombstone marker so that rollback can restore the deleted key.",
+    "reference": "MDN: Map",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides"
+      ],
+      "companies": [
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-kv-transactions"
+  },
+  {
+    "id": "JSM-IQ5-COD-015",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your SDK talks to an API limited to 5 requests per second. You have `limit(fn)`, which queues calls so at most 5 start per second, and `retry(fn, n)`, which retries a failed call with backoff. Retries must never push traffic over the limit. How should they be composed?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`retry(() => limit(request)(), 3)`: each attempt, including retries, goes through the limiter",
+        "correct": true,
+        "why": "The limiter wraps the raw request, so every attempt waits for a slot and the 5-per-second limit holds even during a retry storm."
+      },
+      {
+        "id": "B",
+        "text": "`limit(() => retry(request, 3))()`: the whole retrying operation takes one slot",
+        "correct": false,
+        "why": "The limiter counts one slot, but up to four real requests can be sent, so retries can exceed the limit."
+      },
+      {
+        "id": "C",
+        "text": "Use the limiter only for first attempts, and send retries immediately so failed users are not delayed",
+        "correct": false,
+        "why": "Immediate retries are exactly the burst that triggers more 429 responses. This makes outages worse."
+      },
+      {
+        "id": "D",
+        "text": "Drop the limiter and rely on retrying with exponential backoff when the API returns 429",
+        "correct": false,
+        "why": "Backoff reacts after you have already been rejected. A client-side limiter prevents the rejections in the first place."
+      }
+    ],
+    "explanation": "Put the rate limiter closest to the network call, and the retry policy around it, so every real request is counted. Good SDKs also respect the `Retry-After` header, add jitter to backoff, retry only idempotent or safe requests, and use an `AbortSignal` to cancel queued work. Note that \"throttle\" here means a queueing rate limiter, not a UI throttle that drops calls.",
+    "reference": "MDN: 429 Too Many Requests",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/microsoft/questions-guides"
+      ],
+      "companies": [
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-sdk-throttle-retry"
+  },
+  {
+    "id": "JSM-IQ5-DOM-013",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are building nested checkboxes: a parent \"Select all\" over three child checkboxes. Which three statements are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "When some but not all children are checked, set the parent's `checked = false` and `indeterminate = true`",
+        "correct": true,
+        "why": "That is the standard tri-state pattern. `indeterminate` only changes how the box looks, and `checked` still holds the real value."
+      },
+      {
+        "id": "B",
+        "text": "`indeterminate` can only be set from JavaScript. There is no HTML attribute for it.",
+        "correct": true,
+        "why": "It is an IDL property only. Markup like `<input indeterminate>` has no effect."
+      },
+      {
+        "id": "C",
+        "text": "When the user clicks an indeterminate checkbox, the browser clears `indeterminate` and toggles `checked`",
+        "correct": true,
+        "why": "The checkbox click behaviour in the HTML spec sets `indeterminate` to false as well as toggling checkedness."
+      },
+      {
+        "id": "D",
+        "text": "Setting `parent.checked = true` automatically checks all of its child checkboxes",
+        "correct": false,
+        "why": "Checkboxes have no built-in parent–child link. Your change handler must update the children."
+      },
+      {
+        "id": "E",
+        "text": "An indeterminate checkbox is submitted with the value `\"indeterminate\"`",
+        "correct": false,
+        "why": "Form submission only looks at `checked`. An indeterminate box submits its value only if it is also checked."
+      },
+      {
+        "id": "F",
+        "text": "The `:checked` pseudo-class matches a checkbox while it is indeterminate",
+        "correct": false,
+        "why": "Indeterminate boxes match `:indeterminate`. `:checked` follows only the `checked` state."
+      }
+    ],
+    "explanation": "Nested checkboxes need state to flow in two directions. Toggling a parent sets every descendant. Toggling a child recomputes each ancestor as all checked, none checked or mixed. Keep the tree in data and derive `checked`/`indeterminate` from it rather than reading the DOM. Reasoned from the HTML spec and MDN, because jsdom is not installed here.",
+    "reference": "MDN: <input type=\"checkbox\">",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-mc-nested-checkboxes"
+  },
+  {
+    "id": "JSM-IQ5-COD-016",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nclass Model {\n  #attrs = {};\n  #listeners = {};\n  on(attr, fn) { (this.#listeners[attr] ??= []).push(fn); }\n  set(attr, value) {\n    const prev = this.#attrs[attr];\n    if (Object.is(prev, value)) return;\n    this.#attrs[attr] = value;\n    (this.#listeners[attr] ?? []).forEach((fn) => fn(value, prev));\n  }\n}\nconst m = new Model();\nm.on('tags', (v) => console.log('tags changed', v.length));\nconst tags = ['a'];\nm.set('tags', tags);\ntags.push('b');\nm.set('tags', tags);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`tags changed 1` only",
+        "correct": true,
+        "why": "The second `set` passes the same array reference, so `Object.is` reports no change and no listener runs, even though the array was mutated."
+      },
+      {
+        "id": "B",
+        "text": "`tags changed 1` then `tags changed 2`",
+        "correct": false,
+        "why": "That needs a deep comparison or a new array. Identity checks cannot see in-place mutation."
+      },
+      {
+        "id": "C",
+        "text": "`tags changed 2` only",
+        "correct": false,
+        "why": "The first listener call logs straight away, while the array still has one item. The second call never happens."
+      },
+      {
+        "id": "D",
+        "text": "Nothing, because the listener was registered before the attribute existed",
+        "correct": false,
+        "why": "Listeners are keyed by attribute name, so registering early is fine. The first `set` fires it."
+      }
+    ],
+    "explanation": "Backbone-style models fire change events only when a value actually changes, and \"changes\" usually means identity (`Object.is`, which also treats `NaN` as equal to itself). Mutating a stored object in place goes unnoticed, which is why immutable updates (`set('tags', [...tags, 'b'])`) matter in observable models, Redux and React. Interviewers then ask for `off`, wildcard `change` events and batching.",
+    "reference": "MDN: Object.is()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/airbnb/questions-guides"
+      ],
+      "companies": [
+        "Airbnb"
+      ]
+    },
+    "source": "interview:js-observable-model"
+  },
+  {
+    "id": "JSM-IQ5-COD-017",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A minimal Observable has a `map` operator. After `sub.unsubscribe()` runs at 35 ms, what happens?\n\n```js\nclass Observable {\n  constructor(producer) { this.producer = producer; }\n  subscribe(observer) {\n    let closed = false;\n    const teardown = this.producer({ next: (v) => { if (!closed) observer.next(v); } });\n    return { unsubscribe() { closed = true; teardown?.(); } };\n  }\n  map(fn) {\n    return new Observable((obs) => {\n      this.subscribe({ next: (v) => obs.next(fn(v)) });\n    });\n  }\n}\nconst ticks = new Observable((obs) => {\n  let n = 0;\n  const id = setInterval(() => obs.next(++n), 10);\n  return () => clearInterval(id);\n});\nconst sub = ticks.map((x) => x * 10).subscribe({ next: (v) => console.log(v) });\nsetTimeout(() => sub.unsubscribe(), 35);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Logging stops, but the source interval keeps running forever, because `map` never returns a teardown that unsubscribes from the source",
+        "correct": true,
+        "why": "The outer `closed` flag blocks delivery, but the inner subscription to `ticks` is never released, so `clearInterval` never runs and the timer leaks."
+      },
+      {
+        "id": "B",
+        "text": "Logging stops and the interval is cleared, because unsubscribing always reaches the original producer",
+        "correct": false,
+        "why": "Teardown only reaches the source if each operator passes it on. This `map` returns `undefined` from its producer."
+      },
+      {
+        "id": "C",
+        "text": "Values keep being logged, because `map` creates its own subscription that ignores the outer one",
+        "correct": false,
+        "why": "Values still flow through the inner subscription, but the outer `next` wrapper checks `closed` and drops them."
+      },
+      {
+        "id": "D",
+        "text": "It throws a TypeError when `unsubscribe` calls `teardown`, because the teardown is undefined",
+        "correct": false,
+        "why": "`teardown?.()` uses optional chaining, so an undefined teardown is skipped without an error."
+      }
+    ],
+    "explanation": "In an Observable, each operator subscribes to its source and must return a teardown that unsubscribes from it: `const s = this.subscribe(...); return () => s.unsubscribe();`. Without that, unsubscribing from the end of a chain cannot free resources at the start, such as timers, sockets or event listeners. Confirmed in Node: after unsubscribing, nothing more is logged, but the interval kept firing.",
+    "reference": "MDN: clearInterval() global function",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-observable-impl"
+  },
+  {
+    "id": "JSM-IQ5-COL-003",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "An Immer-style update changes one nested field. Which three expressions evaluate to `true`? (Choose three.)\n\n```js\nconst state = {\n  user: { profile: { name: 'Ada' }, prefs: { theme: 'dark' } },\n  posts: [{ id: 1 }],\n};\nconst next = {\n  ...state,\n  user: { ...state.user, profile: { ...state.user.profile, name: 'Grace' } },\n};\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`next.user.prefs === state.user.prefs`",
+        "correct": true,
+        "why": "`prefs` was not on the updated path, so the spread copies its reference unchanged (structural sharing)."
+      },
+      {
+        "id": "B",
+        "text": "`next.posts === state.posts`",
+        "correct": true,
+        "why": "The top-level spread reuses the existing `posts` array reference."
+      },
+      {
+        "id": "C",
+        "text": "`state.user.profile.name === 'Ada'`",
+        "correct": true,
+        "why": "A new `profile` object was created, so the original is untouched."
+      },
+      {
+        "id": "D",
+        "text": "`next.user.profile === state.user.profile`",
+        "correct": false,
+        "why": "`profile` is on the updated path, so a new object was created for it."
+      },
+      {
+        "id": "E",
+        "text": "`next.user === state.user`",
+        "correct": false,
+        "why": "Every object from the root down to the changed field is copied, including `user`."
+      },
+      {
+        "id": "F",
+        "text": "`next === state`",
+        "correct": false,
+        "why": "The root is always a new object when anything inside it changes."
+      }
+    ],
+    "explanation": "Immutable updates copy only the path from the root to the changed value and share everything else. That is why `===` checks (React.memo, selectors, `useEffect` dependencies) can cheaply detect what changed. Immer's `produce` and `update(state, { user: { profile: { name: { $set: 'Grace' } } } })` both give exactly this shape. Interviewers ask which references survive to check you understand structural sharing.",
+    "reference": "MDN: Spread syntax (...)",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-immutability-helper"
+  },
+  {
+    "id": "JSM-IQ5-COD-018",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An autocomplete stores 100,000 words in this trie. Let p be the prefix length and k the number of trie nodes under the prefix. What are the costs of `startsWith(prefix)` and of collecting every completion?\n\n```js\nclass Trie {\n  root = {};\n  insert(word) {\n    let node = this.root;\n    for (const ch of word) node = node[ch] ??= {};\n    node.end = true;\n  }\n  startsWith(prefix) {\n    let node = this.root;\n    for (const ch of prefix) {\n      node = node[ch];\n      if (!node) return false;\n    }\n    return true;\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "O(p) for `startsWith`, and O(p + k) to collect the completions",
+        "correct": true,
+        "why": "The lookup takes one step per character, whatever the number of words. Listing results then has to visit the subtree under the prefix."
+      },
+      {
+        "id": "B",
+        "text": "O(n) for `startsWith`, where n is the number of words",
+        "correct": false,
+        "why": "That is the cost of filtering an array with `startsWith`. A trie never looks at words that don't share the prefix."
+      },
+      {
+        "id": "C",
+        "text": "O(log n) for both, like a binary search over sorted words",
+        "correct": false,
+        "why": "A sorted array with binary search gives O(p log n) lookups. A trie's lookup does not depend on n."
+      },
+      {
+        "id": "D",
+        "text": "O(p × n) for `startsWith`, because every word is compared one character at a time",
+        "correct": false,
+        "why": "Characters are followed down one path, not compared against every word."
+      }
+    ],
+    "explanation": "A trie trades memory (one node per distinct prefix) for lookups that don't depend on dictionary size. For autocomplete you usually limit the results, for example the top 10 by frequency stored on each node, so you don't walk a huge subtree for a short prefix. Using `Map` for children avoids clashes between a character key and a marker such as `end`.",
+    "reference": "MDN: Map",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/data-structures-interview-questions-for-senior-frontend-engineers"
+      ]
+    },
+    "source": "interview:js-trie"
+  }
+]
