@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "A composite index works like a phone book sorted by surname, then first name. You can seek on any leftmost prefix of its columns (last_name, or last_name plus first_name), but not on a later column alone. This is the leftmost-prefix rule.",
-    "reference": "PostgreSQL docs: Multicolumn Indexes"
+    "reference": "PostgreSQL docs: Multicolumn Indexes",
+    "roleLevel": 2
   },
   {
     "id": "SD-DAT-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "An insert into a table with five indexes performs six writes: the row plus one entry per index. Indexes also use disk and memory and can push hot data out of cache. Add indexes for the queries you actually run, and drop unused ones.",
-    "reference": "DDIA, Chapter 3"
+    "reference": "DDIA, Chapter 3",
+    "roleLevel": 2
   },
   {
     "id": "SD-DAT-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "LSM-trees absorb writes in a memtable and flush them as immutable sorted files, which makes ingestion fast. A read may consult the memtable and several files (Bloom filters skip most of them), and compaction keeps merging files in the background. B-trees give more predictable reads but update pages in place, which costs random I/O per write.",
-    "reference": "DDIA, Chapter 3"
+    "reference": "DDIA, Chapter 3",
+    "roleLevel": 3
   },
   {
     "id": "SD-DAT-004",
@@ -139,7 +142,8 @@
       }
     ],
     "explanation": "The shard key decides which queries are cheap. Range on time keeps time scans local but creates a write hotspot on the newest range. Hash on user_id balances writes and makes per-user reads single-shard, at the cost of scatter-gather for time-range queries.",
-    "reference": "DDIA, Chapter 6"
+    "reference": "DDIA, Chapter 6",
+    "roleLevel": 3
   },
   {
     "id": "SD-DAT-005",
@@ -194,7 +198,8 @@
       }
     ],
     "explanation": "Consistent hashing limits data movement on membership change; virtual nodes smooth the uneven ranges a few random tokens would give. Key suffixes split a hot key's writes (reads then gather all suffixes). A term-partitioned global index turns a lookup by another attribute into a single-partition read, at the cost of slower, often asynchronous index writes. No partitioning trick makes cross-partition transactions free.",
-    "reference": "DDIA, Chapter 6; Dynamo paper"
+    "reference": "DDIA, Chapter 6; Dynamo paper",
+    "roleLevel": 3
   },
   {
     "id": "SD-DAT-006",
@@ -231,7 +236,8 @@
       }
     ],
     "explanation": "A global secondary index is a separately partitioned copy of the data that DynamoDB maintains asynchronously, usually within a fraction of a second, and it offers only eventually consistent reads. Read-your-writes therefore needs a strongly consistent read on the base table by its key, or the client or server folding the just-written item into the list it shows. The general lesson applies to any sharded store: a global secondary index on a different key is either asynchronous or needs a distributed transaction on every write.",
-    "reference": "AWS docs: Using Global Secondary Indexes in DynamoDB"
+    "reference": "AWS docs: Using Global Secondary Indexes in DynamoDB",
+    "roleLevel": 4
   },
   {
     "id": "SD-DAT-007",
@@ -268,7 +274,8 @@
       }
     ],
     "explanation": "The limit is per partition key, so the fix is to split the hot key. You need at least 50,000 / 1,000 = 50 suffixes; 64 leaves headroom (about 781 writes per second each). Reads now fetch 64 items and add them up, which suits a counter that is read far less often than it is written. Batching increments in memory and flushing periodically is a complementary option.",
-    "reference": "AWS DynamoDB docs: Using write sharding"
+    "reference": "AWS DynamoDB docs: Using write sharding",
+    "roleLevel": 4
   },
   {
     "id": "SD-DAT-008",
@@ -305,7 +312,8 @@
       }
     ],
     "explanation": "Put equality-filtered columns first and the sort or range column last. With `(tenant_id, status, created_at)`, the database seeks to (tenant, 'open'), walks the range backwards and stops after 20 rows. Any other order either sorts or reads rows it then throws away.",
-    "reference": "Use The Index, Luke: Indexing ORDER BY"
+    "reference": "Use The Index, Luke: Indexing ORDER BY",
+    "roleLevel": 4
   },
   {
     "id": "SD-DAT-009",
@@ -342,7 +350,8 @@
       }
     ],
     "explanation": "If each shard exceeds its p99 1% of the time, a 64-way fan-out sees at least one slow reply with probability 1 − 0.99^64 ≈ 0.47. Local indexes also can't enforce global uniqueness. The usual design is a separate `email → user_id` table partitioned by email (a global index): a conditional insert on the email claims it, then the user row is created, with cleanup for claims that never complete. Login becomes two single-shard reads.",
-    "reference": "Dean & Barroso, The Tail at Scale; DDIA, Chapter 6"
+    "reference": "Dean & Barroso, The Tail at Scale; DDIA, Chapter 6",
+    "roleLevel": 5
   },
   {
     "id": "SD-DAT-010",
@@ -385,7 +394,8 @@
       }
     ],
     "explanation": "Unbounded partitions come from a partition key that never rolls over, so add a time bucket chosen to keep partitions in the tens of megabytes. TTL data under size-tiered compaction leaves tombstones mixed with live data. TWCS lets whole expired windows be dropped, avoiding the tombstone churn.",
-    "reference": "Apache Cassandra docs: Data modeling; Time Window Compaction"
+    "reference": "Apache Cassandra docs: Data modeling; Time Window Compaction",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-001",
@@ -422,7 +432,8 @@
       }
     ],
     "explanation": "Asynchronous followers lag behind the leader. Common fixes are to read a user's own recently changed data from the leader for a short window, or to track the write's log position and only read from followers that have caught up to it.",
-    "reference": "DDIA, Chapter 5"
+    "reference": "DDIA, Chapter 5",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-002",
@@ -440,7 +451,8 @@
       "R = 2"
     ],
     "explanation": "Overlap is guaranteed when R + W > N. With N = 3 and W = 2, R = 2 gives 4 > 3, while R = 1 gives 3, which is not greater than 3. The overlap means at least one replica in every read has seen the latest acknowledged write (with caveats such as sloppy quorums).",
-    "reference": "DDIA, Chapter 5; Dynamo paper"
+    "reference": "DDIA, Chapter 5; Dynamo paper",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-003",
@@ -477,7 +489,8 @@
       }
     ],
     "explanation": "Monotonic reads promise that once you've seen data, a later read won't show an older state. Pinning a user's reads to one replica (with failover to another if it dies) is enough. Tracking the highest log position the user has seen and requiring replicas to be at least that current also works.",
-    "reference": "DDIA, Chapter 5"
+    "reference": "DDIA, Chapter 5",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-004",
@@ -520,7 +533,8 @@
       }
     ],
     "explanation": "Snapshot isolation stops dirty and non-repeatable reads with snapshots and stops lost updates with write-write conflict checks. It allows write skew, including the phantom variant where the conflicting rows don't exist yet. Use SERIALIZABLE (SSI in PostgreSQL), explicit locks or a constraint for those cases.",
-    "reference": "Berenson et al., A Critique of ANSI SQL Isolation Levels"
+    "reference": "Berenson et al., A Critique of ANSI SQL Isolation Levels",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-005",
@@ -555,7 +569,8 @@
       "D"
     ],
     "explanation": "Linearizability gives one total order that respects real time. Sequential consistency keeps a single total order consistent with each process's program order, but without the real-time constraint. Causal consistency only orders operations that are causally related; concurrent ones may be seen in different orders. Eventual consistency only promises replicas converge once writes stop.",
-    "reference": "Jepsen: Consistency Models"
+    "reference": "Jepsen: Consistency Models",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-006",
@@ -592,7 +607,8 @@
       }
     ],
     "explanation": "A sloppy quorum trades consistency for write availability: when home replicas are unreachable, any W reachable nodes accept the write and hand it off later. Until the handoff, R + W > N is only a durability promise, not a guarantee that reads see the write. Cassandra and Riak expose this choice as a configuration option.",
-    "reference": "Dynamo paper (2007); DDIA, Chapter 5"
+    "reference": "Dynamo paper (2007); DDIA, Chapter 5",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-007",
@@ -635,7 +651,8 @@
       }
     ],
     "explanation": "This is the classic write skew: each transaction reads the same premise and then updates a different row, so there's no write-write conflict to detect. Either make the conflict explicit with locks on the rows the decision depends on, or use true serializability (SSI) and retry aborted transactions.",
-    "reference": "DDIA, Chapter 7; PostgreSQL docs: Transaction Isolation"
+    "reference": "DDIA, Chapter 7; PostgreSQL docs: Transaction Isolation",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-008",
@@ -672,7 +689,8 @@
       }
     ],
     "explanation": "Serializability is about transactions: the result equals some serial execution, possibly not the real-time one. Linearizability is about single objects and recency: once a write completes, every later read sees it. Systems such as Spanner provide both, which is called strict serializability.",
-    "reference": "Bailis: Linearizability versus Serializability; DDIA, Chapter 9"
+    "reference": "Bailis: Linearizability versus Serializability; DDIA, Chapter 9",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-009",
@@ -709,7 +727,8 @@
       }
     ],
     "explanation": "This is why 2PC is called a blocking protocol. A YES vote gives up the right to abort alone, and in-doubt transactions hold locks until the coordinator's log is recovered. Production systems reduce the risk by making the coordinator itself highly available, for example by replicating its decision log with Paxos or Raft, as Spanner does.",
-    "reference": "DDIA, Chapter 9; Gray & Lamport, Consensus on Transaction Commit"
+    "reference": "DDIA, Chapter 9; Gray & Lamport, Consensus on Transaction Commit",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-010",
@@ -746,6 +765,7 @@
       }
     ],
     "explanation": "The leader plus one follower is 2 of 3, so commit latency is one round trip to the nearest follower: 70 ms to us-west. If us-west fails, the remaining two still form a majority, so writes continue at the 80 ms round trip to eu-west. This is the 'else' half of PACELC: even with no partition, strong consistency across regions costs at least one wide-area round trip per write.",
-    "reference": "Raft paper (Ongaro & Ousterhout); Abadi, PACELC"
+    "reference": "Raft paper (Ongaro & Ousterhout); Abadi, PACELC",
+    "roleLevel": 5
   }
 ]

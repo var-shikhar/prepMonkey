@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Consensus needs a majority quorum: floor(N/2) + 1. For N = 5 that is 3, so up to 2 members can fail. In general a cluster of 2f + 1 members tolerates f failures, which is why clusters use odd sizes.",
-    "reference": "Raft paper (Ongaro and Ousterhout)"
+    "reference": "Raft paper (Ongaro and Ousterhout)",
+    "roleLevel": 2
   },
   {
     "id": "SD-CRD-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "Wall clocks on different machines drift and can be stepped forward or backward. Events closer together than the skew can appear in the wrong order, which is how last-write-wins can silently drop the newer write. Use logical clocks (Lamport or vector) for causal order, or a bounded-uncertainty clock like Spanner's TrueTime.",
-    "reference": "DDIA, chapter 8: Unreliable clocks"
+    "reference": "DDIA, chapter 8: Unreliable clocks",
+    "roleLevel": 2
   },
   {
     "id": "SD-CRD-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "Measuring a duration needs a clock that never jumps. Wall-clock time can move backwards or leap forward when it is corrected, so elapsed-time checks on it are unsafe. A monotonic clock is right for measuring intervals on one machine, but it still cannot compare times between machines.",
-    "reference": "DDIA, chapter 8: Monotonic versus time-of-day clocks"
+    "reference": "DDIA, chapter 8: Monotonic versus time-of-day clocks",
+    "roleLevel": 3
   },
   {
     "id": "SD-CRD-004",
@@ -139,7 +142,8 @@
       }
     ],
     "explanation": "Lamport clocks give a total order that is consistent with causality, but a lower timestamp does not prove causality. Vector clocks capture the full happened-before relation, so they can detect concurrent (conflicting) updates, at the cost of size proportional to the number of writers.",
-    "reference": "Lamport 1978; DDIA, chapter 5: Detecting concurrent writes"
+    "reference": "Lamport 1978; DDIA, chapter 5: Detecting concurrent writes",
+    "roleLevel": 3
   },
   {
     "id": "SD-CRD-005",
@@ -179,7 +183,8 @@
       "E"
     ],
     "explanation": "An entry is committed once a majority (the leader plus 2 followers in a 5-node cluster) has stored it. Only then does the leader apply it and answer the client. Followers learn the new commit index in later AppendEntries messages and apply the entry themselves.",
-    "reference": "Raft paper, section 5.3: Log replication"
+    "reference": "Raft paper, section 5.3: Log replication",
+    "roleLevel": 3
   },
   {
     "id": "SD-CRD-006",
@@ -216,7 +221,8 @@
       }
     ],
     "explanation": "A client can never be sure its lease is still valid at the moment its write lands. The fix is to make the resource itself enforce ordering: the lock service hands out monotonically increasing fencing tokens, and the storage layer rejects stale ones. This is Kleppmann's argument for why timing-based locks need fencing to be safe for correctness.",
-    "reference": "DDIA, chapter 8: Fencing tokens; Kleppmann, How to do distributed locking"
+    "reference": "DDIA, chapter 8: Fencing tokens; Kleppmann, How to do distributed locking",
+    "roleLevel": 4
   },
   {
     "id": "SD-CRD-007",
@@ -253,7 +259,8 @@
       }
     ],
     "explanation": "Writes are safe in this scenario, since the old leader cannot reach a majority to commit. Reads are not, unless the leader confirms it is still leader: Raft section 8 has it exchange heartbeats with a majority before answering (ReadIndex), or rely on a time-bounded leader lease. etcd and Consul expose this choice as linearizable versus stale reads.",
-    "reference": "Raft paper, section 8: Client interaction"
+    "reference": "Raft paper, section 8: Client interaction",
+    "roleLevel": 4
   },
   {
     "id": "SD-CRD-008",
@@ -296,7 +303,8 @@
       }
     ],
     "explanation": "2PC gives atomic commit but blocks when the coordinator fails at the wrong time, and it holds locks across services. Sagas avoid distributed locks by committing each step locally and undoing with compensations, which means no isolation (the I in ACID) and steps that must be idempotent and retryable.",
-    "reference": "DDIA, chapter 9: Distributed transactions; Garcia-Molina and Salem, Sagas"
+    "reference": "DDIA, chapter 9: Distributed transactions; Garcia-Molina and Salem, Sagas",
+    "roleLevel": 4
   },
   {
     "id": "SD-CRD-009",
@@ -333,7 +341,8 @@
       }
     ],
     "explanation": "Picking s at the moment of TT.now() at true time t gives s ≤ t + ε. TT.now().earliest exceeds s only once true time passes about t + 2ε, so the wait is about 2 × 7 = 14 ms. After that, true time is definitely past s, so any transaction that starts later gets a larger timestamp. Spanner hides most of the wait by overlapping it with Paxos replication.",
-    "reference": "Spanner paper (Corbett et al., OSDI 2012), section 4.1.2"
+    "reference": "Spanner paper (Corbett et al., OSDI 2012), section 4.1.2",
+    "roleLevel": 5
   },
   {
     "id": "SD-CRD-010",
@@ -370,7 +379,8 @@
       }
     ],
     "explanation": "Check the worst case: lose the largest zone, then one more member, and compare what is left to floor(N/2) + 1. 5 → 3 − 1 = 2 < 3. 6 → 4 − 1 = 3 < 4. 7 → 4 − 1 = 3 < 4. 9 → 6 − 1 = 5 ≥ 5. Adding an even member never helps, and bigger clusters cost write latency, since every commit waits for more acknowledgements.",
-    "reference": "etcd FAQ: cluster size and failure tolerance"
+    "reference": "etcd FAQ: cluster size and failure tolerance",
+    "roleLevel": 5
   },
   {
     "id": "SD-REL-001",
@@ -407,7 +417,8 @@
       }
     ],
     "explanation": "Clients that fail together and back off on the same schedule retry together, a thundering herd. Randomising each delay (for example full jitter: a random value between 0 and the backoff cap) spreads the load and lets the service recover.",
-    "reference": "AWS Builders' Library: Timeouts, retries and backoff with jitter"
+    "reference": "AWS Builders' Library: Timeouts, retries and backoff with jitter",
+    "roleLevel": 2
   },
   {
     "id": "SD-REL-002",
@@ -425,7 +436,8 @@
       "43.2min"
     ],
     "explanation": "30 days × 24 h × 60 min = 43,200 minutes. The error budget is 0.1% of that: 43,200 × 0.001 = 43.2 minutes. Each extra nine divides it by ten (99.99% allows about 4.3 minutes).",
-    "reference": "Google SRE book: Embracing risk"
+    "reference": "Google SRE book: Embracing risk",
+    "roleLevel": 2
   },
   {
     "id": "SD-REL-003",
@@ -462,7 +474,8 @@
       }
     ],
     "explanation": "For hard serial dependencies multiply availabilities: 0.999³ = 0.997003, and × 0.9995 ≈ 0.99650, or 99.65%. That is about 3.5 hours of downtime a month instead of the 43 minutes a 99.9% target allows. This is why critical paths need fewer hard dependencies, caching or fallbacks.",
-    "reference": "Google SRE workbook: The calculus of service availability"
+    "reference": "Google SRE workbook: The calculus of service availability",
+    "roleLevel": 3
   },
   {
     "id": "SD-REL-004",
@@ -517,7 +530,8 @@
       }
     ],
     "explanation": "Circuit breakers protect callers from a sick dependency, bulkheads isolate resource pools so a failure cannot spread, load shedding protects a server from its own overload, and rate limiting enforces fairness per client. None of them provides exactly-once processing, which comes from idempotency and deduplication.",
-    "reference": "Release It! (Nygard); AWS Builders' Library: Using load shedding to avoid overload"
+    "reference": "Release It! (Nygard); AWS Builders' Library: Using load shedding to avoid overload",
+    "roleLevel": 3
   },
   {
     "id": "SD-REL-005",
@@ -560,7 +574,8 @@
       }
     ],
     "explanation": "A token bucket enforces a long-run rate (the refill rate) while allowing bursts up to its capacity. A leaky bucket used as a queue outputs at a fixed rate and smooths bursts. Fixed-window counters are simpler but allow up to twice the limit at window boundaries, which sliding windows fix.",
-    "reference": "Stripe engineering: Scaling your API with rate limiters"
+    "reference": "Stripe engineering: Scaling your API with rate limiters",
+    "roleLevel": 3
   },
   {
     "id": "SD-REL-006",
@@ -597,7 +612,8 @@
       }
     ],
     "explanation": "Retries at every layer multiply: 3 × 3 × 3 = 27 times the load on the service that is already failing, which can turn a partial outage into a full one. AWS's guidance is to retry at a single point in the stack, use retry budgets or token buckets for retries, and pass an 'already retried' signal or deadline downstream.",
-    "reference": "AWS Builders' Library: Timeouts, retries and backoff with jitter"
+    "reference": "AWS Builders' Library: Timeouts, retries and backoff with jitter",
+    "roleLevel": 4
   },
   {
     "id": "SD-REL-007",
@@ -634,7 +650,8 @@
       }
     ],
     "explanation": "This is a metastable failure: a short trigger pushes the system into a bad state that sustains itself (retries plus a cold cache keep load above capacity) after the trigger is gone. Recovery needs load reduced below capacity: shed or rate-limit traffic, stop retry amplification, warm the cache, then ramp traffic back up.",
-    "reference": "Bronson et al., Metastable Failures in Distributed Systems (HotOS 2021)"
+    "reference": "Bronson et al., Metastable Failures in Distributed Systems (HotOS 2021)",
+    "roleLevel": 4
   },
   {
     "id": "SD-REL-008",
@@ -671,7 +688,8 @@
       }
     ],
     "explanation": "This is congestion collapse. The server stays busy, but with FIFO order and a growing queue every request it finishes has already been abandoned, so goodput approaches zero. The fix is to stop doing work nobody is waiting for: cap queueing delay (as CoDel does), drop requests past their deadline, or switch to adaptive LIFO under congestion, as Facebook describes in \"Fail at Scale\". Combine it with load shedding at admission so that excess work is rejected cheaply and early.",
-    "reference": "Maurer, Fail at Scale (ACM Queue 2015)"
+    "reference": "Maurer, Fail at Scale (ACM Queue 2015)",
+    "roleLevel": 4
   },
   {
     "id": "SD-REL-009",
@@ -708,7 +726,8 @@
       }
     ],
     "explanation": "Burn rate is how fast the budget is consumed relative to spending exactly all of it in the window. Allowed error ratio = 0.1%, so burn rate 14.4 means 1.44% errors. 30 days = 720 hours, so one hour at 14.4× spends 14.4 / 720 = 2% of the budget. The workbook pairs this long window with a 5-minute short window so the alert also resets quickly.",
-    "reference": "Google SRE workbook: Alerting on SLOs"
+    "reference": "Google SRE workbook: Alerting on SLOs",
+    "roleLevel": 5
   },
   {
     "id": "SD-REL-010",
@@ -751,6 +770,7 @@
       }
     ],
     "explanation": "Timeouts should shrink as you go deeper, and the whole retry plan of a layer must fit in its caller's budget. Here the client waits 2 s, but A can spend 3 × 3 s = 9 s on B, so B's load triples for answers nobody receives. Propagating a deadline (as gRPC does) and setting per-try timeouts from the dependency's p99 latency fix both problems.",
-    "reference": "AWS Builders' Library: Timeouts, retries and backoff with jitter; gRPC deadlines"
+    "reference": "AWS Builders' Library: Timeouts, retries and backoff with jitter; gRPC deadlines",
+    "roleLevel": 5
   }
 ]

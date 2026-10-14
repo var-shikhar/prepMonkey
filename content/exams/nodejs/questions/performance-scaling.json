@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Node runs your JavaScript on one thread and relies on non-blocking I/O for concurrency. CPU-heavy synchronous work stalls the event loop for every connection. Move it to `worker_threads` (or a worker pool such as Piscina), a separate service, or a native library that works off the main thread.",
-    "reference": "Node.js docs: Don't Block the Event Loop"
+    "reference": "Node.js docs: Don't Block the Event Loop",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "Buffers are backed by ArrayBuffers whose bytes are allocated outside the V8 heap. In Node 24, allocating 50 MB this way raises `arrayBuffers` by 50 MB and leaves `heapUsed` essentially unchanged. A memory investigation that watches only heapUsed will miss Buffer-heavy leaks.",
-    "reference": "Node.js docs: process.memoryUsage()"
+    "reference": "Node.js docs: process.memoryUsage()",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "`os.availableParallelism()` is the documented way to pick a default degree of parallelism. Unlike `os.cpus().length`, it respects CPU affinity. In containers with a CPU quota, still prefer an explicit setting (for example an environment variable) because a quota limits CPU time rather than which CPUs you can use.",
-    "reference": "Node.js docs: os.availableParallelism()"
+    "reference": "Node.js docs: os.availableParallelism()",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-004",
@@ -111,7 +114,8 @@
       "10"
     ],
     "explanation": "`EventEmitter.defaultMaxListeners` is 10. Adding an 11th listener for the same event prints \"Possible EventEmitter memory leak detected. 11 data listeners added…\". It is only a warning: the listener is still added. It usually means code adds a listener per request to a long-lived emitter.",
-    "reference": "Node.js docs: events.defaultMaxListeners"
+    "reference": "Node.js docs: events.defaultMaxListeners",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-005",
@@ -162,7 +166,8 @@
       }
     ],
     "explanation": "These are the core performance tools for Node. CPU profiles answer \"where is time spent\", heap snapshots answer \"what is retaining memory\", Clinic.js Doctor triages which kind of problem you have, and a load generator such as autocannon reproduces the traffic that triggers it.",
-    "reference": "Node.js docs: Profiling Node.js Applications"
+    "reference": "Node.js docs: Profiling Node.js Applications",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-006",
@@ -199,7 +204,8 @@
       }
     ],
     "explanation": "`cluster` forks child processes that share server handles, so several processes can serve the same port. Because they are separate processes, anything stored in memory (sessions, caches, rate-limit counters) exists once per worker. Shared state must live in an external store such as Redis or a database.",
-    "reference": "Node.js docs: Cluster"
+    "reference": "Node.js docs: Cluster",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-007",
@@ -242,7 +248,8 @@
       }
     ],
     "explanation": "Workers help with CPU-bound JavaScript, because each worker has its own event loop and V8 isolate on another thread. I/O-bound work gains nothing: Node already overlaps network and async file I/O without blocking the main thread.",
-    "reference": "Node.js docs: Worker threads"
+    "reference": "Node.js docs: Worker threads",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-008",
@@ -279,7 +286,8 @@
       }
     ],
     "explanation": "Node 19 changed `http.globalAgent` (and `https.globalAgent`) to `keepAlive: true`. Reusing sockets avoids a TCP and TLS handshake per request, which matters a lot for services that call the same upstream many times per second. Global `fetch` uses undici, which also pools connections.",
-    "reference": "Node.js docs: http.globalAgent"
+    "reference": "Node.js docs: http.globalAgent",
+    "roleLevel": 1
   },
   {
     "id": "NJS-PRF-009",
@@ -316,7 +324,8 @@
       }
     ],
     "explanation": "Read `process.memoryUsage()` field by field. `heapUsed` is live JS objects, while `external` and `arrayBuffers` cover memory outside the V8 heap, such as Buffer contents. Growth in arrayBuffers with a flat heap points to retained Buffers: a cache of file contents, accumulated chunks or a stream that never drains. A heap snapshot still helps, because the small JS objects holding those Buffers appear as retainers.",
-    "reference": "Node.js docs: process.memoryUsage()"
+    "reference": "Node.js docs: process.memoryUsage()",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-010",
@@ -353,7 +362,8 @@
       }
     ],
     "explanation": "Cluster workers are separate processes, so in-memory state is per worker. With 4 workers, a user whose next request reaches a different worker looks logged out. The robust fix is an external session store (or stateless signed tokens). Sticky routing can mask the problem but breaks on restarts and scaling.",
-    "reference": "Node.js docs: Cluster"
+    "reference": "Node.js docs: Cluster",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-011",
@@ -390,7 +400,8 @@
       }
     ],
     "explanation": "Listing an ArrayBuffer in the transfer list moves its memory to the receiving side instead of copying it. The sender keeps a detached buffer whose `byteLength` is 0, which Node 24 confirms. Transfer is how you pass large binary data to a worker without paying for a copy.",
-    "reference": "Node.js docs: port.postMessage(value[, transferList])"
+    "reference": "Node.js docs: port.postMessage(value[, transferList])",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-012",
@@ -433,7 +444,8 @@
       }
     ],
     "explanation": "In a garbage-collected runtime, a leak is memory that stays reachable when you no longer need it. Long-lived roots such as module-level variables, emitters that live for the whole process, and active timers are the usual culprits. Short-lived locals and settled promises are freed normally.",
-    "reference": "Node.js docs: Memory diagnostics"
+    "reference": "Node.js docs: Memory diagnostics",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-013",
@@ -470,7 +482,8 @@
       }
     ],
     "explanation": "Node warns when more than 10 listeners (by default) are added for one event on one emitter. It is a heuristic: some designs legitimately need more, and then raising the limit for that emitter is fine. Usually it reveals code that adds listeners per request or per retry. Run with `--trace-warnings` to get the stack where the 11th listener was added.",
-    "reference": "Node.js docs: emitter.setMaxListeners(n)"
+    "reference": "Node.js docs: emitter.setMaxListeners(n)",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-014",
@@ -510,7 +523,8 @@
       "E"
     ],
     "explanation": "Warm-up removes one-off allocations such as caches and JIT data from the comparison. Objects created during the first batch that survive a second identical batch are likely leaks. In Chrome DevTools, the \"Objects allocated between snapshots\" view filters for exactly those, and their retainer chains show what holds them.",
-    "reference": "Chrome DevTools: Fix memory problems"
+    "reference": "Chrome DevTools: Fix memory problems",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-015",
@@ -547,7 +561,8 @@
       }
     ],
     "explanation": "Async `fs`, `zlib`, `crypto.pbkdf2`, `dns.lookup` and a few others share the libuv thread pool, 4 threads by default. Saturating it with compression delays unrelated file reads. Options: raise `UV_THREADPOOL_SIZE` (set before the pool starts), compress at a reverse proxy or CDN, or cache compressed output.",
-    "reference": "Node.js docs: Don't Block the Event Loop (the worker pool)"
+    "reference": "Node.js docs: Don't Block the Event Loop (the worker pool)",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-016",
@@ -572,7 +587,8 @@
       }
     ],
     "explanation": "A CPU limit caps total CPU time. Beyond roughly one worker per available core, extra workers add memory, context switches and CFS throttling without adding throughput, and tail latency often gets worse. Size workers to the quota, and scale out with more pods.",
-    "reference": "Kubernetes docs: Resource Management for Pods and Containers"
+    "reference": "Kubernetes docs: Resource Management for Pods and Containers",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-017",
@@ -589,7 +605,8 @@
       "500 req/s"
     ],
     "explanation": "One thread can do 1,000 ms of CPU work per second. At 2 ms per request, that is 1,000 ÷ 2 = 500 requests per second, however much I/O concurrency there is. Beyond that, requests queue and latency climbs, so scale with more processes or cut CPU per request.",
-    "reference": "Node.js docs: Don't Block the Event Loop"
+    "reference": "Node.js docs: Don't Block the Event Loop",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-018",
@@ -626,7 +643,8 @@
       }
     ],
     "explanation": "Benchmark from a separate machine (or at least separate cores), warm the server up first, use realistic payloads, and watch the generator's own CPU. Otherwise you are measuring two programs fighting over the same CPU.",
-    "reference": "autocannon README"
+    "reference": "autocannon README",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-019",
@@ -663,7 +681,8 @@
       }
     ],
     "explanation": "An in-process cache is per process. Across N workers you also store N copies (N× the memory) and need cross-process invalidation, for example Redis pub/sub broadcasts, short TTLs or versioned keys. A shared cache such as Redis gives one copy and one invalidation point at the cost of a network hop.",
-    "reference": "Node.js docs: Cluster"
+    "reference": "Node.js docs: Cluster",
+    "roleLevel": 2
   },
   {
     "id": "NJS-PRF-020",
@@ -700,7 +719,8 @@
       }
     ],
     "explanation": "V8 picks a default heap ceiling from available memory, and it may not match what you want in a container. Set `--max-old-space-size` (in MiB) explicitly, leaving headroom for Buffers, native memory and the rest of RSS. Then use `--heapsnapshot-near-heap-limit` or heap profiling to see why spikes allocate so much.",
-    "reference": "Node.js docs: --max-old-space-size"
+    "reference": "Node.js docs: --max-old-space-size",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-021",
@@ -737,7 +757,8 @@
       }
     ],
     "explanation": "`performance.eventLoopUtilization()` reports the fraction of time the loop spends running callbacks rather than idling in the poll phase. ELU around 1 with one core busy means the single JS thread is the bottleneck. Scale horizontally with cluster, multiple pods or a process manager, or move hot CPU work to worker threads.",
-    "reference": "Node.js docs: performance.eventLoopUtilization()"
+    "reference": "Node.js docs: performance.eventLoopUtilization()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-022",
@@ -780,7 +801,8 @@
       }
     ],
     "explanation": "Offload work that is large relative to the cost of moving its inputs and outputs. Parsing 2 KB takes microseconds, while cloning the result back to the main thread can cost more. Worker threads pay off for heavy CPU tasks, or when you can transfer data (ArrayBuffers) instead of cloning it.",
-    "reference": "Node.js docs: Worker threads"
+    "reference": "Node.js docs: Worker threads",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-023",
@@ -817,7 +839,8 @@
       }
     ],
     "explanation": "Shared memory needs atomic operations. `view[0]++` compiles to load, add and store, and two threads can interleave between them and lose updates. With `Atomics.add` the same test reaches exactly 4,000,000; in Node 24 the plain version landed near 2.6 million. Most code should prefer message passing and reserve SharedArrayBuffer for measured hot paths.",
-    "reference": "MDN: Atomics.add()"
+    "reference": "MDN: Atomics.add()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-024",
@@ -854,7 +877,8 @@
       }
     ],
     "explanation": "Long-polling sends several separate HTTP requests per session. Under round-robin distribution they land on different workers, and only the worker that ran the handshake knows the session. Use sticky sessions (for example `@socket.io/sticky` or a load balancer with affinity) plus an adapter such as Redis so workers can broadcast to each other's clients.",
-    "reference": "Socket.IO docs: Using multiple nodes"
+    "reference": "Socket.IO docs: Using multiple nodes",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-025",
@@ -905,7 +929,8 @@
       }
     ],
     "explanation": "Knowing which number moves tells you where to look. heapUsed growth means JS objects, so take a heap snapshot. arrayBuffers or external growth means Buffers or native bindings. RSS growth with everything else flat points to native memory or allocator fragmentation.",
-    "reference": "Node.js docs: process.memoryUsage()"
+    "reference": "Node.js docs: process.memoryUsage()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-026",
@@ -940,7 +965,8 @@
       "D"
     ],
     "explanation": "The signal flag must be set at start-up; afterwards a signal writes a snapshot on demand. Writing pauses the event loop and can temporarily need memory comparable to the heap size, so route traffic away first if possible. `--heapsnapshot-near-heap-limit=N` captures snapshots automatically as the heap nears its limit.",
-    "reference": "Node.js docs: --heapsnapshot-signal"
+    "reference": "Node.js docs: --heapsnapshot-signal",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-027",
@@ -983,7 +1009,8 @@
       }
     ],
     "explanation": "JSON.stringify is synchronous and runs on the main thread, so big payloads directly reduce throughput. Schema-based serialisers (Fastify uses fast-json-stringify for response schemas) and smaller payloads both cut the work. For huge results, streaming the JSON also bounds memory and time to first byte.",
-    "reference": "Fastify docs: Validation and Serialization"
+    "reference": "Fastify docs: Validation and Serialization",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-028",
@@ -1020,7 +1047,8 @@
       }
     ],
     "explanation": "Every closed client connection leaves a local port in TIME_WAIT for a while. At thousands of new connections per second, the ephemeral port range (about 28,000 ports on Linux by default) runs out. Reuse connections: a keep-alive agent with sensible `maxSockets`, or undici's `Pool`. That also saves the TCP and TLS handshake on each request.",
-    "reference": "Node.js docs: new Agent([options])"
+    "reference": "Node.js docs: new Agent([options])",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-029",
@@ -1063,7 +1091,8 @@
       }
     ],
     "explanation": "V8 uses a generational collector: frequent cheap scavenges for the young generation and rarer mark-compact cycles for the old one, largely concurrent but with pauses. Reducing allocation pressure is the most reliable fix. Tuning semi-space size helps when a profile shows short-lived objects surviving into the old generation. Measure with `--trace-gc` or `perf_hooks` GC entries before and after.",
-    "reference": "V8 blog: Trash talk (Orinoco garbage collector)"
+    "reference": "V8 blog: Trash talk (Orinoco garbage collector)",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-030",
@@ -1088,7 +1117,8 @@
       }
     ],
     "explanation": "Node's Brotli default `BROTLI_PARAM_QUALITY` is 11, the slowest and strongest level. For per-request compression use around level 4–5, or gzip, or let a CDN or reverse proxy compress. Precompress static assets at level 11 during the build.",
-    "reference": "Node.js docs: zlib Brotli constants"
+    "reference": "Node.js docs: zlib Brotli constants",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-031",
@@ -1105,7 +1135,8 @@
       "1000 rps"
     ],
     "explanation": "One worker can do 1,000 ÷ 4 = 250 requests per second. Four workers on four dedicated cores give about 4 × 250 = 1,000 requests per second. Real systems land somewhat lower because of GC, kernel networking and the load balancer.",
-    "reference": "Node.js docs: Cluster"
+    "reference": "Node.js docs: Cluster",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-032",
@@ -1145,7 +1176,8 @@
       "E"
     ],
     "explanation": "Start the replacement first, so capacity never drops, and wait until it is actually listening. `worker.disconnect()` closes the old worker's server handles; once existing connections end, it exits. Add a timeout that calls `worker.kill()` if in-flight requests hang. PM2's `reload` automates the same sequence.",
-    "reference": "Node.js docs: worker.disconnect()"
+    "reference": "Node.js docs: worker.disconnect()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-033",
@@ -1182,7 +1214,8 @@
       }
     ],
     "explanation": "AsyncLocalStorage propagates context to async work created inside `run()`, including timers. While a timer is pending, its context and everything the store references stay reachable. Keep stores small (IDs, not bodies), and start long-lived background work outside the request context, for example with `AsyncLocalStorage.exit()` or a job queue.",
-    "reference": "Node.js docs: AsyncLocalStorage"
+    "reference": "Node.js docs: AsyncLocalStorage",
+    "roleLevel": 3
   },
   {
     "id": "NJS-PRF-034",
@@ -1219,7 +1252,8 @@
       }
     ],
     "explanation": "When every V8-visible number is flat but RSS grows, the memory is native: addons, TLS or zlib buffers, or allocator behaviour. glibc creates many malloc arenas in multi-threaded processes (Node has the thread pool), and fragmentation can stop memory returning to the OS. Limiting arenas or using jemalloc often flattens RSS, which confirms the diagnosis.",
-    "reference": "Node.js docs: Memory diagnostics"
+    "reference": "Node.js docs: Memory diagnostics",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-035",
@@ -1256,7 +1290,8 @@
       }
     ],
     "explanation": "`cluster.schedulingPolicy` defaults to `SCHED_RR` everywhere except Windows, where it is `SCHED_NONE` (this machine reports 1, the value of SCHED_NONE). Under SCHED_RR the primary accepts connections and hands them to workers in turn. Under SCHED_NONE workers accept directly and the OS picks, which can be lopsided. You can set the policy with `NODE_CLUSTER_SCHED_POLICY` or before forking.",
-    "reference": "Node.js docs: cluster.schedulingPolicy"
+    "reference": "Node.js docs: cluster.schedulingPolicy",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-036",
@@ -1299,7 +1334,8 @@
       }
     ],
     "explanation": "A CPU quota limits CPU time, not which CPUs are visible, so CPU-count APIs see the whole machine. Make the worker count explicit (for example from an environment variable matching the limit). Often better: run one process per pod and let Kubernetes scale pods.",
-    "reference": "Kubernetes docs: Resource Management for Pods and Containers"
+    "reference": "Kubernetes docs: Resource Management for Pods and Containers",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-037",
@@ -1336,7 +1372,8 @@
       }
     ],
     "explanation": "Starting a worker means creating a V8 isolate, an event loop and loading your modules: milliseconds of CPU and several megabytes of memory. Per request, that start-up can dominate. A pool sized near the available cores amortises start-up and gives natural backpressure with a bounded queue.",
-    "reference": "Piscina README"
+    "reference": "Piscina README",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-038",
@@ -1373,7 +1410,8 @@
       }
     ],
     "explanation": "Patterns such as `^([a-z]+)*@` can backtrack exponentially on inputs that almost match, and the main thread is blocked for the whole time. This is ReDoS when attackers can supply input. Fix the pattern, cap input length before matching, or use a linear-time engine (for example the re2 binding).",
-    "reference": "OWASP: Regular expression Denial of Service (ReDoS)"
+    "reference": "OWASP: Regular expression Denial of Service (ReDoS)",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-039",
@@ -1410,7 +1448,8 @@
       }
     ],
     "explanation": "Event-loop delay measures how late timers fire, so periodic synchronous work shows up as regular bursts. Fixes: move the computation off the main thread (a worker that posts the finished structure back, ideally a transferable one), split it into chunks with `setImmediate` between them, or make updates incremental.",
-    "reference": "Node.js docs: perf_hooks.monitorEventLoopDelay()"
+    "reference": "Node.js docs: perf_hooks.monitorEventLoopDelay()",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-040",
@@ -1447,7 +1486,8 @@
       }
     ],
     "explanation": "Every resource sets a ceiling, and the lowest wins. CPU: 1,000 ms ÷ 3 ms ≈ 333 per second. Pool: by Little's Law, 10 connections ÷ 0.05 s ≈ 200 per second. So the pool binds first. Beyond 200 per second, requests queue for connections and latency grows, even though CPU is only about 60% busy. A bigger pool helps only while the database can absorb more concurrency.",
-    "reference": "Little's Law (queueing theory)"
+    "reference": "Little's Law (queueing theory)",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-041",
@@ -1490,7 +1530,8 @@
       }
     ],
     "explanation": "Buffering whole large files makes memory scale with file size times concurrency. Streaming with `pipeline` reads chunks (64 KiB by default for fs streams), pauses when the socket's buffer is full and forwards errors properly. For static files, a CDN or sendfile-capable reverse proxy is even better.",
-    "reference": "Node.js docs: stream.pipeline()"
+    "reference": "Node.js docs: stream.pipeline()",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-042",
@@ -1527,7 +1568,8 @@
       }
     ],
     "explanation": "Each Node timer is a JS object linked into timer lists, plus a closure capturing the key. Millions of them waste memory and timer bookkeeping. Lazy expiry (compare `expiresAt` on access) plus a periodic sweep or a size-bounded LRU such as `lru-cache` with a TTL scales far better.",
-    "reference": "Node.js docs: Timers"
+    "reference": "Node.js docs: Timers",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-043",
@@ -1544,7 +1586,8 @@
       "1800 MB"
     ],
     "explanation": "Each worker is a separate process with its own copy, so 6 × 300 MB = 1,800 MB. That multiplier is a key argument for a shared cache (Redis or memcached) or for fewer, larger processes when caching dominates memory.",
-    "reference": "Node.js docs: Cluster"
+    "reference": "Node.js docs: Cluster",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-044",
@@ -1581,7 +1624,8 @@
       }
     ],
     "explanation": "A closed-loop generator sends the next request only after the previous one finishes, so when the server stalls it sends less load. Real users keep arriving, requests queue during the stall, and every one of them sees the delay. To measure latency for an SLO, use a fixed request rate (open-loop, as wrk2 or k6 arrival-rate executors do) and correct for coordinated omission.",
-    "reference": "Gil Tene: How NOT to Measure Latency"
+    "reference": "Gil Tene: How NOT to Measure Latency",
+    "roleLevel": 4
   },
   {
     "id": "NJS-PRF-045",
@@ -1632,6 +1676,7 @@
       }
     ],
     "explanation": "Each symptom points to a different subsystem: connection distribution, the JS heap, the libuv pool and the TCP stack. Learning these signatures saves hours: confirm with ELU per worker, heap snapshots, a thread-pool usage check and `ss -s` for socket states.",
-    "reference": "Node.js docs: Diagnostics guide"
+    "reference": "Node.js docs: Diagnostics guide",
+    "roleLevel": 4
   }
 ]

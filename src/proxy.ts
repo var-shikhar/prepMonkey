@@ -36,7 +36,7 @@ export const config = {
   matcher: [{
     // Pages only: not API routes, build assets, icons, share images or crawler files, and not
     // link prefetches (the page they prefetch gets its own policy when it is actually opened).
-    source: '/((?!api/|_next/static|_next/image|favicon.ico|icon|apple-icon|.*opengraph-image|robots.txt|sitemap.xml|llms.txt).*)',
+    source: '/((?!api/|_next/static|_next/image|favicon.ico|icon|apple-icon|.*opengraph-image|robots.txt|sitemap.xml|llms.txt|manifest.webmanifest|sw.js).*)',
     missing: [
       { type: 'header', key: 'next-router-prefetch' },
       { type: 'header', key: 'purpose', value: 'prefetch' },

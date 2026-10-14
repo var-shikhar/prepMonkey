@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "SQL injection happens when user input is spliced into the SQL text and changes its meaning. Parameterized queries (prepared statements) send the SQL and the values separately: the server parses the statement first, then binds the values as data. That makes injection through the bound value impossible, whatever characters it contains.",
-    "reference": "OWASP: SQL Injection Prevention Cheat Sheet"
+    "reference": "OWASP: SQL Injection Prevention Cheat Sheet",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "Escaping only works if it matches the exact parsing rules of the context: string literal settings such as `standard_conforming_strings`, numeric positions where there are no quotes at all, `LIKE` patterns and identifiers all need different treatment. Bind parameters avoid the whole problem because values never become part of the SQL text. OWASP lists escaping only as a last resort.",
-    "reference": "OWASP: SQL Injection Prevention Cheat Sheet"
+    "reference": "OWASP: SQL Injection Prevention Cheat Sheet",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "PostgreSQL privileges are separate and additive: SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER on tables. `GRANT SELECT` allows reading only. Re-granting needs `WITH GRANT OPTION`, and ALTER/DROP are reserved for the owner. Least privilege means granting exactly what each role needs.",
-    "reference": "PostgreSQL docs: GRANT"
+    "reference": "PostgreSQL docs: GRANT",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-004",
@@ -155,7 +158,8 @@
       }
     ],
     "explanation": "Each normal form builds on the previous one. 1NF removes lists and repeating groups. 2NF removes partial dependencies on part of a composite key. 3NF removes transitive dependencies between non-key columns. BCNF tightens 3NF by requiring every determinant to be a candidate key, which matters when a table has overlapping candidate keys.",
-    "reference": "Database design: normalization (1NF–BCNF)"
+    "reference": "Database design: normalization (1NF–BCNF)",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-005",
@@ -170,7 +174,8 @@
       "REVOKE"
     ],
     "explanation": "`REVOKE` is the counterpart of `GRANT`. It removes privileges (or role memberships) from a role. A role can still have access through other routes, such as membership in a role that holds the privilege or a grant to PUBLIC.",
-    "reference": "PostgreSQL docs: REVOKE"
+    "reference": "PostgreSQL docs: REVOKE",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-006",
@@ -207,7 +212,8 @@
       }
     ],
     "explanation": "`numeric` (or `decimal`) stores exact decimal values, so money adds up to the cent and can be constrained with `CHECK (amount >= 0)`. Floating-point types are binary approximations and accumulate rounding errors. Some teams store integer cents (`bigint`) instead, which is also exact. PostgreSQL's `money` type exists but depends on the `lc_monetary` locale, so `numeric` is the usual recommendation.",
-    "reference": "PostgreSQL docs: Numeric Types"
+    "reference": "PostgreSQL docs: Numeric Types",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-007",
@@ -250,7 +256,8 @@
       }
     ],
     "explanation": "Least privilege means each role gets only what its job requires. A typical setup has a dedicated owner role for migrations, a runtime role with DML privileges only, and read-only roles for reporting. Superusers and the owner bypass checks (and RLS, unless forced), so applications should never run as them.",
-    "reference": "PostgreSQL docs: Database Roles and Privileges"
+    "reference": "PostgreSQL docs: Database Roles and Privileges",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-008",
@@ -287,7 +294,8 @@
       }
     ],
     "explanation": "Storing several values in one column breaks first normal form. You cannot index or join on a single tag, enforce that tags exist, or count products per tag without string parsing. The normalized design uses a junction table such as `product_tags(product_id, tag_id)` with foreign keys to both sides. PostgreSQL arrays or JSONB are deliberate exceptions with their own trade-offs.",
-    "reference": "Database design: first normal form"
+    "reference": "Database design: first normal form",
+    "roleLevel": 1
   },
   {
     "id": "SQL-SEC-009",
@@ -324,7 +332,8 @@
       }
     ],
     "explanation": "Column privileges let you hide sensitive columns without a view. Any query that references a column without privilege fails with \"permission denied for table emp\", including `SELECT *` and a WHERE or ORDER BY on that column. Verified in PostgreSQL 18: `count(*)` and queries on `id`, `name` work, `SELECT *` fails.",
-    "reference": "PostgreSQL docs: GRANT (column privileges)"
+    "reference": "PostgreSQL docs: GRANT (column privileges)",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-010",
@@ -361,7 +370,8 @@
       }
     ],
     "explanation": "Access is checked in layers: CONNECT on the database, USAGE on the schema, then privileges on the object. Holding SELECT on `hr.pay` is useless without `GRANT USAGE ON SCHEMA hr TO rep`. Verified in PostgreSQL 18: the query fails with \"permission denied for schema hr\" until USAGE is granted.",
-    "reference": "PostgreSQL docs: Schemas and Privileges"
+    "reference": "PostgreSQL docs: Schemas and Privileges",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-011",
@@ -398,7 +408,8 @@
       }
     ],
     "explanation": "When row-level security is enabled and no policy applies, PostgreSQL uses a default-deny policy: no rows are visible and no rows can be modified. The table owner, superusers and BYPASSRLS roles are exempt. Verified in PostgreSQL 18: `app` gets a count of 0.",
-    "reference": "PostgreSQL docs: Row Security Policies"
+    "reference": "PostgreSQL docs: Row Security Policies",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-012",
@@ -441,7 +452,8 @@
       }
     ],
     "explanation": "Parameter binding protects the SQL structure, but the bound string is still a LIKE pattern. Users can submit `%` or `_` to widen matches or force expensive scans. Escape the special characters (backslash is the default escape character in PostgreSQL) before adding your own wildcard. Verified in PostgreSQL 18: binding `a%` matched 3 rows, while the escaped `a\\%%` matched only the literal `a%b`.",
-    "reference": "PostgreSQL docs: Pattern Matching (LIKE)"
+    "reference": "PostgreSQL docs: Pattern Matching (LIKE)",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-013",
@@ -478,7 +490,8 @@
       }
     ],
     "explanation": "`product_name` is determined by `product_id` alone, which is only part of the composite key. That partial dependency breaks 2NF and causes update anomalies: renaming a product means updating every order line. The fix is to keep `product_name` in a `products` table and reference it by `product_id`.",
-    "reference": "Database design: second normal form"
+    "reference": "Database design: second normal form",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-014",
@@ -515,7 +528,8 @@
       }
     ],
     "explanation": "Because `dept_name` depends on `dept_id`, and `dept_id` depends on the key, `dept_name` depends on the key only transitively. That breaks 3NF and creates an update anomaly: the same fact is stored many times and can drift apart. A `departments(dept_id, dept_name)` table stores each name once.",
-    "reference": "Database design: third normal form"
+    "reference": "Database design: third normal form",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-015",
@@ -565,7 +579,8 @@
       "E"
     ],
     "explanation": "Each normal form requires the previous one: 1NF (atomic values), 2NF (no partial dependencies), 3NF (no transitive dependencies), BCNF (every determinant is a candidate key), then 4NF (no non-trivial multi-valued dependencies). Most OLTP schemas aim for 3NF or BCNF and denormalize deliberately where it helps.",
-    "reference": "Database design: normal forms"
+    "reference": "Database design: normal forms",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-016",
@@ -590,7 +605,8 @@
       }
     ],
     "explanation": "Privileges from role membership are separate from direct grants. Revoking the direct grant leaves the inherited one in place, so `analyst` keeps reading through `readers` (verified in PostgreSQL 18). To cut access you must also revoke the membership (`REVOKE readers FROM analyst`) or the role's grant. `has_table_privilege()` shows the effective result.",
-    "reference": "PostgreSQL docs: Role Membership"
+    "reference": "PostgreSQL docs: Role Membership",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-017",
@@ -627,7 +643,8 @@
       }
     ],
     "explanation": "PostgreSQL enums can gain values (`ADD VALUE`, optionally `BEFORE`/`AFTER`) and rename them, but cannot drop them: the error is \"dropping an enum value is not implemented\" (verified in PostgreSQL 18). Removing a value means creating a new type and migrating the column. That rigidity is why many teams model statuses with a `CHECK` constraint or a lookup table with a foreign key instead.",
-    "reference": "PostgreSQL docs: ALTER TYPE"
+    "reference": "PostgreSQL docs: ALTER TYPE",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-018",
@@ -643,7 +660,8 @@
       "quote_ident()"
     ],
     "explanation": "Identifiers such as table and column names cannot be bind parameters. `quote_ident()` (or `format()` with `%I`) double-quotes the name when needed and escapes embedded quotes, so the value cannot break out of the identifier. Better still, validate the name against an allow-list of known tables first.",
-    "reference": "PostgreSQL docs: String Functions (quote_ident)"
+    "reference": "PostgreSQL docs: String Functions (quote_ident)",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-019",
@@ -686,7 +704,8 @@
       }
     ],
     "explanation": "Passwords should be hashed with an adaptive, salted algorithm designed for passwords: Argon2id, scrypt or bcrypt (PBKDF2 where FIPS compliance requires it). General-purpose hashes like MD5 and SHA-256 are far too fast, and encryption is reversible. In PostgreSQL itself, `pgcrypto`'s `crypt()` with `gen_salt('bf')` provides bcrypt when hashing in the database is unavoidable.",
-    "reference": "OWASP: Password Storage Cheat Sheet"
+    "reference": "OWASP: Password Storage Cheat Sheet",
+    "roleLevel": 2
   },
   {
     "id": "SQL-SEC-020",
@@ -723,7 +742,8 @@
       }
     ],
     "explanation": "With `missing_ok = true`, `current_setting()` returns NULL for an unset parameter (or an empty string after a transaction-local value has expired). Either way, `tenant = <that>` is never true, so the query returns nothing. Failing closed like this is the desired behaviour. Without `missing_ok`, the query would raise \"unrecognized configuration parameter\" instead. Verified in PostgreSQL 18.",
-    "reference": "PostgreSQL docs: Row Security Policies"
+    "reference": "PostgreSQL docs: Row Security Policies",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-021",
@@ -760,7 +780,8 @@
       }
     ],
     "explanation": "A policy created without `FOR` applies to all commands. When it has no `WITH CHECK`, PostgreSQL uses the USING expression to check rows being inserted or updated. A tenant therefore cannot write rows for another tenant. Verified in PostgreSQL 18: the INSERT, and an UPDATE moving a row to tenant `b`, both fail with \"new row violates row-level security policy\".",
-    "reference": "PostgreSQL docs: CREATE POLICY"
+    "reference": "PostgreSQL docs: CREATE POLICY",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-022",
@@ -797,7 +818,8 @@
       }
     ],
     "explanation": "By default, a table's owner is exempt from its row-level security policies. `ALTER TABLE own FORCE ROW LEVEL SECURITY` makes policies apply to the owner too. Verified in PostgreSQL 18: `owner1` sees 1 row, and 0 rows once RLS is forced. This matters because applications often connect as the role that owns the tables, which silently disables RLS for them.",
-    "reference": "PostgreSQL docs: ALTER TABLE (FORCE ROW LEVEL SECURITY)"
+    "reference": "PostgreSQL docs: ALTER TABLE (FORCE ROW LEVEL SECURITY)",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-023",
@@ -840,7 +862,8 @@
       }
     ],
     "explanation": "Row security does not apply to superusers, roles with BYPASSRLS, or the table owner (unless FORCE ROW LEVEL SECURITY is enabled). Everyone else is filtered by the policies. Verified in PostgreSQL 18 with a BYPASSRLS role and a non-superuser owner. Keep those three kinds of role out of application connection strings.",
-    "reference": "PostgreSQL docs: Row Security Policies"
+    "reference": "PostgreSQL docs: Row Security Policies",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-024",
@@ -877,7 +900,8 @@
       }
     ],
     "explanation": "SECURITY DEFINER functions run with the owner's privileges, but unqualified names are resolved through the caller's search_path, where the temporary schema comes first by default. An attacker can shadow `balances` (or a function or operator) with their own object. The documented fix is `SET search_path = public, pg_temp` (or schema-qualifying every name), with pg_temp last. Verified in PostgreSQL 18: the unsafe function returned the attacker's 999999, the fixed one returned 5.",
-    "reference": "PostgreSQL docs: CREATE FUNCTION (Writing SECURITY DEFINER Functions Safely)"
+    "reference": "PostgreSQL docs: CREATE FUNCTION (Writing SECURITY DEFINER Functions Safely)",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-025",
@@ -914,7 +938,8 @@
       }
     ],
     "explanation": "PostgreSQL grants EXECUTE on new functions to PUBLIC by default. For SECURITY DEFINER functions this is dangerous, because callers run the body with the owner's privileges. The docs recommend creating the function and revoking `EXECUTE ... FROM PUBLIC` in the same transaction, then granting it to the intended roles. You can also change the default with `ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`. Verified in PostgreSQL 18.",
-    "reference": "PostgreSQL docs: CREATE FUNCTION"
+    "reference": "PostgreSQL docs: CREATE FUNCTION",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-026",
@@ -957,7 +982,8 @@
       }
     ],
     "explanation": "Column-level UPDATE privileges let the database enforce which fields an application may change. That is a backstop against mass-assignment bugs, where an API copies all request fields into the UPDATE. A statement that touches any ungranted column fails as a whole with \"permission denied for table prof\". Verified in PostgreSQL 18.",
-    "reference": "PostgreSQL docs: GRANT (column privileges)"
+    "reference": "PostgreSQL docs: GRANT (column privileges)",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-027",
@@ -994,7 +1020,8 @@
       }
     ],
     "explanation": "`ALTER DEFAULT PRIVILEGES` without `FOR ROLE` changes the defaults only for objects created later by the current role. Tables created by another role do not pick them up, and existing tables are never changed. Run `ALTER DEFAULT PRIVILEGES FOR ROLE dev IN SCHEMA hr ...` for each creating role, or create objects with a single owner role. Verified in PostgreSQL 18: a table created by the same role was readable, the one created by `dev` was not.",
-    "reference": "PostgreSQL docs: ALTER DEFAULT PRIVILEGES"
+    "reference": "PostgreSQL docs: ALTER DEFAULT PRIVILEGES",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-028",
@@ -1031,7 +1058,8 @@
       }
     ],
     "explanation": "Privileges granted through a grant option depend on it. `REVOKE` defaults to RESTRICT and refuses when dependent grants exist. `REVOKE ... CASCADE` removes the dependent grants as well. Verified in PostgreSQL 18: the plain REVOKE failed with \"dependent privileges exist\"; with CASCADE, `junior` lost access too.",
-    "reference": "PostgreSQL docs: REVOKE"
+    "reference": "PostgreSQL docs: REVOKE",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-029",
@@ -1074,7 +1102,8 @@
       }
     ],
     "explanation": "Ordinary views access their underlying tables with the privileges of the view owner, which is what makes them useful for exposing a safe subset. Since PostgreSQL 15, `security_invoker = true` makes a view check privileges (and RLS) as the querying user instead. Verified in PostgreSQL 18: `viewer` reads `pub_names`, but `salaries` and `pub_names_inv` both fail with \"permission denied for table salaries\".",
-    "reference": "PostgreSQL docs: CREATE VIEW"
+    "reference": "PostgreSQL docs: CREATE VIEW",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-030",
@@ -1111,7 +1140,8 @@
       }
     ],
     "explanation": "A partial unique index enforces uniqueness only for rows matching its predicate. With `WHERE deleted_at IS NULL`, active emails stay unique while soft-deleted rows are ignored. `UNIQUE (email, deleted)` breaks on the second deletion of the same email, and `UNIQUE (email, deleted_at)` lets duplicate live rows through because NULLs compare as distinct. Verified in PostgreSQL 18.",
-    "reference": "PostgreSQL docs: Partial Indexes"
+    "reference": "PostgreSQL docs: Partial Indexes",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-031",
@@ -1148,7 +1178,8 @@
       }
     ],
     "explanation": "Bind parameters can only stand for values. In ORDER BY a parameter becomes a constant, so the sort does nothing useful (and no error warns you). For a table name in FROM, a parameter is a syntax error. Dynamic identifiers must be checked against an allow-list (for example a map of `\"name\" → name`) or quoted with `format('%I')`. Verified in PostgreSQL 18: the rows came back in insertion order.",
-    "reference": "PostgreSQL docs: Prepared statements and ORDER BY"
+    "reference": "PostgreSQL docs: Prepared statements and ORDER BY",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-032",
@@ -1202,7 +1233,8 @@
       }
     ],
     "explanation": "Storing facts about courses inside enrollment rows causes all three classic anomalies. Normalizing into `courses(course_id, title, instructor)` and `enrollments(student_id, course_id)` stores each fact once. The non-repeatable read is a transaction-isolation issue and is unrelated to normalization.",
-    "reference": "Database design: modification anomalies"
+    "reference": "Database design: modification anomalies",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-033",
@@ -1217,7 +1249,8 @@
       "%L"
     ],
     "explanation": "`%L` produces a properly quoted SQL literal (and `NULL` without quotes for a null value), while `%I` quotes identifiers and `%s` inserts text unquoted. For dynamic SQL inside PL/pgSQL, passing values with `EXECUTE ... USING` is even safer because they never become SQL text. Verified in PostgreSQL 18: `format('%L', 'O''Brien')` gives `'O''Brien'`.",
-    "reference": "PostgreSQL docs: format()"
+    "reference": "PostgreSQL docs: format()",
+    "roleLevel": 3
   },
   {
     "id": "SQL-SEC-034",
@@ -1254,7 +1287,8 @@
       }
     ],
     "explanation": "Second-order injection happens when data stored safely is later treated as trusted and built into dynamic SQL. Here the saved name closes the literal and adds `or '1'='1`. Verified in PostgreSQL 18: the concatenating function returned 1 match for a name that does not exist. The fixes, `format('... %L', n)` or `EXECUTE '... $1' USING n`, both returned 0.",
-    "reference": "OWASP: SQL Injection (second-order)"
+    "reference": "OWASP: SQL Injection (second-order)",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-035",
@@ -1291,7 +1325,8 @@
       }
     ],
     "explanation": "ORMs are safe by default, but their raw-query escape hatches are where injection creeps back in. Prisma's `$queryRaw` tagged template parameterizes every interpolated value. `$queryRawUnsafe` accepts a plain string, so building that string with interpolation splices user input into SQL. It is only safe when values are passed as separate parameter arguments. Other ORMs have the same split, for example Sequelize `literal` and Django `extra`.",
-    "reference": "Prisma docs: Raw queries (SQL injection prevention)"
+    "reference": "Prisma docs: Raw queries (SQL injection prevention)",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-036",
@@ -1334,7 +1369,8 @@
       }
     ],
     "explanation": "Ordinary views check base-table privileges and RLS policies as the view owner. A view owned by a superuser (or the table owner, or a BYPASSRLS role) therefore leaks every row. Verified in PostgreSQL 18: a superuser-owned view returned both tenants' rows to `viewer`, while one owned by a normal role returned only tenant `a`. PostgreSQL 15+ also offers `security_invoker = true` to evaluate policies as the caller.",
-    "reference": "PostgreSQL docs: CREATE VIEW (security_invoker)"
+    "reference": "PostgreSQL docs: CREATE VIEW (security_invoker)",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-037",
@@ -1371,7 +1407,8 @@
       }
     ],
     "explanation": "Since PostgreSQL 12, `ALTER TYPE ... ADD VALUE` can run inside a transaction block. The new value cannot be used until that transaction commits, and using it raises \"unsafe use of new value\". Migration tools that wrap each file in a transaction need the ALTER and the data change in separate migrations. This rigidity, plus the inability to drop values, is a common argument for `CHECK` constraints or lookup tables over enums. Verified in PostgreSQL 18.",
-    "reference": "PostgreSQL docs: ALTER TYPE (ADD VALUE)"
+    "reference": "PostgreSQL docs: ALTER TYPE (ADD VALUE)",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-038",
@@ -1414,7 +1451,8 @@
       }
     ],
     "explanation": "EAV trades schema enforcement for flexibility. Types, required attributes, foreign keys and uniqueness all have to move into application code, and queries get complex and slow. In PostgreSQL, a typed core table plus a `jsonb` column for truly variable attributes, optionally with CHECK constraints or JSON schema validation, usually gives the flexibility with far less pain.",
-    "reference": "Database design: EAV anti-pattern"
+    "reference": "Database design: EAV anti-pattern",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-039",
@@ -1451,7 +1489,8 @@
       }
     ],
     "explanation": "A polymorphic association stores a type and an id, so no foreign key can enforce the id: orphans and ids pointing at the wrong table are easy to create. Alternatives are \"exclusive arcs\" (one nullable FK per parent plus `num_nonnulls(...) = 1`), separate comment tables per parent, or a shared supertype table that every commentable entity references. Verified in PostgreSQL 18: the CHECK rejected a row with both parents set.",
-    "reference": "PostgreSQL docs: Comparison Functions (num_nonnulls)"
+    "reference": "PostgreSQL docs: Comparison Functions (num_nonnulls)",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-040",
@@ -1488,7 +1527,8 @@
       }
     ],
     "explanation": "This is the textbook case separating 3NF from BCNF. The dependency `instructor → course` has a non-key determinant, but `course` belongs to a candidate key, so 3NF tolerates it while BCNF does not. The consequence is an anomaly: you cannot record which course an instructor teaches without a student. Decomposing into `(instructor, course)` and `(student, instructor)` reaches BCNF, at the cost of no longer enforcing \"one instructor per student per course\" with a simple key.",
-    "reference": "Database design: Boyce–Codd normal form"
+    "reference": "Database design: Boyce–Codd normal form",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-041",
@@ -1525,7 +1565,8 @@
       }
     ],
     "explanation": "PostgreSQL combines all permissive policies for a command with OR, then ANDs every restrictive policy on top. Here that is `(a OR b) AND a`, so only row 1 is visible. Restrictive policies suit global guards such as \"only rows of the current tenant\", applied in addition to more specific permissive rules. You need at least one permissive policy, or nothing is visible at all. Verified in PostgreSQL 18: without p3 `app` saw rows 1 and 2, with p3 only row 1.",
-    "reference": "PostgreSQL docs: CREATE POLICY (permissive and restrictive)"
+    "reference": "PostgreSQL docs: CREATE POLICY (permissive and restrictive)",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-042",
@@ -1562,7 +1603,8 @@
       }
     ],
     "explanation": "Statement logging records SQL text, including literals. The PostgreSQL docs warn that a password given in CREATE or ALTER ROLE is sent in clear text and may end up in the server log or client history. Prefer setting passwords with psql's `\\password` (which sends a SCRAM hash), limit statement logging to DDL or a sampled subset, and protect and redact the logs. Logs are a classic place for secrets and personal data to leak.",
-    "reference": "PostgreSQL docs: CREATE ROLE and Error Reporting and Logging"
+    "reference": "PostgreSQL docs: CREATE ROLE and Error Reporting and Logging",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-043",
@@ -1599,7 +1641,8 @@
       }
     ],
     "explanation": "PostgreSQL 15 removed the default PUBLIC CREATE privilege on the `public` schema for new databases (and made the database owner the schema owner). Databases upgraded or restored from older versions keep their existing privileges, so upgraded clusters can still let any role create objects there. That is the classic path for trojan functions and search_path attacks. Run `REVOKE CREATE ON SCHEMA public FROM PUBLIC` explicitly. Verified in PostgreSQL 18: a fresh database denies CREATE to a new login role.",
-    "reference": "PostgreSQL 15 release notes; PostgreSQL docs: Schemas (Usage Patterns)"
+    "reference": "PostgreSQL 15 release notes; PostgreSQL docs: Schemas (Usage Patterns)",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-044",
@@ -1624,7 +1667,8 @@
       }
     ],
     "explanation": "Encryption at rest (disk, volume or tablespace level) protects against stolen drives, snapshots and backups. Queries see plaintext because the database decrypts transparently, so injection, over-privileged roles or a missing RLS policy expose the data anyway. Defence in depth combines least privilege, parameterized queries, RLS and, for the most sensitive fields, application-level or column-level encryption with keys held outside the database.",
-    "reference": "OWASP: Cryptographic Storage Cheat Sheet"
+    "reference": "OWASP: Cryptographic Storage Cheat Sheet",
+    "roleLevel": 4
   },
   {
     "id": "SQL-SEC-045",
@@ -1674,6 +1718,7 @@
       "E"
     ],
     "explanation": "With pooled connections, a session-level `SET app.tenant` survives on the connection and can leak into the next request for a different tenant. Setting it with `set_config(..., true)` (or `SET LOCAL`) inside a transaction scopes it to that transaction. After COMMIT the setting reads as an empty string, so a request that forgets to set it fails closed. Verified in PostgreSQL 18: the local value disappeared after COMMIT, while a session-level value persisted.",
-    "reference": "PostgreSQL docs: set_config and SET LOCAL"
+    "reference": "PostgreSQL docs: set_config and SET LOCAL",
+    "roleLevel": 4
   }
 ]

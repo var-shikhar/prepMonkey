@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Synchronous fs methods do their I/O on the main JavaScript thread, so the whole process waits. In a server that turns every slow disk read into latency for all concurrent requests. They are perfectly reasonable where nothing else needs to run yet: loading config at startup, or one-shot CLI tools. In handlers, use `fs/promises` or cache the template once at startup.",
-    "reference": "Node.js docs: Don't Block the Event Loop"
+    "reference": "Node.js docs: Don't Block the Event Loop",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "`process.env` coerces every assigned value to a string. `process.env.PORT = 3000` stores `\"3000\"`, and even `process.env.X = undefined` stores the string `\"undefined\"`. Parse values explicitly (`Number(process.env.PORT)`) and delete keys with `delete process.env.X`.",
-    "reference": "Node.js docs: process.env"
+    "reference": "Node.js docs: process.env",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "CommonJS wraps each module in a function that receives `__dirname` and `__filename`. ES modules have no such wrapper, so those names are undeclared. Since Node.js 20.11 (and 21.2) use `import.meta.dirname` and `import.meta.filename`; on older versions, derive them with `fileURLToPath(import.meta.url)`.",
-    "reference": "Node.js docs: ECMAScript modules (import.meta.dirname)"
+    "reference": "Node.js docs: ECMAScript modules (import.meta.dirname)",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-004",
@@ -111,7 +114,8 @@
       "/a/c/d.txt"
     ],
     "explanation": "`join` concatenates the segments with `/` and then normalizes: `/a/b/../c/d.txt` collapses `b/..`, giving `/a/c/d.txt`.",
-    "reference": "Node.js docs: path.join()"
+    "reference": "Node.js docs: path.join()",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-005",
@@ -148,7 +152,8 @@
       }
     ],
     "explanation": "fs APIs resolve relative paths against the process working directory, which is wherever the process was started. `require()` resolves relative to the module file, which is why people expect the same from fs. Use `path.join(__dirname, 'config.json')` (CommonJS) or `path.join(import.meta.dirname, 'config.json')` (ESM).",
-    "reference": "Node.js docs: process.cwd()"
+    "reference": "Node.js docs: process.cwd()",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-006",
@@ -207,7 +212,8 @@
       }
     ],
     "explanation": "`exec` is the convenient but risky one: it uses a shell and buffers output up to `maxBuffer`. `execFile` skips the shell, so arguments are passed literally. `spawn` is the low-level primitive with streamed stdio. `fork` is `spawn` specialised for Node.js scripts, adding an IPC channel for `send()` and `message` events.",
-    "reference": "Node.js docs: Child process"
+    "reference": "Node.js docs: Child process",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-007",
@@ -250,7 +256,8 @@
       }
     ],
     "explanation": "`mkdir` with `{ recursive: true }` behaves like `mkdir -p`, and `rm` with `{ recursive: true, force: true }` behaves like `rm -rf`. Writing a file never creates its parent folders, so create them first.",
-    "reference": "Node.js docs: fs.mkdir(), fs.rm()"
+    "reference": "Node.js docs: fs.mkdir(), fs.rm()",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-008",
@@ -287,7 +294,8 @@
       }
     ],
     "explanation": "Node.js exits with code 1 for an uncaught exception, after printing the stack to stderr. Since Node.js 15, an unhandled promise rejection also exits with 1 by default. Supervisors (systemd, Kubernetes, PM2) rely on this non-zero code to decide to restart.",
-    "reference": "Node.js docs: Process exit codes"
+    "reference": "Node.js docs: Process exit codes",
+    "roleLevel": 1
   },
   {
     "id": "NJS-FSP-009",
@@ -324,7 +332,8 @@
       }
     ],
     "explanation": "`process.exitCode` only records the code to use when the process eventually exits. The event loop still runs the pending timer, prints `flushed`, and then exits with 3. `process.exit()` instead ends the process synchronously and abandons timers, pending I/O and possibly unflushed stdout. Prefer setting `exitCode` and letting the process end naturally.",
-    "reference": "Node.js docs: process.exitCode"
+    "reference": "Node.js docs: process.exitCode",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-010",
@@ -339,7 +348,8 @@
       "/var/data/x.log"
     ],
     "explanation": "`resolve` processes segments from right to left until it has an absolute path. `x.log` is relative, `/var/data` is absolute, so it stops there and returns `/var/data/x.log`. Everything to the left of the last absolute segment is ignored.",
-    "reference": "Node.js docs: path.resolve()"
+    "reference": "Node.js docs: path.resolve()",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-011",
@@ -376,7 +386,8 @@
       }
     ],
     "explanation": "Checking and then acting is a time-of-check to time-of-use (TOCTOU) race: both workers can pass `existsSync` before either writes. The `wx` flag (`O_CREAT | O_EXCL`) makes creation and the existence check one atomic system call. The loser gets `EEXIST`. The same idea applies generally: attempt the operation and handle the error, instead of checking first.",
-    "reference": "Node.js docs: File system flags"
+    "reference": "Node.js docs: File system flags",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-012",
@@ -413,7 +424,8 @@
       }
     ],
     "explanation": "`readFile` loads the entire file into memory, and a UTF-8 decode makes a single string, which has a hard maximum length in V8. Large files must be processed incrementally: stream chunks with `createReadStream` and, for line-based work, iterate with `for await (const line of rl)`. Memory use then stays flat regardless of file size.",
-    "reference": "Node.js docs: readline (Example: Read file stream line-by-Line)"
+    "reference": "Node.js docs: readline (Example: Read file stream line-by-Line)",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-013",
@@ -456,7 +468,8 @@
       }
     ],
     "explanation": "Node.js 20.6+ loads `.env` files natively. Variables that already exist in the environment are not overwritten, and when several files are given, later ones override earlier ones. A missing file stops startup with an error; Node.js 22.9 added `--env-file-if-exists` for optional files. For runtime loading, use `process.loadEnvFile()`.",
-    "reference": "Node.js docs: --env-file"
+    "reference": "Node.js docs: --env-file",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-014",
@@ -481,7 +494,8 @@
       }
     ],
     "explanation": "`join` glues segments together with the separator and normalizes the result, so a leading `/` in a later segment does not restart the path: the result is `/srv/uploads/etc/passwd`. `resolve` behaves differently and would return `/etc/passwd`. Neither function is a security check: `join('/srv/uploads', '../../etc/passwd')` still escapes to `/etc/passwd`.",
-    "reference": "Node.js docs: path.join(), path.resolve()"
+    "reference": "Node.js docs: path.join(), path.resolve()",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-015",
@@ -518,7 +532,8 @@
       }
     ],
     "explanation": "`exec` passes one string to `/bin/sh -c`, so any shell metacharacters in user input are interpreted. `execFile` and `spawn` without `shell: true` call the program directly with an argument array, and each element is passed literally. Also validate that the name is a plain file name, and consider `--` before user arguments for programs that parse options.",
-    "reference": "Node.js docs: child_process.execFile()"
+    "reference": "Node.js docs: child_process.execFile()",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-016",
@@ -555,7 +570,8 @@
       }
     ],
     "explanation": "`exec` and `execFile` collect all output in memory. When stdout or stderr exceeds `maxBuffer` (1024 × 1024 bytes by default), the child is killed and the callback receives `ERR_CHILD_PROCESS_STDIO_MAXBUFFER` with truncated output. For large or unbounded output, use `spawn` and pipe `child.stdout` straight to a file stream.",
-    "reference": "Node.js docs: child_process.exec() (maxBuffer)"
+    "reference": "Node.js docs: child_process.exec() (maxBuffer)",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-017",
@@ -595,7 +611,8 @@
       "E"
     ],
     "explanation": "Stop taking new work first, so no request starts that cannot finish. Then let current requests complete, since they still need the database. Only then release shared resources like the database pool and consumers, flush logs last so shutdown errors are captured, and exit. A timer (shorter than the pod's termination grace period) forces exit if something hangs.",
-    "reference": "Node.js docs: http server.close(); Kubernetes: Pod termination"
+    "reference": "Node.js docs: http server.close(); Kubernetes: Pod termination",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-018",
@@ -632,7 +649,8 @@
       }
     ],
     "explanation": "`util.parseArgs` (stable since Node.js 20) is strict by default: unknown options, missing values and unexpected positionals throw errors with `ERR_PARSE_ARGS_*` codes. Pass `strict: false` to collect unknown flags, and `allowPositionals: true` to accept bare arguments such as file names.",
-    "reference": "Node.js docs: util.parseArgs()"
+    "reference": "Node.js docs: util.parseArgs()",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-019",
@@ -675,7 +693,8 @@
       }
     ],
     "explanation": "`fs.watch` uses inotify, FSEvents or ReadDirectoryChangesW, so it is efficient but platform dependent: one save can produce several `rename` or `change` events, and the file name is not always provided. `fs.watchFile` polls `stat()` (about every 5 seconds by default), which is slower but predictable. Tools like chokidar smooth over the differences.",
-    "reference": "Node.js docs: fs.watch() caveats"
+    "reference": "Node.js docs: fs.watch() caveats",
+    "roleLevel": 2
   },
   {
     "id": "NJS-FSP-020",
@@ -712,7 +731,8 @@
       }
     ],
     "explanation": "With `recursive: true`, `mkdir` returns the first directory path it actually created, here the absolute path of `d1`. When everything already exists it returns `undefined` and does not throw. Without `recursive`, creating an existing directory throws `EEXIST`.",
-    "reference": "Node.js docs: fs.mkdirSync()"
+    "reference": "Node.js docs: fs.mkdirSync()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-021",
@@ -749,7 +769,8 @@
       }
     ],
     "explanation": "A string prefix check does not respect path boundaries: `/srv/uploads-old` starts with `/srv/uploads`. A robust check computes `const rel = path.relative(base, target)` and rejects it if `rel.startsWith('..')` or `path.isAbsolute(rel)`, or compares against `base + path.sep`. Also consider symlinks inside the folder, which `resolve` does not follow; use `fs.realpath` when that matters.",
-    "reference": "OWASP: Path Traversal; Node.js docs: path.relative()"
+    "reference": "OWASP: Path Traversal; Node.js docs: path.relative()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-022",
@@ -786,7 +807,8 @@
       }
     ],
     "explanation": "Linux treats PID 1 specially: signals whose action is the default (terminate) are ignored unless the process installs a handler. Node.js is not designed to run as PID 1. Either handle SIGTERM explicitly (and shut down gracefully), or run a tiny init such as `docker run --init` or tini, which forwards signals and reaps zombie processes.",
-    "reference": "Node.js Docker best practices; docker run --init"
+    "reference": "Node.js Docker best practices; docker run --init",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-023",
@@ -829,7 +851,8 @@
       }
     ],
     "explanation": "SIGINT and SIGTERM have default handlers that exit with 128 + the signal number. Registering a listener disables that default, a common reason a process \"won't die\" after someone adds logging on SIGTERM. SIGKILL and SIGSTOP can never be caught. On Windows, signal support is limited: SIGINT works from the terminal, SIGTERM cannot be sent to a process.",
-    "reference": "Node.js docs: Signal events"
+    "reference": "Node.js docs: Signal events",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-024",
@@ -866,7 +889,8 @@
       }
     ],
     "explanation": "`writeFile` opens the file with truncation and then writes, so a crash between the two leaves an empty or partial file. Writing a complete new file and renaming it over the old one is atomic on POSIX within the same filesystem: readers see either the old or the new file. Calling `fsync` (for example `filehandle.sync()`) before the rename makes the new content durable. Packages like write-file-atomic wrap this pattern.",
-    "reference": "Node.js docs: fs.rename(); POSIX rename(2)"
+    "reference": "Node.js docs: fs.rename(); POSIX rename(2)",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-025",
@@ -903,7 +927,8 @@
       }
     ],
     "explanation": "`Promise.all` starts every read at once, and each open file needs a descriptor, so the per-process limit (often 1024) is exceeded. Bounding concurrency keeps descriptor use flat and is usually just as fast, since disks and the thread pool are the real bottleneck. Raising `ulimit -n` or using graceful-fs (which queues and retries on EMFILE) only hides the problem.",
-    "reference": "Node.js docs: fs (file descriptors); libuv thread pool"
+    "reference": "Node.js docs: fs (file descriptors); libuv thread pool",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-026",
@@ -940,7 +965,8 @@
       }
     ],
     "explanation": "Whether `process.stdout` writes are synchronous depends on what it is connected to (file, terminal, pipe) and on the platform. When writes are asynchronous, `process.exit()` can end the process before the queued data reaches the pipe. Set `process.exitCode = 0` and return, so Node.js exits once the write queue drains.",
-    "reference": "Node.js docs: A note on process I/O"
+    "reference": "Node.js docs: A note on process I/O",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-027",
@@ -955,7 +981,8 @@
       "143"
     ],
     "explanation": "Signal deaths are reported as 128 + signal number, so SIGTERM gives 128 + 15 = 143 (SIGINT gives 130). Seeing 143 in container logs means the process was terminated, not that it crashed with an error.",
-    "reference": "Node.js docs: Signal events; Process exit codes"
+    "reference": "Node.js docs: Signal events; Process exit codes",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-028",
@@ -992,7 +1019,8 @@
       }
     ],
     "explanation": "By the time `exit` fires, the event loop has finished and will not run again, so timers, promises and I/O started in the listener are abandoned. Only synchronous work completes there. Do asynchronous cleanup before exiting, for example in a SIGTERM handler or in `beforeExit`, which can schedule more work.",
-    "reference": "Node.js docs: Event: 'exit'"
+    "reference": "Node.js docs: Event: 'exit'",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-029",
@@ -1029,7 +1057,8 @@
       }
     ],
     "explanation": "`beforeExit` fires each time the event loop runs out of work. If the listener schedules more work, the process continues and the event fires again later. Here the timer is scheduled twice; on the third emission no new work is added, so `exit` follows with code 0. `beforeExit` is not emitted for `process.exit()` or uncaught exceptions.",
-    "reference": "Node.js docs: Event: 'beforeExit'"
+    "reference": "Node.js docs: Event: 'beforeExit'",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-030",
@@ -1072,7 +1101,8 @@
       }
     ],
     "explanation": "`fork()` is `spawn()` of a new Node.js process with an IPC channel. Data sent with `send()` is serialized (JSON by default, or the structured-clone-like `advanced` mode). Because the channel keeps both processes alive, a parent that finishes its work still waits until the child exits or `child.disconnect()` is called. For shared memory, use worker_threads instead.",
-    "reference": "Node.js docs: child_process.fork()"
+    "reference": "Node.js docs: child_process.fork()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-031",
@@ -1109,7 +1139,8 @@
       }
     ],
     "explanation": "Like `exec`, the synchronous `spawnSync` and `execSync` buffer the child's output and enforce `maxBuffer` (1024 × 1024 bytes by default). When exceeded, the child is killed and `error.code` is `ENOBUFS`, with partial output. Pass a larger `maxBuffer` if the size is bounded, or use async `spawn` and stream the output.",
-    "reference": "Node.js docs: child_process.spawnSync() (maxBuffer)"
+    "reference": "Node.js docs: child_process.spawnSync() (maxBuffer)",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-032",
@@ -1134,7 +1165,8 @@
       }
     ],
     "explanation": "Since Node.js 20, `process.exitCode` and `process.exit()` validate their argument. A non-integer number throws `ERR_OUT_OF_RANGE` at the assignment. An integer string such as `'2'` is still accepted for compatibility. Earlier versions coerced values silently, which hid bugs.",
-    "reference": "Node.js docs: process.exitCode"
+    "reference": "Node.js docs: process.exitCode",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-033",
@@ -1169,7 +1201,8 @@
       "D"
     ],
     "explanation": "The main script runs to completion first. The event loop then runs the timer. Once the loop is empty, `beforeExit` fires; since it schedules nothing, the process proceeds to `exit`, the last event before the process ends.",
-    "reference": "Node.js docs: process events"
+    "reference": "Node.js docs: process events",
+    "roleLevel": 3
   },
   {
     "id": "NJS-FSP-034",
@@ -1206,7 +1239,8 @@
       }
     ],
     "explanation": "`child.kill()` signals exactly one process: the direct child, here npm. The actual server is a grandchild (often via a shell) and may survive as an orphan still holding the port. On POSIX, starting the child with `detached: true` makes it the leader of a new process group, and `process.kill(-child.pid, 'SIGTERM')` signals the whole group. On Windows, use `taskkill /T` or a package like tree-kill.",
-    "reference": "Node.js docs: options.detached, subprocess.kill()"
+    "reference": "Node.js docs: options.detached, subprocess.kill()",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-035",
@@ -1243,7 +1277,8 @@
       }
     ],
     "explanation": "The shell form of CMD and ENTRYPOINT wraps the command in `/bin/sh -c`. The shell becomes PID 1, receives SIGTERM, and (being PID 1 with no handler) ignores it and does not forward it. Node.js never hears about it, so Docker eventually sends SIGKILL. Use the exec form, and consider `--init` so an init process forwards signals and reaps zombies. The same layering problem appears with `npm start`, which adds another process between the container runtime and node.",
-    "reference": "Docker docs: CMD (shell and exec form); Node.js Docker best practices"
+    "reference": "Docker docs: CMD (shell and exec form); Node.js Docker best practices",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-036",
@@ -1292,7 +1327,8 @@
       }
     ],
     "explanation": "The permission model restricts file system reads and writes, child processes, worker threads, native addons and WASI, each granted with its own `--allow-*` flag. Denied operations throw `ERR_ACCESS_DENIED`, and `process.permission.has()` lets code check access first. Node.js documents it as a \"seat belt\" that stops trusted code from doing unintended things; it is not a security boundary against malicious code.",
-    "reference": "Node.js docs: Permissions"
+    "reference": "Node.js docs: Permissions",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-037",
@@ -1329,7 +1365,8 @@
       }
     ],
     "explanation": "`/tmp` in a container is usually the container's own filesystem, while `/app/data` is a separate volume. `rename` cannot move a file across filesystems and fails with `EXDEV` (\"cross-device link not permitted\"). Copying instead would lose atomicity. Put the temp file next to the target (for example `/app/data/.state.json.tmp`), then rename.",
-    "reference": "POSIX rename(2) (EXDEV); Node.js docs: fs.rename()"
+    "reference": "POSIX rename(2) (EXDEV); Node.js docs: fs.rename()",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-038",
@@ -1366,7 +1403,8 @@
       }
     ],
     "explanation": "On Linux and macOS, `fs.watch` resolves the path to an inode and watches that inode. Many editors save by writing a new file and renaming it over the original, which gives the path a new inode. The watcher reports the first rename and then keeps watching the orphaned old inode. Watching the directory, or re-creating the watcher after each `rename` event, handles atomic saves.",
-    "reference": "Node.js docs: fs.watch() (Inodes)"
+    "reference": "Node.js docs: fs.watch() (Inodes)",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-039",
@@ -1403,7 +1441,8 @@
       }
     ],
     "explanation": "A `FileHandle` holds an OS descriptor until `close()` is called. Relying on garbage collection is unreliable (Node.js warns and plans to make it an error), so leaks surface as EMFILE under load. `try { ... } finally { await fh.close(); }` fixes it, and Node.js 24 also supports explicit resource management: `await using` calls `fh[Symbol.asyncDispose]()` when the block exits, even on errors. For simple cases, `fs.promises.readFile(path)` opens and closes for you.",
-    "reference": "Node.js docs: FileHandle (filehandle[Symbol.asyncDispose]); DEP0137"
+    "reference": "Node.js docs: FileHandle (filehandle[Symbol.asyncDispose]); DEP0137",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-040",
@@ -1446,7 +1485,8 @@
       }
     ],
     "explanation": "With `pipe`, the child writes into an OS pipe that Node.js reads only when you consume the stream. If nothing reads it, the pipe buffer (64 KB on Linux) fills and the child blocks forever: a classic hang. Consume or pipe `child.stdout`, or use `ignore` if you do not need it. `inherit` passes the parent's own descriptor, so output appears directly on the terminal or log.",
-    "reference": "Node.js docs: options.stdio"
+    "reference": "Node.js docs: options.stdio",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-041",
@@ -1483,7 +1523,8 @@
       }
     ],
     "explanation": "`Date.now()` reads wall-clock time, which NTP corrections, manual changes or VM clock sync can move forwards or backwards. Durations need a monotonic clock: `process.hrtime.bigint()` returns nanoseconds as a BigInt, and `performance.now()` returns fractional milliseconds. Both only ever move forward.",
-    "reference": "Node.js docs: process.hrtime.bigint()"
+    "reference": "Node.js docs: process.hrtime.bigint()",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-042",
@@ -1498,7 +1539,8 @@
       "shell"
     ],
     "explanation": "Two rules combine. Among the files, later ones override earlier ones, so the files alone would give `b`. But values already in the real environment take precedence over every --env-file, so the exported `shell` wins. This lets operators override file defaults at deploy time.",
-    "reference": "Node.js docs: --env-file"
+    "reference": "Node.js docs: --env-file",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-043",
@@ -1541,7 +1583,8 @@
       }
     ],
     "explanation": "Adding an `uncaughtException` listener replaces the default crash, so the process carries on. The Node.js docs warn that it is not safe to resume after an uncaught exception, because the application may be in an undefined state. Use it for synchronous logging and cleanup, then exit and let systemd, Kubernetes or PM2 start a fresh process.",
-    "reference": "Node.js docs: Warning: Using 'uncaughtException' correctly"
+    "reference": "Node.js docs: Warning: Using 'uncaughtException' correctly",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-044",
@@ -1600,7 +1643,8 @@
       }
     ],
     "explanation": "A natural exit uses code 0 unless `exitCode` was set. Since Node.js 15 an unhandled rejection is raised as an uncaught exception and exits with 1. Deaths from the default signal handlers are reported as 128 plus the signal number: 130 for SIGINT and 143 for SIGTERM. These codes tell you at a glance whether a container crashed or was stopped.",
-    "reference": "Node.js docs: Process exit codes; Signal events"
+    "reference": "Node.js docs: Process exit codes; Signal events",
+    "roleLevel": 4
   },
   {
     "id": "NJS-FSP-045",
@@ -1637,6 +1681,7 @@
       }
     ],
     "explanation": "By default the parent's event loop waits for every child it spawned. `detached: true` lets the child outlive the parent and puts it in its own process group, but the parent still keeps a reference. Calling `child.unref()` removes it from the loop's reference count, so the parent can exit while the updater keeps running. Using `stdio: 'ignore'` matters too: inherited or piped stdio would keep the two processes connected.",
-    "reference": "Node.js docs: options.detached"
+    "reference": "Node.js docs: options.detached",
+    "roleLevel": 4
   }
 ]

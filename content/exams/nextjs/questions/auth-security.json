@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "The `cookies()` API reads incoming cookies in Server Components but can only write (`set`, `delete`) in Server Functions and Route Handlers. HTTP does not allow setting cookies after streaming starts, and rendering streams HTML, so Next.js blocks cookie writes during render. A login form should therefore submit to a Server Action that creates the session cookie and then redirects.",
-    "reference": "Next.js docs: cookies() (Good to know)"
+    "reference": "Next.js docs: cookies() (Good to know)",
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "By default environment variables are only available on the server. Prefixing a name with `NEXT_PUBLIC_` tells Next.js to inline the value into the client bundle at build time, which means anyone can read it in the downloaded JavaScript. Only publishable values (such as a Stripe publishable key) belong there; secret keys must stay unprefixed and be read on the server. Inlined values are also frozen at build time, so changing them later requires a rebuild.",
-    "reference": "Next.js docs: Environment Variables"
+    "reference": "Next.js docs: Environment Variables",
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-003",
@@ -102,7 +104,8 @@
       }
     ],
     "explanation": "The guide recommends setting the session cookie on the server with HttpOnly, Secure, SameSite, an expiry (Max-Age or Expires) and a Path. The payload should contain only the minimum needed to identify the user, such as the ID and role. Personally identifiable or sensitive data does not belong in a cookie, and tokens should never be mirrored into storage that scripts can read.",
-    "reference": "Next.js docs: Authentication (Setting cookies)"
+    "reference": "Next.js docs: Authentication (Setting cookies)",
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-004",
@@ -139,7 +142,8 @@
       }
     ],
     "explanation": "Next.js documents that an exported Server Action is reachable via a direct POST request, not just through your UI. Treat every action like a public API endpoint: authenticate the caller, authorize the specific operation, and validate the input inside the action (or in a Data Access Layer it calls). Rendering the form only for logged-in users is a UX choice, not a security boundary.",
-    "reference": "Next.js docs: Data Security (Mutating Data)"
+    "reference": "Next.js docs: Data Security (Mutating Data)",
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-005",
@@ -157,7 +161,8 @@
       "'server-only'",
       "\"server-only\"",
       "import 'server-only'"
-    ]
+    ],
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-006",
@@ -216,7 +221,8 @@
         "text": "A function that returns `{ id, name }` instead of the full user row",
         "answer": "D"
       }
-    ]
+    ],
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-007",
@@ -253,7 +259,8 @@
       }
     ],
     "explanation": "React escapes strings rendered as children or attribute values, so `<img src=x onerror=...>` inside a comment appears as literal text. `dangerouslySetInnerHTML` bypasses that escaping on purpose. If you must render user HTML, sanitize it with an allowlist-based sanitizer first, and add a Content Security Policy as a second layer.",
-    "reference": "react.dev: dangerouslySetInnerHTML"
+    "reference": "react.dev: dangerouslySetInnerHTML",
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-008",
@@ -290,7 +297,8 @@
       }
     ],
     "explanation": "Rendering `href=\"javascript:alert(1)\"` with React 19 produces `href=\"javascript:throw new Error('React has blocked a javascript: URL as a security precaution.')\"`, and the same applies to `src`. This protects links built from user data, but it is not a full defense. `router.push` with a `javascript:` URL still executes it, as the Next.js docs warn, and other schemes such as `data:` are not covered. Validate user URLs, for example allow only `https:`, before storing or rendering them.",
-    "reference": "React 19 release notes; Next.js docs: useRouter (Good to know)"
+    "reference": "React 19 release notes; Next.js docs: useRouter (Good to know)",
+    "roleLevel": 1
   },
   {
     "id": "NXT-SEC-009",
@@ -327,7 +335,8 @@
       }
     ],
     "explanation": "This is an Insecure Direct Object Reference (IDOR). The action proves the caller is logged in (authentication) but not that they may act on this post (authorization). Because action arguments come from the client, an attacker can POST any ID. Load the resource and compare `post.authorId` with `session.user.id` (or call a `canDelete` policy) before deleting, ideally inside a server-only Data Access Layer.",
-    "reference": "Next.js docs: Data Security (Authentication and authorization)"
+    "reference": "Next.js docs: Data Security (Authentication and authorization)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-010",
@@ -364,7 +373,8 @@
       }
     ],
     "explanation": "Next.js documents exactly this case: the page-level redirect controls which UI renders, but the Server Action is its own entry point and must verify the caller itself. Add `const session = await auth(); if (!session?.user?.isAdmin) throw new Error('Unauthorized')` inside the action, or call a DAL function that does it. The Origin check only stops cross-site form posts; it does nothing against a logged-in user calling the action from your own origin.",
-    "reference": "Next.js docs: Data Security (Authentication and authorization)"
+    "reference": "Next.js docs: Data Security (Authentication and authorization)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-011",
@@ -407,7 +417,8 @@
       }
     ],
     "explanation": "Because of partial rendering, navigating between pages under the same layout re-renders only the changed segment, so a session check in the layout is not repeated. A layout that hides or swaps `{children}` or parallel slots also does not stop the router from rendering them. Put checks close to the data (the DAL) or in each page and leaf component that needs them.",
-    "reference": "Next.js docs: Authentication (Layouts and auth checks)"
+    "reference": "Next.js docs: Authentication (Layouts and auth checks)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-012",
@@ -444,7 +455,8 @@
       }
     ],
     "explanation": "Props passed from a Server Component to a Client Component are serialized into the RSC payload so the client can hydrate. React has no way to know which fields the component reads, so the whole object goes over the wire. The docs flag this exact pattern as EXPOSED. Return a minimal DTO such as `{ name }` from a data function, and keep Client Component prop types narrow so broad objects are rejected in review.",
-    "reference": "Next.js docs: Data Security (Component-level data access)"
+    "reference": "Next.js docs: Data Security (Component-level data access)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-013",
@@ -481,7 +493,8 @@
       }
     ],
     "explanation": "Whatever a Server Action returns is serialized and sent to the client, for example into `useActionState`. Returning the raw ORM result can leak columns such as password hashes, internal flags or tokens. Do the update, then return only what the UI needs, such as `{ success: true }` or a small DTO.",
-    "reference": "Next.js docs: Data Security (Controlling return values)"
+    "reference": "Next.js docs: Data Security (Controlling return values)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-014",
@@ -531,7 +544,8 @@
       "C",
       "D",
       "E"
-    ]
+    ],
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-015",
@@ -556,7 +570,8 @@
       }
     ],
     "explanation": "Server Actions are invoked with POST, and only that method is allowed. Combined with SameSite cookies, this prevents most CSRF in modern browsers. As extra protection, Next.js compares the `Origin` header with the `Host` (or `X-Forwarded-Host`) and rejects mismatches. The docs also stress the flip side: never perform mutations during rendering, for example logging out when a query parameter is present, because a GET for that page would trigger it.",
-    "reference": "Next.js docs: Data Security (Allowed origins; Avoiding side-effects during rendering)"
+    "reference": "Next.js docs: Data Security (Allowed origins; Avoiding side-effects during rendering)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-016",
@@ -593,7 +608,8 @@
       }
     ],
     "explanation": "Rendering this with React 19 outputs the payload verbatim, so the HTML parser sees `</script>` and closes the element, then runs the attacker's `<script>`. The Next.js JSON-LD guide fixes it by escaping `<` before inserting: `JSON.stringify(jsonLd).replace(/</g, '\\\\u003c')`. The `\\u003c` escape is still valid JSON for the same character but can no longer close the tag.",
-    "reference": "Next.js docs: JSON-LD"
+    "reference": "Next.js docs: JSON-LD",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-017",
@@ -630,7 +646,8 @@
       }
     ],
     "explanation": "React's `javascript:` protection applies to rendered attributes such as `href` and `src`. Programmatic navigation is different: the `useRouter` docs say `javascript:` URLs sent to `router.push` or `router.replace` are executed in the context of your page. Treat `next`, `callbackUrl` and similar parameters as untrusted. Accept only same-origin relative paths (and reject `//`), or map them to an allowlist.",
-    "reference": "Next.js docs: useRouter (Good to know)"
+    "reference": "Next.js docs: useRouter (Good to know)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-018",
@@ -647,7 +664,8 @@
       "poweredbyheader"
     ],
     "explanation": "By default Next.js adds an `x-powered-by` header. Setting `poweredByHeader: false` in `next.config.js` turns it off. Removing it does not fix any vulnerability, but it stops broadcasting the framework, which makes automated fingerprinting slightly harder. That is why many security baselines ask for it alongside proper headers such as a Content Security Policy.",
-    "reference": "Next.js docs: poweredByHeader"
+    "reference": "Next.js docs: poweredByHeader",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-019",
@@ -690,7 +708,8 @@
       }
     ],
     "explanation": "Checking only that a session cookie exists is fast but proves nothing about validity: the cookie may be expired, revoked or forged. The Next.js guide recommends exactly this split. Proxy does cookie-only optimistic checks and redirects, avoiding database work because it runs on every route and prefetch, while the Data Access Layer performs the secure check before any sensitive data is read or changed.",
-    "reference": "Next.js docs: Authentication (Optimistic checks with Proxy)"
+    "reference": "Next.js docs: Authentication (Optimistic checks with Proxy)",
+    "roleLevel": 2
   },
   {
     "id": "NXT-SEC-020",
@@ -727,7 +746,8 @@
       }
     ],
     "explanation": "Next.js applies nonces during server-side rendering, based on the CSP header of the incoming request. A static page is generated at build time with no request, so no nonce can be injected, and a cached copy would replay one nonce to everyone. The docs therefore say nonce-based CSP requires dynamic rendering. Static optimization and ISR are disabled, CDN caching needs extra work, and Partial Prerendering is incompatible. If you need static pages with a strict CSP, the experimental Subresource Integrity (hash-based) approach is the documented alternative.",
-    "reference": "Next.js docs: Content Security Policy (Static vs Dynamic Rendering)"
+    "reference": "Next.js docs: Content Security Policy (Static vs Dynamic Rendering)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-021",
@@ -776,7 +796,8 @@
       }
     ],
     "explanation": "The CSP guide lists the trade-offs of nonces: every page is dynamically rendered, static generation and ISR are disabled, pages cannot be CDN-cached by default, and PPR is incompatible. On the plus side, Next.js attaches the nonce to its own scripts and styles automatically. In development the policy also needs `'unsafe-eval'` because React uses `eval` for debugging, which production does not need.",
-    "reference": "Next.js docs: Content Security Policy"
+    "reference": "Next.js docs: Content Security Policy",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-022",
@@ -813,7 +834,8 @@
       }
     ],
     "explanation": "On the initial load, Client Components run on the server to generate HTML as well as in the browser. The docs say they must follow the same security assumptions as browser code and must not access privileged data. A Client Component that reads a secret can embed something derived from it in the server-rendered HTML even though the browser bundle sees `undefined`, and the mismatch also causes hydration errors. Keep secrets in server-only modules, ideally only in the DAL.",
-    "reference": "Next.js docs: Data Security (Passing data from server to client)"
+    "reference": "Next.js docs: Data Security (Passing data from server to client)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-023",
@@ -850,7 +872,8 @@
       }
     ],
     "explanation": "Caching by `userId` is fine; letting the caller choose the `userId` is not. The Cache Components authentication guide resolves the current user inside an exported getter and passes only that ID to an unexported `'use cache'` function, so no caller can ask for another user's data. A plain `'use cache'` scope cannot read `cookies()` itself, which is why the session must be read outside it and the ID passed in.",
-    "reference": "Next.js docs: Authentication with Cache Components (Step 4)"
+    "reference": "Next.js docs: Authentication with Cache Components (Step 4)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-024",
@@ -887,7 +910,8 @@
       }
     ],
     "explanation": "`startsWith('/')` is a common but incomplete open-redirect guard. A URL beginning with `//` is protocol-relative, so `//evil.example/login` resolves to another host. Browsers also treat `/\\evil.example` similarly. Reject values starting with `//` or `/\\`, or parse with `new URL(next, origin)` and require the result's `origin` to equal yours, then redirect to its pathname and search.",
-    "reference": "OWASP: Unvalidated Redirects and Forwards Cheat Sheet"
+    "reference": "OWASP: Unvalidated Redirects and Forwards Cheat Sheet",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-025",
@@ -924,7 +948,8 @@
       }
     ],
     "explanation": "An inline action that captures outer variables needs those values when it is invoked later, so Next.js sends them to the client and back, encrypted with a per-build private key. The docs explicitly say not to rely on encryption alone to keep sensitive values off the client. Read secrets inside the action body or in a server-only module instead of capturing them, and use closures only for non-sensitive snapshots such as a version number.",
-    "reference": "Next.js docs: Data Security (Closures and encryption)"
+    "reference": "Next.js docs: Data Security (Closures and encryption)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-026",
@@ -961,7 +986,8 @@
       }
     ],
     "explanation": "Production builds turn browser source maps off by default \"to prevent you leaking your source on the client\". With `productionBrowserSourceMaps: true`, the maps are written next to the JavaScript files and Next.js serves them automatically, so anyone can rebuild your readable client-side code, comments included. The setting covers client bundles, not server-only code, but it still exposes business logic and makes probing easier. It also slows `next build` and uses more memory. To debug production errors, upload the maps privately to an error tracker instead of serving them publicly.",
-    "reference": "Next.js docs: productionBrowserSourceMaps"
+    "reference": "Next.js docs: productionBrowserSourceMaps",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-027",
@@ -998,7 +1024,8 @@
       }
     ],
     "explanation": "Next.js protects Server Actions by comparing the request's `Origin` with the `Host` (or `X-Forwarded-Host`) and rejecting mismatches. When a reverse proxy or multi-layer setup makes the server-side host differ from the public domain, the docs recommend listing the safe origins in `serverActions.allowedOrigins`, for example `['app.example.com']` (wildcards like `'*.example.com'` are supported). Better still, configure the proxy to forward the correct `X-Forwarded-Host`.",
-    "reference": "Next.js docs: serverActions (allowedOrigins)"
+    "reference": "Next.js docs: serverActions (allowedOrigins)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-028",
@@ -1057,7 +1084,8 @@
         "text": "`Referrer-Policy: origin-when-cross-origin`",
         "answer": "D"
       }
-    ]
+    ],
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-029",
@@ -1094,7 +1122,8 @@
       }
     ],
     "explanation": "`remotePatterns` is an allowlist for the built-in Image Optimization API. A hostname of `**`, with protocol, port, pathname and search omitted (which also implies `**`), turns your server into a general-purpose image proxy. Attackers can then make it fetch and transform URLs you never intended, wasting compute and bandwidth and widening SSRF exposure. Pin the protocol, the exact host, a pathname prefix such as `/account123/**` and, ideally, the `search` string.",
-    "reference": "Next.js docs: Image component (remotePatterns)"
+    "reference": "Next.js docs: Image component (remotePatterns)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-030",
@@ -1119,7 +1148,8 @@
       }
     ],
     "explanation": "The default loader follows up to 3 redirects when fetching remote images, and the docs note those redirects do not need to satisfy `remotePatterns`. An allowed host with an open redirect can therefore send the optimizer somewhere else. Set `images.maximumRedirects` to `0` to disable following redirects, or lower it, if your image sources do not need them. Local IP addresses stay blocked unless you set `dangerouslyAllowLocalIP`.",
-    "reference": "Next.js docs: Image component (maximumRedirects, remotePatterns)"
+    "reference": "Next.js docs: Image component (maximumRedirects, remotePatterns)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-031",
@@ -1156,7 +1186,8 @@
       }
     ],
     "explanation": "SVG supports many HTML and CSS features, including script, so serving user SVGs from your origin can enable XSS. If you enable `dangerouslyAllowSVG`, the docs strongly recommend `contentDispositionType: 'attachment'`, the default since v15, so direct visits download rather than render. They also recommend an image `contentSecurityPolicy` such as `\"default-src 'self'; script-src 'none'; sandbox;\"` so embedded scripts cannot execute. For known-safe static SVGs, the `unoptimized` prop is the simpler choice.",
-    "reference": "Next.js docs: Image component (dangerouslyAllowSVG, contentDispositionType)"
+    "reference": "Next.js docs: Image component (dangerouslyAllowSVG, contentDispositionType)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-032",
@@ -1199,7 +1230,8 @@
       }
     ],
     "explanation": "The taint APIs let you mark objects (`experimental_taintObjectReference`) or unique values (`experimental_taintUniqueValue`) that React must refuse to pass to Client Components. A leak then becomes a thrown error. Enabling `experimental.taint` also switches the app directory to React's experimental channel and taints `process.env` so it cannot be passed whole to a Client Component. The docs are explicit that this is defensive layering: still filter data in the DAL.",
-    "reference": "Next.js docs: taint; Data Security (Tainting)"
+    "reference": "Next.js docs: taint; Data Security (Tainting)",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-033",
@@ -1236,7 +1268,8 @@
       }
     ],
     "explanation": "`public` with `s-maxage` explicitly allows shared caches (CDNs and proxies) to store a response and serve it to other clients. For personalized data, use `Cache-Control: private, no-store`, or at least `private`, so only the user's own browser may cache it. Do not mark responses that depend on cookies as publicly cacheable. Within Next.js, keep per-user data out of shared server caches too: pass a resolved user ID into `'use cache'`, or use `'use cache: private'`.",
-    "reference": "MDN: Cache-Control; Next.js docs: Authentication with Cache Components"
+    "reference": "MDN: Cache-Control; Next.js docs: Authentication with Cache Components",
+    "roleLevel": 3
   },
   {
     "id": "NXT-SEC-034",
@@ -1273,7 +1306,8 @@
       }
     ],
     "explanation": "On client navigation the App Router renders only the segments that change, so `layout.tsx` and its `redirect` are not executed again. The billing page's data fetch runs without any check and the invoices are sent. The guide recommends checks close to the data: `getInvoices()` in the DAL should call `verifySession()`, so every caller is protected whichever layout happens to render.",
-    "reference": "Next.js docs: Authentication (Layouts and auth checks)"
+    "reference": "Next.js docs: Authentication (Layouts and auth checks)",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-035",
@@ -1310,7 +1344,8 @@
       }
     ],
     "explanation": "The authentication guide warns that route segments and parallel route slots are rendered by the router, so a layout that hides or swaps them does not stop them from running or from appearing in the RSC payload. Conditional rendering is presentation, not access control. The `@admin` page (or the DAL function it calls) must verify the admin role itself and return nothing sensitive otherwise.",
-    "reference": "Next.js docs: Authentication (Layouts and auth checks)"
+    "reference": "Next.js docs: Authentication (Layouts and auth checks)",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-036",
@@ -1353,7 +1388,8 @@
       }
     ],
     "explanation": "The incident is a textbook case for defense in depth. Teams that used middleware only for optimistic redirects, as the docs recommend, and re-verified the session in the DAL, pages, actions and Route Handlers, lost only a redirect when middleware was skipped. Teams relying on middleware alone exposed protected pages and APIs. Beyond upgrading promptly, keep the secure check next to the data.",
-    "reference": "Next.js docs: Authentication (Optimistic checks with Proxy); Next.js security advisory CVE-2025-29927"
+    "reference": "Next.js docs: Authentication (Optimistic checks with Proxy); Next.js security advisory CVE-2025-29927",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-037",
@@ -1390,7 +1426,8 @@
       }
     ],
     "explanation": "The DAL examples wrap `verifySession` and `getCurrentUser` in React's `cache`, which memoizes for the duration of one server request, so many components can share the lookup safely. A module-level variable lives as long as the server process and is shared by every concurrent request. Whoever arrives first is returned to everyone after them, a classic cross-user leak that only shows up under real traffic.",
-    "reference": "Next.js docs: Authentication (Creating a Data Access Layer); react.dev: cache"
+    "reference": "Next.js docs: Authentication (Creating a Data Access Layer); react.dev: cache",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-038",
@@ -1433,7 +1470,8 @@
       }
     ],
     "explanation": "The Data Security guide's audit list covers several areas. Is there an isolated DAL, with database packages and environment variables not imported outside it? Do `\"use client\"` props expect private data, or are their types overly broad? Do `\"use server\"` actions validate arguments, re-authorize, check ownership and constrain return values? Are dynamic `[param]` inputs validated? And because `proxy.ts` and `route.ts` are powerful, they deserve traditional security review and penetration testing.",
-    "reference": "Next.js docs: Data Security (Auditing)"
+    "reference": "Next.js docs: Data Security (Auditing)",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-039",
@@ -1470,7 +1508,8 @@
       }
     ],
     "explanation": "`'use cache: private'` is designed for request-specific data. It can call `cookies()`, `headers()` and read `searchParams`, which plain `'use cache'` and `'use cache: remote'` cannot. Its results are not stored in a server cache across production requests. Matching calls within one request can reuse the result, and the client router can keep the output in browser memory for the configured stale time. `connection()` is still prohibited inside it.",
-    "reference": "Next.js docs: use cache: private; Authentication with Cache Components"
+    "reference": "Next.js docs: use cache: private; Authentication with Cache Components",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-040",
@@ -1527,7 +1566,8 @@
       "D",
       "E",
       "F"
-    ]
+    ],
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-041",
@@ -1570,7 +1610,8 @@
       }
     ],
     "explanation": "SSRF turns your server into a proxy into your private network, for example cloud metadata at `169.254.169.254`. Effective defenses validate the destination after parsing and resolution: an allowlist of schemes and hosts, rejecting private, loopback and link-local ranges for the resolved IP, which also guards against DNS tricks, and refusing to follow redirects blindly. String blocklists are easy to bypass. Next.js applies similar protections in its own image optimizer, which blocks local IPs unless `dangerouslyAllowLocalIP` is set.",
-    "reference": "OWASP: SSRF Prevention Cheat Sheet; Next.js docs: Image component (dangerouslyAllowLocalIP)"
+    "reference": "OWASP: SSRF Prevention Cheat Sheet; Next.js docs: Image component (dangerouslyAllowLocalIP)",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-042",
@@ -1607,7 +1648,8 @@
       }
     ],
     "explanation": "A header is trustworthy only if your own code sets or overwrites it on every request path that reads it. Here the matcher skips `/api`, so a client can send `x-tenant-id: victim` directly to those handlers. Derive tenant identity on the server where it is used, from the authenticated session or the Host, ideally in the DAL. If you use a forwarded header, make sure Proxy strips or overwrites it for every route that consumes it.",
-    "reference": "Next.js docs: Proxy (matcher); Data Security (Validating client input)"
+    "reference": "Next.js docs: Proxy (matcher); Data Security (Validating client input)",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-043",
@@ -1644,7 +1686,8 @@
       }
     ],
     "explanation": "However an argument reaches a Server Action, through `.bind`, FormData or a direct call, it arrives in a request the client controls. Next.js tells you to treat action arguments as untrusted and to check authorization for the specific resource. `archiveItem` should load the item and confirm the caller owns it (or has the right role) before changing it. Deciding which forms to render does nothing to stop a direct POST with a different ID.",
-    "reference": "Next.js docs: Server Actions (Security); Data Security"
+    "reference": "Next.js docs: Server Actions (Security); Data Security",
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-044",
@@ -1662,7 +1705,8 @@
       "host",
       "Host header",
       "the Host header"
-    ]
+    ],
+    "roleLevel": 4
   },
   {
     "id": "NXT-SEC-045",
@@ -1699,6 +1743,7 @@
       }
     ],
     "explanation": "Caching session data in a signed cookie is an optimistic, stateless check: the signature proves the server issued it, but nothing re-checks the database until the cache lifetime ends, so a ban or logout elsewhere is not seen for up to that long. The Next.js guide separates optimistic checks, suited to UI and redirects, from secure checks against database session data before sensitive operations. For high-risk actions, verify against the source of truth. Many libraries expose a way to skip the cookie cache, such as Better Auth's `disableCookieCache` option.",
-    "reference": "Next.js docs: Authentication (Optimistic vs secure checks); Better Auth docs: Session management"
+    "reference": "Next.js docs: Authentication (Optimistic vs secure checks); Better Auth docs: Session management",
+    "roleLevel": 4
   }
 ]

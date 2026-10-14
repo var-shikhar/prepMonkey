@@ -19,6 +19,7 @@ import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { ManageBillingButton } from '@/components/billing/billing-buttons';
 import Link from 'next/link';
+import { InstallApp } from '@/components/pwa/install-app';
 
 interface Settings { name: string; email: string; isAnonymous: boolean; dailyGoal: number; timezone: string; leaderboardOptIn: boolean; plan: 'free' | 'pro'; billing: boolean }
 
@@ -123,6 +124,10 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           <ToggleGroupItem value="dark" className="px-4"><Moon /> Dark</ToggleGroupItem>
           <ToggleGroupItem value="system" className="px-4"><Monitor /> System</ToggleGroupItem>
         </ToggleGroup>
+      </Section>
+
+      <Section title="App" description="Install PrepMonkey to open it from your home screen or desktop, in its own window.">
+        <InstallApp />
       </Section>
 
       <Section title="Danger zone" description="Permanently delete your account, attempts, notes and certificates." danger>

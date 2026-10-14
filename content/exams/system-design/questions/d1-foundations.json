@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Memorise 86,400 seconds per day (about 10^5). A handy rule: 1M requests/day is about 12 QPS on average, so 100M/day is about 1,200 QPS. Real traffic is not even, so you then apply a peak factor.",
-    "reference": "System design estimation basics"
+    "reference": "System design estimation basics",
+    "roleLevel": 2
   },
   {
     "id": "SD-EST-002",
@@ -89,7 +90,8 @@
       }
     ],
     "explanation": "RAM is about 100 ns, an in-datacenter round trip about 500 µs, a disk seek about 10 ms and an intercontinental round trip about 150 ms. One nanosecond is closer to an L1 cache hit. Each step is roughly a 100× to 5,000× jump, which is why a design that adds a cross-region hop or a disk seek per request changes its whole latency budget.",
-    "reference": "Jeff Dean: Latency numbers every programmer should know"
+    "reference": "Jeff Dean: Latency numbers every programmer should know",
+    "roleLevel": 2
   },
   {
     "id": "SD-EST-003",
@@ -126,7 +128,8 @@
       }
     ],
     "explanation": "100M × 500 B = 50 GB/day. 50 GB × 365 ≈ 18.25 TB/year, × 5 years ≈ 91 TB, × 3 replicas ≈ 274 TB. In an interview, say the units out loud at each step; most estimation errors are a dropped factor of 10 or a forgotten multiplier such as replication or retention.",
-    "reference": "System design estimation basics"
+    "reference": "System design estimation basics",
+    "roleLevel": 3
   },
   {
     "id": "SD-EST-004",
@@ -163,7 +166,8 @@
       }
     ],
     "explanation": "Total calls = 10M × 20 = 200M/day. Average = 200M ÷ 86,400 ≈ 2,315 QPS. Peak = 3 × 2,315 ≈ 6,950 QPS. You then add headroom (for example, size so peak runs at 60-70% of capacity) and allow for losing a zone.",
-    "reference": "System design estimation basics"
+    "reference": "System design estimation basics",
+    "roleLevel": 3
   },
   {
     "id": "SD-EST-005",
@@ -179,7 +183,8 @@
       "500 requests"
     ],
     "explanation": "Little's Law: L = λ × W = 2,000 req/s × 0.25 s = 500 requests in flight. It holds for any stable system regardless of the arrival distribution, so it is the quickest way to size thread pools, connection pools and worker counts. If latency doubles at the same arrival rate, concurrency doubles too, which is why a slow dependency can exhaust a pool that was fine yesterday.",
-    "reference": "Little's Law"
+    "reference": "Little's Law",
+    "roleLevel": 3
   },
   {
     "id": "SD-EST-006",
@@ -216,7 +221,8 @@
       }
     ],
     "explanation": "Egress = 1,000,000 × 5 Mbps = 5,000,000 Mbps = 5,000 Gbps = 5 Tbps. Usable per server = 100 × 0.8 = 80 Gbps. 5,000 ÷ 80 = 62.5, so 63 servers before any N+1 or zone redundancy. Bandwidth is quoted in bits (Mbps, Gbps) while storage is in bytes; mixing them is an 8× error.",
-    "reference": "System design estimation basics"
+    "reference": "System design estimation basics",
+    "roleLevel": 4
   },
   {
     "id": "SD-EST-007",
@@ -265,7 +271,8 @@
       }
     ],
     "explanation": "Hot set = 10M × 2 KB = 20 GB; full set = 100 GB. A cache holding the hot set captures about 80% of reads, leaving the database about 20% in steady state. But the database must also survive a cold start (or a cache node failure), when the miss rate jumps toward 100%. Average latency is a weighted mean: with a 1 ms cache and 10 ms database, 0.8 × 1 + 0.2 × 10 = 2.8 ms.",
-    "reference": "System design estimation basics"
+    "reference": "System design estimation basics",
+    "roleLevel": 4
   },
   {
     "id": "SD-EST-008",
@@ -302,7 +309,8 @@
       }
     ],
     "explanation": "Serial components multiply: 0.999³ ≈ 0.997003. Parallel components multiply their unavailabilities: 1 − 0.01 × 0.01 = 0.9999. Overall = 0.997003 × 0.9999 ≈ 0.996903, so about 0.31% unavailable. 0.0031 × 720 h ≈ 2.2 hours. In practice, replicas often fail together (shared deploys, configs or zones), so real redundancy is worth less than the independence math suggests.",
-    "reference": "Google SRE book: Embracing Risk; Availability table"
+    "reference": "Google SRE book: Embracing Risk; Availability table",
+    "roleLevel": 4
   },
   {
     "id": "SD-EST-009",
@@ -339,7 +347,8 @@
       }
     ],
     "explanation": "P(no slow leaf) = 0.99¹⁰⁰ ≈ 0.366, so P(at least one) ≈ 63.4%. This is the core result of Dean and Barroso's \"The Tail at Scale\": at high fan-out, a leaf's rare p99 becomes the common case for the user. That is why large systems manage leaf tail latency directly, with hedged requests, micro-partitioning and good-enough partial results.",
-    "reference": "Dean & Barroso, The Tail at Scale (CACM 2013)"
+    "reference": "Dean & Barroso, The Tail at Scale (CACM 2013)",
+    "roleLevel": 5
   },
   {
     "id": "SD-EST-010",
@@ -376,7 +385,8 @@
       }
     ],
     "explanation": "Deferring the hedge until p95 bounds the extra load to about 5% of requests, as \"The Tail at Scale\" reports. It works because most tail latency is transient (GC pauses, queueing, background compaction) and not shared across replicas, so the second copy is usually fast. Hedging does not help when slowness is correlated, such as an overloaded shared dependency. There it adds load to the thing that is already struggling.",
-    "reference": "Dean & Barroso, The Tail at Scale (CACM 2013)"
+    "reference": "Dean & Barroso, The Tail at Scale (CACM 2013)",
+    "roleLevel": 5
   },
   {
     "id": "SD-SCL-001",
@@ -413,7 +423,8 @@
       }
     ],
     "explanation": "Vertical scaling (bigger box) is simple but limited by the largest available machine, and that machine stays a single point of failure. Horizontal scaling (more boxes) is open-ended, but needs a way to route work (load balancing, partitioning) and to handle shared state.",
-    "reference": "Kleppmann, Designing Data-Intensive Applications, ch. 1"
+    "reference": "Kleppmann, Designing Data-Intensive Applications, ch. 1",
+    "roleLevel": 2
   },
   {
     "id": "SD-SCL-002",
@@ -438,7 +449,8 @@
       }
     ],
     "explanation": "Making the request-handling tier stateless is the standard first step to scaling it out. Instances become interchangeable, so autoscaling, rolling deploys and crash recovery stop logging users out. The state still exists; it has moved to a store designed to be shared and replicated.",
-    "reference": "The Twelve-Factor App: Processes"
+    "reference": "The Twelve-Factor App: Processes",
+    "roleLevel": 2
   },
   {
     "id": "SD-SCL-003",
@@ -481,7 +493,8 @@
       }
     ],
     "explanation": "A layer-4 balancer picks a backend per TCP connection and forwards bytes, which is fast but blind to HTTP. A layer-7 balancer terminates the connection (and usually TLS), so it can route by content, retry idempotent requests and balance each multiplexed HTTP/2 or gRPC request. With layer 4, one long-lived gRPC connection pins all of a client's calls to one backend.",
-    "reference": "Envoy and NGINX load-balancing documentation"
+    "reference": "Envoy and NGINX load-balancing documentation",
+    "roleLevel": 3
   },
   {
     "id": "SD-SCL-004",
@@ -518,7 +531,8 @@
       }
     ],
     "explanation": "Round robin and random assume every request costs the same. When costs vary by orders of magnitude, a load-aware policy (least connections or least outstanding requests) routes around servers that are busy right now. Moving long exports to an async job queue would be better still.",
-    "reference": "Google SRE book: Load Balancing in the Datacenter"
+    "reference": "Google SRE book: Load Balancing in the Datacenter",
+    "roleLevel": 3
   },
   {
     "id": "SD-SCL-005",
@@ -553,7 +567,8 @@
       "D"
     ],
     "explanation": "Draining (AWS calls it the deregistration delay) separates \"no new work\" from \"kill the process\". Terminating first, or stopping the process before the balancer has stopped routing, turns every scale-in and deploy into a burst of 502s. Set the delay a little longer than your slowest legitimate request.",
-    "reference": "AWS Elastic Load Balancing: Deregistration delay"
+    "reference": "AWS Elastic Load Balancing: Deregistration delay",
+    "roleLevel": 3
   },
   {
     "id": "SD-SCL-006",
@@ -590,7 +605,8 @@
       }
     ],
     "explanation": "With modulo hashing, a key keeps its node only when h mod 10 equals h mod 11. Over any run of 110 hash values that happens 10 times, so 1/11 ≈ 9% stay and about 91% move, which looks like a near-total cache flush. Consistent hashing moves only the keys the new node takes over, about 1/(N+1) ≈ 9%. Virtual nodes spread that share evenly across the existing nodes.",
-    "reference": "Karger et al., Consistent Hashing and Random Trees (1997)"
+    "reference": "Karger et al., Consistent Hashing and Random Trees (1997)",
+    "roleLevel": 4
   },
   {
     "id": "SD-SCL-007",
@@ -633,7 +649,8 @@
       }
     ],
     "explanation": "The root cause is per-instance state. Either externalise it (a shared session store) or make it client-held (signed tokens such as JWTs, ideally short-lived with a revocation strategy). Both make the tier stateless, which also fixes the uneven load: once stickiness goes, the balancer can spread requests freely.",
-    "reference": "The Twelve-Factor App: Processes"
+    "reference": "The Twelve-Factor App: Processes",
+    "roleLevel": 4
   },
   {
     "id": "SD-SCL-008",
@@ -670,7 +687,8 @@
       }
     ],
     "explanation": "An I/O-bound tier blocks on a downstream dependency while its CPU looks idle. Scaling it out multiplies connections and makes database contention worse. Fix the constraint (slow queries, locks, pool sizing, read replicas, caching), and give the tier a saturation signal that reflects its real limit, such as in-flight requests or queue depth, plus load shedding when the dependency is saturated.",
-    "reference": "Google SRE book: Handling Overload; Monitoring Distributed Systems"
+    "reference": "Google SRE book: Handling Overload; Monitoring Distributed Systems",
+    "roleLevel": 4
   },
   {
     "id": "SD-SCL-009",
@@ -707,7 +725,8 @@
       }
     ],
     "explanation": "Greedy least-load on stale or partial information causes herding: everyone picks the same minimum. The power-of-two-choices result (Mitzenmacher) shows that comparing just two random candidates gives almost all the benefit of full least-load, and it is robust to stale data because different balancers sample different pairs. Pair it with slow start (NGINX `slow_start`, Envoy slow-start mode) for new or recovering hosts.",
-    "reference": "Mitzenmacher, The Power of Two Choices in Randomized Load Balancing"
+    "reference": "Mitzenmacher, The Power of Two Choices in Randomized Load Balancing",
+    "roleLevel": 5
   },
   {
     "id": "SD-SCL-010",
@@ -750,6 +769,7 @@
       }
     ],
     "explanation": "Gunther's Universal Scalability Law models throughput as N / (1 + σ(N − 1) + κN(N − 1)). The σ term (contention, like Amdahl) causes a plateau; the κ term (coherency, such as nodes keeping each other in sync) causes retrograde throughput past a peak. The fix is to cut cross-node coordination: partition ownership so that invalidations are targeted, and replace the global lock with per-key or per-shard locking.",
-    "reference": "Gunther, Universal Scalability Law"
+    "reference": "Gunther, Universal Scalability Law",
+    "roleLevel": 5
   }
 ]

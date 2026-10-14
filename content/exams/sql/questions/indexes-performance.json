@@ -34,7 +34,8 @@
     ],
     "explanation": "A B-tree index is sorted by the indexed value, so it can locate rows for equality (`=`), ranges (`<`, `BETWEEN`) and sorting on that same column. Any predicate that transforms the column first, or targets a different column, cannot use the index to seek.",
     "reference": "PostgreSQL docs: Index Types (B-Tree)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-002",
@@ -59,7 +60,8 @@
     ],
     "explanation": "Every index is maintained on each write that touches its columns, consumes disk and buffer cache, and adds work for VACUUM. Indexes that no query uses are pure overhead. Index the columns your real queries filter, join or sort on.",
     "reference": "PostgreSQL docs: Indexes (Introduction)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-003",
@@ -96,7 +98,8 @@
     ],
     "explanation": "`EXPLAIN` prints the plan the optimizer chose with its estimated costs and row counts. `EXPLAIN ANALYZE` runs the statement for real, then shows actual rows, loops and timing next to the estimates. Comparing estimated and actual rows is the fastest way to spot bad statistics.",
     "reference": "PostgreSQL docs: Using EXPLAIN",
-    "select": 1
+    "select": 1,
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-004",
@@ -151,7 +154,8 @@
     ],
     "explanation": "A Seq Scan reads the whole table. An Index Scan follows index entries and visits the heap per match. An Index Only Scan returns data straight from the index when the visibility map says pages are all-visible. A Bitmap Heap Scan first builds a bitmap of matching row locations (from one or more Bitmap Index Scans), then reads the heap in page order, which suits medium selectivity.",
     "reference": "PostgreSQL docs: Using EXPLAIN",
-    "select": 1
+    "select": 1,
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-005",
@@ -194,7 +198,8 @@
       }
     ],
     "explanation": "Indexes speed up reads that can use them, but every one adds write amplification (more pages to update and more WAL) and consumes storage and cache. That is why unused indexes should be found and dropped.",
-    "reference": "PostgreSQL docs: Indexes (Introduction)"
+    "reference": "PostgreSQL docs: Indexes (Introduction)",
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-006",
@@ -211,7 +216,8 @@
     ],
     "explanation": "`EXPLAIN ANALYZE` executes the statement and adds actual rows, loops and time to each plan node. Adding `BUFFERS` as well, as in `EXPLAIN (ANALYZE, BUFFERS)`, shows how many pages were read from cache or disk.",
     "reference": "PostgreSQL docs: EXPLAIN",
-    "select": 1
+    "select": 1,
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-007",
@@ -248,7 +254,8 @@
     ],
     "explanation": "B-trees are sorted from the first character, so they can serve prefixes but not suffixes. A leading `%` forces a full scan. For suffix or substring search, use a trigram GIN index (pg_trgm) or store a reversed copy of the column.",
     "reference": "PostgreSQL docs: Index Types (B-Tree)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-008",
@@ -285,7 +292,8 @@
     ],
     "explanation": "`SELECT *` drags every column (including large TOASTed text) through the executor and over the network, and it rules out index-only scans because no index contains all 40 columns. Selecting just what you need cuts work and lets a covering index such as `(category_id) INCLUDE (id, name, price)` serve the query.",
     "reference": "Use The Index, Luke: Index-Only Scan",
-    "select": 1
+    "select": 1,
+    "roleLevel": 1
   },
   {
     "id": "SQL-IDX-009",
@@ -328,7 +336,8 @@
       }
     ],
     "explanation": "A composite B-tree is sorted by its first column, then by the second within each first-column value. A seek needs equality or a range on a leftmost prefix. Once the first column uses a range, later columns can only filter inside that range. (PostgreSQL 18 adds skip scan, which can sometimes use a non-leading column when the leading one has few distinct values.)",
-    "reference": "PostgreSQL docs: Multicolumn Indexes"
+    "reference": "PostgreSQL docs: Multicolumn Indexes",
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-010",
@@ -365,7 +374,8 @@
     ],
     "explanation": "An index only helps when the query predicate matches what the index stores. `lower(email)` is a different value from `email`, so the plain index is useless here. An expression index on `lower(email)` (or a case-insensitive `citext` column) makes the lookup an Index Scan. Verified on PostgreSQL 18.",
     "reference": "PostgreSQL docs: Indexes on Expressions",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-011",
@@ -402,7 +412,8 @@
     ],
     "explanation": "A predicate is sargable only when the indexed column appears on its own. `customer_id + 1 = 43` forces the database to compute an expression for every row. Rewriting it as `customer_id = 42` gives the planner a direct index condition. PostgreSQL 18 confirms: the original plan is a Seq Scan with `Filter: ((customer_id + 1) = 43)`.",
     "reference": "Use The Index, Luke: Functions",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-012",
@@ -439,7 +450,8 @@
     ],
     "explanation": "The planner compares estimated costs using column statistics. Fetching 198,000 rows through an index means random heap visits, which costs more than one sequential pass. Fetching 2,000 rows through the index is far cheaper. A partial index `WHERE status = 'pending'` would be even smaller. Verified on PostgreSQL 18.",
     "reference": "PostgreSQL docs: Examining Index Usage",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-013",
@@ -464,7 +476,8 @@
     ],
     "explanation": "To profile a data-modifying statement safely, wrap it: `BEGIN; EXPLAIN ANALYZE DELETE ...; ROLLBACK;`. On PostgreSQL 18, running it without a transaction on a 10-row table left 5 rows.",
     "reference": "PostgreSQL docs: EXPLAIN",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-014",
@@ -501,7 +514,8 @@
     ],
     "explanation": "An index-only scan needs every column the query touches to be present in the index. INCLUDE columns ride along in leaf pages: they can be returned but not searched. On PostgreSQL 18 the first query gave an Index Only Scan, and adding `status` turned it into a Bitmap Heap Scan.",
     "reference": "PostgreSQL docs: Index-Only Scans and Covering Indexes",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-015",
@@ -538,7 +552,8 @@
     ],
     "explanation": "The planner only uses a partial index when it can prove, from the query text, that every row the query needs satisfies the index predicate. Repeating `status = 'pending'` literally is the reliable way. On PostgreSQL 18 the matching query used `orders_pending`, while a date-only query fell back to a Seq Scan.",
     "reference": "PostgreSQL docs: Partial Indexes",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-016",
@@ -583,7 +598,8 @@
     ],
     "explanation": "Start from the real statement (plans depend on parameter values), measure with EXPLAIN ANALYZE and BUFFERS, look for the node where estimates and reality diverge or where most time and buffers go, change one thing, then measure again. Guessing at indexes before reading the plan usually adds cost without fixing the problem.",
     "reference": "PostgreSQL docs: Using EXPLAIN",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-017",
@@ -599,7 +615,8 @@
     ],
     "explanation": "GIN (Generalized Inverted Index) indexes the keys and values inside a JSONB document, so it supports containment `@>` and key-existence operators. A B-tree on the whole JSONB value cannot help with containment. Verified on PostgreSQL 18: the containment query used a Bitmap Index Scan on the GIN index.",
     "reference": "PostgreSQL docs: GIN Indexes (jsonb)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-018",
@@ -636,7 +653,8 @@
     ],
     "explanation": "N+1 issues one query for the list plus one per row. Each round trip pays latency, parsing and planning. Joining the tables, or batching the IDs into one `IN`/`ANY` query (as ORMs do with eager loading), turns 51 round trips into one or two.",
     "reference": "Use The Index, Luke: Join Operations",
-    "select": 1
+    "select": 1,
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-019",
@@ -679,7 +697,8 @@
       }
     ],
     "explanation": "Keep the indexed column bare on one side and move all computation to the constant side. For dates, a half-open range (`>= day AND < next day`) is the standard sargable form. Functions such as `date()`, casts, `COALESCE` or `extract()` on the column need a matching expression index instead.",
-    "reference": "Use The Index, Luke: Date Types"
+    "reference": "Use The Index, Luke: Date Types",
+    "roleLevel": 2
   },
   {
     "id": "SQL-IDX-020",
@@ -716,7 +735,8 @@
     ],
     "explanation": "For mixed predicates, put equality columns first and the range column last. With `(b, a)`, all `b = 7` entries sit together, sorted by `a`, so `a BETWEEN 10 AND 500` is one tight range. With `(a, b)`, the scan covers every `b` for 491 values of `a`. The \"most selective column first\" rule does not apply when the leading column uses a range. With both indexes present, PostgreSQL 18 chose `(b, a)`.",
     "reference": "Use The Index, Luke: Concatenated Keys",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-021",
@@ -753,7 +773,8 @@
     ],
     "explanation": "The planner estimated 1 row because its statistics still said every `flag` was 0, so an index scan looked cheap. Comparing `rows=` (estimate) with `actual rows=` exposes this. After `ANALYZE t`, PostgreSQL 18 estimated 98,983 rows and chose a Seq Scan. Big batch updates are a common reason to run ANALYZE manually instead of waiting for autovacuum.",
     "reference": "PostgreSQL docs: Statistics Used by the Planner",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-022",
@@ -790,7 +811,8 @@
     ],
     "explanation": "OFFSET N still produces and throws away N rows, so deep pages get linearly slower. Keyset (seek) pagination remembers the last key and continues from it with an index condition. On PostgreSQL 18, OFFSET 150000 read 150,020 index rows (1,223 buffers), while `id > 150000` read 20 rows (4 buffers). The trade-off is that you cannot jump to an arbitrary page number.",
     "reference": "Use The Index, Luke: Paging Through Results",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-023",
@@ -827,7 +849,8 @@
     ],
     "explanation": "Since PostgreSQL 12, a side-effect-free, non-recursive CTE referenced once is inlined like a subquery, so outer predicates are pushed down. `AS MATERIALIZED` restores the old fence: the CTE is computed in full, then filtered. On PostgreSQL 18 the first query was an Index Scan on `big_pkey`, and the second a CTE Scan over a Seq Scan of `big`.",
     "reference": "PostgreSQL docs: WITH Queries (CTE Materialization)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-024",
@@ -864,7 +887,8 @@
     ],
     "explanation": "A prefix LIKE becomes a range condition only if the index order matches plain character-by-character order. That is true for the C collation, but not for linguistic collations like en_US. The docs recommend `CREATE INDEX ... (email text_pattern_ops)`, or `varchar_pattern_ops`, for LIKE and regex prefix searches in such databases. Leading-wildcard searches still need pg_trgm.",
     "reference": "PostgreSQL docs: Operator Classes and Operator Families",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-025",
@@ -901,7 +925,8 @@
     ],
     "explanation": "When the operand types differ, PostgreSQL resolves the operator by casting one side. Here it casts `customer_id` to numeric (the wider type), wrapping the indexed column in an expression. Passing parameters with the column type, as in `= 42` or `$1::int`, keeps the predicate sargable. The same thing happens with `customer_id::text = '42'`. Verified on PostgreSQL 18.",
     "reference": "PostgreSQL docs: Type Conversion (Operators)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-026",
@@ -938,7 +963,8 @@
     ],
     "explanation": "For OR (and sometimes AND) across separately indexed columns, PostgreSQL builds a bitmap from each index, combines them with BitmapOr or BitmapAnd, and visits the heap once in page order. On PostgreSQL 18 the plan was `Bitmap Heap Scan` over `BitmapOr` of two Bitmap Index Scans. A composite index cannot serve an OR across two different columns.",
     "reference": "PostgreSQL docs: Combining Multiple Indexes",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-027",
@@ -975,7 +1001,8 @@
     ],
     "explanation": "Index usage depends on the operator, not just the column. GIN `jsonb_ops` supports `@>`, `?`, `?|` and `?&`. Extracting text with `->>` and comparing with `=` is a different operator on a different value. Either rewrite the query to use `@>`, or create `CREATE INDEX ON orders ((payload->>'tag'))`. Verified on PostgreSQL 18.",
     "reference": "PostgreSQL docs: jsonb Indexing",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-028",
@@ -1012,7 +1039,8 @@
     ],
     "explanation": "PostgreSQL requires a unique index on the referenced side, but never creates one on the referencing (child) side. Joins and parent deletes then scan the child table. On PostgreSQL 18 this plan was a Nested Loop with `Seq Scan on items`. After `CREATE INDEX ON items (customer_id)` it became a Bitmap Index Scan. Index foreign-key columns that you join on or that cascade.",
     "reference": "PostgreSQL docs: Foreign Keys",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-029",
@@ -1055,7 +1083,8 @@
       }
     ],
     "explanation": "PostgreSQL indexes do not store visibility information. An index-only scan therefore consults the visibility map and only skips the heap for pages known to be all-visible. On a heavily updated table that VACUUM has not processed, \"Heap Fetches\" in EXPLAIN ANALYZE stays high, and the scan behaves like a normal index scan.",
-    "reference": "PostgreSQL docs: Index-Only Scans and Covering Indexes"
+    "reference": "PostgreSQL docs: Index-Only Scans and Covering Indexes",
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-030",
@@ -1080,7 +1109,8 @@
     ],
     "explanation": "A hash index maps each value to a bucket by hash code, so neighbouring values land in unrelated buckets. It can only answer `=`. B-trees handle equality, ranges and ORDER BY, which is why they are the default and usually the right choice.",
     "reference": "PostgreSQL docs: Index Types (Hash)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-031",
@@ -1135,7 +1165,8 @@
     ],
     "explanation": "B-tree is the default general-purpose index. GIN is inverted, mapping element to rows, which suits multi-valued data such as JSONB, arrays and tsvector. GiST is a balanced framework for overlap, containment and distance on spatial and range types. BRIN stores only min/max summaries per block range, so it is tiny and works when values correlate with physical position.",
     "reference": "PostgreSQL docs: Index Types",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-032",
@@ -1150,7 +1181,8 @@
     ],
     "explanation": "CONCURRENTLY builds the index in several phases, each in its own transaction, so it can wait out other transactions without blocking writes. It therefore cannot run inside BEGIN ... COMMIT. Run it as a standalone statement (most migration tools have a \"no transaction\" flag), and check afterwards that the index is valid. The error text was confirmed on PostgreSQL 18.",
     "reference": "PostgreSQL docs: CREATE INDEX (Building Indexes Concurrently)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-033",
@@ -1187,7 +1219,8 @@
     ],
     "explanation": "If the subquery could return NULL, `NOT IN` would yield NULL instead of TRUE, so PostgreSQL does not convert it to an anti join. Even when the column is NOT NULL, the planner keeps a hashed or materialized subplan. `NOT EXISTS` becomes a Nested Loop or Hash Anti Join. On PostgreSQL 18, Q1 was a `Nested Loop Anti Join` with an Index Only Scan, and Q2 a filter over a materialized SubPlan. Prefer NOT EXISTS.",
     "reference": "PostgreSQL docs: Subquery Expressions",
-    "select": 1
+    "select": 1,
+    "roleLevel": 3
   },
   {
     "id": "SQL-IDX-034",
@@ -1224,7 +1257,8 @@
     ],
     "explanation": "By default the planner multiplies selectivities: 1% × 1% of 100,000 is about 10 rows. When columns are correlated this underestimates badly and can lead to nested loops that explode. Extended statistics (`dependencies`, `ndistinct`, `mcv`) capture the relationship. On PostgreSQL 18 the estimate went from 11 to 1,023 after CREATE STATISTICS and ANALYZE.",
     "reference": "PostgreSQL docs: Extended Statistics",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-035",
@@ -1261,7 +1295,8 @@
     ],
     "explanation": "PostgreSQL 18 added skip scan for multicolumn B-trees. When the leading column has few distinct values, the scan does one index descent per distinct value with the condition on the next column, effectively `region = r AND ts = 12345` for each `r`. This helps only when the leading column has low cardinality; with thousands of values a separate index on `ts` is still better.",
     "reference": "PostgreSQL 18 release notes: B-tree skip scan",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-036",
@@ -1298,7 +1333,8 @@
     ],
     "explanation": "Partition pruning works like sargability: the planner must match the predicate to the partition bounds on the key column. `extract(year FROM ts)` is an expression the planner cannot invert, so every partition stays in the plan. On PostgreSQL 18, the range query scanned only `m_2025`, and the extract() query produced an Append over both partitions.",
     "reference": "PostgreSQL docs: Partition Pruning",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-037",
@@ -1335,7 +1371,8 @@
     ],
     "explanation": "BRIN (Block Range INdex) stores a summary, by default min and max, for each range of 128 pages. A query skips ranges whose summary cannot match, then rechecks rows in the rest. That works only when the column correlates with physical order, as with append-only timestamps. If rows land in random order, every range covers nearly all values and BRIN degrades to scanning the table.",
     "reference": "PostgreSQL docs: BRIN Indexes",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-038",
@@ -1372,7 +1409,8 @@
     ],
     "explanation": "Equality on the leading column plus ORDER BY on the next column is the ideal pattern. The index already delivers rows in the requested order, so PostgreSQL scans the `customer_id = 42` slice backwards and stops after 5 rows, with no sort. Verified on PostgreSQL 18: `Limit -> Index Scan Backward using orders_customer_id_created_at_idx`. Without such an index, ORDER BY ... LIMIT does a Seq Scan and a Sort.",
     "reference": "Use The Index, Luke: Indexing ORDER BY",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-039",
@@ -1409,7 +1447,8 @@
     ],
     "explanation": "work_mem limits the memory each sort or hash operation may use before spilling to temporary files. One query can run several such nodes, and many sessions run at once, so the total can be many times work_mem. Tune it per session (`SET LOCAL work_mem`) or per role for known heavy reports. An index providing pre-sorted input can avoid the sort entirely. Both plans were measured on PostgreSQL 18.",
     "reference": "PostgreSQL docs: Resource Consumption (work_mem)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-040",
@@ -1452,7 +1491,8 @@
       }
     ],
     "explanation": "An index whose columns are a leading prefix of another index is usually redundant: the larger index serves the same lookups, though it is slightly bigger to scan. Exceptions are constraint-backing indexes (UNIQUE or PRIMARY KEY on the prefix) and cases where the smaller index makes a critical query measurably faster. Verified on PostgreSQL 18: with only `(a, b)`, `WHERE a = 5` used a Bitmap Index Scan on it. Confirm with `pg_stat_user_indexes.idx_scan` before dropping.",
-    "reference": "PostgreSQL docs: Multicolumn Indexes"
+    "reference": "PostgreSQL docs: Multicolumn Indexes",
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-041",
@@ -1497,7 +1537,8 @@
     ],
     "explanation": "Validate the idea first, then build without blocking writes using CONCURRENTLY. A failed concurrent build leaves an INVALID index that still costs writes, so check `indisvalid`. Confirm the real plan changed, and only after observing usage remove indexes it superseded. Skipping the validity check is a classic production trap.",
     "reference": "PostgreSQL docs: CREATE INDEX (Building Indexes Concurrently)",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-042",
@@ -1546,7 +1587,8 @@
       }
     ],
     "explanation": "When an index is ignored, check three things: does the predicate match the index (no functions, casts or leading wildcards on the column)? Is the filter selective enough? Are the estimates right (EXPLAIN ANALYZE estimated vs actual; run ANALYZE)? Each of these appeared in plans measured on PostgreSQL 18 for this bank.",
-    "reference": "PostgreSQL docs: Examining Index Usage"
+    "reference": "PostgreSQL docs: Examining Index Usage",
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-043",
@@ -1583,7 +1625,8 @@
     ],
     "explanation": "Because of MVCC, PostgreSQL has no stored exact count. `count(*)` must check visibility of every row. Scanning a compact index whose pages are all-visible reads fewer pages than the heap, so the planner may choose the smallest full index. If the visibility map is stale, heap fetches creep back in. For an approximate count, `pg_class.reltuples` or an estimate is far cheaper. Verified on PostgreSQL 18.",
     "reference": "PostgreSQL docs: Index-Only Scans and Covering Indexes",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-044",
@@ -1620,7 +1663,8 @@
     ],
     "explanation": "A correlated scalar subquery runs once per outer row. Without an index, that is 2,000 sequential scans of 200,000 rows. Pre-aggregating with GROUP BY and joining reads items once. On PostgreSQL 18 the rewrite became a Hash Right Join over a HashAggregate. Alternatively, index `items(customer_id)` (or `INCLUDE (amt)`), so each subplan is a cheap index lookup. Keep the LEFT JOIN so customers without items still appear.",
     "reference": "PostgreSQL docs: Subquery Expressions",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   },
   {
     "id": "SQL-IDX-045",
@@ -1659,6 +1703,7 @@
     ],
     "explanation": "Bitmap scans separate finding matches from reading them. Index scans build bitmaps of tuple locations, BitmapAnd or BitmapOr combines them, and the heap is then read once per page in physical order, which avoids random re-reads. If the bitmap gets too big for work_mem it becomes lossy (one bit per page), so every row on those pages must be rechecked. That is the \"Recheck Cond\" line in EXPLAIN.",
     "reference": "PostgreSQL docs: Combining Multiple Indexes",
-    "select": 1
+    "select": 1,
+    "roleLevel": 4
   }
 ]

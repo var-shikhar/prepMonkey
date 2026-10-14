@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Network partitions happen whether you like it or not, so CAP is really a statement about behaviour during one: a node cut off from the others must either reject requests (staying consistent) or serve them with possibly stale data (staying available). CAP's consistency is linearizability, and its availability means every non-failed node answers every request. Outside partitions, CAP is silent; PACELC covers the latency-versus-consistency trade-off that applies the rest of the time.",
-    "reference": "Kleppmann, DDIA ch. 9; Gilbert & Lynch (2002)"
+    "reference": "Kleppmann, DDIA ch. 9; Gilbert & Lynch (2002)",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-012",
@@ -71,7 +72,8 @@
       }
     ],
     "explanation": "Asynchronous replication acknowledges a commit as soon as the primary has made it durable locally. Anything committed in the replication lag window, often milliseconds but sometimes seconds or more under load, exists only on the primary. If that machine is lost and a standby is promoted, those acknowledged writes disappear. The RPO of asynchronous replication is therefore \"up to the replication lag\", not zero.",
-    "reference": "PostgreSQL docs: High Availability, Load Balancing, and Replication"
+    "reference": "PostgreSQL docs: High Availability, Load Balancing, and Replication",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-013",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "Replication and backup solve different problems. Replication gives high availability when hardware fails. Backups, ideally base backups plus archived write-ahead log for point-in-time recovery, let you restore the state from before an accidental deletion, a buggy deploy or ransomware. Every replica applies the bad change too, so you need both.",
-    "reference": "Google SRE book, ch. 26: Data Integrity"
+    "reference": "Google SRE book, ch. 26: Data Integrity",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-014",
@@ -133,7 +136,8 @@
       }
     ],
     "explanation": "Durability, the D in ACID, means a committed transaction survives a crash. That requires the log record to reach stable storage (fsync) before the commit is acknowledged. Settings like PostgreSQL `synchronous_commit = off` or MySQL `innodb_flush_log_at_trx_commit = 2` trade a small window of possible loss for speed. Group commit is the usual way to keep durability while amortising fsync cost across many transactions.",
-    "reference": "PostgreSQL docs: WAL reliability"
+    "reference": "PostgreSQL docs: WAL reliability",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-015",
@@ -170,7 +174,8 @@
       }
     ],
     "explanation": "Reading another transaction's uncommitted change is a dirty read. If that transaction aborts, the reader has acted on a value that never existed. READ COMMITTED, the default in PostgreSQL, Oracle and SQL Server, prevents it; PostgreSQL never allows dirty reads even if you ask for READ UNCOMMITTED.",
-    "reference": "Berenson et al., A Critique of ANSI SQL Isolation Levels (1995)"
+    "reference": "Berenson et al., A Critique of ANSI SQL Isolation Levels (1995)",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-016",
@@ -207,7 +212,8 @@
       }
     ],
     "explanation": "Last-write-wins is popular because it always converges with no extra metadata, but it does so by silently dropping data: of concurrent writes, only one survives. It is acceptable for values where losing a concurrent update doesn't matter (a cache, a \"last seen\" time) and dangerous for anything users expect to keep, such as cart contents or document edits.",
-    "reference": "Kleppmann, DDIA ch. 5: Handling Write Conflicts"
+    "reference": "Kleppmann, DDIA ch. 5: Handling Write Conflicts",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-017",
@@ -253,7 +259,8 @@
       }
     ],
     "explanation": "Single-leader replication (PostgreSQL, MySQL, MongoDB replica sets) is simplest and avoids write conflicts. Multi-leader (for example multi-region setups with bidirectional replication) gives local write latency in every region but needs conflict resolution. Leaderless (Cassandra, Riak, DynamoDB's ancestor Dynamo) uses quorums, read repair and anti-entropy. The unused option describes partitioning, which is separate from replication.",
-    "reference": "Kleppmann, DDIA ch. 5"
+    "reference": "Kleppmann, DDIA ch. 5",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-018",
@@ -269,7 +276,8 @@
       "lost update"
     ],
     "explanation": "A lost update happens in any read-modify-write cycle where two transactions read the same value and the second write overwrites the first. Fixes: an atomic update (`UPDATE ... SET n = n + 1`), an explicit lock (`SELECT ... FOR UPDATE`), compare-and-set on a version column, or an isolation level that detects the conflict.",
-    "reference": "Kleppmann, DDIA ch. 7: Preventing Lost Updates"
+    "reference": "Kleppmann, DDIA ch. 7: Preventing Lost Updates",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-019",
@@ -306,7 +314,8 @@
       }
     ],
     "explanation": "Eventual consistency is a liveness guarantee only: stop writing and the replicas converge. It says nothing about how stale a read can be, whether you will see your own writes, or whether time appears to go backwards between reads. Real systems usually add session guarantees (read-your-writes, monotonic reads, consistent prefix) on top when users would notice.",
-    "reference": "Vogels, Eventually Consistent (CACM 2009)"
+    "reference": "Vogels, Eventually Consistent (CACM 2009)",
+    "roleLevel": 2
   },
   {
     "id": "SD-REP-020",
@@ -343,7 +352,8 @@
       }
     ],
     "explanation": "With a single named synchronous standby, the standby is a single point of failure for writes: commits wait for it, without limit. Production setups therefore list several candidates, such as `synchronous_standby_names = 'ANY 1 (s1, s2)'`, so any one of them can confirm, or use a failover manager that rewrites the setting. MySQL semi-sync takes the other side of the trade-off and silently degrades to asynchronous replication after a timeout, risking data loss to stay available.",
-    "reference": "PostgreSQL docs: Synchronous Replication"
+    "reference": "PostgreSQL docs: Synchronous Replication",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-021",
@@ -380,7 +390,8 @@
       }
     ],
     "explanation": "The bug is a lost update caused by read-modify-write in the application. A conditional atomic update fixes it: the row lock taken by `UPDATE` serialises concurrent buyers, and each re-checks `stock > 0` against the latest committed version. Alternatives are `SELECT ... FOR UPDATE` inside a transaction, or optimistic concurrency with a version column, but the single statement is simplest and fastest.",
-    "reference": "PostgreSQL docs: Transaction Isolation (Read Committed)"
+    "reference": "PostgreSQL docs: Transaction Isolation (Read Committed)",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-022",
@@ -423,7 +434,8 @@
       }
     ],
     "explanation": "Optimistic concurrency control turns a lost update into a detected conflict: the second save matches 0 rows and the app can show a merge or retry. It holds no locks across user think time, which makes it the standard choice for edit forms and for HTTP `If-Match` APIs. It protects one row at a time, so invariants across rows still need a transaction with locks, constraints or SERIALIZABLE isolation.",
-    "reference": "Fowler, Patterns of Enterprise Application Architecture: Optimistic Offline Lock"
+    "reference": "Fowler, Patterns of Enterprise Application Architecture: Optimistic Offline Lock",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-023",
@@ -460,7 +472,8 @@
       }
     ],
     "explanation": "Consistent prefix reads means that if writes happen in a certain order, anyone reading them sees them in that order. Partitioned stores break this when causally related writes land in different partitions that replicate independently. Fixes: put causally related data in the same partition (thread id as partition key), or track causal dependencies so a read waits for them, as in causally consistent stores like COPS or MongoDB causal sessions.",
-    "reference": "Kleppmann, DDIA ch. 5: Consistent Prefix Reads"
+    "reference": "Kleppmann, DDIA ch. 5: Consistent Prefix Reads",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-024",
@@ -485,7 +498,8 @@
       }
     ],
     "explanation": "This is a non-repeatable read, and READ COMMITTED allows it. It matters for reports and multi-step logic that assume a stable view: a report summing balances across several queries can see money \"in flight\". Use REPEATABLE READ (a transaction-wide snapshot in PostgreSQL) for consistent read-only reports and backups.",
-    "reference": "PostgreSQL docs: Transaction Isolation"
+    "reference": "PostgreSQL docs: Transaction Isolation",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-025",
@@ -525,7 +539,8 @@
       "E"
     ],
     "explanation": "Writes must stop first, otherwise commits can land on the old primary after the standby has caught up and be lost. Only once lag is zero is promotion lossless. Clients move after promotion, and the old primary rejoins last, typically with `pg_rewind` to discard any divergent history. Failover managers such as Patroni automate exactly this sequence.",
-    "reference": "Patroni docs: switchover; PostgreSQL docs: Failover"
+    "reference": "Patroni docs: switchover; PostgreSQL docs: Failover",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-026",
@@ -562,7 +577,8 @@
       }
     ],
     "explanation": "Leaderless stores use three complementary repair paths: hinted handoff for short outages, read repair for keys that are read, and anti-entropy for everything else. Anti-entropy builds Merkle trees (hash trees) over token ranges, so two replicas can find the differing ranges by exchanging a few hashes instead of all data. In Cassandra you must run `nodetool repair` regularly, within `gc_grace_seconds`, or deleted data can come back.",
-    "reference": "Apache Cassandra docs: Repair; DeCandia et al., Dynamo (2007)"
+    "reference": "Apache Cassandra docs: Repair; DeCandia et al., Dynamo (2007)",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-027",
@@ -608,7 +624,8 @@
       }
     ],
     "explanation": "The ANSI levels are defined by which of these three phenomena they forbid. Real engines differ: PostgreSQL's REPEATABLE READ is snapshot isolation and also prevents phantoms but allows write skew, while MySQL InnoDB's REPEATABLE READ uses next-key locks for locking reads. Berenson et al. showed the ANSI definitions miss anomalies such as lost update and write skew, so always check what your engine actually implements.",
-    "reference": "Berenson et al., A Critique of ANSI SQL Isolation Levels (1995)"
+    "reference": "Berenson et al., A Critique of ANSI SQL Isolation Levels (1995)",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-028",
@@ -651,7 +668,8 @@
       }
     ],
     "explanation": "CAP is narrow: linearizability versus total availability, only during partitions. PACELC (Abadi) adds the everyday trade-off: else, latency versus consistency. A CP system such as etcd or ZooKeeper stops serving on the minority side; an AP system such as Cassandra keeps serving with weaker, but not absent, guarantees. Uptime SLAs are a different notion of availability entirely.",
-    "reference": "Abadi, Consistency Tradeoffs in Modern Distributed Database System Design (2012)"
+    "reference": "Abadi, Consistency Tradeoffs in Modern Distributed Database System Design (2012)",
+    "roleLevel": 3
   },
   {
     "id": "SD-REP-029",
@@ -688,7 +706,8 @@
       }
     ],
     "explanation": "An OR-Set (add-wins set) tags every insertion uniquely, and a removal records the tags it observed. On merge, an element is present if it has any tag not covered by a removal. That keeps concurrent adds, makes removals stick, and converges without coordination. Union merges, as in the original Dynamo cart, resurrect deleted items; LWW loses updates. Libraries such as Automerge and Riak data types provide these CRDTs.",
-    "reference": "Shapiro et al., A comprehensive study of CRDTs (2011)"
+    "reference": "Shapiro et al., A comprehensive study of CRDTs (2011)",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-030",
@@ -725,7 +744,8 @@
       }
     ],
     "explanation": "This happened at GitHub in 2012: a lagging MySQL replica was promoted, reused primary keys that the old leader had issued, and a Redis cache keyed by those ids then exposed private data to the wrong users. Discarding unreplicated writes is not just data loss when other systems (caches, search indexes, emails, URLs) already saw them. Defences: lossless failover (synchronous or semi-sync replication), ids that can't be reused (UUIDs or a separate id service), and flushing derived stores after an unclean failover.",
-    "reference": "Kleppmann, DDIA ch. 5: Handling Node Outages"
+    "reference": "Kleppmann, DDIA ch. 5: Handling Node Outages",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-031",
@@ -762,7 +782,8 @@
       }
     ],
     "explanation": "With two nodes there is no way to tell \"the other node died\" from \"the link between us died\", so each side can decide it should lead: split brain. A third vote (a witness, an arbiter, or a consensus store such as etcd used by Patroni) means promotion needs a majority, which only one side of a partition can have. Fencing (STONITH, revoking storage or network access, or the old primary demoting itself when it loses quorum) makes sure the deposed primary can no longer accept writes.",
-    "reference": "Kleppmann, DDIA ch. 8: The Truth Is Defined by the Majority"
+    "reference": "Kleppmann, DDIA ch. 8: The Truth Is Defined by the Majority",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-032",
@@ -799,7 +820,8 @@
       }
     ],
     "explanation": "In PostgreSQL REPEATABLE READ, once T1 commits, T2's update of the same row fails with \"could not serialize access due to concurrent update\" and the app must retry. InnoDB's REPEATABLE READ uses a snapshot for plain SELECTs, but UPDATE performs a current read of the latest version and doesn't check whether it changed since T2's snapshot, so the lost update goes through. The portable fixes are atomic updates (`balance = balance + 50`), `SELECT ... FOR UPDATE`, or a version check.",
-    "reference": "PostgreSQL docs: Repeatable Read; MySQL docs: InnoDB Consistent Nonlocking Reads"
+    "reference": "PostgreSQL docs: Repeatable Read; MySQL docs: InnoDB Consistent Nonlocking Reads",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-033",
@@ -848,7 +870,8 @@
       }
     ],
     "explanation": "This is write skew through a phantom: each transaction checks a condition over rows that don't exist yet, then inserts a row that invalidates the other's check. Snapshot isolation (PostgreSQL REPEATABLE READ) can't see it, and `FOR UPDATE` has nothing to lock. The fixes are to let SSI detect the conflict, let a constraint enforce the invariant, or materialise the conflict as lockable rows. A constraint is usually best when the invariant can be expressed as one.",
-    "reference": "Kleppmann, DDIA ch. 7: Write Skew and Phantoms; PostgreSQL docs: Exclusion Constraints"
+    "reference": "Kleppmann, DDIA ch. 7: Write Skew and Phantoms; PostgreSQL docs: Exclusion Constraints",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-034",
@@ -885,7 +908,8 @@
       }
     ],
     "explanation": "Dual writes from application code have race conditions: request 1 writes the database and then the index, request 2 does the same, and the index writes can interleave the other way round, leaving the old value as the final state. A crash between the two writes adds permanent divergence too. Deriving the index from the database's write-ahead log (change data capture), keyed per product, gives one ordered source of truth. Writing a version with each document and using external versioning in Elasticsearch adds a safety net.",
-    "reference": "Kleppmann, DDIA ch. 11: Change Data Capture; Debezium docs"
+    "reference": "Kleppmann, DDIA ch. 11: Change Data Capture; Debezium docs",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-035",
@@ -922,7 +946,8 @@
       }
     ],
     "explanation": "\"Failed\" in a leaderless quorum system only means the coordinator couldn't confirm W acknowledgements. The replicas that did accept the write keep it, and reads that happen to include one of them may return it and repair it onto others. So a client can be told the write failed and still see it later. This is one of several reasons quorums alone don't give linearizability, and why clients should treat a failed write's outcome as unknown and retry idempotently.",
-    "reference": "Kleppmann, DDIA ch. 5: Limitations of Quorum Consistency"
+    "reference": "Kleppmann, DDIA ch. 5: Limitations of Quorum Consistency",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-036",
@@ -940,7 +965,8 @@
       "45 seconds"
     ],
     "explanation": "The replica can be up to 45 s behind, so promoting it loses at most 45 s of writes. The WAL archive can be up to 60 s behind (plus upload time), so restoring from it loses up to about 60 s. The best choice is to promote the replica, so the worst-case RPO is 45 s, the smaller of the two. To lower it, reduce lag (capacity, compression) or add synchronous replication to a nearby zone, accepting higher commit latency.",
-    "reference": "PostgreSQL docs: Continuous Archiving and Point-in-Time Recovery"
+    "reference": "PostgreSQL docs: Continuous Archiving and Point-in-Time Recovery",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-037",
@@ -983,7 +1009,8 @@
       }
     ],
     "explanation": "Version vectors let the store tell \"happened after\" from \"concurrent\". One version dominates another only if every counter is at least as large. When neither dominates, the store keeps both as siblings, and the application merges them and writes back with the causal context it read, which tells the store that the new value incorporates both. Forgetting the context is a classic bug that makes siblings pile up.",
-    "reference": "Riak docs: Causal Context; Kleppmann, DDIA ch. 5: Version Vectors"
+    "reference": "Riak docs: Causal Context; Kleppmann, DDIA ch. 5: Version Vectors",
+    "roleLevel": 4
   },
   {
     "id": "SD-REP-038",
@@ -1020,7 +1047,8 @@
       }
     ],
     "explanation": "Read-your-writes per device is easy; across devices it needs the consistency token to live where every device can see it, usually on the server keyed by user id. On each read, look up the user's last-write position and use only replicas that have replayed past it (`pg_last_wal_replay_lsn()` in PostgreSQL), waiting briefly or falling back to the primary. This keeps reads on replicas in the common case and pays extra only for recently active writers.",
-    "reference": "Kleppmann, DDIA ch. 5: Reading Your Own Writes (cross-device)"
+    "reference": "Kleppmann, DDIA ch. 5: Reading Your Own Writes (cross-device)",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-039",
@@ -1057,7 +1085,8 @@
       }
     ],
     "explanation": "Sagas give up isolation: each local step commits, so other transactions see intermediate states (the \"dirty read\" problem between sagas). Standard countermeasures, from Garcia-Molina and Chris Richardson's catalogue, include semantic locks (a status field such as PENDING that others must respect), commutative updates, pessimistic ordering of steps (put the risky step first), re-reading values before acting, and version files. A semantic lock fixes this case: tentative holds are explicit instead of looking like real sales.",
-    "reference": "Richardson, Microservices Patterns ch. 4: Countermeasures for Saga Isolation"
+    "reference": "Richardson, Microservices Patterns ch. 4: Countermeasures for Saga Isolation",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-040",
@@ -1094,7 +1123,8 @@
       }
     ],
     "explanation": "With wall-clock LWW, a write that clearly happened after another (the client even read `x = 1` first) can be discarded because a skewed clock gave it a lower timestamp. To avoid that, carry causality: version vectors, or hybrid logical clocks where the client passes the last timestamp it saw so the next write gets a larger one. Bounding skew with TrueTime-style commit wait is another option. Monitoring clock offset and rejecting nodes with large skew reduces the risk but doesn't remove it.",
-    "reference": "Kleppmann, DDIA ch. 8: Timestamps for Ordering Events"
+    "reference": "Kleppmann, DDIA ch. 8: Timestamps for Ordering Events",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-041",
@@ -1131,7 +1161,8 @@
       }
     ],
     "explanation": "With AFTER_COMMIT, the primary commits in the storage engine and then waits for the replica's acknowledgement. In that window other sessions can read data that a failover will discard: a \"phantom\" committed read. AFTER_SYNC, called lossless semi-sync and the default since MySQL 5.7, waits for the replica after writing the binlog but before the engine commit, so nothing becomes visible until it exists on two servers. Semi-sync still falls back to asynchronous after the timeout, so monitor for it.",
-    "reference": "MySQL docs: Semisynchronous Replication (rpl_semi_sync_master_wait_point)"
+    "reference": "MySQL docs: Semisynchronous Replication (rpl_semi_sync_master_wait_point)",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-042",
@@ -1168,7 +1199,8 @@
       }
     ],
     "explanation": "PostgreSQL's `synchronous_commit` levels say how far a commit must get on the synchronous standby before the client is told it succeeded: `remote_write` (handed to the standby's OS), `on` (flushed to the standby's disk) or `remote_apply` (replayed, so visible to queries there). Only `remote_apply` gives read-your-writes on the standby, at the cost of extra commit latency and stalls if replay is blocked by long standby queries.",
-    "reference": "PostgreSQL docs: synchronous_commit"
+    "reference": "PostgreSQL docs: synchronous_commit",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-043",
@@ -1211,7 +1243,8 @@
       }
     ],
     "explanation": "This is close to GitHub's October 2018 incident: a short cross-coast partition led to cross-region promotion, both sides took writes, and restoring a consistent state took about 24 hours of careful reconciliation. Lessons: an automated failover must weigh lost or divergent writes against downtime, cross-region promotion changes latency for every caller, and the plan for the moment the network heals has to exist before the incident.",
-    "reference": "GitHub Engineering, October 21 post-incident analysis (2018)"
+    "reference": "GitHub Engineering, October 21 post-incident analysis (2018)",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-044",
@@ -1248,7 +1281,8 @@
       }
     ],
     "explanation": "Q's read starts after P's read finished, yet returns an older value, so the history isn't linearizable even though R + W > N. Linearizable reads in a quorum system need the reader to perform synchronous read repair, writing the latest value back to a quorum before returning (the ABD algorithm). Cassandra doesn't fully do this, and Dynamo-style systems generally provide only eventual consistency. Choose a system with consensus (for example Raft-based stores) when you need linearizability.",
-    "reference": "Kleppmann, DDIA ch. 9: Linearizability and Quorums; Attiya, Bar-Noy & Dolev (1995)"
+    "reference": "Kleppmann, DDIA ch. 9: Linearizability and Quorums; Attiya, Bar-Noy & Dolev (1995)",
+    "roleLevel": 5
   },
   {
     "id": "SD-REP-045",
@@ -1291,6 +1325,7 @@
       }
     ],
     "explanation": "Serializable snapshot isolation is optimistic: it lets transactions run and aborts one when their reads and writes form a dangerous structure. Correctness then depends on the application retrying the entire transaction, including its reads, and on the transaction having no external side effects, since the database can roll back its own writes but not an email. Use an outbox or another post-commit mechanism for side effects, and keep transactions short to limit aborts.",
-    "reference": "PostgreSQL docs: Serializable Isolation Level; Ports & Grittner, SSI in PostgreSQL (VLDB 2012)"
+    "reference": "PostgreSQL docs: Serializable Isolation Level; Ports & Grittner, SSI in PostgreSQL (VLDB 2012)",
+    "roleLevel": 5
   }
 ]

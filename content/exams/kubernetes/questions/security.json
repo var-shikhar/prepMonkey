@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Every API request passes authentication (who are you?), then authorization (may you do this verb on this resource?), then admission control (is this particular object acceptable, possibly after mutation?). RBAC is the usual authorizer.",
-    "reference": "Kubernetes docs: Controlling Access to the Kubernetes API"
+    "reference": "Kubernetes docs: Controlling Access to the Kubernetes API",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "RBAC rules only grant access. A subject's effective permissions are the union of every Role and ClusterRole bound to it, so the only way to remove access is to remove or change a binding. Deny-style controls need an admission policy instead.",
-    "reference": "Kubernetes docs: Using RBAC Authorization"
+    "reference": "Kubernetes docs: Using RBAC Authorization",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "Nodes are cluster-scoped. Roles and RoleBindings live in a namespace and can only grant namespaced resources, so access to Nodes needs a ClusterRole plus a ClusterRoleBinding.",
-    "reference": "Kubernetes docs: Using RBAC Authorization"
+    "reference": "Kubernetes docs: Using RBAC Authorization",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-004",
@@ -133,7 +136,8 @@
       }
     ],
     "explanation": "Each namespace automatically gets a ServiceAccount called `default`. A Pod that omits `serviceAccountName` runs as that account, and by default its token is mounted into the Pod.",
-    "reference": "Kubernetes docs: Service Accounts"
+    "reference": "Kubernetes docs: Service Accounts",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-005",
@@ -148,7 +152,8 @@
       "restricted"
     ],
     "explanation": "The Pod Security Standards are `privileged` (unrestricted), `baseline` (blocks known privilege escalations such as hostPath and privileged containers) and `restricted` (current hardening best practice: non-root, no privilege escalation, all capabilities dropped, a seccomp profile set).",
-    "reference": "Kubernetes docs: Pod Security Standards"
+    "reference": "Kubernetes docs: Pod Security Standards",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-006",
@@ -185,7 +190,8 @@
       }
     ],
     "explanation": "By default Pods are non-isolated and accept traffic from any source. A Pod becomes isolated for ingress or egress only when at least one NetworkPolicy selects it for that direction; from then on, only traffic some policy allows gets through.",
-    "reference": "Kubernetes docs: Network Policies"
+    "reference": "Kubernetes docs: Network Policies",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-007",
@@ -236,7 +242,8 @@
       }
     ],
     "explanation": "`runAsNonRoot` makes the kubelet refuse to start a container that would run as root. `readOnlyRootFilesystem` mounts the image filesystem read-only. `allowPrivilegeEscalation: false` sets the no_new_privs flag, so setuid binaries cannot raise privileges. Dropping ALL capabilities removes even the default set the runtime grants.",
-    "reference": "Kubernetes docs: Configure a Security Context for a Pod or Container"
+    "reference": "Kubernetes docs: Configure a Security Context for a Pod or Container",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-008",
@@ -261,7 +268,8 @@
       }
     ],
     "explanation": "The API server stores Secrets unencrypted in etcd unless you configure encryption at rest with an EncryptionConfiguration (for example the KMS v2 provider). Base64 is an encoding, not encryption, so anyone who can read etcd or its backups can read the values.",
-    "reference": "Kubernetes docs: Encrypting Confidential Data at Rest"
+    "reference": "Kubernetes docs: Encrypting Confidential Data at Rest",
+    "roleLevel": 1
   },
   {
     "id": "K8S-SEC-009",
@@ -298,7 +306,8 @@
       }
     ],
     "explanation": "A RoleBinding may reference a ClusterRole; the permissions then apply only within the RoleBinding's namespace. This lets you define a role once and reuse it per namespace. The built-in `view` ClusterRole allows reading most namespaced objects but not Secrets.",
-    "reference": "Kubernetes docs: Using RBAC Authorization"
+    "reference": "Kubernetes docs: Using RBAC Authorization",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-010",
@@ -347,7 +356,8 @@
       }
     ],
     "explanation": "Both `get` and `list` on Secrets return the data (`list` and `watch` reveal contents, which is an easy one to miss). Permission to create Pods is indirect access: the Pod can mount any Secret in the namespace as a volume or env var and then expose it. The RBAC docs warn about this escalation path.",
-    "reference": "Kubernetes docs: RBAC Good Practices"
+    "reference": "Kubernetes docs: RBAC Good Practices",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-011",
@@ -384,7 +394,8 @@
       }
     ],
     "explanation": "`kubectl auth can-i` asks the API server, via a SelfSubjectAccessReview, whether an action would be allowed. With `--as`, kubectl impersonates the named user or ServiceAccount, which the caller can only do if they hold the `impersonate` verb on users, groups or serviceaccounts.",
-    "reference": "Kubernetes docs: Authorization Overview (Checking API access)"
+    "reference": "Kubernetes docs: Authorization Overview (Checking API access)",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-012",
@@ -421,7 +432,8 @@
       }
     ],
     "explanation": "By default the kubelet projects a ServiceAccount token into every Pod. If the app never talks to the API server, setting `automountServiceAccountToken: false` (on the Pod or the ServiceAccount) removes that credential, which limits what an attacker who compromises the container can do.",
-    "reference": "Kubernetes docs: Configure Service Accounts for Pods"
+    "reference": "Kubernetes docs: Configure Service Accounts for Pods",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-013",
@@ -458,7 +470,8 @@
       }
     ],
     "explanation": "Pod Security Admission has three independent modes per namespace: `enforce` rejects violating Pods, `audit` records violations as audit-log annotations, and `warn` returns a warning to the client. With only `audit` set, the Pod is created normally and the violation shows up in the audit log.",
-    "reference": "Kubernetes docs: Pod Security Admission"
+    "reference": "Kubernetes docs: Pod Security Admission",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-014",
@@ -495,7 +508,8 @@
       }
     ],
     "explanation": "The `restricted` profile requires `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, a seccomp profile of `RuntimeDefault` or `Localhost`, and containers that drop `ALL` capabilities (only `NET_BIND_SERVICE` may be added back). This Pod is missing the capability drop.",
-    "reference": "Kubernetes docs: Pod Security Standards"
+    "reference": "Kubernetes docs: Pod Security Standards",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-015",
@@ -532,7 +546,8 @@
       }
     ],
     "explanation": "Once a policy selects the web Pods for egress, only the listed destinations are allowed. DNS queries go to the CoreDNS Pods in `kube-system` on port 53 (UDP and TCP), so a rule allowing that traffic has to be added, typically using a namespaceSelector for kube-system and the DNS Pods' labels.",
-    "reference": "Kubernetes docs: Network Policies"
+    "reference": "Kubernetes docs: Network Policies",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-016",
@@ -547,7 +562,8 @@
       "pods/exec"
     ],
     "explanation": "`kubectl exec` opens a connection to the `exec` subresource of a Pod, which RBAC writes as `pods/exec`. Recent kubectl versions use the `create` verb for it (older ones used `get`), so a rule usually grants `create` and `get` on `pods/exec`. Subresources like `pods/log` and `pods/exec` must be granted separately from `pods`.",
-    "reference": "Kubernetes docs: Using RBAC Authorization (Referring to resources)"
+    "reference": "Kubernetes docs: Using RBAC Authorization (Referring to resources)",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-017",
@@ -584,7 +600,8 @@
       }
     ],
     "explanation": "Pods now receive tokens from the TokenRequest API through a projected volume. These tokens expire (the kubelet refreshes them), carry an audience, and are bound to the Pod, so they stop working once the Pod is deleted. Legacy tokens stored in Secrets never expire, which is why Kubernetes stopped auto-creating them.",
-    "reference": "Kubernetes docs: Service Accounts"
+    "reference": "Kubernetes docs: Service Accounts",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-018",
@@ -609,7 +626,8 @@
       }
     ],
     "explanation": "NetworkPolicy is implemented by the network plugin (for example Calico or Cilium). On a cluster whose plugin doesn't support it, the API accepts the objects but they have no effect, which can give a false sense of security.",
-    "reference": "Kubernetes docs: Network Policies"
+    "reference": "Kubernetes docs: Network Policies",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-019",
@@ -646,7 +664,8 @@
       }
     ],
     "explanation": "Tags are mutable pointers: someone can push new content under `1.4`, and different nodes may pull different images. A digest is the hash of the image manifest, so it always resolves to the same content, which supports reproducible deployments and signature verification.",
-    "reference": "Kubernetes docs: Images"
+    "reference": "Kubernetes docs: Images",
+    "roleLevel": 2
   },
   {
     "id": "K8S-SEC-020",
@@ -683,7 +702,8 @@
       }
     ],
     "explanation": "Within one `from` element, `namespaceSelector` and `podSelector` are combined with AND. Separate elements are ORed, and a bare `podSelector` element means Pods in the policy's own namespace. The NetworkPolicy docs call out this single-dash difference as a common source of mistakes.",
-    "reference": "Kubernetes docs: Network Policies (Behavior of to and from selectors)"
+    "reference": "Kubernetes docs: Network Policies (Behavior of to and from selectors)",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-021",
@@ -720,7 +740,8 @@
       }
     ],
     "explanation": "Permission to create Pods (or workloads that create Pods) in a namespace implies the ability to run as any ServiceAccount there and to mount any Secret there. The RBAC good-practice guide lists this as an escalation path. Keep high-privilege ServiceAccounts in namespaces where few people can create Pods.",
-    "reference": "Kubernetes docs: RBAC Good Practices"
+    "reference": "Kubernetes docs: RBAC Good Practices",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-022",
@@ -769,7 +790,8 @@
       }
     ],
     "explanation": "RBAC normally stops users from granting permissions they don't have. The `escalate` verb lifts that check for creating or updating Roles, and the `bind` verb lifts it for creating bindings to Roles. `impersonate` lets a user act as any other identity, including more privileged ones. These three verbs should be granted to very few subjects.",
-    "reference": "Kubernetes docs: RBAC Good Practices"
+    "reference": "Kubernetes docs: RBAC Good Practices",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-023",
@@ -806,7 +828,8 @@
       }
     ],
     "explanation": "Wildcards in a Role match every namespaced resource in that namespace, including Secrets and any CRD types installed later, and every verb. The RBAC good-practice guide advises against them because new resources become accessible automatically. A Role can still never reach cluster-scoped resources or other namespaces.",
-    "reference": "Kubernetes docs: RBAC Good Practices"
+    "reference": "Kubernetes docs: RBAC Good Practices",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-024",
@@ -843,7 +866,8 @@
       }
     ],
     "explanation": "The `system:masters` group bypasses authorization entirely, so removing bindings has no effect. Client certificates can't be revoked individually by Kubernetes, so the access lasts until the certificate expires or the cluster CA is rotated. Avoid issuing `system:masters` certificates to people.",
-    "reference": "Kubernetes docs: RBAC Good Practices"
+    "reference": "Kubernetes docs: RBAC Good Practices",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-025",
@@ -880,7 +904,8 @@
       }
     ],
     "explanation": "ValidatingAdmissionPolicy (GA in Kubernetes 1.30) evaluates CEL expressions inside the API server. A policy defines the checks; a ValidatingAdmissionPolicyBinding decides which resources and namespaces it applies to and which validation actions (Deny, Warn, Audit) to take.",
-    "reference": "Kubernetes docs: Validating Admission Policy"
+    "reference": "Kubernetes docs: Validating Admission Policy",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-026",
@@ -917,7 +942,8 @@
       }
     ],
     "explanation": "In `enforce` mode, Pod Security Admission only evaluates Pod objects. The Deployment and ReplicaSet are created, but each Pod creation by the ReplicaSet controller is rejected, which appears as FailedCreate events on the ReplicaSet. The `warn` and `audit` modes also check workload resources, which is why adding a `warn` label surfaces the problem at apply time.",
-    "reference": "Kubernetes docs: Pod Security Admission"
+    "reference": "Kubernetes docs: Pod Security Admission",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-027",
@@ -968,7 +994,8 @@
       }
     ],
     "explanation": "Pod Security Admission is built in but only knows the fixed profiles. ValidatingAdmissionPolicy runs custom CEL checks in-process. Gatekeeper and Kyverno are webhook-based policy engines: Gatekeeper uses Rego via ConstraintTemplates, while Kyverno uses YAML policies and can also mutate and generate resources.",
-    "reference": "Kubernetes docs: Admission Control; Validating Admission Policy"
+    "reference": "Kubernetes docs: Admission Control; Validating Admission Policy",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-028",
@@ -1017,7 +1044,8 @@
       }
     ],
     "explanation": "Privileged containers, writable hostPath mounts of sensitive host paths, and host namespaces (hostPID, hostNetwork, hostIPC) all break the isolation between container and node. The `baseline` Pod Security Standard forbids all of them.",
-    "reference": "Kubernetes docs: Pod Security Standards"
+    "reference": "Kubernetes docs: Pod Security Standards",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-029",
@@ -1054,7 +1082,8 @@
       }
     ],
     "explanation": "The NodeRestriction admission plugin limits the Node and Pod objects a kubelet can modify. Kubelets that authenticate in the `system:nodes` group with a `system:node:<nodeName>` username may only modify their own Node object and Pods bound to their node. They also can't update or remove taints on their Node, can't delete their Node object, and are restricted in setting labels under the kubernetes.io prefixes. Combined with the Node authorizer, this limits the blast radius of one compromised node.",
-    "reference": "Kubernetes docs: Admission Controllers (NodeRestriction)"
+    "reference": "Kubernetes docs: Admission Controllers (NodeRestriction)",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-030",
@@ -1091,7 +1120,8 @@
       }
     ],
     "explanation": "The kubelet's HTTPS API (port 10250) can list Pods and run commands inside containers. If anonymous requests are allowed and authorization is AlwaysAllow, anyone who can reach the port controls the node's workloads. Disable anonymous auth, enable Webhook authorization so the API server decides, and restrict network access to the port.",
-    "reference": "Kubernetes docs: Kubelet authentication/authorization"
+    "reference": "Kubernetes docs: Kubelet authentication/authorization",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-031",
@@ -1140,7 +1170,8 @@
       }
     ],
     "explanation": "NetworkPolicies are allow-lists. Each direction is isolated separately, only for Pods a policy selects, and the allowed traffic is the union of all applicable policies. They are connection-oriented, so return traffic is implicitly allowed. `podSelector: {}` selects all Pods in the namespace, which is the usual way to write a default-deny policy.",
-    "reference": "Kubernetes docs: Network Policies"
+    "reference": "Kubernetes docs: Network Policies",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-032",
@@ -1155,7 +1186,8 @@
       "view"
     ],
     "explanation": "Kubernetes ships the user-facing ClusterRoles `cluster-admin`, `admin`, `edit` and `view`. `view` allows read-only access to most objects but not Secrets, because reading Secrets (and ServiceAccount tokens) would allow escalation. `edit` and `admin` do allow access to Secrets.",
-    "reference": "Kubernetes docs: Using RBAC Authorization (User-facing roles)"
+    "reference": "Kubernetes docs: Using RBAC Authorization (User-facing roles)",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-033",
@@ -1190,7 +1222,8 @@
       "D"
     ],
     "explanation": "Pod Security Admission's `warn` and `audit` modes surface violations without blocking anything, including on workload resources. After fixing the reported workloads, switching on `enforce` won't reject the next round of Pod creations. A server-side dry run of the label change also lists violating Pods.",
-    "reference": "Kubernetes docs: Migrate from PodSecurityPolicy / Enforce Pod Security Standards"
+    "reference": "Kubernetes docs: Migrate from PodSecurityPolicy / Enforce Pod Security Standards",
+    "roleLevel": 3
   },
   {
     "id": "K8S-SEC-034",
@@ -1227,7 +1260,8 @@
       }
     ],
     "explanation": "Every ServiceAccount is in the groups `system:serviceaccounts` and `system:serviceaccounts:<namespace>`. Binding the namespaced group grants the role to all current and future ServiceAccounts there, so any Pod in `dev` gets `edit`, including access to Secrets. That is usually far broader than intended.",
-    "reference": "Kubernetes docs: Using RBAC Authorization (Referring to subjects)"
+    "reference": "Kubernetes docs: Using RBAC Authorization (Referring to subjects)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-035",
@@ -1264,7 +1298,8 @@
       }
     ],
     "explanation": "Workload controllers create Pods using their own permissions, from the template you supply. Anyone who can create or modify Deployments, ReplicaSets, StatefulSets, Jobs or CronJobs can effectively run arbitrary Pods, including choosing any ServiceAccount and mounting any Secret in the namespace. Treat workload write access like Pod creation access.",
-    "reference": "Kubernetes docs: RBAC Good Practices (Workload creation)"
+    "reference": "Kubernetes docs: RBAC Good Practices (Workload creation)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-036",
@@ -1313,7 +1348,8 @@
       }
     ],
     "explanation": "Namespaces are a soft boundary. Real multi-tenancy layers RBAC scoped to each namespace, Pod Security to block node-level escape, NetworkPolicies for traffic, resource quotas, and for hostile tenants node isolation or sandboxed runtimes such as gVisor or Kata.",
-    "reference": "Kubernetes docs: Multi-tenancy"
+    "reference": "Kubernetes docs: Multi-tenancy",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-037",
@@ -1356,7 +1392,8 @@
       }
     ],
     "explanation": "The default `view`, `edit` and `admin` ClusterRoles are aggregated: a controller fills their rules from ClusterRoles carrying labels such as `rbac.authorization.k8s.io/aggregate-to-view: \"true\"`. Adding a labelled ClusterRole for a CRD extends every existing binding, and manual edits to the aggregated role are overwritten.",
-    "reference": "Kubernetes docs: Using RBAC Authorization (Aggregated ClusterRoles)"
+    "reference": "Kubernetes docs: Using RBAC Authorization (Aggregated ClusterRoles)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-038",
@@ -1393,7 +1430,8 @@
       }
     ],
     "explanation": "ipBlock matches the source address the Pod actually sees. Traffic through load balancers or NodePorts may be source-NATed, so the original client IP is gone, and the docs warn that ipBlock behaviour for such traffic is implementation-defined. `externalTrafficPolicy: Local` or the load balancer's own allow-lists are more reliable.",
-    "reference": "Kubernetes docs: Network Policies (ipBlock)"
+    "reference": "Kubernetes docs: Network Policies (ipBlock)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-039",
@@ -1430,7 +1468,8 @@
       }
     ],
     "explanation": "The node's instance role is shared by every Pod scheduled there. Workload identity schemes such as IRSA, GKE Workload Identity or Azure Workload Identity exchange a projected ServiceAccount token with a cloud-specific audience for credentials scoped to that one workload, and metadata access is blocked with network policy or provider settings.",
-    "reference": "Kubernetes docs: Service Accounts (Bound service account tokens)"
+    "reference": "Kubernetes docs: Service Accounts (Bound service account tokens)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-040",
@@ -1467,7 +1506,8 @@
       }
     ],
     "explanation": "Audit levels are `None`, `Metadata`, `Request` and `RequestResponse`. At `Request` and above, the bodies of Secret writes and reads end up in the log. The docs' example policy logs Secrets, ConfigMaps and TokenReviews only at `Metadata`, and keeps request bodies for less sensitive resources.",
-    "reference": "Kubernetes docs: Auditing"
+    "reference": "Kubernetes docs: Auditing",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-041",
@@ -1510,7 +1550,8 @@
       }
     ],
     "explanation": "Supply-chain controls need enforcement in the cluster. Admission policies can verify a signature (and optionally attestations such as SBOMs or provenance) against your signing identity, and require digest references so the verified content is what actually runs. Pull policies, registries and CI scans don't stop an unverified image at deploy time.",
-    "reference": "Kubernetes docs: Admission Control; Images"
+    "reference": "Kubernetes docs: Admission Control; Images",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-042",
@@ -1547,7 +1588,8 @@
       }
     ],
     "explanation": "A privileged container always has every capability, so it can always escalate. API validation therefore rejects `allowPrivilegeEscalation: false` combined with `privileged: true`, and likewise combined with adding `CAP_SYS_ADMIN`. The docs note that allowPrivilegeEscalation is always true when the container is privileged or has CAP_SYS_ADMIN.",
-    "reference": "Kubernetes docs: Configure a Security Context for a Pod or Container"
+    "reference": "Kubernetes docs: Configure a Security Context for a Pod or Container",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-043",
@@ -1584,7 +1626,8 @@
       }
     ],
     "explanation": "With X.509 client certificate authentication, the subject's common name becomes the username and each organization (O) field becomes a group the user belongs to. Removing a binding for `User: jane` does nothing about bindings to `Group: dev` or `Group: qa`, so she keeps any access granted to those groups. To cut access you must find every binding that matches her username or any of her groups (`kubectl auth can-i --as=jane --as-group=dev …` helps), and remember that the certificate itself can't be revoked by Kubernetes.",
-    "reference": "Kubernetes docs: Authenticating (X509 client certificates)"
+    "reference": "Kubernetes docs: Authenticating (X509 client certificates)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-044",
@@ -1621,7 +1664,8 @@
       }
     ],
     "explanation": "RBAC prevents privilege escalation: you can only create or update a Role whose permissions you already have (in the same scope), unless you hold the `escalate` verb on roles. Likewise, creating a binding to a Role requires holding its permissions or the `bind` verb.",
-    "reference": "Kubernetes docs: Using RBAC Authorization (Privilege escalation prevention)"
+    "reference": "Kubernetes docs: Using RBAC Authorization (Privilege escalation prevention)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-SEC-045",
@@ -1658,6 +1702,7 @@
       }
     ],
     "explanation": "A binding's `roleRef` is immutable. To point it at another role you delete and recreate the binding; `kubectl auth reconcile` can do this for you. The immutability prevents someone who can only update bindings from quietly swapping in a more powerful role for existing subjects.",
-    "reference": "Kubernetes docs: Using RBAC Authorization"
+    "reference": "Kubernetes docs: Using RBAC Authorization",
+    "roleLevel": 4
   }
 ]
