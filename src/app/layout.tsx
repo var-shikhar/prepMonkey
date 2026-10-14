@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Geist, Geist_Mono } from 'next/font/google';
 import { headers } from 'next/headers';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/components/providers/providers';
+import { PwaRegister } from '@/components/pwa/pwa-register';
 import { JsonLd } from '@/components/seo/json-ld';
 import { graph, organizationLd, websiteLd } from '@/lib/seo';
 import { SITE_NAME, siteUrl } from '@/lib/site';
@@ -23,6 +24,9 @@ export const metadata: Metadata = {
   applicationName: SITE_NAME,
   openGraph: { siteName: SITE_NAME, type: 'website', locale: 'en_US' },
   twitter: { card: 'summary_large_image' },
+  // iOS: open full-screen from the home screen, with the status bar over the dark cocoa theme.
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: 'black-translucent' },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -41,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-dvh">
         <JsonLd data={graph(organizationLd(), websiteLd())} />
         <Providers nonce={nonce}>{children}</Providers>
+        <PwaRegister />
         <SpeedInsights />
 	<Analytics />
       </body>
