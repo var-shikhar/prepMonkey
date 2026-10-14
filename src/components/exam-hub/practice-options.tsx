@@ -15,17 +15,21 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { useStartAttempt } from '@/hooks/use-start-attempt';
 import { KINDS } from '@/lib/attempt-kinds';
 import type { ExamConfig } from '@/lib/engine/types';
+import type { RoleCounts } from '@/lib/role-levels';
 import { cn } from '@/lib/utils';
 import { useHubUi, type SetupKind } from '@/stores/hub-ui';
 import { usePracticePrefs } from '@/stores/practice-prefs';
 import { DifficultyPicker } from './difficulty-picker';
+import { RolePicker, hasRoleLevels } from './role-picker';
 
 type Setup = SetupKind | null;
 
-export function PracticeOptions({ exam, signedIn, defaultName, hasImported, due, mistakes, autoOpen, skillCounts }: {
+export function PracticeOptions({ exam, signedIn, defaultName, hasImported, due, mistakes, autoOpen, skillCounts, roleCounts }: {
   exam: ExamConfig;
   /** reviewed-bank question counts per skill */
   skillCounts: Record<string, number>;
+  /** reviewed-bank question counts per role level; the role picker shows once an exam is tagged */
+  roleCounts?: RoleCounts;
   signedIn: boolean;
   defaultName: string;
   hasImported: boolean;
@@ -109,13 +113,13 @@ export function PracticeOptions({ exam, signedIn, defaultName, hasImported, due,
         </div>
       )}
 
-      <SetupSheet exam={exam} setup={setup} onClose={closeSetup} defaultName={defaultName} hasImported={hasImported} skillCounts={skillCounts} />
+      <SetupSheet exam={exam} setup={setup} onClose={closeSetup} defaultName={defaultName} hasImported={hasImported} skillCounts={skillCounts} roleCounts={roleCounts} />
     </section>
   );
 }
 
-function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCounts }: {
-  exam: ExamConfig; setup: Setup; onClose: () => void; defaultName: string; hasImported: boolean; skillCounts: Record<string, number>;
+function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCounts, roleCounts }: {
+  exam: ExamConfig; setup: Setup; onClose: () => void; defaultName: string; hasImported: boolean; skillCounts: Record<string, number>; roleCounts?: RoleCounts;
 }) {
   const desktop = useMediaQuery('(min-width: 768px)', true);
   const start = useStartAttempt();
@@ -133,11 +137,16 @@ function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCount
   const [pool, setPool] = useState<'bank' | 'imported' | 'all'>('bank');
   const [more, setMore] = useState(false);
   const [narrow, setNarrow] = useState(false);
+  const [role, setRole] = useState<number | null>(null);
+  const [askedOnly, setAskedOnly] = useState(false);
+  const showRoles = hasRoleLevels(roleCounts);
 
   // Each time the sheet opens, start from this exam's last choices on this device.
   const [openedFor, setOpenedFor] = useState<Setup>(null);
   if (setup !== openedFor) {
     setOpenedFor(setup);
+    setRole(showRoles ? prefs.role : null);
+    setAskedOnly(Boolean(saved?.askedOnly) && Boolean(roleCounts?.asked));
     if (setup === 'practice' && saved) {
       setDomains(saved.domains.filter((d) => exam.domains.some((x) => x.id === d)));
       setSkills(saved.skills.filter((sk) => exam.skills.some((x) => x.id === sk)));
@@ -162,14 +171,16 @@ function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCount
 
   function begin() {
     if (!setup) return;
+    if (showRoles) prefs.setRole(role);
+    const target = showRoles && role ? role : undefined;
     if (isMock) {
       prefs.saveMockDifficulty(exam.id, difficulty);
-      start.mutate({ examId: exam.id, kind: setup, difficulty, candidateName: name });
+      start.mutate({ examId: exam.id, kind: setup, difficulty, candidateName: name, role: target });
     }
     else {
-      prefs.saveDrill(exam.id, { domains, skills, count, instant, timed, pool, difficulty });
+      prefs.saveDrill(exam.id, { domains, skills, count, instant, timed, pool, difficulty, askedOnly });
       start.mutate({
-        examId: exam.id, kind: 'practice', difficulty, instant, timed, pool,
+        examId: exam.id, kind: 'practice', difficulty, instant, timed, pool, role: target, askedOnly: askedOnly || undefined,
         domains: domains.length ? domains : undefined,
         skills: skills.length ? skills : undefined,
         count: count === 'all' ? 2000 : Number(count),
@@ -190,6 +201,12 @@ function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCount
         <div className="flex-1 space-y-6 overflow-y-auto p-5">
           {isMock ? (
             <>
+              {showRoles && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Preparing for</Label>
+                  <RolePicker counts={roleCounts!} value={role} onChange={setRole} />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Difficulty</Label>
                 <DifficultyPicker exam={exam} value={difficulty} onChange={setDifficulty} baseMinutes={mode?.minutes} showCertificate={setup === 'full'} />
@@ -250,6 +267,12 @@ function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCount
                   </div>
                 )}
               </div>
+              {showRoles && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Preparing for</Label>
+                  <RolePicker counts={roleCounts!} value={role} onChange={setRole} />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Difficulty</Label>
                 <ToggleGroup type="single" value={difficulty} onValueChange={(v) => v && setDifficulty(v)} variant="outline" className="grid w-full grid-cols-3 gap-1.5 sm:grid-cols-5">
@@ -276,6 +299,15 @@ function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCount
                 </span>
                 <Switch checked={instant} onCheckedChange={setInstant} />
               </Label>
+              {Boolean(roleCounts?.asked) && (
+                <Label className="flex items-center justify-between gap-4 rounded-2xl border p-4 font-normal">
+                  <span>
+                    <span className="block text-sm font-semibold">Real interview questions only</span>
+                    <span className="text-xs text-muted-foreground">Only questions reported as asked in real interviews ({roleCounts!.asked.toLocaleString()} in this bank).</span>
+                  </span>
+                  <Switch checked={askedOnly} onCheckedChange={setAskedOnly} />
+                </Label>
+              )}
 
               <div>
                 <button type="button" onClick={() => setMore((m) => !m)} className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">

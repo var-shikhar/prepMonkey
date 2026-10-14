@@ -10,6 +10,7 @@ import {
   type ExamConfig, type Question,
 } from '@/lib/engine';
 import { KINDS } from '@/lib/attempt-kinds';
+import { poolForRole } from '@/lib/role-levels';
 import type { AttemptListItem, PlayerState, ProgressPatch, ResultState } from '@/lib/dto';
 import { XP, recordActivity } from './activity';
 import { aiEnabled } from './ai/client';
@@ -55,6 +56,8 @@ export interface StartInput {
   count?: number;
   timed?: boolean;
   instant?: boolean;
+  role?: number;
+  askedOnly?: boolean;
   candidateName?: string;
   challengeId?: string;
   assignmentId?: string;
@@ -93,8 +96,9 @@ export async function startAttempt(userId: string, userName: string, input: Star
       if (input.kind === 'full') await assertCanStartFullMock(userId, ex.id);
       const mode = cfg.modes[input.kind];
       if (!mode) throw new AppError('This exam has no such mock.', 400);
-      form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: mode.items, difficulty, seen });
+      form = assembleForm(cfg, poolForRole(await getAssemblyPool(ex.id, 'bank'), input.role, mode.items), { seed, total: mode.items, difficulty, seen });
       minutes = Math.ceil(mode.minutes * preset.timeFactor);
+      settings.role = input.role ?? null;
       settings.candidateName = (input.candidateName ?? userName).trim().slice(0, 80);
       break;
     }
@@ -138,12 +142,15 @@ export async function startAttempt(userId: string, userName: string, input: Star
       pool = input.pool ?? 'bank';
       // "All available" arrives as a large count; the form is capped by what the pool holds.
       const count = Math.max(1, Math.min(input.count ?? 10, 2000));
-      form = assembleForm(cfg, await getAssemblyPool(ex.id, pool), {
+      // A drill may be short, so the role filter never widens to fill it.
+      form = assembleForm(cfg, poolForRole(await getAssemblyPool(ex.id, pool), input.role, 1, input.askedOnly), {
         seed, total: count, difficulty, domains: input.domains ?? null, skills: input.skills ?? null, seen,
       });
       settings.domains = input.domains ?? null;
       settings.skills = input.skills ?? null;
       settings.count = count;
+      settings.role = input.role ?? null;
+      settings.askedOnly = Boolean(input.askedOnly);
       settings.timed = Boolean(input.timed);
       if (input.timed) minutes = Math.ceil(((form.itemIds.length * secondsPerItem(cfg)) / 60) * preset.timeFactor);
       break;
