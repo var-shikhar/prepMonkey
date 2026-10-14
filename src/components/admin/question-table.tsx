@@ -1,23 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient,
   type InfiniteData, type QueryFunctionContext,
 } from '@tanstack/react-query';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { AlertTriangle, Download, Loader2, Plus, Search, X } from 'lucide-react';
+import { AlertTriangle, Download, Loader2, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { api } from '@/lib/api';
 import type { ExamConfig } from '@/lib/engine/types';
 import { FLAG_INFO } from '@/lib/item-flags';
@@ -52,8 +55,9 @@ const BULK_ACTIONS: { status: Status; label: string }[] = [
   { status: 'retired', label: 'Retire' },
 ];
 const NO_FILTERS: Filters = { status: 'all', type: '', skill: '', flagged: false, sort: 'updated', q: '' };
-/** Height of a row with a two-line stem, used until the row is measured. */
+/** Height of a row with a two-line stem, used until the row is measured. Phones show it as a taller card. */
 const estimateRow = () => 72;
+const estimateCard = () => 112;
 
 type ListKey = readonly ['admin', 'questions', string, 'list', Filters];
 const listKey = (examId: string, f: Filters): ListKey => ['admin', 'questions', examId, 'list', f];
@@ -183,7 +187,9 @@ export function QuestionTable({ exam }: { exam: Exam }) {
   }, []);
 
   const getItemKey = useCallback((i: number) => rows[i]?.id ?? i, [rows]);
-  const virtualizer = useWindowVirtualizer({ count: rows.length, estimateSize: estimateRow, overscan: 10, scrollMargin, getItemKey });
+  // Below md the same rows render as cards (CSS only), so only the first guess at their height differs.
+  const wide = useMediaQuery('(min-width: 768px)', true);
+  const virtualizer = useWindowVirtualizer({ count: rows.length, estimateSize: wide ? estimateRow : estimateCard, overscan: 10, scrollMargin, getItemKey });
   const items = virtualizer.getVirtualItems();
   const margin = virtualizer.options.scrollMargin;
   const padTop = items.length ? items[0].start - margin : 0;
@@ -251,9 +257,13 @@ export function QuestionTable({ exam }: { exam: Exam }) {
   const refreshing = list.isFetching && isPlaceholderData;
   const filtered = filterParams({ ...filters, sort: 'updated' }).some(([, v]) => v);
   const matchCount = total != null && allLoadedSelected && total > selected.size ? total : null;
+  // What the phone's Filters button summarises; status and search stay visible outside it.
+  const activeFilters = [filters.skill, filters.type, filters.flagged, filters.sort !== 'updated'].filter(Boolean).length;
+  const toggleAllLoaded = (on: boolean) => setSelected(on ? new Set(rows.map((r) => r.id)) : new Set());
+  const allLoadedState = allLoadedSelected ? true : selectedLoaded > 0 ? 'indeterminate' : false;
 
   return (
-    <div className={cn('space-y-4', selected.size > 0 && 'pb-20')}>
+    <div className={cn('space-y-4', selected.size > 0 && 'pb-20 max-md:pb-48')}>
       {/* status tabs */}
       <div className="scrollbar-none flex gap-1 overflow-x-auto border-b">
         {STATUSES.map((s) => {
@@ -266,7 +276,7 @@ export function QuestionTable({ exam }: { exam: Exam }) {
               onClick={() => applyFilters({ status: s })}
               onMouseEnter={() => prefetch({ ...filters, status: s })}
               onFocus={() => prefetch({ ...filters, status: s })}
-              className={cn('-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium capitalize transition-colors', filters.status === s ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}
+              className={cn('-mb-px min-h-10 shrink-0 border-b-2 px-3 py-2 text-sm font-medium capitalize transition-colors md:min-h-0', filters.status === s ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}
             >
               {s} <span className="text-xs text-muted-foreground tabular-nums">{n == null ? '·' : n.toLocaleString()}</span>
             </button>
@@ -274,62 +284,73 @@ export function QuestionTable({ exam }: { exam: Exam }) {
         })}
       </div>
 
-      {/* one filter row */}
+      {/* one filter row; on phones the filters move into a bottom sheet behind one button */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-52 flex-1">
+        <div className="relative min-w-0 flex-1 md:min-w-52">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search stem or id…" className="h-9 pr-9 pl-9" aria-label="Search questions" />
           {search && (
             <button
               type="button"
               onClick={() => { setSearch(''); applyFilters({ q: '' }); }}
-              className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground"
+              className="absolute top-1/2 right-0.5 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:text-foreground max-md:size-9"
               aria-label="Clear search"
             >
               <X className="size-3.5" />
             </button>
           )}
         </div>
-        <Select value={filters.skill || 'all'} onValueChange={(v) => applyFilters({ skill: v === 'all' ? '' : v })}>
-          <SelectTrigger className="h-9 w-48" aria-label="Skill"><SelectValue placeholder="All skills" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All skills</SelectItem>
-            {exam.domains.map((d) => exam.skills.filter((s) => s.domain === d.id).map((s) => <SelectItem key={s.id} value={s.id}>D{d.id} · {s.name}</SelectItem>))}
-          </SelectContent>
-        </Select>
-        <Select value={filters.type || 'all'} onValueChange={(v) => applyFilters({ type: v === 'all' ? '' : v })}>
-          <SelectTrigger className="h-9 w-36" aria-label="Type"><SelectValue placeholder="All types" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {Object.entries(TYPE_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filters.sort} onValueChange={(v) => applyFilters({ sort: v as QuestionSort })}>
-          <SelectTrigger className="h-9 w-40" aria-label="Sort"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(SORT_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <label className="flex h-9 items-center gap-2 rounded-lg border px-3 text-sm">
-          <Switch checked={filters.flagged} onCheckedChange={(v) => applyFilters({ flagged: v })} /> Needs attention
-        </label>
-        <div className="ml-auto flex gap-2">
-          <Button asChild variant="outline" size="sm"><a href={`/api/admin/export?examId=${encodeURIComponent(exam.id)}&status=${filters.status}`}><Download /> Export</a></Button>
-          <Button asChild variant="premium" size="sm"><Link href={`/admin/questions/new?exam=${exam.id}`}><Plus /> New question</Link></Button>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="h-9 md:hidden" aria-label={activeFilters ? `Filters, ${activeFilters} active` : 'Filters'}>
+              <SlidersHorizontal /> Filters
+              {activeFilters > 0 && <span className="rounded-full bg-primary px-1.5 text-[0.65rem] font-semibold text-primary-foreground tabular-nums">{activeFilters}</span>}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[85dvh] gap-0 rounded-t-3xl p-0">
+            <SheetHeader className="border-b p-5">
+              <SheetTitle className="font-heading text-lg">Filters</SheetTitle>
+              <SheetDescription>Changes apply as you make them.</SheetDescription>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+              <FilterFields exam={exam} filters={filters} onChange={applyFilters} stacked />
+            </div>
+            <SheetFooter className="flex-row border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <Button variant="outline" className="h-11 flex-1" disabled={!activeFilters} onClick={() => applyFilters({ skill: '', type: '', flagged: false, sort: 'updated' })}>Reset</Button>
+              <SheetClose asChild>
+                <Button variant="premium" className="h-11 flex-1">{total == null ? 'Done' : `Show ${total.toLocaleString()}`}</Button>
+              </SheetClose>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+        <div className="hidden md:contents">
+          <FilterFields exam={exam} filters={filters} onChange={applyFilters} />
+        </div>
+        <div className="flex gap-2 max-md:w-full md:ml-auto">
+          <Button asChild variant="outline" size="sm" className="max-md:flex-1"><a href={`/api/admin/export?examId=${encodeURIComponent(exam.id)}&status=${filters.status}`}><Download /> Export</a></Button>
+          <Button asChild variant="premium" size="sm" className="max-md:flex-1"><Link href={`/admin/questions/new?exam=${exam.id}`}><Plus /> New question</Link></Button>
         </div>
       </div>
 
-      <div className="flex min-h-5 items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
-        {total != null && (
-          <span>{total.toLocaleString()} question{total === 1 ? '' : 's'}{filters.q ? ` matching “${filters.q}”` : ''}</span>
-        )}
-        {list.isFetching && <Loader2 className="size-3.5 animate-spin" aria-label="Loading" />}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-h-5 items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+          {total != null && (
+            <span>{total.toLocaleString()} question{total === 1 ? '' : 's'}{filters.q ? ` matching “${filters.q}”` : ''}</span>
+          )}
+          {list.isFetching && <Loader2 className="size-3.5 animate-spin" aria-label="Loading" />}
+        </div>
+        {/* The cards have no header row, so the select-all box lives here on phones. */}
+        <label className="flex min-h-10 shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground md:hidden">
+          <Checkbox checked={allLoadedState} onCheckedChange={(v) => toggleAllLoaded(v === true)} disabled={!rows.length} />
+          Select all
+        </label>
       </div>
 
-      {/* table: rows outside the viewport are replaced by two spacer rows */}
+      {/* table: rows outside the viewport are replaced by two spacer rows. Below md the table,
+          its body and rows turn into plain blocks, so each row reads as a card. */}
       <div className="overflow-x-auto glass rounded-3xl [overflow-anchor:none]">
-        <table className="w-full min-w-[60rem] table-fixed text-left text-sm" aria-rowcount={(total ?? rows.length) + 1}>
-          <colgroup>
+        <table className="w-full table-fixed text-left text-sm max-md:block md:min-w-[60rem]" aria-rowcount={(total ?? rows.length) + 1}>
+          <colgroup className="max-md:hidden">
             <col className="w-10" />
             <col />
             <col className="w-40" />
@@ -340,15 +361,10 @@ export function QuestionTable({ exam }: { exam: Exam }) {
             <col className="w-[5.5rem]" />
             <col className="w-36" />
           </colgroup>
-          <thead className="border-b bg-wash text-xs text-muted-foreground">
+          <thead className="border-b bg-wash text-xs text-muted-foreground max-md:hidden">
             <tr aria-rowindex={1}>
               <th className="px-3 py-2.5">
-                <Checkbox
-                  checked={allLoadedSelected ? true : selectedLoaded > 0 ? 'indeterminate' : false}
-                  onCheckedChange={(v) => setSelected(v === true ? new Set(rows.map((r) => r.id)) : new Set())}
-                  disabled={!rows.length}
-                  aria-label="Select all loaded questions"
-                />
+                <Checkbox checked={allLoadedState} onCheckedChange={(v) => toggleAllLoaded(v === true)} disabled={!rows.length} aria-label="Select all loaded questions" />
               </th>
               <th className="px-3 py-2.5 font-medium">Question</th>
               <th className="px-3 py-2.5 font-medium">Skill</th>
@@ -360,14 +376,14 @@ export function QuestionTable({ exam }: { exam: Exam }) {
               <th className="px-3 py-2.5 font-medium">Signals</th>
             </tr>
           </thead>
-          <tbody ref={tbodyRef} className={cn('transition-opacity', refreshing && 'opacity-60')}>
+          <tbody ref={tbodyRef} className={cn('transition-opacity max-md:block', refreshing && 'opacity-60')}>
             {list.isPending ? (
               Array.from({ length: 8 }, (_, i) => (
-                <tr key={i} className="border-b"><td colSpan={9} className="px-3 py-3"><Skeleton className="h-10 w-full" /></td></tr>
+                <tr key={i} className="border-b max-md:block"><td colSpan={9} className="px-3 py-3 max-md:block"><Skeleton className="h-10 w-full max-md:h-20" /></td></tr>
               ))
             ) : (
               <>
-                {padTop > 0 && <tr aria-hidden style={{ height: padTop }}><td colSpan={9} /></tr>}
+                {padTop > 0 && <tr aria-hidden className="max-md:block" style={{ height: padTop }}><td colSpan={9} /></tr>}
                 {items.map((item) => {
                   const row = rows[item.index];
                   return row ? (
@@ -382,9 +398,9 @@ export function QuestionTable({ exam }: { exam: Exam }) {
                     />
                   ) : null;
                 })}
-                {padBottom > 0 && <tr aria-hidden style={{ height: padBottom }}><td colSpan={9} /></tr>}
-                <tr>
-                  <td colSpan={9} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                {padBottom > 0 && <tr aria-hidden className="max-md:block" style={{ height: padBottom }}><td colSpan={9} /></tr>}
+                <tr className="max-md:block">
+                  <td colSpan={9} className="px-3 py-6 text-center text-sm text-muted-foreground max-md:block">
                     {list.isError && (isFetchNextPageError || !rows.length) ? (
                       <>
                         Couldn&apos;t load {rows.length ? 'more questions' : 'the questions'}.{' '}
@@ -414,12 +430,13 @@ export function QuestionTable({ exam }: { exam: Exam }) {
         </table>
       </div>
 
-      {/* bulk actions float over the list, so selecting never shifts the rows */}
+      {/* bulk actions float over the list, so selecting never shifts the rows; on phones they
+          span the width, clear of the home indicator, with the four actions in a 2×2 grid */}
       {selected.size > 0 && (
         <div
           role="region"
           aria-label="Bulk actions"
-          className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100%-2rem)] flex-wrap items-center justify-center gap-2 rounded-2xl border bg-popover/95 px-3 py-2 text-sm shadow-lg backdrop-blur animate-pop"
+          className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100%-2rem)] flex-wrap items-center justify-center gap-2 rounded-2xl border bg-popover/95 px-3 py-2 text-sm shadow-lg backdrop-blur animate-pop max-md:inset-x-3 max-md:bottom-[calc(0.75rem+env(safe-area-inset-bottom))] max-md:w-auto max-md:max-w-none max-md:justify-start max-md:p-3"
         >
           <span className="font-medium tabular-nums">{selected.size.toLocaleString()} selected</span>
           {matchCount != null && (
@@ -427,13 +444,15 @@ export function QuestionTable({ exam }: { exam: Exam }) {
               {selectAll.isPending ? 'Selecting…' : `Select all ${matchCount.toLocaleString()} matching`}
             </Button>
           )}
-          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-          {BULK_ACTIONS.map((a) => (
-            <Button key={a.status} size="xs" variant={a.status === 'published' ? 'default' : 'outline'} disabled={bulk.isPending} onClick={() => bulk.mutate({ ids: [...selected], status: a.status })}>
-              {a.label}
-            </Button>
-          ))}
-          <Button size="xs" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
+          <Button size="xs" variant="ghost" className="max-md:ml-auto md:order-last" onClick={() => setSelected(new Set())}>Clear</Button>
+          <span className="mx-1 h-4 w-px bg-border max-md:hidden" aria-hidden />
+          <div className="contents max-md:grid max-md:w-full max-md:grid-cols-2 max-md:gap-2">
+            {BULK_ACTIONS.map((a) => (
+              <Button key={a.status} size="xs" variant={a.status === 'published' ? 'default' : 'outline'} disabled={bulk.isPending} onClick={() => bulk.mutate({ ids: [...selected], status: a.status })}>
+                {a.label}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -454,12 +473,16 @@ const QuestionRow = memo(function QuestionRow({ row, index, examId, selected, on
   const router = useRouter();
   const href = `/admin/questions/${encodeURIComponent(row.id)}?exam=${examId}`;
   const stats = row.stats;
+  const pct = stats && stats.p != null && stats.n >= 5 ? `${Math.round(stats.p * 100)}%` : null;
+  // Below md the row is a flex card: checkbox, then the question with its key facts under it.
+  // The other cells would repeat those facts, so they are hidden there.
+  const cell = 'px-3 py-2.5 max-md:hidden';
   return (
-    <tr ref={measure} data-index={index} aria-rowindex={index + 2} className={cn('border-b transition-colors hover:bg-wash', selected && 'bg-primary/[0.04]')}>
-      <td className="px-3 py-2.5">
-        <Checkbox checked={selected} onCheckedChange={(v) => onToggle(row.id, v === true)} aria-label={`Select ${row.id}`} />
+    <tr ref={measure} data-index={index} aria-rowindex={index + 2} className={cn('border-b transition-colors hover:bg-wash max-md:flex max-md:items-start', selected && 'bg-primary/[0.04]')}>
+      <td className="px-3 py-2.5 max-md:shrink-0 max-md:py-3.5 max-md:pl-4">
+        <Checkbox checked={selected} onCheckedChange={(v) => onToggle(row.id, v === true)} aria-label={`Select ${row.id}`} className="max-md:after:-inset-y-3" />
       </td>
-      <td className="px-3 py-2.5">
+      <td className="px-3 py-2.5 max-md:min-w-0 max-md:flex-1 max-md:py-3 max-md:pr-4 max-md:pl-1">
         {/* Rows scroll in and out of view constantly, so prefetch on hover rather than on sight. */}
         <Link href={href} prefetch={false} onMouseEnter={() => router.prefetch(href)} className="group block min-w-0">
           <span className="block truncate font-mono text-[0.7rem] text-muted-foreground">
@@ -467,32 +490,98 @@ const QuestionRow = memo(function QuestionRow({ row, index, examId, selected, on
           </span>
           <span className="line-clamp-2 group-hover:text-primary">{row.preview}</span>
         </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-muted-foreground md:hidden">
+          <StatusPill status={row.status} />
+          <span>{TYPE_LABEL[row.type]}</span>
+          <Level difficulty={row.difficulty} />
+          <span className="tabular-nums">{(stats?.n ?? 0).toLocaleString()} answered{pct ? ` · ${pct} correct` : ''}</span>
+          {/* Tooltips need a hover, so phones get the labels alone; the editor explains each flag. */}
+          <Signals row={row} />
+        </div>
       </td>
-      <td className="px-3 py-2.5 text-xs text-muted-foreground"><span className="line-clamp-2" title={row.skillName}>{row.skillName}</span></td>
-      <td className="px-3 py-2.5 text-xs">{TYPE_LABEL[row.type]}</td>
-      <td className="px-3 py-2.5">
-        <span className="flex gap-0.5" aria-label={`Difficulty ${row.difficulty} of 4`}>
-          {[1, 2, 3, 4].map((l) => <span key={l} className={cn('h-2.5 w-1.5 rounded-sm', l <= row.difficulty ? 'bg-primary' : 'bg-secondary')} />)}
-        </span>
-      </td>
-      <td className="px-3 py-2.5"><span className={cn('rounded-full px-2 py-0.5 text-[0.7rem] font-semibold capitalize', STATUS_STYLE[row.status])}>{row.status}</span></td>
-      <td className="px-3 py-2.5 text-right tabular-nums">{stats?.n ?? 0}</td>
-      <td className="px-3 py-2.5 text-right tabular-nums">{stats && stats.p != null && stats.n >= 5 ? `${Math.round(stats.p * 100)}%` : '—'}</td>
-      <td className="px-3 py-2.5">
-        <span className="flex flex-wrap items-center gap-1">
-          {row.openReports > 0 && <Badge variant="outline" className="border-primary/40 text-primary">{row.openReports} report{row.openReports === 1 ? '' : 's'}</Badge>}
-          {stats?.flags.map((f) => (
-            <Tooltip key={f}>
-              <TooltipTrigger asChild>
-                <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem] font-medium', FLAG_INFO[f].tone === 'bad' ? 'bg-destructive/10 text-destructive' : 'bg-banana/25 text-cocoa dark:text-banana')}>
-                  <AlertTriangle className="size-3" />{FLAG_INFO[f].label}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{FLAG_INFO[f].hint}</TooltipContent>
-            </Tooltip>
-          ))}
-        </span>
+      <td className={cn(cell, 'text-xs text-muted-foreground')}><span className="line-clamp-2" title={row.skillName}>{row.skillName}</span></td>
+      <td className={cn(cell, 'text-xs')}>{TYPE_LABEL[row.type]}</td>
+      <td className={cell}><Level difficulty={row.difficulty} /></td>
+      <td className={cell}><StatusPill status={row.status} /></td>
+      <td className={cn(cell, 'text-right tabular-nums')}>{stats?.n ?? 0}</td>
+      <td className={cn(cell, 'text-right tabular-nums')}>{pct ?? '—'}</td>
+      <td className={cell}>
+        <span className="flex flex-wrap items-center gap-1"><Signals row={row} hints /></span>
       </td>
     </tr>
   );
 });
+
+function StatusPill({ status }: { status: Status }) {
+  return <span className={cn('rounded-full px-2 py-0.5 text-[0.7rem] font-semibold capitalize', STATUS_STYLE[status])}>{status}</span>;
+}
+
+function Level({ difficulty }: { difficulty: number }) {
+  return (
+    <span className="flex gap-0.5" aria-label={`Difficulty ${difficulty} of 4`}>
+      {[1, 2, 3, 4].map((l) => <span key={l} className={cn('h-2.5 w-1.5 rounded-sm', l <= difficulty ? 'bg-primary' : 'bg-secondary')} />)}
+    </span>
+  );
+}
+
+/** Open reports and statistical flags; with `hints`, each flag explains itself on hover. */
+function Signals({ row, hints = false }: { row: QuestionListRow; hints?: boolean }) {
+  return (
+    <>
+      {row.openReports > 0 && <Badge variant="outline" className="border-primary/40 text-primary">{row.openReports} report{row.openReports === 1 ? '' : 's'}</Badge>}
+      {row.stats?.flags.map((f) => {
+        const pill = (
+          <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem] font-medium', FLAG_INFO[f].tone === 'bad' ? 'bg-destructive/10 text-destructive' : 'bg-banana/25 text-cocoa dark:text-banana')}>
+            <AlertTriangle className="size-3" />{FLAG_INFO[f].label}
+          </span>
+        );
+        return hints ? (
+          <Tooltip key={f}>
+            <TooltipTrigger asChild>{pill}</TooltipTrigger>
+            <TooltipContent>{FLAG_INFO[f].hint}</TooltipContent>
+          </Tooltip>
+        ) : <Fragment key={f}>{pill}</Fragment>;
+      })}
+    </>
+  );
+}
+
+/** Skill, type, sort and "needs attention": inline on wider screens, stacked in the phone's filter sheet. */
+function FilterFields({ exam, filters, onChange, stacked = false }: { exam: Exam; filters: Filters; onChange: (patch: Partial<Filters>) => void; stacked?: boolean }) {
+  // The sheet sits in a portal outside the admin's touch-size rule, so it sizes its own controls.
+  const trigger = stacked ? 'min-h-11 w-full' : '';
+  const field = (label: string, control: React.ReactNode) => (stacked ? <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">{label}</Label>{control}</div> : control);
+  return (
+    <>
+      {field('Skill', (
+        <Select value={filters.skill || 'all'} onValueChange={(v) => onChange({ skill: v === 'all' ? '' : v })}>
+          <SelectTrigger className={cn('h-9 w-48', trigger)} aria-label="Skill"><SelectValue placeholder="All skills" /></SelectTrigger>
+          <SelectContent className="max-w-[calc(100vw-2rem)]">
+            <SelectItem value="all">All skills</SelectItem>
+            {exam.domains.map((d) => exam.skills.filter((s) => s.domain === d.id).map((s) => <SelectItem key={s.id} value={s.id}>D{d.id} · {s.name}</SelectItem>))}
+          </SelectContent>
+        </Select>
+      ))}
+      {field('Type', (
+        <Select value={filters.type || 'all'} onValueChange={(v) => onChange({ type: v === 'all' ? '' : v })}>
+          <SelectTrigger className={cn('h-9 w-36', trigger)} aria-label="Type"><SelectValue placeholder="All types" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {Object.entries(TYPE_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ))}
+      {field('Sort', (
+        <Select value={filters.sort} onValueChange={(v) => onChange({ sort: v as QuestionSort })}>
+          <SelectTrigger className={cn('h-9 w-40', trigger)} aria-label="Sort"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(SORT_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ))}
+      <label className={cn('flex items-center gap-2 rounded-lg border px-3 text-sm', stacked ? 'min-h-11 flex-row-reverse justify-between' : 'h-9')}>
+        <Switch checked={filters.flagged} onCheckedChange={(v) => onChange({ flagged: v })} /> Needs attention
+      </label>
+    </>
+  );
+}
