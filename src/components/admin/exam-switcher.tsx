@@ -29,7 +29,8 @@ export function ExamSwitcher({ exams, value }: { exams: { id: string; code: stri
       <SelectTrigger className={cn('h-9 w-full transition-opacity sm:w-72', isPending && 'opacity-70')} aria-label="Exam" aria-busy={isPending}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      {/* Long exam titles wrap rather than push the list past a phone's edge. */}
+      <SelectContent className="max-w-[calc(100vw-2rem)]">
         {exams.map((e) => (
           <SelectItem key={e.id} value={e.id}><span className="font-semibold">{e.code}</span> <span className="text-muted-foreground">{e.title}</span></SelectItem>
         ))}
