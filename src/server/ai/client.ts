@@ -19,7 +19,7 @@ const dailyLimit = (plan: 'free' | 'pro') => (billingEnabled() && plan === 'free
 
 let client: OpenAI | null = null;
 function ai(): OpenAI {
-  if (!aiEnabled()) throw new AppError('AI features are not switched on yet. An admin needs to add an OpenAI or LiteLLM key.', 503, 'AI_DISABLED');
+  if (!aiEnabled()) throw new AppError('AI features are coming soon.', 503, 'AI_DISABLED');
   client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL || undefined, timeout: 60_000, maxRetries: 2 });
   return client;
 }
