@@ -66,6 +66,8 @@ export function rowToQuestion(r: QuestionRow): Question {
     prompts: r.prompts ?? undefined,
     accepted: r.accepted ?? undefined,
     caseId: r.caseId,
+    roleLevel: r.roleLevel,
+    asked: r.asked,
   };
 }
 

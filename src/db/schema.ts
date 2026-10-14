@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean, date, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import type { ExamConfig, MatchPrompt, QuestionOption } from '@/lib/engine/types';
+import type { AskedInInterviews, ExamConfig, MatchPrompt, QuestionOption, RoleLevel } from '@/lib/engine/types';
 
 const createdAt = () => timestamp({ withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp({ withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date());
@@ -135,6 +135,10 @@ export const question = pgTable('question', {
   source: text().notNull().default('seed'),
   /** free-text origin note, e.g. 'Official Exam Guide sample 1' */
   provenance: text(),
+  /** 1 fresher, 2 junior, 3 mid, 4 senior, 5 staff/lead; null when not yet tagged */
+  roleLevel: integer().$type<RoleLevel>(),
+  /** evidence that this question is asked in real interviews; null for concept checks */
+  asked: jsonb().$type<AskedInInterviews>(),
   version: integer().notNull().default(1),
   createdBy: text().references(() => user.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
