@@ -37,7 +37,8 @@ export default async function LandingPage() {
     <div className="relative overflow-x-clip">
       <ScrollProgress />
       <JsonLd data={graph(examListLd(exams), faqLd(LANDING_FAQ))} />
-      <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[60] opacity-[0.06] mix-blend-overlay" />
+      {/* Desktop only: a full-screen blended layer makes every repaint cost the whole screen, which phones feel. */}
+      <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[60] hidden opacity-[0.06] mix-blend-overlay md:block" />
 
       {/* Hero */}
       <section className="relative">
@@ -47,8 +48,8 @@ export default async function LandingPage() {
           <Reveal className="relative inline-block">
             {/* The pill is the lamp: a warm cone of light falls from it over the headline. */}
             <div aria-hidden className="pointer-events-none absolute inset-0">
-              <div className="animate-beam absolute origin-top top-1/2 left-1/2 h-[44rem] w-[min(76rem,200vw)] -translate-x-1/2 bg-[conic-gradient(from_180deg_at_50%_0%,transparent_36%,oklch(0.86_0.12_72/0.2)_50%,transparent_64%)] [mask-image:radial-gradient(farthest-side_at_50%_0%,black_30%,transparent)]" />
-              <div className="animate-beam absolute origin-top top-1/2 left-1/2 h-[30rem] w-[44rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side_at_50%_0%,oklch(0.75_0.17_58/0.35),transparent)]" />
+              <div className="animate-beam absolute origin-top will-change-[transform,opacity] top-1/2 left-1/2 h-[44rem] w-[min(76rem,200vw)] -translate-x-1/2 bg-[conic-gradient(from_180deg_at_50%_0%,transparent_36%,oklch(0.86_0.12_72/0.2)_50%,transparent_64%)] [mask-image:radial-gradient(farthest-side_at_50%_0%,black_30%,transparent)]" />
+              <div className="animate-beam absolute origin-top will-change-[transform,opacity] top-1/2 left-1/2 h-[30rem] w-[44rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side_at_50%_0%,oklch(0.75_0.17_58/0.35),transparent)]" />
               <div className="absolute -inset-x-8 -inset-y-4 rounded-full bg-primary/35 blur-2xl" />
               <div className="absolute top-full left-1/2 h-px w-56 -translate-x-1/2 bg-gradient-to-r from-transparent via-[oklch(0.9_0.1_75)] to-transparent" />
             </div>
@@ -216,7 +217,7 @@ export default async function LandingPage() {
         <div aria-hidden className="absolute top-1/2 left-1/2 h-[36rem] w-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,oklch(0.72_0.17_55/0.22),transparent)]" />
         <Reveal className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
           <div className="relative mx-auto size-36 sm:size-44">
-            <div aria-hidden className="ring-spin absolute inset-2 rounded-full opacity-60 blur-2xl" />
+            <div aria-hidden className="ring-glow absolute inset-2 rounded-full opacity-60 blur-2xl" />
             <div aria-hidden className="absolute inset-3 rounded-full border border-primary/25 bg-background/60 backdrop-blur" />
             <MascotFace className="relative size-full p-4" title="The PrepMonkey guide" />
           </div>
