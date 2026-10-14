@@ -64,9 +64,9 @@ export function ImportPanel({ examId, examCode }: { examId: string; examCode: st
           </ToggleGroup>
         </div>
 
-        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center transition-colors hover:border-primary/40 hover:bg-wash">
+        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-5 text-center sm:p-6 transition-colors hover:border-primary/40 hover:bg-wash">
           <FileUp className="size-7 text-primary" />
-          <span className="text-sm font-medium">{fileName || 'Choose a .json or .csv file'}</span>
+          <span className="max-w-full text-sm font-medium break-words">{fileName || 'Choose a .json or .csv file'}</span>
           <span className="text-xs text-muted-foreground">or paste the contents below</span>
           <input type="file" accept=".json,.csv,application/json,text/csv" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
         </label>
@@ -99,15 +99,15 @@ export function ImportPanel({ examId, examCode }: { examId: string; examCode: st
               <Input id="set" value={setName} onChange={(e) => setSetName(e.target.value.replace(/[^a-z0-9-]/gi, '').slice(0, 40))} className="h-9" />
             </div>
           )}
-          <label className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm">
+          <label className="flex min-h-10 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm">
             <span>Overwrite questions with the same id</span>
             <Switch checked={overwrite} onCheckedChange={setOverwrite} />
           </label>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" disabled={!text.trim() || check.isPending} onClick={() => check.mutate()}>{check.isPending && <Spinner />} Check file</Button>
-          <Button variant="premium" disabled={!preview?.valid || commit.isPending} onClick={() => commit.mutate()}>
+          <Button variant="outline" className="max-sm:flex-1" disabled={!text.trim() || check.isPending} onClick={() => check.mutate()}>{check.isPending && <Spinner />} Check file</Button>
+          <Button variant="premium" className="max-sm:flex-1" disabled={!preview?.valid || commit.isPending} onClick={() => commit.mutate()}>
             {commit.isPending && <Spinner />} Import {preview?.valid ?? 0} valid question{preview?.valid === 1 ? '' : 's'}
           </Button>
         </div>
@@ -118,13 +118,13 @@ export function ImportPanel({ examId, examCode }: { examId: string; examCode: st
               <b>{preview.valid}</b> of {preview.items.length} ready{preview.skipped.length ? `, ${preview.skipped.length} rows skipped while reading` : ''}.
               {preview.items.some((i) => i.exists) && <span className="text-muted-foreground"> Items marked &ldquo;exists&rdquo; are {overwrite ? 'overwritten' : 'skipped'}.</span>}
             </p>
-            <ul className="max-h-96 divide-y overflow-y-auto rounded-xl border">
+            <ul className="max-h-[min(24rem,60dvh)] divide-y overflow-y-auto overscroll-contain rounded-xl border">
               {preview.items.map((it, i) => (
                 <li key={`${it.id}-${i}`} className="px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     {it.errors.length ? <X className="size-4 shrink-0 text-destructive" /> : <CheckCircle2 className="size-4 shrink-0 text-success" />}
-                    <span className="font-mono text-xs">{it.id}</span>
-                    <span className="text-xs text-muted-foreground">{it.type} · {it.skill}</span>
+                    <span className="min-w-0 font-mono text-xs break-all">{it.id}</span>
+                    <span className="min-w-0 text-xs text-muted-foreground">{it.type} · {it.skill}</span>
                     {it.exists && <span className="rounded-full bg-secondary px-1.5 text-[0.65rem]">exists</span>}
                   </div>
                   <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{it.stem}</p>
