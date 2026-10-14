@@ -37,8 +37,7 @@ export default async function LandingPage() {
     <div className="relative overflow-x-clip">
       <ScrollProgress />
       <JsonLd data={graph(examListLd(exams), faqLd(LANDING_FAQ))} />
-      {/* Desktop only: a full-screen blended layer makes every repaint cost the whole screen, which phones feel. */}
-      <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[60] hidden opacity-[0.06] mix-blend-overlay md:block" />
+      <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[60] opacity-[0.06] mix-blend-overlay" />
 
       {/* Hero */}
       <section className="relative">
