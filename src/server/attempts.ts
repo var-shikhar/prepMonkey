@@ -10,6 +10,7 @@ import {
   type ExamConfig, type Question,
 } from '@/lib/engine';
 import { KINDS } from '@/lib/attempt-kinds';
+import { poolForRole } from '@/lib/role-levels';
 import type { AttemptListItem, PlayerState, ProgressPatch, ResultState } from '@/lib/dto';
 import { XP, recordActivity } from './activity';
 import { aiEnabled } from './ai/client';
@@ -28,6 +29,21 @@ type AttemptRow = typeof attempt.$inferSelect;
 const GRACE_MS = 15_000;
 const DIAGNOSTIC_ITEMS = 15;
 const ADAPTIVE_LENGTH = 20;
+/** How many of the learner's latest attempts count as "recently seen" when drawing new questions. */
+const SEEN_WINDOW = 15;
+
+/** Question id -> how many attempts ago the learner last saw it (0 = the latest), across their recent attempts on this exam. */
+async function recentlySeen(userId: string, examId: string, excludeAttemptId?: string): Promise<Map<string, number>> {
+  const rows = await db.select({ id: attempt.id, itemIds: attempt.itemIds }).from(attempt)
+    .where(and(eq(attempt.userId, userId), eq(attempt.examId, examId)))
+    .orderBy(desc(attempt.startedAt))
+    .limit(SEEN_WINDOW + 1);
+  const seen = new Map<string, number>();
+  rows.filter((r) => r.id !== excludeAttemptId).slice(0, SEEN_WINDOW).forEach((r, age) => {
+    for (const id of r.itemIds) if (!seen.has(id)) seen.set(id, age);
+  });
+  return seen;
+}
 const MAX_TIME_PER_ITEM_MS = 4 * 60 * 60 * 1000;
 
 export interface StartInput {
@@ -40,6 +56,8 @@ export interface StartInput {
   count?: number;
   timed?: boolean;
   instant?: boolean;
+  role?: number;
+  askedOnly?: boolean;
   candidateName?: string;
   challengeId?: string;
   assignmentId?: string;
@@ -64,6 +82,7 @@ export async function startAttempt(userId: string, userName: string, input: Star
   const difficulty = cfg.difficultyModes[input.difficulty ?? ''] ? input.difficulty! : cfg.defaultDifficultyMode;
   const preset = difficultyMode(cfg, difficulty);
   const seed = newSeed();
+  const seen = await recentlySeen(userId, ex.id);
   const settings: AttemptSettings = {};
   let form: { itemIds: string[]; optionOrder: Record<string, string[]> };
   let minutes: number | null = null;
@@ -77,15 +96,17 @@ export async function startAttempt(userId: string, userName: string, input: Star
       if (input.kind === 'full') await assertCanStartFullMock(userId, ex.id);
       const mode = cfg.modes[input.kind];
       if (!mode) throw new AppError('This exam has no such mock.', 400);
-      form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: mode.items, difficulty });
+      form = assembleForm(cfg, poolForRole(await getAssemblyPool(ex.id, 'bank'), input.role, mode.items), { seed, total: mode.items, difficulty, seen });
       minutes = Math.ceil(mode.minutes * preset.timeFactor);
+      settings.role = input.role ?? null;
       settings.candidateName = (input.candidateName ?? userName).trim().slice(0, 80);
       break;
     }
     case 'challenge': {
       const c = await getChallengeForm(input.challengeId ?? '');
       if (c.examId !== ex.id) throw new AppError('That challenge belongs to another exam.', 400);
-      form = { itemIds: c.itemIds, optionOrder: c.optionOrder };
+      // Everyone gets the same questions, each in their own order.
+      form = formFromItems(await getQuestionsByIds(c.itemIds), seed);
       minutes = c.minutes;
       challengeId = c.id;
       settings.candidateName = userName;
@@ -96,10 +117,10 @@ export async function startAttempt(userId: string, userName: string, input: Star
       if (asg.examId !== ex.id) throw new AppError('That assignment belongs to another exam.', 400);
       assignmentId = asg.id;
       if (asg.kind === 'practice') {
-        form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: 15, difficulty: asg.difficulty });
+        form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: 15, difficulty: asg.difficulty, seen });
       } else {
         const mode = cfg.modes[asg.kind];
-        form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: mode?.items ?? cfg.itemCount, difficulty: asg.difficulty });
+        form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: mode?.items ?? cfg.itemCount, difficulty: asg.difficulty, seen });
         minutes = Math.ceil((mode?.minutes ?? cfg.timeLimitMinutes) * difficultyMode(cfg, asg.difficulty).timeFactor);
       }
       settings.candidateName = userName;
@@ -107,26 +128,29 @@ export async function startAttempt(userId: string, userName: string, input: Star
     }
     case 'adaptive': {
       const target = Math.min(ADAPTIVE_LENGTH, cfg.itemCount);
-      const first = pickNextAdaptive(cfg, await getAssemblyPool(ex.id, 'bank'), new Set(), [], 0, target, mulberry32(seed));
+      const first = pickNextAdaptive(cfg, await getAssemblyPool(ex.id, 'bank'), new Set(), [], 0, target, mulberry32(seed), seen);
       if (!first) throw new AppError('This exam has no questions yet.', 400, 'EMPTY');
       form = formFromItems([first], seed);
       settings.adaptive = { theta: 0, target };
       break;
     }
     case 'diagnostic': {
-      form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: DIAGNOSTIC_ITEMS, difficulty: cfg.defaultDifficultyMode });
+      form = assembleForm(cfg, await getAssemblyPool(ex.id, 'bank'), { seed, total: DIAGNOSTIC_ITEMS, difficulty: cfg.defaultDifficultyMode, seen });
       break;
     }
     case 'practice': {
       pool = input.pool ?? 'bank';
       // "All available" arrives as a large count; the form is capped by what the pool holds.
       const count = Math.max(1, Math.min(input.count ?? 10, 2000));
-      form = assembleForm(cfg, await getAssemblyPool(ex.id, pool), {
-        seed, total: count, difficulty, domains: input.domains ?? null, skills: input.skills ?? null,
+      // A drill may be short, so the role filter never widens to fill it.
+      form = assembleForm(cfg, poolForRole(await getAssemblyPool(ex.id, pool), input.role, 1, input.askedOnly), {
+        seed, total: count, difficulty, domains: input.domains ?? null, skills: input.skills ?? null, seen,
       });
       settings.domains = input.domains ?? null;
       settings.skills = input.skills ?? null;
       settings.count = count;
+      settings.role = input.role ?? null;
+      settings.askedOnly = Boolean(input.askedOnly);
       settings.timed = Boolean(input.timed);
       if (input.timed) minutes = Math.ceil(((form.itemIds.length * secondsPerItem(cfg)) / 60) * preset.timeFactor);
       break;
@@ -555,7 +579,8 @@ export async function answerAdaptive(userId: string, attemptId: string, question
   const pool = await getAssemblyPool(ex.id, 'bank');
   const used = new Set(a.itemIds);
   const answeredSkills = (await getQuestionsByIds(a.itemIds)).map((x) => x.skill);
-  const next = pickNextAdaptive(ex.config, pool, used, answeredSkills, theta, state.target, mulberry32(a.seed + answered));
+  const seen = await recentlySeen(a.userId, ex.id, a.id);
+  const next = pickNextAdaptive(ex.config, pool, used, answeredSkills, theta, state.target, mulberry32(a.seed + answered), seen);
   if (!next) {
     const closed = { ...a, responses, settings: { ...a.settings, adaptive: { ...state, theta } } };
     await db.update(attempt).set({ responses, settings: closed.settings }).where(eq(attempt.id, a.id));

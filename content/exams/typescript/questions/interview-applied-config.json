@@ -1,0 +1,1986 @@
+[
+  {
+    "id": "TSM-IQ2-APP-001",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A React frontend and a Node backend live in different repos. Twice this quarter the backend renamed a response field and the frontend broke in production, even though it \"has types\". Which two changes keep the client's types honest? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Generate the client's request and response types from the backend's OpenAPI spec in CI, so a renamed field breaks the frontend build",
+        "correct": true,
+        "why": "Types derived from the server's contract change when the contract changes, so the mismatch shows up as a compile error instead of a production bug."
+      },
+      {
+        "id": "B",
+        "text": "Parse each response with a runtime schema (for example zod) at the fetch boundary and derive the TypeScript type from that schema",
+        "correct": true,
+        "why": "The schema checks the real payload at runtime, and `z.infer` keeps the static type identical to what was validated."
+      },
+      {
+        "id": "C",
+        "text": "Annotate the result, as in `const user: User = await res.json()`, instead of using `as User`",
+        "correct": false,
+        "why": "`res.json()` returns `Promise<any>`, and `any` is assignable to `User`, so the annotation checks nothing. It is the same unchecked trust as the cast."
+      },
+      {
+        "id": "D",
+        "text": "Make every property in the hand-written response interfaces optional so a missing field can never cause a type error",
+        "correct": false,
+        "why": "This hides the drift instead of detecting it, and forces `?.` checks everywhere. A renamed field still compiles silently."
+      },
+      {
+        "id": "E",
+        "text": "Turn on `noUncheckedIndexedAccess` so that property reads on response objects include `undefined`",
+        "correct": false,
+        "why": "That option only affects index-signature and array element access, not named properties of an interface, and it never compares types with the server."
+      }
+    ],
+    "explanation": "Compile-time types are only as good as their source. When they are hand-written on the client, they are a guess about the server. Interviewers asking about API typing want two layers: a single source of truth for the contract (OpenAPI codegen, a shared types package, or tRPC) and runtime validation at the trust boundary, because TypeScript types are erased and cannot check JSON on their own.",
+    "reference": "TypeScript Handbook: Type Assertions",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://www.greatfrontend.com/blog/typeScript-Interview-Questions-for-3-Years-Experience"
+      ]
+    },
+    "source": "interview:ts-api-type-design"
+  },
+  {
+    "id": "TSM-IQ2-APP-002",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You are asked to type the result of an API call so that callers **cannot** read `data` until they have ruled out an error. Which type does that under `strict`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`type Result<T> = { data?: T; error?: string }`",
+        "correct": false,
+        "why": "A caller can write `r.data?.name` without ever looking at `error`, and the type also allows both or neither to be set."
+      },
+      {
+        "id": "B",
+        "text": "`type Result<T> = { ok: true; data: T } | { ok: false; error: string }`",
+        "correct": true,
+        "why": "`data` exists only on the `ok: true` member. Reading `r.data` before checking `r.ok` is a compile error, and after `if (r.ok)` it is `T`."
+      },
+      {
+        "id": "C",
+        "text": "`type Result<T> = { ok: boolean; data: T; error: string | null }`",
+        "correct": false,
+        "why": "`data` is always typed `T`, so callers can read it without checking `ok`, even when the request failed."
+      },
+      {
+        "id": "D",
+        "text": "`type Result<T> = { data: T | null; error: string | null; status: number }`",
+        "correct": false,
+        "why": "A caller can check `data !== null` and skip the error, and nothing stops the impossible state where both are null."
+      }
+    ],
+    "explanation": "A discriminated union makes illegal states unrepresentable: the `ok` literal tells the compiler which members exist. This is the usual answer to \"how do you design API response types\": model success and failure as separate shapes rather than one object with optional fields.",
+    "reference": "TypeScript Handbook: Discriminated unions",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://www.greatfrontend.com/blog/typeScript-Interview-Questions-for-3-Years-Experience"
+      ]
+    },
+    "source": "interview:ts-api-type-design"
+  },
+  {
+    "id": "TSM-IQ2-APP-003",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This compiles under `strict`, but throws `TypeError: u.createdAt.getTime is not a function` at runtime:\n\n```ts\ninterface User { name: string; createdAt: Date }\n\nasync function loadUser(): Promise<User> {\n  const res = await fetch(\"/api/user\");\n  const u: User = await res.json();\n  return u;\n}\n\nasync function ageMs() {\n  const u = await loadUser();\n  return Date.now() - u.createdAt.getTime();\n}\n```\n\nWhat is the root cause, and what is the usual fix?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`fetch` drops `Date` objects in transit; send dates as numbers instead",
+        "correct": false,
+        "why": "Nothing is dropped. JSON has no date type, so the server already serialised the date as a string, and `res.json()` keeps it a string."
+      },
+      {
+        "id": "B",
+        "text": "`res.json()` returns `any`, so the interface was never checked against the payload, where `createdAt` is a string. Type the wire format as a DTO with `createdAt: string` and convert it in a mapper.",
+        "correct": true,
+        "why": "The `User` type described a domain object, not the JSON. Separating the DTO from the domain model and converting at the boundary makes the type match reality."
+      },
+      {
+        "id": "C",
+        "text": "Use `as User` instead of an annotation, which tells the compiler to convert the field",
+        "correct": false,
+        "why": "Assertions are erased at compile time and never convert values, so the field is still a string at runtime."
+      },
+      {
+        "id": "D",
+        "text": "Enable `strictNullChecks`, which would have reported that `createdAt` might be a string",
+        "correct": false,
+        "why": "`strict` already includes `strictNullChecks`, and no flag can see the runtime JSON. The `any` from `res.json()` hides it."
+      }
+    ],
+    "explanation": "A common senior-level follow-up on API typing is the gap between the wire format and the domain model. JSON can carry only strings, numbers, booleans, null, arrays and objects, so a `Date`, `Map` or class instance in a response type is always a lie. Type the DTO honestly, then map it (and ideally validate it) into the richer domain type.",
+    "reference": "MDN: Response.json()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://www.greatfrontend.com/blog/typeScript-Interview-Questions-for-3-Years-Experience"
+      ]
+    },
+    "source": "interview:ts-api-type-design"
+  },
+  {
+    "id": "TSM-IQ2-APP-004",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You lead a team with a 200k-line JavaScript React app. Product will not accept a feature freeze. Which migration plan would an interviewer expect from a staff engineer?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a branch, rename every `.js` file to `.ts`, fix errors until it compiles, then merge it in one release",
+        "correct": false,
+        "why": "A big-bang branch drifts from main for weeks, conflicts with every feature, and blocks releases. It is the plan the question warns against."
+      },
+      {
+        "id": "B",
+        "text": "Rewrite the app module by module in a new TypeScript repo, and switch traffic once the rewrite reaches parity",
+        "correct": false,
+        "why": "A rewrite doubles the work and freezes the old code base in practice. Migration should keep the same code running."
+      },
+      {
+        "id": "C",
+        "text": "Add a `tsconfig` with `allowJs` and type-checking in CI, convert files incrementally starting with leaf modules and new code, and tighten strict flags over time",
+        "correct": true,
+        "why": "`.js` and `.ts` coexist from day one, every pull request stays shippable, and strictness ratchets up as coverage grows."
+      },
+      {
+        "id": "D",
+        "text": "Turn on `strict` across the whole app first, add `// @ts-ignore` above every reported line, and remove the comments later",
+        "correct": false,
+        "why": "Thousands of blanket `@ts-ignore` comments hide new errors on those lines too, and they rarely get cleaned up. `@ts-expect-error` with a tracked count is the safer suppression."
+      }
+    ],
+    "explanation": "Incremental migration is the expected answer: let TypeScript and JavaScript live side by side (`allowJs`), check in CI, convert leaf utilities and shared types first so dependants benefit, write all new code in TypeScript, and raise strictness gradually. Interviewers also listen for how you measure progress (files converted, suppressions remaining) and keep the product shipping.",
+    "reference": "TypeScript Handbook: Migrating from JavaScript",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.kore1.com/typescript-developer-interview-questions/",
+        "https://dev.to/suraj_kumar_fb57ae0928df2/most-common-typescript-interview-questions-for-frontend-developers-5cpo",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-js-to-ts-migration"
+  },
+  {
+    "id": "TSM-IQ2-APP-005",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Midway through a migration, the team upgrades to TypeScript 6.0. Because `strict` now defaults to `true`, the build reports 4,000 errors, mostly implicit `any` and possible `null`. Which two approaches keep the migration moving? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Turn on `isolatedModules` so that each file is checked on its own and errors in other files are ignored",
+        "correct": false,
+        "why": "`isolatedModules` adds restrictions for single-file transpilers. It does not suppress type errors, and `tsc` still checks the whole program."
+      },
+      {
+        "id": "B",
+        "text": "Set `\"strict\": false` explicitly for now, then enable the strict-family flags one at a time (for example `noImplicitAny`, then `strictNullChecks`), fixing each batch",
+        "correct": true,
+        "why": "Each flag is a separate option, so the team can turn them on in stages and keep the build green between steps."
+      },
+      {
+        "id": "C",
+        "text": "Keep the main tsconfig loose and add a second, stricter tsconfig that `extends` it and includes only already-migrated folders, checked in CI too",
+        "correct": true,
+        "why": "Migrated code is held to strict rules while the rest catches up. Folders move into the strict config as they are cleaned."
+      },
+      {
+        "id": "D",
+        "text": "Turn on `skipLibCheck`, which skips type checking of the project's own source files until they are fixed",
+        "correct": false,
+        "why": "`skipLibCheck` skips only declaration files (`.d.ts`). It does not touch errors in your `.ts` sources."
+      },
+      {
+        "id": "E",
+        "text": "Lower `target` to `es5`, which removes the strict checks that only apply to modern syntax",
+        "correct": false,
+        "why": "`target` controls the emitted JavaScript syntax. It has no effect on which type errors `strict` reports."
+      }
+    ],
+    "explanation": "TypeScript 6.0 turns `strict` on by default, so a project that relied on the old loose default sees a wave of errors on upgrade. The standard migration answer is to ratchet: pin the current strictness explicitly, then tighten flag by flag or folder by folder, with CI enforcing the strict part. Interviewers want a plan that keeps the build green rather than a pile of suppressions.",
+    "reference": "TypeScript TSConfig Reference: strict",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.kore1.com/typescript-developer-interview-questions/",
+        "https://dev.to/suraj_kumar_fb57ae0928df2/most-common-typescript-interview-questions-for-frontend-developers-5cpo",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-js-to-ts-migration"
+  },
+  {
+    "id": "TSM-IQ2-APP-006",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "During a migration with `\"allowJs\": true` (and `checkJs` off), a new `.ts` file imports an old, unannotated JavaScript module:\n\n```js\n// legacy.js\nexport function fmt(n) {\n  return \"$\" + n.toFixed(2);\n}\n```\n\n```ts\n// app.ts\nimport { fmt } from \"./legacy.js\";\nconst label = fmt(\"12.5\");\n```\n\nWhat happens under `strict`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`app.ts` reports an error, because `fmt` expects a `number`",
+        "correct": false,
+        "why": "There is no annotation in `legacy.js`, so TypeScript has no `number` to compare against."
+      },
+      {
+        "id": "B",
+        "text": "`app.ts` reports TS7006, because the parameter `n` in `legacy.js` implicitly has an `any` type",
+        "correct": false,
+        "why": "Implicit-any errors are reported only in files that are type-checked. With `checkJs` off, `legacy.js` is not checked."
+      },
+      {
+        "id": "C",
+        "text": "It compiles, `label` is a `string`, and it throws at runtime (strings have no `toFixed`)",
+        "correct": true,
+        "why": "In an unchecked JS file the untyped parameter is `any`, so any argument is accepted. The return type is still inferred from `\"$\" + ...` as `string`."
+      },
+      {
+        "id": "D",
+        "text": "It compiles, and `label` is typed `any`, because imports from `.js` files are always `any`",
+        "correct": false,
+        "why": "TypeScript infers types from JavaScript sources. Only the unannotated parameter is `any`; the return type is inferred as `string`."
+      }
+    ],
+    "explanation": "During gradual migration, imports from JavaScript are only as safe as what TypeScript can infer. Parameters without JSDoc become `any`, so calls into legacy code are effectively unchecked. That is why teams convert leaf modules first or add JSDoc types plus `checkJs` to the hottest legacy files.",
+    "reference": "TypeScript Handbook: Type Checking JavaScript Files",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.kore1.com/typescript-developer-interview-questions/",
+        "https://dev.to/suraj_kumar_fb57ae0928df2/most-common-typescript-interview-questions-for-frontend-developers-5cpo",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-js-to-ts-migration"
+  },
+  {
+    "id": "TSM-IQ2-APP-007",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks: \"What are the downsides of TypeScript?\" Which answer is a **real** drawback rather than a myth?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The app runs slower in the browser, because every typed variable is checked at runtime",
+        "correct": false,
+        "why": "Types are erased when TypeScript is compiled. The browser runs plain JavaScript with no extra checks."
+      },
+      {
+        "id": "B",
+        "text": "Users download a larger bundle, because type annotations are shipped to the browser",
+        "correct": false,
+        "why": "Annotations are removed from the output, so they add nothing to the bundle."
+      },
+      {
+        "id": "C",
+        "text": "It adds a build or type-check step, extra configuration and a learning curve",
+        "correct": true,
+        "why": "This is the honest cost: tooling (tsconfig, build or strip step, CI type checks) and a learning curve, especially for advanced types."
+      },
+      {
+        "id": "D",
+        "text": "TypeScript projects cannot use npm packages that were written in plain JavaScript",
+        "correct": false,
+        "why": "They can. Packages ship their own `.d.ts` files, use community types from `@types/*`, or can be declared locally."
+      }
+    ],
+    "explanation": "A balanced answer names real costs, such as the build step, configuration, learning curve, slower type checks on very large projects, and sometimes missing or wrong third-party typings, and does not repeat myths about runtime speed or bundle size. Types are erased, so they cost nothing at runtime.",
+    "reference": "TypeScript Handbook: TypeScript for JavaScript Programmers",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://arc.dev/developer-blog/typescript-interview-questions/",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://uk.indeed.com/career-advice/interviewing/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-pros-and-cons"
+  },
+  {
+    "id": "TSM-IQ2-APP-008",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two are genuine advantages of TypeScript over plain JavaScript? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Compiled code is guaranteed to never throw a runtime type error",
+        "correct": false,
+        "why": "TypeScript is not fully sound, and `any`, assertions and unvalidated external data can all lead to runtime type errors."
+      },
+      {
+        "id": "B",
+        "text": "The emitted JavaScript runs faster, because the engine can trust the type annotations",
+        "correct": false,
+        "why": "Annotations are erased, and engines such as V8 never see them, so there is no speed-up."
+      },
+      {
+        "id": "C",
+        "text": "API responses are validated against their interfaces automatically at runtime",
+        "correct": false,
+        "why": "Interfaces have no runtime form. Validating external data needs a runtime check or a schema library."
+      },
+      {
+        "id": "D",
+        "text": "Typos and wrong argument types are reported in the editor or CI before the code runs",
+        "correct": true,
+        "why": "Static checking catches a whole class of bugs, like misspelt properties and wrong arguments, at compile time."
+      },
+      {
+        "id": "E",
+        "text": "Editors get accurate autocompletion, go-to-definition and safe rename refactoring across files",
+        "correct": true,
+        "why": "The type information powers the language service, which makes large refactors much safer."
+      }
+    ],
+    "explanation": "The advantages interviewers want to hear are developer-time ones: earlier error detection, better tooling, self-documenting code and safer refactoring. Claims about runtime guarantees or speed are red flags, because TypeScript's types disappear before the code runs.",
+    "reference": "TypeScript Handbook: The Basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://arc.dev/developer-blog/typescript-interview-questions/",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://uk.indeed.com/career-advice/interviewing/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-pros-and-cons"
+  },
+  {
+    "id": "TSM-IQ2-APP-009",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your manager asks what it will **cost** to adopt TypeScript on a large existing codebase. Which two statements are accurate? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Existing JavaScript files must all be rewritten before the first TypeScript file can be added",
+        "correct": false,
+        "why": "`allowJs` lets JavaScript and TypeScript files live in the same project, so adoption can be gradual."
+      },
+      {
+        "id": "B",
+        "text": "Every variable and function must carry an explicit type annotation",
+        "correct": false,
+        "why": "Inference fills in most types. Annotations are mainly needed at boundaries such as function parameters."
+      },
+      {
+        "id": "C",
+        "text": "Type-checking a large project can become slow, and teams may need incremental builds or project references to keep CI fast",
+        "correct": true,
+        "why": "Checking cost grows with program size and type complexity. `incremental`, project references and simpler types are the usual remedies."
+      },
+      {
+        "id": "D",
+        "text": "Some third-party libraries have missing or inaccurate typings, so the team may need `@types` packages or its own declaration files",
+        "correct": true,
+        "why": "Typings come from the library or from DefinitelyTyped, and they can lag behind the code. Writing or patching `.d.ts` files is a real cost."
+      },
+      {
+        "id": "E",
+        "text": "Every user's browser must download the TypeScript compiler before the app can start",
+        "correct": false,
+        "why": "Compilation happens at build time. The browser receives only the emitted JavaScript."
+      }
+    ],
+    "explanation": "Real adoption costs are build and check time, typings for third-party code, configuration and training. Myths such as \"annotate everything\" or \"rewrite first\" suggest the candidate has not used TypeScript on a real project. Interviewers like answers that pair each cost with its mitigation.",
+    "reference": "TypeScript Handbook: Project References",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://arc.dev/developer-blog/typescript-interview-questions/",
+        "https://www.datacamp.com/blog/typescript-interview-questions",
+        "https://uk.indeed.com/career-advice/interviewing/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-pros-and-cons"
+  },
+  {
+    "id": "TSM-IQ2-APP-010",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What are the types of `k` and `v`?\n\n```ts\nconst scores = [10, 20, 30];\n\nfor (const k in scores) { /* ... */ }\nfor (const v of scores) { /* ... */ }\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`k` is `number` and `v` is `number`",
+        "correct": false,
+        "why": "`for...in` iterates property keys, and property keys are strings, even for array indexes."
+      },
+      {
+        "id": "B",
+        "text": "`k` is `string` and `v` is `number`",
+        "correct": true,
+        "why": "`for...in` yields string keys (`\"0\"`, `\"1\"`, ...), while `for...of` yields the array's elements, which are numbers."
+      },
+      {
+        "id": "C",
+        "text": "`k` is `\"0\" | \"1\" | \"2\"` and `v` is `number`",
+        "correct": false,
+        "why": "The array type `number[]` has no fixed length, so TypeScript cannot list the keys. It types the variable as plain `string`."
+      },
+      {
+        "id": "D",
+        "text": "`k` is `number` and `v` is `10 | 20 | 30`",
+        "correct": false,
+        "why": "`scores` is inferred as `number[]`, so its elements are `number`, and the keys from `for...in` are strings."
+      }
+    ],
+    "explanation": "`for...in` walks enumerable property **names**, so its loop variable is always `string` in TypeScript. `for...of` walks the iterator's **values**, so it gets the element type. For arrays, prefer `for...of`, `forEach` or an index `for` loop. `for...in` is meant for object keys.",
+    "reference": "TypeScript Handbook: Iterators and Generators",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-loops-typing"
+  },
+  {
+    "id": "TSM-IQ2-APP-011",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This compiles under `strict`. What does it log?\n\n```ts\nconst nums = [1, 2, 3];\nconst out: string[] = [];\n\nfor (const i in nums) {\n  out.push(i + 1);\n}\nconsole.log(out);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[\"2\", \"3\", \"4\"]`",
+        "correct": false,
+        "why": "That would need numeric addition. `i` is a string, so `+ 1` concatenates."
+      },
+      {
+        "id": "B",
+        "text": "`[\"1\", \"2\", \"3\"]`",
+        "correct": false,
+        "why": "This treats `i` as the element value. `for...in` gives the indexes `\"0\"`, `\"1\"`, `\"2\"`."
+      },
+      {
+        "id": "C",
+        "text": "`[\"01\", \"11\", \"21\"]`",
+        "correct": true,
+        "why": "`i` is the string index, and `string + number` is string concatenation, which gives `\"0\" + 1 = \"01\"`, and so on. The result is a string, so `push` type-checks."
+      },
+      {
+        "id": "D",
+        "text": "Nothing, because the `push` line is a compile error: `i + 1` is a `number`",
+        "correct": false,
+        "why": "`i` is `string`, so `i + 1` is `string`, which matches `string[]`. That is why the bug slips through."
+      }
+    ],
+    "explanation": "A common snippet in screening rounds: the `for...in` key is a string, so arithmetic on it silently becomes concatenation, and TypeScript allows it because `string + number` is a valid string expression. Use `for...of` with `entries()` (`for (const [i, n] of nums.entries())`) when you need a numeric index.",
+    "reference": "MDN: for...in",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-loops-typing"
+  },
+  {
+    "id": "TSM-IQ2-APP-012",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A shared helper is used across the app:\n\n```ts\nasync function api(url: string) {\n  const res = await fetch(url);\n  return res.json();\n}\n\nasync function showName() {\n  const user = await api(\"/api/user\");\n  console.log(user.nmae.toUpperCase());\n}\n```\n\nWhy does the typo `nmae` compile under `strict`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`api` returns `Promise<any>`, because `res.json()` is typed `Promise<any>`, so every property read on the result is unchecked",
+        "correct": true,
+        "why": "The inferred return type flows from `res.json()`. `any` turns off checking for `user` and everything read from it."
+      },
+      {
+        "id": "B",
+        "text": "`api` returns `Promise<unknown>`, and property reads on `unknown` are allowed",
+        "correct": false,
+        "why": "If it were `unknown`, reading `user.nmae` would be an error (TS18046). The problem is that it is `any`."
+      },
+      {
+        "id": "C",
+        "text": "Inferred return types are skipped by `strict`; only annotated return types are checked",
+        "correct": false,
+        "why": "Inferred return types are fully checked. Here the inferred type is simply `any`."
+      },
+      {
+        "id": "D",
+        "text": "Misspelt property names are only reported with `noPropertyAccessFromIndexSignature`, which `strict` does not include",
+        "correct": false,
+        "why": "That option only forces bracket access for index-signature properties. It does nothing for a value typed `any`, and normal typos on known types are reported without it."
+      }
+    ],
+    "explanation": "An untyped fetch wrapper leaks `any` into every caller, which defeats strict mode silently. A typed client should return `unknown` or a validated `T`, so that callers have to narrow or parse before using the data. typescript-eslint's `no-unsafe-member-access` and `no-unsafe-return` rules catch this kind of leak.",
+    "reference": "TypeScript Handbook: Everyday Types (any)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-typed-fetch-client"
+  },
+  {
+    "id": "TSM-IQ2-APP-013",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are asked to write `getJson` with three requirements: it throws on HTTP error statuses, it validates the body, and it returns the validated type. Callers pass a parser such as `UserSchema.parse`. Which implementation meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\nasync function getJson<T>(url: string, parse: (d: unknown) => T): Promise<T> {\n  const res = await fetch(url);\n  return parse(await res.json());\n}\n```",
+        "correct": false,
+        "why": "`fetch` resolves normally for 404 and 500 responses, so without a `res.ok` check an error body is passed to `parse` instead of being reported as an HTTP error."
+      },
+      {
+        "id": "B",
+        "text": "```ts\nasync function getJson<T>(url: string, parse: (d: unknown) => T): Promise<T> {\n  const res = await fetch(url);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return parse(await res.json());\n}\n```",
+        "correct": true,
+        "why": "It rejects on non-2xx statuses, hands the raw body to the parser as `unknown`, and returns whatever type the parser proves."
+      },
+      {
+        "id": "C",
+        "text": "```ts\nasync function getJson<T>(url: string, parse: (d: unknown) => T): Promise<T> {\n  const res = await fetch(url);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return (await res.json()) as T;\n}\n```",
+        "correct": false,
+        "why": "It accepts a parser but never calls it, so the `as T` assertion trusts the body without validation."
+      },
+      {
+        "id": "D",
+        "text": "```ts\nasync function getJson<T>(url: string, parse: (d: unknown) => T): Promise<T> {\n  try {\n    const res = await fetch(url);\n    return parse(await res.json());\n  } catch {\n    // treat any failure as \"no data\"\n    return undefined as T;\n  }\n}\n```",
+        "correct": false,
+        "why": "It swallows every failure and lies about the type: callers receive `undefined` typed as `T`, which crashes later and far from the cause."
+      }
+    ],
+    "explanation": "A typed fetch client is a common mid-level coding prompt. The typing is only honest if a runtime check stands behind it: check `res.ok` (fetch does not reject on HTTP errors), treat the body as `unknown`, and let a validator produce `T`. Interviewers also watch for `as T` shortcuts and swallowed errors.",
+    "reference": "MDN: Using the Fetch API",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-typed-fetch-client"
+  },
+  {
+    "id": "TSM-IQ2-APP-014",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A typed client declares:\n\n```ts\ndeclare function request<T>(url: string): Promise<T>;\n\nasync function load() {\n  const data = await request(\"/api/users\");\n  return data;\n}\n```\n\nThe caller forgot the type argument. What is the type of `data` inside `load`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`any`, because a type parameter that cannot be inferred falls back to `any`",
+        "correct": false,
+        "why": "Uninferred type parameters fall back to their constraint, and the implicit constraint is `unknown`, not `any`."
+      },
+      {
+        "id": "B",
+        "text": "`unknown`, so reading `data.length` is a compile error",
+        "correct": true,
+        "why": "With no inference site for `T`, TypeScript uses `unknown`. Reading a property on it reports TS18046."
+      },
+      {
+        "id": "C",
+        "text": "`{}`, so every property read is a compile error but `data` cannot be null",
+        "correct": false,
+        "why": "`{}` was the fallback in very old versions (before TypeScript 3.5). It is `unknown` today."
+      },
+      {
+        "id": "D",
+        "text": "`never`, because nothing in the call constrains `T`",
+        "correct": false,
+        "why": "`never` is not used as a fallback for an uninferred type parameter."
+      }
+    ],
+    "explanation": "When a type parameter appears only in the return type, callers must supply it, otherwise it becomes `unknown`. That is safer than `any`, but it also shows that `request<T>` alone is a disguised cast: `T` is whatever the caller claims. Pair it with runtime validation, or derive `T` from a route map, so that the type is earned.",
+    "reference": "TypeScript Handbook: Generics",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-typed-fetch-client"
+  },
+  {
+    "id": "TSM-IQ2-APP-015",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You are asked to type a `deepClone` helper. It must accept primitives, arrays and objects, and callers must get back exactly the type they passed in. Which signature fits?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function deepClone(value: any): any`",
+        "correct": false,
+        "why": "It accepts anything but returns `any`, so callers lose their type and every later read is unchecked."
+      },
+      {
+        "id": "B",
+        "text": "`function deepClone(value: object): object`",
+        "correct": false,
+        "why": "It rejects primitives and returns plain `object`, so callers cannot read their own properties without a cast."
+      },
+      {
+        "id": "C",
+        "text": "`function deepClone<T>(value: T): T`",
+        "correct": true,
+        "why": "`T` is inferred from the argument and returned unchanged, so a `User` in gives a `User` out, and primitives work too."
+      },
+      {
+        "id": "D",
+        "text": "`function deepClone<T extends object>(value: T): Partial<T>`",
+        "correct": false,
+        "why": "The constraint rejects primitives, and `Partial<T>` wrongly tells callers that every property might be missing."
+      }
+    ],
+    "explanation": "An identity-shaped generic, `<T>(value: T) => T`, is the standard signature for clone helpers. The implementation still needs internal casts (for example `as T` after building the copy), because the compiler cannot prove that a rebuilt object has type `T`. Mention `structuredClone`, which is built into browsers and Node, as the production choice.",
+    "reference": "TypeScript Handbook: Generics",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233474950/javascript-typescript-fundamentals-frontend-interview/"
+      ]
+    },
+    "source": "interview:ts-typed-deep-clone-equal"
+  },
+  {
+    "id": "TSM-IQ2-APP-016",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Requirements for `deepClone<T>(value: T): T`: copy nested plain objects and arrays so that no reference is shared, handle `null` values, and keep properties whose value is `undefined` (so `\"note\" in copy` stays `true`). Which implementation meets every requirement?\n\n```ts\nfunction clone1<T>(value: T): T {\n  return JSON.parse(JSON.stringify(value));\n}\n\nfunction clone2<T>(value: T): T {\n  if (typeof value !== \"object\") return value;\n  if (Array.isArray(value)) return value.map(clone2) as T;\n  const out: Record<string, unknown> = {};\n  for (const [k, v] of Object.entries(value as object)) out[k] = clone2(v);\n  return out as T;\n}\n\nfunction clone3<T>(value: T): T {\n  if (value === null || typeof value !== \"object\") return value;\n  if (Array.isArray(value)) return value.map(clone3) as T;\n  const out: Record<string, unknown> = {};\n  for (const [k, v] of Object.entries(value)) out[k] = clone3(v);\n  return out as T;\n}\n\nfunction clone4<T extends object>(value: T): T {\n  return { ...value };\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`clone1`",
+        "correct": false,
+        "why": "`JSON.stringify` drops properties whose value is `undefined`, so `\"note\" in copy` becomes `false`. It also turns `Date` values into strings."
+      },
+      {
+        "id": "B",
+        "text": "`clone2`",
+        "correct": false,
+        "why": "`typeof null` is `\"object\"`, so a `null` value falls through to `Object.entries(null)`, which throws a `TypeError`."
+      },
+      {
+        "id": "C",
+        "text": "`clone3`",
+        "correct": true,
+        "why": "It returns primitives and `null` as they are, maps arrays recursively, and copies every own key, including keys whose value is `undefined`."
+      },
+      {
+        "id": "D",
+        "text": "`clone4`",
+        "correct": false,
+        "why": "Spread makes a shallow copy. Nested arrays and objects are still shared with the original."
+      }
+    ],
+    "explanation": "The three classic candidate mistakes are a shallow spread, forgetting that `typeof null === \"object\"`, and the JSON round trip, which loses `undefined`, `Date`, `Map` and cycles. Interviewers often follow up with dates, cycles (use a `WeakMap` of visited objects) or `structuredClone`, which handles most built-ins but not functions or class prototypes.",
+    "reference": "MDN: structuredClone()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233474950/javascript-typescript-fundamentals-frontend-interview/"
+      ]
+    },
+    "source": "interview:ts-typed-deep-clone-equal"
+  },
+  {
+    "id": "TSM-IQ2-APP-017",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This `deepEqual` passes the interviewer's first few tests:\n\n```ts\nfunction deepEqual<T>(a: T, b: T): boolean {\n  if (a === b) return true;\n  if (typeof a !== \"object\" || typeof b !== \"object\" || a === null || b === null) {\n    return false;\n  }\n  for (const key of Object.keys(a)) {\n    if (!deepEqual((a as any)[key], (b as any)[key])) return false;\n  }\n  return true;\n}\n```\n\nWhich call exposes its bug?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`deepEqual({ a: 1 }, { a: 1, b: 2 })`",
+        "correct": true,
+        "why": "It returns `true`. Only the keys of `a` are compared, so an extra key in `b` is never seen. The fix is to compare key counts first (or check keys in both directions)."
+      },
+      {
+        "id": "B",
+        "text": "`deepEqual({ a: 1, b: 2 }, { a: 1 })`",
+        "correct": false,
+        "why": "It correctly returns `false`: the loop reaches `b`, and `2` is not equal to `undefined`."
+      },
+      {
+        "id": "C",
+        "text": "`deepEqual({ a: { b: [1, 2] } }, { a: { b: [1, 2] } })`",
+        "correct": false,
+        "why": "It correctly returns `true`. Arrays are objects, so the recursion compares the nested values index by index."
+      },
+      {
+        "id": "D",
+        "text": "`deepEqual(null, null)`",
+        "correct": false,
+        "why": "It correctly returns `true`, because `null === null` is checked first."
+      }
+    ],
+    "explanation": "Typed `deepEqual` is usually asked as a coding question with a follow-up on edge cases: asymmetric keys, arrays of different lengths (the same bug: `[1, 2]` against `[1, 2, 3]` returns `true` here), `NaN`, dates and cycles. The `<T>(a: T, b: T)` signature also catches some mismatched comparisons at compile time, such as `deepEqual(1, \"1\")`.",
+    "reference": "MDN: Object.keys()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233474950/javascript-typescript-fundamentals-frontend-interview/"
+      ]
+    },
+    "source": "interview:ts-typed-deep-clone-equal"
+  },
+  {
+    "id": "TSM-IQ2-APP-018",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a strict codebase where `any` is discouraged, which use would most reviewers accept?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function memoize<F extends (...args: any[]) => any>(fn: F): F`, where `any` appears only in the constraint and callers keep `F`'s exact type",
+        "correct": true,
+        "why": "`(...args: unknown[]) => unknown` would reject `(x: number) => number`, because parameters are checked contravariantly. `any[]` in the constraint is the accepted idiom, and no `any` reaches callers."
+      },
+      {
+        "id": "B",
+        "text": "`const data: any = await res.json();`, passed straight to the rest of the app to save time on typing the response",
+        "correct": false,
+        "why": "This spreads `any` from an untrusted boundary through the codebase. The boundary should produce `unknown` and validate it."
+      },
+      {
+        "id": "C",
+        "text": "`function Table(props: any)` in a shared component, so it can accept whatever each screen passes",
+        "correct": false,
+        "why": "A shared component is exactly where a precise props type pays off. Use a generic or a union of supported shapes instead."
+      },
+      {
+        "id": "D",
+        "text": "`let config: any = {};` so that keys can be added one by one later",
+        "correct": false,
+        "why": "A typed object literal, `Partial<Config>` or `Record<string, string>` describes this without giving up checking."
+      }
+    ],
+    "explanation": "Senior candidates are expected to treat `any` as a bounded escape hatch: acceptable inside generic constraints or small, well-tested internal helpers whose public signature is fully typed, and never at trust boundaries or in shared APIs. Quoting the `unknown[]` contravariance problem shows you know why the idiom exists.",
+    "reference": "TypeScript Handbook: Generic Constraints",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.kore1.com/typescript-developer-interview-questions/",
+        "https://www.techinterview.org/companies/vercel/",
+        "https://www.greatfrontend.com/blog/typeScript-Interview-Questions-for-3-Years-Experience"
+      ],
+      "companies": [
+        "Vercel"
+      ]
+    },
+    "source": "interview:ts-any-when-acceptable"
+  },
+  {
+    "id": "TSM-IQ2-APP-019",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A team wants to stop `any` from spreading through a strict codebase. Which two statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`any` is contained to the variable it is declared on, because reading a property from an `any` value gives `unknown`",
+        "correct": false,
+        "why": "It spreads: property reads, calls and returns on `any` all produce `any`, so one `any` can silently untype a whole call chain."
+      },
+      {
+        "id": "B",
+        "text": "Adding `// @ts-expect-error` above each `any` turns it into `unknown` for the rest of the file",
+        "correct": false,
+        "why": "That directive only suppresses an error on the next line. It never changes a type."
+      },
+      {
+        "id": "C",
+        "text": "typescript-eslint's `no-explicit-any` and the typed `no-unsafe-*` rules flag written `any` and `any` values flowing into assignments, calls and returns",
+        "correct": true,
+        "why": "`noImplicitAny` cannot see explicit or library-provided `any`. These lint rules fill that gap."
+      },
+      {
+        "id": "D",
+        "text": "Using `unknown` at boundaries such as `JSON.parse` results and `catch` variables forces code to narrow or validate before using the value",
+        "correct": true,
+        "why": "`unknown` accepts any value but allows almost no operations until it is narrowed, so it contains the uncertainty at the edge."
+      },
+      {
+        "id": "E",
+        "text": "`noImplicitAny` also reports explicit `any` annotations, so turning it on is enough",
+        "correct": false,
+        "why": "It only reports places where TypeScript would silently infer `any`. Writing `: any` is allowed."
+      }
+    ],
+    "explanation": "`any` is contagious, which is why interviewers ask how you contain it, not just whether you use it. The usual answer combines `unknown` at the edges, lint rules that catch explicit and leaked `any`, and a policy that allows it only in documented, bounded spots.",
+    "reference": "TypeScript Handbook: The unknown type",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.kore1.com/typescript-developer-interview-questions/",
+        "https://www.techinterview.org/companies/vercel/",
+        "https://www.greatfrontend.com/blog/typeScript-Interview-Questions-for-3-Years-Experience"
+      ],
+      "companies": [
+        "Vercel"
+      ]
+    },
+    "source": "interview:ts-any-when-acceptable"
+  },
+  {
+    "id": "TSM-IQ2-APP-020",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a Vite + TypeScript app, `npm run dev` serves the page and hot-reloads normally, even though `src/cart.ts` passes a `string` where a `number` is expected. What is going on, and how should the project catch it?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Vite strips types with esbuild but never type-checks, so run `tsc --noEmit` in CI (or a checker plugin)",
+        "correct": true,
+        "why": "Vite's docs say it only transpiles `.ts` files. Type checking is left to the editor, `tsc` or a plugin such as vite-plugin-checker."
+      },
+      {
+        "id": "B",
+        "text": "Vite reports type errors only in production builds, so `vite build` will fail on this file",
+        "correct": false,
+        "why": "`vite build` also transpiles without type checking. That is why templates often run `tsc` before `vite build`."
+      },
+      {
+        "id": "C",
+        "text": "The project needs `@babel/preset-typescript`, because it type-checks files during transpilation",
+        "correct": false,
+        "why": "Babel's TypeScript preset also only removes types. It never runs the type checker."
+      },
+      {
+        "id": "D",
+        "text": "ESLint with the recommended config reports all type errors, so the project should add it to the dev server",
+        "correct": false,
+        "why": "Lint rules are not a replacement for the compiler's assignability checks. Even typed linting reports only its own rules."
+      }
+    ],
+    "explanation": "Modern build tools (Vite/esbuild, swc, Babel, Node's type stripping) transpile each file without checking types, for speed. Type safety comes from a separate `tsc --noEmit` step in CI and pre-commit, plus the editor. This is also why such projects enable `isolatedModules` or `verbatimModuleSyntax`.",
+    "reference": "Vite docs: Features (TypeScript, transpile only)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-build-tools-eslint"
+  },
+  {
+    "id": "TSM-IQ2-APP-021",
+    "domain": 5,
+    "skill": "applied-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You publish a typed `pick(obj, keys)` helper. After a refactor its return type silently widened to `any`, and every runtime unit test still passed. Which test would have failed CI?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A runtime assertion such as `expect(typeof pick(user, [\"id\"])).toBe(\"object\")`",
+        "correct": false,
+        "why": "It checks a runtime value. Types are erased, so an `any` return type looks identical at runtime."
+      },
+      {
+        "id": "B",
+        "text": "A snapshot test of `JSON.stringify(pick(user, [\"id\"]))`",
+        "correct": false,
+        "why": "The JSON output is the same whether the static type is precise or `any`."
+      },
+      {
+        "id": "C",
+        "text": "A compile-time assertion such as `expectTypeOf(pick(user, [\"id\"])).toEqualTypeOf<{ id: string }>()`, run through the type checker (for example `vitest --typecheck` or `tsc`)",
+        "correct": true,
+        "why": "The assertion compares types during type checking, and `any` is not equal to `{ id: string }` under these utilities, so the check fails."
+      },
+      {
+        "id": "D",
+        "text": "A Jest mock created with `jest.fn() as any`, so the test can stub `pick` freely",
+        "correct": false,
+        "why": "Casting the mock to `any` removes type information from the test. It makes type regressions harder to catch, not easier."
+      }
+    ],
+    "explanation": "Type-level behaviour needs type-level tests: `expectTypeOf` (Vitest, expect-type), `tsd`, or an `Expect<Equal<A, B>>` helper with `@ts-expect-error` for negative cases. They run in the type checker, so they catch widened, narrowed or `any` return types that runtime tests cannot see. Interviewers for library or design-system roles ask about this.",
+    "reference": "TypeScript Handbook: Generics",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026"
+      ]
+    },
+    "source": "interview:ts-type-testing"
+  },
+  {
+    "id": "TSM-IQ2-CFG-001",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "In a fresher interview you are asked: \"What is TypeScript, and how is it different from JavaScript?\" Which two statements belong in a correct answer? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "It is a superset of JavaScript: it adds a static type system on top of JavaScript syntax",
+        "correct": true,
+        "why": "TypeScript keeps JavaScript's syntax and runtime behaviour and adds type annotations plus a checker."
+      },
+      {
+        "id": "B",
+        "text": "Types are checked before the code runs and are removed when TypeScript is compiled to JavaScript",
+        "correct": true,
+        "why": "Checking happens in the editor and in `tsc`. The emitted JavaScript has no annotations and no type checks."
+      },
+      {
+        "id": "C",
+        "text": "A browser can load a `.ts` file in a `<script>` tag and run it directly",
+        "correct": false,
+        "why": "Browsers understand only JavaScript. A `.ts` file must first be compiled or have its types stripped."
+      },
+      {
+        "id": "D",
+        "text": "It compiles to WebAssembly, which is why it runs faster than JavaScript",
+        "correct": false,
+        "why": "TypeScript compiles to JavaScript, and the output runs at the same speed as hand-written JavaScript."
+      },
+      {
+        "id": "E",
+        "text": "It adds runtime checks, so passing a string to a `number` parameter throws when the code runs",
+        "correct": false,
+        "why": "There are no runtime checks. Once compiled, the function receives whatever value it is given."
+      }
+    ],
+    "explanation": "The answer interviewers expect has three parts: TypeScript is JavaScript plus static types, the types are checked at compile time and erased in the output, and teams adopt it for earlier bug detection, better tooling and safer refactoring. Saying it adds runtime checks or speed is the most common wrong answer.",
+    "reference": "TypeScript Handbook: TypeScript for the New Programmer",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/Why-use-TypeScript-over-JavaScript-QTN_8372032.htm",
+        "https://www.glassdoor.com/Interview/1st-round-Simple-questions-on-react-why-and-what-of-react-Virtual-dom-simple-array-and-object-manipulation-in-javascr-QTN_4981520.htm",
+        "https://www.naukri.com/code360/interview-experiences/innovapptive/innovapptive-interview-experience-oct-2024-exp-0-2-years",
+        "https://www.glassdoor.co.nz/Interview/Qive-Interview-E1271309-RVW103310251.htm"
+      ],
+      "companies": [
+        "EG",
+        "MapleLabs",
+        "Innovapptive",
+        "Qive"
+      ]
+    },
+    "source": "interview:ts-what-is-typescript"
+  },
+  {
+    "id": "TSM-IQ2-CFG-002",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `tsc` (with `\"target\": \"es2022\"`) emit for this file?\n\n```ts\ninterface User { name: string }\n\nconst greet = (u: User): string => `Hi ${u.name}`;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nconst greet = (u) => `Hi ${u.name}`;\n```",
+        "correct": true,
+        "why": "The interface and both annotations are type-only, so they are erased. The function body is left unchanged."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst User = { name: \"string\" };\nconst greet = (u) => `Hi ${u.name}`;\n```",
+        "correct": false,
+        "why": "Interfaces have no runtime representation. Nothing named `User` exists in the output."
+      },
+      {
+        "id": "C",
+        "text": "```js\nconst greet = (u) => {\n  if (typeof u.name !== \"string\") throw new TypeError();\n  return `Hi ${u.name}`;\n};\n```",
+        "correct": false,
+        "why": "TypeScript never inserts runtime type checks. Validation has to be written by hand or come from a library."
+      },
+      {
+        "id": "D",
+        "text": "```js\nclass User {}\nconst greet = (u) => `Hi ${u.name}`;\n```",
+        "correct": false,
+        "why": "An interface is not turned into a class. Only `class` declarations produce runtime classes."
+      }
+    ],
+    "explanation": "Type erasure is the core idea behind \"how is TypeScript different from JavaScript\": interfaces, type aliases and annotations exist only for the checker. This is why the output behaves exactly like the JavaScript you would write by hand, and why external data still needs runtime validation.",
+    "reference": "TypeScript Handbook: The Basics (Erased Types)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/Why-use-TypeScript-over-JavaScript-QTN_8372032.htm",
+        "https://www.glassdoor.com/Interview/1st-round-Simple-questions-on-react-why-and-what-of-react-Virtual-dom-simple-array-and-object-manipulation-in-javascr-QTN_4981520.htm",
+        "https://www.naukri.com/code360/interview-experiences/innovapptive/innovapptive-interview-experience-oct-2024-exp-0-2-years",
+        "https://www.glassdoor.co.nz/Interview/Qive-Interview-E1271309-RVW103310251.htm"
+      ],
+      "companies": [
+        "EG",
+        "MapleLabs",
+        "Innovapptive",
+        "Qive"
+      ]
+    },
+    "source": "interview:ts-what-is-typescript"
+  },
+  {
+    "id": "TSM-IQ2-CFG-003",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Most TypeScript syntax is erased at compile time, but not all of it. Which two of these produce runtime JavaScript code when compiled by `tsc`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`interface Point { x: number }`",
+        "correct": false,
+        "why": "Interfaces are type-only and are erased completely."
+      },
+      {
+        "id": "B",
+        "text": "`type Id = string | number;`",
+        "correct": false,
+        "why": "Type aliases are type-only and produce no output."
+      },
+      {
+        "id": "C",
+        "text": "`const n = value as number;`, specifically the `as number` part",
+        "correct": false,
+        "why": "Assertions are erased. The output is just `const n = value;`."
+      },
+      {
+        "id": "D",
+        "text": "`enum Color { Red, Green }`",
+        "correct": true,
+        "why": "A regular enum compiles to an object (built in an IIFE) with forward and reverse mappings."
+      },
+      {
+        "id": "E",
+        "text": "`class Point { constructor(private x: number) {} }`, specifically the `private x` parameter property",
+        "correct": true,
+        "why": "A parameter property generates a field and the `this.x = x` assignment in the constructor."
+      }
+    ],
+    "explanation": "Enums, parameter properties, namespaces with values and legacy decorators are the TypeScript features with runtime semantics. That is why Node's type stripping and the `erasableSyntaxOnly` option reject them. Knowing which parts are erasable shows you understand that TypeScript is \"JavaScript plus types\", with a few historical exceptions.",
+    "reference": "TypeScript Handbook: Enums",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/Why-use-TypeScript-over-JavaScript-QTN_8372032.htm",
+        "https://www.glassdoor.com/Interview/1st-round-Simple-questions-on-react-why-and-what-of-react-Virtual-dom-simple-array-and-object-manipulation-in-javascr-QTN_4981520.htm",
+        "https://www.naukri.com/code360/interview-experiences/innovapptive/innovapptive-interview-experience-oct-2024-exp-0-2-years",
+        "https://www.glassdoor.co.nz/Interview/Qive-Interview-E1271309-RVW103310251.htm"
+      ],
+      "companies": [
+        "EG",
+        "MapleLabs",
+        "Innovapptive",
+        "Qive"
+      ]
+    },
+    "source": "interview:ts-what-is-typescript"
+  },
+  {
+    "id": "TSM-IQ2-CFG-004",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "An interviewer asks: \"Is TypeScript strictly statically typed, or can it be adopted gradually?\" Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Setting `\"strict\": false` turns off type checking completely",
+        "correct": false,
+        "why": "It only relaxes the strict family of checks. Basic assignability errors, such as a string assigned to a `number` variable, are still reported."
+      },
+      {
+        "id": "B",
+        "text": "Once one file is converted to `.ts`, every file that imports it must also be converted",
+        "correct": false,
+        "why": "JavaScript files can import TypeScript files and the reverse; nothing forces the whole import graph to convert together."
+      },
+      {
+        "id": "C",
+        "text": "With `allowJs`, a project can contain both `.js` and `.ts` files and convert them one at a time",
+        "correct": true,
+        "why": "`tsc` compiles and resolves imports across both kinds of file, so migration can happen file by file."
+      },
+      {
+        "id": "D",
+        "text": "A value typed `any` opts out of checking, which lets typed and untyped code meet during a migration",
+        "correct": true,
+        "why": "`any` is the gradual-typing escape hatch. It is useful during adoption but should shrink over time."
+      },
+      {
+        "id": "E",
+        "text": "Every variable and parameter must have an explicit annotation, otherwise the file does not compile",
+        "correct": false,
+        "why": "Inference covers most variables. Even parameters only need annotations when `noImplicitAny` is on."
+      }
+    ],
+    "explanation": "TypeScript is optionally and gradually typed: inference, `any`, `allowJs`/`checkJs` and per-flag strictness let a team dial checking up over time. A good answer also notes the trade-off: every `any` is a hole in the type safety, so mature codebases ban it in new code.",
+    "reference": "TypeScript Handbook: Migrating from JavaScript",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://github.com/fairushyn/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-gradual-typing"
+  },
+  {
+    "id": "TSM-IQ2-CFG-005",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A file contains only this code:\n\n```ts\nexport function double(x) {\n  return x * 2;\n}\ndouble(\"a\");\n```\n\nWhich statement is correct in TypeScript 6.0?",
+    "options": [
+      {
+        "id": "A",
+        "text": "With an empty `compilerOptions`, it compiles, because `strict` is off unless you turn it on",
+        "correct": false,
+        "why": "TypeScript 6.0 changed the default: `strict` is now on when not set, so `noImplicitAny` reports `x`."
+      },
+      {
+        "id": "B",
+        "text": "Empty options: TS7006 (`x` is implicitly `any`). With `\"strict\": false`: it compiles and `x` is `any`",
+        "correct": true,
+        "why": "`strict` defaults to `true` in TypeScript 6.0, which includes `noImplicitAny`. With it off, the unannotated parameter silently becomes `any`."
+      },
+      {
+        "id": "C",
+        "text": "It never compiles, because TypeScript cannot infer a type for `x` from `x * 2`",
+        "correct": false,
+        "why": "TypeScript does not infer parameter types from their use. With `noImplicitAny` off, `x` is simply `any`."
+      },
+      {
+        "id": "D",
+        "text": "With `\"strict\": false` it compiles, and `x` is inferred as `number` from `x * 2`, so `double(\"a\")` is an error",
+        "correct": false,
+        "why": "Parameter types are not inferred from the body. `x` is `any`, so the `\"a\"` call is accepted."
+      }
+    ],
+    "explanation": "\"Optionally typed\" means unannotated code can still compile: with `noImplicitAny` off, missing parameter types become `any`. TypeScript 6.0 turned `strict` on by default, so a new project starts fully checked, and a migrating project has to opt out explicitly with `\"strict\": false`.",
+    "reference": "TypeScript TSConfig Reference: noImplicitAny",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://github.com/fairushyn/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-gradual-typing"
+  },
+  {
+    "id": "TSM-IQ2-CFG-006",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A Node service compiled by `tsc` crashes, and the stack trace points at `dist/server.js:214`, which is hard to relate to the TypeScript source. What makes stack traces and breakpoints point at the `.ts` lines?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set `\"declarationMap\": true`, which maps the emitted JavaScript back to the `.ts` source",
+        "correct": false,
+        "why": "`declarationMap` maps `.d.ts` files to their source for go-to-definition in editors. It does not affect runtime stack traces."
+      },
+      {
+        "id": "B",
+        "text": "Turn on `sourceMap` and run Node with `--enable-source-maps`",
+        "correct": true,
+        "why": "The map files link positions in the emitted JavaScript to the original `.ts` lines. Node applies them to stack traces only when the flag is on."
+      },
+      {
+        "id": "C",
+        "text": "Set `\"removeComments\": false`, so the emitted JavaScript keeps the original line numbers",
+        "correct": false,
+        "why": "Comments have nothing to do with line mapping, and the emitted code can differ in shape from the source anyway."
+      },
+      {
+        "id": "D",
+        "text": "Set `\"target\": \"esnext\"`, so the output is identical to the source and needs no map",
+        "correct": false,
+        "why": "Even with `esnext`, types are removed and the code is reformatted, so positions differ. Debuggers still need a source map."
+      }
+    ],
+    "explanation": "Source maps are how you debug compiled TypeScript: `sourceMap` emits a `.js.map` next to each file and adds a `//# sourceMappingURL` comment. Browsers' DevTools and VS Code pick these up automatically, while Node needs `--enable-source-maps` to rewrite stack traces.",
+    "reference": "TypeScript TSConfig Reference: sourceMap",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://github.com/fairushyn/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-source-maps-debugging"
+  },
+  {
+    "id": "TSM-IQ2-CFG-007",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A project enables `\"sourceMap\": true`. Which two statements about the result are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "tsc adds a `//# sourceMappingURL=...` comment at the end of each `.js` file so tools can find its map",
+        "correct": true,
+        "why": "Debuggers and error trackers read this comment to locate the map file."
+      },
+      {
+        "id": "B",
+        "text": "The map files carry the original type annotations, so the debugger can show each variable's TypeScript type",
+        "correct": false,
+        "why": "A source map contains position mappings (and optionally source text). It has no type information."
+      },
+      {
+        "id": "C",
+        "text": "The `.js` files will not run unless the map files are deployed next to them",
+        "correct": false,
+        "why": "Maps are only read by debugging tools. The JavaScript runs the same without them."
+      },
+      {
+        "id": "D",
+        "text": "It can be combined with `inlineSourceMap` to write both an external and an inline map",
+        "correct": false,
+        "why": "tsc reports TS5053: `sourceMap` cannot be specified together with `inlineSourceMap`."
+      },
+      {
+        "id": "E",
+        "text": "Each emitted `.js` file gets a matching `.js.map` file that maps positions in the JavaScript back to lines and columns in the `.ts` source",
+        "correct": true,
+        "why": "That mapping data is what lets debuggers show and step through the original source."
+      }
+    ],
+    "explanation": "A source map is a position mapping between generated and original code. It does not change runtime behaviour or carry types. Knowing the options (`sourceMap`, `inlineSourceMap`, `inlineSources`, `sourceRoot`, `mapRoot`) and that they are debugging aids helps you answer \"how do you debug TypeScript in production\".",
+    "reference": "TypeScript TSConfig Reference: sourceMap",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://github.com/fairushyn/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-source-maps-debugging"
+  },
+  {
+    "id": "TSM-IQ2-CFG-008",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your error-tracking tool receives the `.js.map` files from CI and maps errors to the correct `.ts` file and line, but shows \"source not available\" because the `.ts` files are never deployed. Which tsconfig change fixes this?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add `\"inlineSources\": true` alongside `\"sourceMap\": true`, which embeds the original TypeScript text inside each map",
+        "correct": true,
+        "why": "With `inlineSources`, the map's `sourcesContent` holds the `.ts` text, so tools can display it without access to the source files."
+      },
+      {
+        "id": "B",
+        "text": "Replace `sourceMap` with `\"inlineSources\": true` on its own",
+        "correct": false,
+        "why": "`inlineSources` needs `sourceMap` or `inlineSourceMap`. On its own, tsc reports TS5051."
+      },
+      {
+        "id": "C",
+        "text": "Add `\"declaration\": true`, so the `.d.ts` files carry the source for the tracker",
+        "correct": false,
+        "why": "Declaration files hold only type signatures, not implementation code, and error trackers do not read them for source display."
+      },
+      {
+        "id": "D",
+        "text": "Set `\"sourceRoot\"` to the repository's Git URL, which makes tsc copy the files into the map",
+        "correct": false,
+        "why": "`sourceRoot` only changes the path prefix written into the map. It copies nothing, and the tool still needs to fetch the files."
+      }
+    ],
+    "explanation": "Positions and source text are separate parts of a source map. `sourceMap` writes the positions; `inlineSources` adds the original text. Teams that do not want to ship source to browsers upload maps with `inlineSources` to their error tracker only, which is a common production-debugging follow-up.",
+    "reference": "TypeScript TSConfig Reference: inlineSources",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://github.com/fairushyn/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-source-maps-debugging"
+  },
+  {
+    "id": "TSM-IQ2-CFG-009",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "What is the difference between `.ts` and `.tsx` files? Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A `.ts` file cannot import anything from a `.tsx` file",
+        "correct": false,
+        "why": "Imports work across both extensions. A `.ts` hook file can import a `.tsx` component and the reverse."
+      },
+      {
+        "id": "B",
+        "text": "`.tsx` can only be used with React",
+        "correct": false,
+        "why": "The `jsx` and `jsxImportSource` options let `.tsx` target Preact, Solid and other JSX runtimes too."
+      },
+      {
+        "id": "C",
+        "text": "JSX syntax such as `<button>Save</button>` is only parsed in `.tsx` files; in a `.ts` file it is a syntax error",
+        "correct": true,
+        "why": "The file extension tells the parser whether `<` can start a JSX element."
+      },
+      {
+        "id": "D",
+        "text": "In `.tsx` files the angle-bracket assertion `<string>value` is not allowed, so you write `value as string`",
+        "correct": true,
+        "why": "`<string>` would be read as the start of a JSX element, so only the `as` form works in `.tsx`."
+      },
+      {
+        "id": "E",
+        "text": "`.tsx` files are type-checked less strictly, so component props are not checked",
+        "correct": false,
+        "why": "`.tsx` files are checked exactly like `.ts` files, including JSX props against the component's types."
+      }
+    ],
+    "explanation": "Use `.tsx` when the file contains JSX and `.ts` otherwise. The extension changes parsing, not type checking. The two well-known side effects are that angle-bracket assertions are not allowed in `.tsx`, and that generic arrow functions need a tweak such as `<T,>`.",
+    "reference": "TypeScript Handbook: JSX",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-ts-vs-tsx"
+  },
+  {
+    "id": "TSM-IQ2-CFG-010",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This line compiles in `utils.ts`. After the file is renamed to `utils.tsx` (with `\"jsx\": \"react-jsx\"`), the build fails with \"JSX element 'T' has no corresponding closing tag\":\n\n```tsx\nconst identity = <T>(value: T) => value;\n```\n\nWhich rewrite keeps it a generic arrow function in the `.tsx` file?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const identity = <T,>(value: T) => value;`",
+        "correct": true,
+        "why": "The trailing comma tells the parser that `<T,>` is a type parameter list, not a JSX tag. `<T extends unknown>` works for the same reason."
+      },
+      {
+        "id": "B",
+        "text": "`const identity = (<T>)(value: T) => value;`",
+        "correct": false,
+        "why": "Parentheses around the type parameter list are not valid syntax."
+      },
+      {
+        "id": "C",
+        "text": "`const identity = <T>(value: T): T => value;`",
+        "correct": false,
+        "why": "Adding a return type does not help. The parser still sees `<T>` as an opening JSX tag first."
+      },
+      {
+        "id": "D",
+        "text": "`const identity = (value: <T>) => value;`",
+        "correct": false,
+        "why": "Type parameters cannot be declared in a parameter's type position, so this does not parse."
+      }
+    ],
+    "explanation": "In `.tsx`, a bare `<T>` at the start of an expression is ambiguous with JSX, so the parser picks JSX. Use `<T,>`, `<T extends unknown>` or a `function` declaration. This comes up as soon as people write generic React helpers or hooks in `.tsx` files.",
+    "reference": "TypeScript Handbook: JSX",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-ts-vs-tsx"
+  },
+  {
+    "id": "TSM-IQ2-CFG-011",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A team asks whether JSDoc annotations can replace TypeScript files. Which statement is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "text": "JSDoc types are documentation only; `tsc` ignores them even when `checkJs` is on",
+        "correct": false,
+        "why": "With `checkJs` or `// @ts-check`, tsc reads `@param`, `@type`, `@returns` and similar tags and reports errors against them."
+      },
+      {
+        "id": "B",
+        "text": "JSDoc cannot express generics, unions or imported types, so it only suits small scripts",
+        "correct": false,
+        "why": "`@template` declares generics, union syntax works inside `{...}`, and `@import` or `import(\"./x\").T` brings in types."
+      },
+      {
+        "id": "C",
+        "text": "With `checkJs` (or `// @ts-check`), the same checker verifies JSDoc-typed `.js` files, which run with no compile step; the trade-off is noisier syntax for advanced types",
+        "correct": true,
+        "why": "This is the real trade-off: same checker and no build step, but complex types are clumsier in comments and some TypeScript-only syntax has no JSDoc form."
+      },
+      {
+        "id": "D",
+        "text": "Node validates JSDoc `@param` types at runtime and throws on a mismatch",
+        "correct": false,
+        "why": "JSDoc is a comment. No runtime reads it, so there is no runtime validation."
+      }
+    ],
+    "explanation": "Some projects, such as Svelte's source, use JavaScript with JSDoc types checked by `tsc` to skip a build step. A strong answer explains that the checker is the same, lists what you give up (verbosity, fewer constructs, harder declaration emit) and notes that published `.d.ts` files can still be generated from JSDoc.",
+    "reference": "TypeScript Handbook: JSDoc Reference",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2"
+      ]
+    },
+    "source": "interview:ts-jsdoc-vs-typescript"
+  },
+  {
+    "id": "TSM-IQ2-CFG-012",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Inside the TypeScript compiler, which component reports an error such as `Type 'string' is not assignable to type 'number'`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The scanner and parser, which turn source text into a syntax tree",
+        "correct": false,
+        "why": "They report syntax errors such as a missing `)`, but have no notion of types or assignability."
+      },
+      {
+        "id": "B",
+        "text": "The binder, which creates symbols and links declarations to their scopes",
+        "correct": false,
+        "why": "The binder builds the symbol tables the checker uses. It does not compare types."
+      },
+      {
+        "id": "C",
+        "text": "The checker, which resolves types and checks assignability",
+        "correct": true,
+        "why": "Type inference, assignability and most semantic diagnostics come from the checker, which is by far the largest part of the compiler."
+      },
+      {
+        "id": "D",
+        "text": "The emitter, which reports type errors as it writes the JavaScript",
+        "correct": false,
+        "why": "The emitter transforms the tree into JavaScript. It does not perform type checks, which is why tsc can emit even when there are type errors."
+      }
+    ],
+    "explanation": "The usual high-level pipeline is: scanner (tokens), parser (AST), binder (symbols and scopes), checker (types and diagnostics) and emitter (JavaScript, `.d.ts` and maps). Senior candidates can use this model to explain why tsc emits output despite type errors and why transpile-only tools are so much faster.",
+    "reference": "TypeScript Compiler Notes: Overview (microsoft/TypeScript-Compiler-Notes)",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-compiler-pipeline"
+  },
+  {
+    "id": "TSM-IQ2-CFG-013",
+    "domain": 4,
+    "skill": "compiler-config",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about how the TypeScript compiler pipeline works are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "The emitter reads the checked types to insert runtime type guards into the output",
+        "correct": false,
+        "why": "TypeScript never adds runtime type checks. The emitter mainly removes type syntax and downlevels newer syntax."
+      },
+      {
+        "id": "B",
+        "text": "The checker runs before the parser, so type errors are listed before syntax errors",
+        "correct": false,
+        "why": "The checker works on the parsed AST and the binder's symbols, so it has to run after both."
+      },
+      {
+        "id": "C",
+        "text": "The binder writes the `.d.ts` files, since it already knows every declaration",
+        "correct": false,
+        "why": "Declaration files are produced by the emit phase, which uses the checker to compute inferred types."
+      },
+      {
+        "id": "D",
+        "text": "For most code, emitting JavaScript needs only the syntax tree, which is why esbuild or swc can strip types file by file without running a type checker",
+        "correct": true,
+        "why": "Type erasure is a syntax transform. The exceptions, such as `const enum` across files or re-exported types, are what `isolatedModules` exists to flag."
+      },
+      {
+        "id": "E",
+        "text": "A syntax error such as a missing `)` is reported by the parser, before any type information exists",
+        "correct": true,
+        "why": "Parsing happens first, and syntax diagnostics are produced while building the AST."
+      }
+    ],
+    "explanation": "The phases are scanner, parser, binder, checker and emitter, and only the checker understands types. That split explains several everyday facts: tsc emits despite type errors (unless `noEmitOnError`), single-file transpilers are fast but need `isolatedModules`, and `.d.ts` emit needs inferred types (or `isolatedDeclarations`).",
+    "reference": "TypeScript Compiler Notes: Overview (microsoft/TypeScript-Compiler-Notes)",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-compiler-pipeline"
+  },
+  {
+    "id": "TSM-IQ2-DCL-001",
+    "domain": 4,
+    "skill": "declarations-modules",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "How do ES modules differ from TypeScript namespaces? Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A file with a top-level `import` or `export` is a module: its declarations are scoped to the file and shared only by exporting them",
+        "correct": true,
+        "why": "Each module has its own scope. Other files see only what it exports and they import."
+      },
+      {
+        "id": "B",
+        "text": "A namespace that contains values compiles to a JavaScript object built inside an IIFE",
+        "correct": true,
+        "why": "For example, `namespace Util { export const v = 1 }` emits `var Util; (function (Util) { Util.v = 1; })(Util || (Util = {}));`."
+      },
+      {
+        "id": "C",
+        "text": "\"Namespace\" is simply TypeScript's name for an ES module, and the two keywords are interchangeable",
+        "correct": false,
+        "why": "Namespaces (formerly \"internal modules\") are a TypeScript-specific way of grouping code under one object. ES modules are the JavaScript standard."
+      },
+      {
+        "id": "D",
+        "text": "Bundlers tree-shake unused members of a namespace as easily as unused named exports",
+        "correct": false,
+        "why": "A namespace is one object whose properties are assigned at runtime, which bundlers generally cannot remove member by member."
+      },
+      {
+        "id": "E",
+        "text": "New application code should prefer namespaces, because modules cannot be split across files",
+        "correct": false,
+        "why": "The TypeScript docs recommend modules for new code. Modules are one file each, and you compose them with imports."
+      }
+    ],
+    "explanation": "Modules are the standard way to organise code: one file, one scope, explicit imports and exports, and good tree-shaking. Namespaces predate ES modules; today they mostly appear in declaration files for global libraries, and their runtime form is rejected by `erasableSyntaxOnly`.",
+    "reference": "TypeScript Handbook: Namespaces and Modules",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://adaface.com/blog/typescript-interview-questions",
+        "https://github.com/fairushyn/typescript-interview-questions",
+        "https://uk.indeed.com/career-advice/interviewing/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-modules-vs-namespaces"
+  },
+  {
+    "id": "TSM-IQ2-DCL-002",
+    "domain": 4,
+    "skill": "declarations-modules",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks: \"In a modern codebase, where would you still write a `namespace`?\" Which answer is the most accurate?",
+    "options": [
+      {
+        "id": "A",
+        "text": "To split application code across several files that share one global object",
+        "correct": false,
+        "why": "This is the pre-ES-module pattern. Modules do it with explicit imports and better tooling support."
+      },
+      {
+        "id": "B",
+        "text": "To load rarely used code lazily, since namespace bodies run only when first accessed",
+        "correct": false,
+        "why": "A namespace body runs as soon as its file runs. Lazy loading uses dynamic `import()`."
+      },
+      {
+        "id": "C",
+        "text": "In declaration files, to describe or augment the types of a global library, such as `declare namespace Express { interface Request { ... } }`",
+        "correct": true,
+        "why": "Type-only `declare namespace` blocks emit nothing and are the standard way to model and augment global APIs."
+      },
+      {
+        "id": "D",
+        "text": "Whenever a file needs private helpers, since modules cannot hide non-exported functions",
+        "correct": false,
+        "why": "Modules already hide everything they do not export."
+      }
+    ],
+    "explanation": "Namespaces with values are legacy for application code. Type-only, ambient namespaces are still common in `.d.ts` files: they group types for a global library and let consumers augment them through declaration merging, which is exactly how Express's `Request` is extended.",
+    "reference": "TypeScript Handbook: Namespaces and Modules",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://adaface.com/blog/typescript-interview-questions",
+        "https://github.com/fairushyn/typescript-interview-questions",
+        "https://uk.indeed.com/career-advice/interviewing/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-modules-vs-namespaces"
+  },
+  {
+    "id": "TSM-IQ2-DCL-003",
+    "domain": 4,
+    "skill": "declarations-modules",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A project has two files with no `import` or `export` statements:\n\n```ts\n// a.ts\nconst count = 1;\n\n// b.ts\nconst count = 2;\n```\n\n`tsc` reports TS2451: \"Cannot redeclare block-scoped variable 'count'\" in both files. Why, and what is the smallest fix?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const` cannot be used at the top level of a `.ts` file; use `let` instead",
+        "correct": false,
+        "why": "Top-level `const` is fine. Switching to `let` gives the same redeclaration error."
+      },
+      {
+        "id": "B",
+        "text": "Without `import` or `export`, each file is treated as a global script, so both `count`s share one global scope; adding `export {};` to a file makes it a module with its own scope",
+        "correct": true,
+        "why": "With the default `moduleDetection: \"auto\"`, a file needs a top-level import or export (or other module markers) to be treated as a module."
+      },
+      {
+        "id": "C",
+        "text": "The two files need different `namespace` names to keep the variables apart",
+        "correct": false,
+        "why": "That works around the problem with legacy syntax. Making the files modules is the standard fix."
+      },
+      {
+        "id": "D",
+        "text": "TypeScript never allows the same variable name in two files of one project",
+        "correct": false,
+        "why": "Modules can each declare `count`. The conflict exists only because both files are global scripts."
+      }
+    ],
+    "explanation": "Whether a file is a module or a script decides its scope. A single top-level `import` or `export` makes it a module. Many beginners hit this in practice files, and interviewers ask it to check that you know what a module actually is. The `moduleDetection: \"force\"` option makes every non-declaration file a module.",
+    "reference": "TypeScript Handbook: Modules",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://github.com/fairushyn/typescript-interview-questions",
+        "https://uk.indeed.com/career-advice/interviewing/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-modules-import-export"
+  },
+  {
+    "id": "TSM-IQ2-DCL-004",
+    "domain": 4,
+    "skill": "declarations-modules",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "`greet.ts` contains:\n\n```ts\nexport default function greet(name: string) {\n  return \"Hi \" + name;\n}\n```\n\nWhich two imports let another module call it as a function? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`import * as greet from \"./greet\"; greet(\"Asha\");`",
+        "correct": false,
+        "why": "The namespace object is not callable (TS2349). The function is at `greet.default`."
+      },
+      {
+        "id": "B",
+        "text": "`import greet = require(\"./greet\"); greet(\"Asha\");`",
+        "correct": false,
+        "why": "This CommonJS-style import binds the whole module object, not the default export, so calling it fails (TS2349) just like the namespace import. Under ES module output it is not allowed at all."
+      },
+      {
+        "id": "C",
+        "text": "`import greet from \"./greet\"; greet(\"Asha\");`",
+        "correct": true,
+        "why": "A default import binds the default export to any local name you choose."
+      },
+      {
+        "id": "D",
+        "text": "`import { default as greet } from \"./greet\"; greet(\"Asha\");`",
+        "correct": true,
+        "why": "The default export is an export named `default`, so it can be renamed in a named import."
+      },
+      {
+        "id": "E",
+        "text": "`import { greet } from \"./greet\"; greet(\"Asha\");`",
+        "correct": false,
+        "why": "TS2614: there is no export named `greet`. The function's own name does not create a named export."
+      }
+    ],
+    "explanation": "Default versus named exports is a basic import/export question that turns into a debugging question when someone mixes them. The default export is simply an export called `default`, which is why `{ default as x }` works. Many teams prefer named exports for clearer refactors and auto-imports.",
+    "reference": "TypeScript Handbook: Modules",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://github.com/fairushyn/typescript-interview-questions",
+        "https://uk.indeed.com/career-advice/interviewing/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-modules-import-export"
+  },
+  {
+    "id": "TSM-IQ2-DCL-005",
+    "domain": 4,
+    "skill": "declarations-modules",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Auth middleware sets `req.user`, but route handlers report `Property 'user' does not exist on type 'Request'`. The project uses `@types/express` and includes every file in `src/`. Which two files, added as `src/types/express.d.ts`, make `req.user?.id` type-check? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ndeclare global {\n  namespace Express {\n    interface Request {\n      user?: { id: string; role: \"admin\" | \"member\" };\n    }\n  }\n}\n```",
+        "correct": false,
+        "why": "With no `import` or `export`, the file is a script, and `declare global` is only allowed in a module. tsc reports TS2669."
+      },
+      {
+        "id": "B",
+        "text": "```ts\nexport {};\ndeclare global {\n  namespace Express {\n    interface Request {\n      user?: { id: string; role: \"admin\" | \"member\" };\n    }\n  }\n}\n```",
+        "correct": true,
+        "why": "`@types/express-serve-static-core` builds its `Request` on the global `Express.Request` interface, so adding a member there merges into every handler's `req`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\nimport \"express\";\ndeclare module \"express-serve-static-core\" {\n  interface Request {\n    user?: { id: string; role: \"admin\" | \"member\" };\n  }\n}\n```",
+        "correct": true,
+        "why": "This is module augmentation of the package that declares the core `Request` interface. The `import` makes the file a module, so the block augments rather than replaces."
+      },
+      {
+        "id": "D",
+        "text": "```ts\nimport \"express\";\nexport interface Request {\n  user?: { id: string; role: \"admin\" | \"member\" };\n}\n```",
+        "correct": false,
+        "why": "This declares a brand-new `Request` that is local to this module. It does not merge with Express's type."
+      },
+      {
+        "id": "E",
+        "text": "```ts\nimport \"express\";\ndeclare global {\n  interface Request {\n    user?: { id: string; role: \"admin\" | \"member\" };\n  }\n}\n```",
+        "correct": false,
+        "why": "This merges into the global Fetch API `Request`, not into Express's request type, so handlers still report the error."
+      }
+    ],
+    "explanation": "Adding `req.user` relies on declaration merging: you reopen the interface that Express actually uses, in a file that is a module (`export {}` or an import). The two common choices are the global `Express.Request` interface and the `express-serve-static-core` module. Keep the property optional, or narrow it in a typed middleware, so handlers cannot forget that unauthenticated requests have no user.",
+    "reference": "TypeScript Handbook: Declaration Merging (Module Augmentation)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/node-js-backend-developer-interview-questions-SRCH_KO0,25.htm",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026"
+      ]
+    },
+    "source": "interview:ts-express-request-augmentation"
+  },
+  {
+    "id": "TSM-IQ2-DCL-006",
+    "domain": 4,
+    "skill": "declarations-modules",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a POST handler you want `req.body` typed as `NewUser`, and `res.json()` to accept only a `User`. Using the generics from `@types/express`, `RequestHandler<Params, ResBody, ReqBody>`, which declaration does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const create: RequestHandler<{}, User, NewUser> = (req, res) => { ... }`",
+        "correct": true,
+        "why": "The type arguments are route params, response body, then request body, so `req.body` is `NewUser` and `res.json` expects `User`."
+      },
+      {
+        "id": "B",
+        "text": "`const create: RequestHandler<NewUser, User> = (req, res) => { ... }`",
+        "correct": false,
+        "why": "The first type argument types `req.params`, not the body. `req.body` stays `any`."
+      },
+      {
+        "id": "C",
+        "text": "`const create = (req: Request<NewUser>, res: Response<User>) => { ... }`",
+        "correct": false,
+        "why": "`Request`'s first type argument is also the route params, so `req.body` is still `any` here."
+      },
+      {
+        "id": "D",
+        "text": "`const create: RequestHandler<{}, NewUser, User> = async (req, res) => { ... }`",
+        "correct": false,
+        "why": "The order is reversed: `req.body` becomes `User` and `res.json` expects `NewUser`."
+      }
+    ],
+    "explanation": "Express typing questions check whether you know where each type goes: `Request<Params, ResBody, ReqBody, Query>` and `RequestHandler` with the same order. A typed `req.body` is still a compile-time claim about untrusted input, so production code also validates the body (for example with zod) in middleware.",
+    "reference": "TypeScript Handbook: Generics",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/node-js-backend-developer-interview-questions-SRCH_KO0,25.htm",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026"
+      ]
+    },
+    "source": "interview:ts-express-request-augmentation"
+  }
+]

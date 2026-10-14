@@ -1,0 +1,1813 @@
+[
+  {
+    "id": "JSM-IQ4-EVL-001",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a browser, what does this code log, and when?\n\n```js\nfunction greet() {\n  console.log('hi');\n}\n\nsetTimeout(greet(), 1000);\nconsole.log('end');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`hi`, then `end`, both straight away; nothing is logged after one second",
+        "correct": true,
+        "why": "`greet()` runs while the arguments are evaluated, so `hi` logs before `setTimeout` is even called. The timer receives `undefined`, not a function, so nothing useful runs later."
+      },
+      {
+        "id": "B",
+        "text": "`end` straight away, then `hi` after one second",
+        "correct": false,
+        "why": "That is what `setTimeout(greet, 1000)` does. The parentheses call `greet` immediately instead of handing it to the timer."
+      },
+      {
+        "id": "C",
+        "text": "`end`, then `hi`, both straight away, because timer work always runs after the synchronous code",
+        "correct": false,
+        "why": "No callback is queued at all. `greet()` is an ordinary call made before `setTimeout` runs, so `hi` comes first."
+      },
+      {
+        "id": "D",
+        "text": "`hi` straight away, then `hi` again after one second",
+        "correct": false,
+        "why": "The timer gets `greet`'s return value, `undefined`, so `greet` is not called a second time."
+      }
+    ],
+    "explanation": "`setTimeout(greet(), 1000)` evaluates `greet()` first and passes its return value as the handler. Browsers convert a non-function handler to a string and compile it as code (here the string `\"undefined\"`, which does nothing, and a strict CSP would block it). Node.js is stricter and throws a `TypeError` (`ERR_INVALID_ARG_TYPE`) after `hi` has logged. The fix is to pass the function itself: `setTimeout(greet, 1000)` or `setTimeout(() => greet(), 1000)`. Interviewers use this to check that you can tell passing a function from calling it.",
+    "reference": "MDN: setTimeout() global function",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://medium.com/@AditiTechBlogs/advanced-js-interview-3-settimeout-output-questions-how-many-can-you-answer-part-1-5b81881058e8",
+        "https://bigfrontend.dev/quiz"
+      ]
+    },
+    "source": "interview:js-settimeout-call-vs-fn"
+  },
+  {
+    "id": "JSM-IQ4-EVL-002",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 3,
+    "roleLevel": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about this code are true? (Choose two.)\n\n```js\nsetTimeout(() => console.log('A'), 100);\nsetTimeout(() => console.log('B'), 0);\nsetTimeout(() => console.log('C'), 50);\nsetTimeout(console.log, 0, 'D');\nPromise.resolve().then(() => console.log('P'));\nconsole.log('E');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`E` is logged first and `P` second",
+        "correct": true,
+        "why": "`E` is synchronous. `P` is a microtask, and the microtask queue is drained before the event loop picks up any timer task."
+      },
+      {
+        "id": "B",
+        "text": "`D` is logged, because extra arguments to `setTimeout` are passed to the callback",
+        "correct": true,
+        "why": "`setTimeout(fn, delay, ...args)` calls `fn(...args)`, so `console.log('D')` runs right after `B`, the other 0 ms timer."
+      },
+      {
+        "id": "C",
+        "text": "`C` is logged exactly 50 ms after the script starts",
+        "correct": false,
+        "why": "The delay is a minimum, not a promise. A busy main thread, timer clamping or a throttled background tab can all make it later."
+      },
+      {
+        "id": "D",
+        "text": "`B` is logged before `P`, because a 0 ms timer is already due",
+        "correct": false,
+        "why": "A due timer still has to wait for the current task to finish and for the microtask queue to empty, so `P` always wins."
+      },
+      {
+        "id": "E",
+        "text": "If the main thread were blocked for 200 ms, `A` could log before `C`",
+        "correct": false,
+        "why": "When several timers from the same page are overdue, they run in order of their due time, so `C` (50 ms) still runs before `A` (100 ms)."
+      }
+    ],
+    "explanation": "The full order is `E, P, B, D, C, A`: synchronous code, then microtasks, then timers by due time, with equal delays running in the order they were scheduled. Interviewers mix delays, a promise and the extra-arguments form of `setTimeout` to see whether you reason from the event loop rather than from the numbers alone.",
+    "reference": "MDN: setTimeout() global function",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://medium.com/@AditiTechBlogs/advanced-js-interview-3-settimeout-output-questions-how-many-can-you-answer-part-1-5b81881058e8",
+        "https://bigfrontend.dev/quiz"
+      ]
+    },
+    "source": "interview:js-settimeout-call-vs-fn"
+  },
+  {
+    "id": "JSM-IQ4-COD-001",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You're asked to write `render(tpl, data)`, which replaces `{{key}}` placeholders with values from `data`. It must allow spaces inside the braces, keep falsy values such as `0`, replace every placeholder, and turn unknown keys into an empty string. For example:\n\n```js\nrender('Hi {{ name }}, you have {{count}} new', { name: 'Ann', count: 0 });\n// 'Hi Ann, you have 0 new'\n```\n\nWhich implementation meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`tpl.replace(/\\{\\{\\s*(\\w+)\\s*\\}\\}/g, (_, k) => data[k] ?? '')`",
+        "correct": true,
+        "why": "The `g` flag replaces every match, `\\s*` allows spaces, and `??` only falls back for `null` or `undefined`, so `0` is kept."
+      },
+      {
+        "id": "B",
+        "text": "`tpl.replace(/\\{\\{(.*)\\}\\}/g, (_, k) => data[k.trim()] ?? '')`",
+        "correct": false,
+        "why": "`.*` is greedy: it runs from the first `{{` to the last `}}`, so both placeholders and the text between them become one unknown key. The result is `'Hi  new'`."
+      },
+      {
+        "id": "C",
+        "text": "`tpl.replace(/\\{\\{\\s*(\\w+)\\s*\\}\\}/, (_, k) => data[k] ?? '')`",
+        "correct": false,
+        "why": "Without the `g` flag, `replace` stops after the first match, giving `'Hi Ann, you have {{count}} new'`."
+      },
+      {
+        "id": "D",
+        "text": "`tpl.replace(/\\{\\{\\s*(\\w+)\\s*\\}\\}/g, (_, k) => data[k] || '')`",
+        "correct": false,
+        "why": "`||` treats `0` as missing, so the count disappears: `'Hi Ann, you have  new'`."
+      }
+    ],
+    "explanation": "A template-interpolation task is mostly a regex task: match every placeholder (`g`), capture a key without running past the closing braces (`\\w+` or a lazy `.+?`, never a greedy `.*`), and use a replacer function so each key is looked up. `??` keeps legitimate falsy values. Interviewers watch for the greedy-match and `||` mistakes.",
+    "reference": "MDN: String.prototype.replace()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.frontendinterviewhandbook.com/javascript-questions"
+      ]
+    },
+    "source": "interview:js-template-interpolation"
+  },
+  {
+    "id": "JSM-IQ4-COD-002",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This interpolation helper supports dotted paths:\n\n```js\nconst interpolate = (tpl, data) =>\n  tpl.replace(/\\{\\{\\s*([\\w.]+)\\s*\\}\\}/g, (_, path) =>\n    path.split('.').reduce((o, k) => o[k], data));\n\ninterpolate('{{user.name}} / {{user.city.zip}}', { user: { name: 'Ann' } });\n```\n\nThe call throws `TypeError: Cannot read properties of undefined (reading 'zip')`. Which change makes it return `'Ann / '`, treating any missing path as an empty string?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `o?.[k]` in the reducer and add `?? ''` after the `reduce` call",
+        "correct": true,
+        "why": "Optional chaining stops at the missing `city` and yields `undefined`, and `?? ''` turns that into an empty string, so the result is `'Ann / '`."
+      },
+      {
+        "id": "B",
+        "text": "Use `o?.[k]` in the reducer and change nothing else",
+        "correct": false,
+        "why": "The crash goes away, but the replacer returns `undefined`, which `replace` turns into the text `\"undefined\"`: `'Ann / undefined'`."
+      },
+      {
+        "id": "C",
+        "text": "Make the capture lazy: `([\\w.]+?)`",
+        "correct": false,
+        "why": "The regex already captures the right path; a lazy quantifier still has to reach `\\s*\\}\\}` and captures the same text. The crash happens in `reduce`."
+      },
+      {
+        "id": "D",
+        "text": "Wrap the `replace` call in `try/catch` and return `tpl` if anything throws",
+        "correct": false,
+        "why": "It no longer throws, but it returns the untouched template, so even the resolvable `{{user.name}}` is lost."
+      }
+    ],
+    "explanation": "Walking a path with `reduce` is a common follow-up to the basic interpolation question. Each step must tolerate a missing level (`o?.[k]`), and the final value needs an explicit fallback, because `String.prototype.replace` converts whatever the replacer returns to a string. The interviewer is checking edge cases: missing keys, falsy values and nested lookups.",
+    "reference": "MDN: Optional chaining (?.)",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.frontendinterviewhandbook.com/javascript-questions"
+      ]
+    },
+    "source": "interview:js-template-interpolation"
+  },
+  {
+    "id": "JSM-IQ4-DOM-001",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "An interviewer asks how a PWA works offline. Which statements about service workers are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "It intercepts requests from pages in its scope through the `fetch` event and can answer them with `event.respondWith()`",
+        "correct": true,
+        "why": "This is the core of offline support: the worker decides whether each request is answered from the cache, the network, or both."
+      },
+      {
+        "id": "B",
+        "text": "It commonly pre-caches the app shell during its `install` event with the Cache API, for example `caches.open()` then `cache.addAll()`",
+        "correct": true,
+        "why": "Caching during `install` (wrapped in `event.waitUntil()`) means the files are ready before the worker starts controlling pages."
+      },
+      {
+        "id": "C",
+        "text": "It can only be registered from a secure context: HTTPS, or `localhost` during development",
+        "correct": true,
+        "why": "Because a service worker can rewrite every response for its scope, browsers require a secure context to register one."
+      },
+      {
+        "id": "D",
+        "text": "It runs on the page's main thread, so it can read and update the DOM directly",
+        "correct": false,
+        "why": "It runs in its own worker global scope with no DOM access. It talks to pages through `postMessage` and the `Clients` API."
+      },
+      {
+        "id": "E",
+        "text": "It stays in memory while the site is open, so global variables are a safe place to keep state between events",
+        "correct": false,
+        "why": "The browser stops an idle service worker and restarts it for the next event, so global state can vanish. Persist state in the Cache API or IndexedDB."
+      },
+      {
+        "id": "F",
+        "text": "Once registered, it can intercept requests made by any site the user visits",
+        "correct": false,
+        "why": "A service worker only controls pages in its own origin and scope (by default, the path of the script and below)."
+      }
+    ],
+    "explanation": "A service worker is a scriptable network proxy that runs in the background. It installs (often pre-caching assets), activates (cleaning old caches), then handles `fetch` events with a strategy such as cache-first or network-first. It needs HTTPS, has no DOM, and may be stopped at any time. Interviewers want the lifecycle and the `fetch` interception story, not just the word \"offline\".",
+    "reference": "MDN: Service Worker API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/sudheerj/javascript-interview-questions",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-service-worker"
+  },
+  {
+    "id": "JSM-IQ4-PRM-001",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You're writing `Promise.prototype.myFinally = function (cb) { ... }`. It must run `cb` once whether the promise fulfils or rejects, pass the original value or reason through, wait for a promise returned by `cb`, and let an error thrown by `cb` replace the outcome. Which body meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`return this.then(() => cb(), () => cb());`",
+        "correct": false,
+        "why": "`cb`'s return value replaces the original value, and a rejection is turned into a fulfilment. `Promise.resolve('ok').myFinally(() => 42)` would give `42`."
+      },
+      {
+        "id": "B",
+        "text": "`return this.then(v => { cb(); return v; }, e => { cb(); throw e; });`",
+        "correct": false,
+        "why": "It passes the outcome through, but ignores a promise returned by `cb`, so the next `.then` runs before an async cleanup has finished."
+      },
+      {
+        "id": "C",
+        "text": "`return this.then(v => Promise.resolve(cb()).then(() => v), e => Promise.resolve(cb()).then(() => { throw e; }));`",
+        "correct": true,
+        "why": "Both paths wait for `cb`'s result, then restore the original value or rethrow the original reason. If `cb` throws or rejects, that error wins, as with the native method."
+      },
+      {
+        "id": "D",
+        "text": "`return this.then(v => Promise.resolve(cb()).then(() => v)).catch(e => Promise.resolve(cb()).then(() => { throw e; }));`",
+        "correct": false,
+        "why": "If `cb` throws on the fulfilment path, `.catch` catches that error and runs `cb` a second time. Use the two-argument form of `then` so the handlers can't trigger each other."
+      }
+    ],
+    "explanation": "`finally` is \"`then` with the same callback on both paths, but transparent\". The callback gets no argument, its return value is ignored unless it throws or rejects, and a returned promise is awaited. The two-argument `then` keeps the handlers independent. Interviewers ask for this polyfill to test whether you know what `finally` passes through and how errors flow.",
+    "reference": "MDN: Promise.prototype.finally()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://humanwhocodes.com/blog/2020/10/creating-javascript-promise-from-scratch-then-catch-finally/"
+      ]
+    },
+    "source": "interview:js-finally-polyfill"
+  },
+  {
+    "id": "JSM-IQ4-DOM-002",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a machine-coding round you build a transfer list: two lists with checkboxes, and buttons that move the checked items to the other side. Items have numeric ids from the server. Each list must keep items in the order they arrived, a move must cost O(1) per item, and checked state must survive a move. Which state shape fits?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Two arrays of items, plus a `Set` of checked array indices",
+        "correct": false,
+        "why": "Indices shift after every move, so the checked state ends up pointing at different items, and removing by index with `splice` is O(n)."
+      },
+      {
+        "id": "B",
+        "text": "Two plain objects mapping id to item, plus a `Set` of checked ids",
+        "correct": false,
+        "why": "Moves are O(1), but integer-like keys are enumerated in ascending numeric order, not insertion order, so the lists re-sort themselves by id."
+      },
+      {
+        "id": "C",
+        "text": "Two `Map`s from id to item (one per side), plus a `Set` of checked ids",
+        "correct": true,
+        "why": "`delete` on one map and `set` on the other are O(1), a `Map` iterates in insertion order, and checked ids don't depend on position."
+      },
+      {
+        "id": "D",
+        "text": "Two arrays of items; to move, find each checked item with `indexOf` and `splice` it out",
+        "correct": false,
+        "why": "It works, but each lookup and `splice` is O(n), so moving k items costs O(k·n), which breaks the stated requirement."
+      }
+    ],
+    "explanation": "Machine-coding rounds reward choosing state that makes the operations trivial. Key items by a stable id, keep selection as a set of ids rather than positions, and pick a structure whose iteration order you control. `Map` preserves insertion order for any key type; plain objects put integer-like keys first, in numeric order.",
+    "reference": "MDN: Map",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-mc-transfer-list"
+  },
+  {
+    "id": "JSM-IQ4-DOM-003",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A transfer-list \"move right\" button runs this code. What do `left` and `right` hold afterwards?\n\n```js\nconst left = ['a', 'b', 'c', 'd'];\nconst right = [];\nconst selected = new Set(['b', 'c']);\n\nleft.forEach((item, i) => {\n  if (selected.has(item)) {\n    right.push(item);\n    left.splice(i, 1);\n  }\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`left` is `['a', 'd']` and `right` is `['b', 'c']`",
+        "correct": false,
+        "why": "That is the intended result. But after `'b'` is spliced out, `'c'` shifts into index 1, which `forEach` has already visited, so `'c'` is skipped."
+      },
+      {
+        "id": "B",
+        "text": "`left` is `['a', 'c', 'd']` and `right` is `['b']`",
+        "correct": true,
+        "why": "Removing an element while iterating forward shifts the next element into the current index, so the loop never sees `'c'`."
+      },
+      {
+        "id": "C",
+        "text": "A `TypeError` is thrown because the array is changed while `forEach` is iterating",
+        "correct": false,
+        "why": "JavaScript allows mutating an array during `forEach`; it just visits whatever is at each index when it gets there."
+      },
+      {
+        "id": "D",
+        "text": "`left` is `['a', 'c']` and `right` is `['b', 'd']`",
+        "correct": false,
+        "why": "`'d'` is not selected, and selection is by value, not by index, so `'d'` is never moved."
+      }
+    ],
+    "explanation": "Mutating an array while iterating it forward skips elements. Build new arrays instead, for example `right.push(...left.filter((x) => selected.has(x)))` followed by `left = left.filter((x) => !selected.has(x))` (with `left` declared with `let`), or loop backwards. In a transfer-list round this bug shows up as \"only every other selected item moves\".",
+    "reference": "MDN: Array.prototype.forEach()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-mc-transfer-list"
+  },
+  {
+    "id": "JSM-IQ4-COL-001",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A take-home task gives you workout rows and asks for one row per user:\n\n```js\nconst rows = [\n  { user: 8, duration: 10, equipment: ['bike'] },\n  { user: 3, duration: 15, equipment: ['bench'] },\n  { user: 8, duration: 20, equipment: ['mat', 'bike'] },\n];\n// expected:\n// [ { user: 8, duration: 30, equipment: ['bike', 'mat'] },\n//   { user: 3, duration: 15, equipment: ['bench'] } ]\n```\n\nDurations are summed, equipment is a sorted list without duplicates, users appear in the order they first occur, and `rows` must not be modified. Which approach meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reduce into an object with `acc[r.user] = { ...acc[r.user], ...r }`, then return `Object.values(acc)`",
+        "correct": false,
+        "why": "Spreading the later row overwrites the earlier one, so user 8 ends up with `duration: 20` and only the last row's equipment. Object key order also puts user 3 first."
+      },
+      {
+        "id": "B",
+        "text": "Collect into a `Map` keyed by user, storing a copy (`{ ...r, equipment: [...r.equipment] }`) the first time and merging later rows into that copy",
+        "correct": true,
+        "why": "A `Map` keeps first-seen order for any key, and merging into a copy sums durations and unions equipment without touching the input objects."
+      },
+      {
+        "id": "C",
+        "text": "Collect into a `Map` keyed by user, storing the first row object itself, then adding to its `duration` and replacing its `equipment` for later rows",
+        "correct": false,
+        "why": "The output is right, but `rows[0]` is mutated: its `duration` becomes 30. Callers that reuse `rows` see corrupted data."
+      },
+      {
+        "id": "D",
+        "text": "Collect copies into a plain object keyed by user, then return `Object.values()` of it",
+        "correct": false,
+        "why": "Merging works, but integer-like keys are enumerated in ascending numeric order, so user 3 comes before user 8."
+      }
+    ],
+    "explanation": "Data-merging questions (asked in Stripe-style rounds) test three details at once: which fields combine and how, preserving first-seen order (`Map`, not an object with numeric keys), and not mutating the input (copy before you merge, including nested arrays). A `Set` handles de-duplication, then `sort()` fixes the order.",
+    "reference": "MDN: Map",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/stripe/questions-guides",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript"
+      ],
+      "companies": [
+        "Stripe"
+      ]
+    },
+    "source": "interview:js-data-merge-utils"
+  },
+  {
+    "id": "JSM-IQ4-COL-002",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the last line log?\n\n```js\nconst rows = [\n  { user: 0, duration: 5 },\n  { user: 1, duration: 20 },\n  { user: 2, duration: 40 },\n];\n\nfunction selectData(rows, opts = {}) {\n  return rows.filter((r) => {\n    if (opts.user && r.user !== opts.user) return false;\n    if (opts.minDuration && r.duration < opts.minDuration) return false;\n    return true;\n  });\n}\n\nconsole.log(selectData(rows, { user: 0 }).length);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`1`",
+        "correct": false,
+        "why": "That is the intended answer, but the user filter never runs for `user: 0`."
+      },
+      {
+        "id": "B",
+        "text": "`0`",
+        "correct": false,
+        "why": "No row is rejected: the `opts.user` check is skipped entirely, so nothing filters the rows out."
+      },
+      {
+        "id": "C",
+        "text": "`3`",
+        "correct": true,
+        "why": "`opts.user` is `0`, which is falsy, so `opts.user && ...` short-circuits and the user filter is ignored. All three rows pass."
+      },
+      {
+        "id": "D",
+        "text": "It throws a `TypeError` because `minDuration` is missing",
+        "correct": false,
+        "why": "Reading a missing property gives `undefined`, which is falsy, so that check is simply skipped."
+      }
+    ],
+    "explanation": "Truthiness checks on options are a classic data-selection bug: a legitimate `0` (or empty string) looks the same as \"not provided\". Check for presence explicitly, for example `opts.user !== undefined` or `'user' in opts`. Interviewers often plant an id of `0` in the test data to see if you notice.",
+    "reference": "MDN: Falsy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/stripe/questions-guides",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript"
+      ],
+      "companies": [
+        "Stripe"
+      ]
+    },
+    "source": "interview:js-data-merge-utils"
+  },
+  {
+    "id": "JSM-IQ4-COD-003",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the last line log?\n\n```js\nclass BrowserHistory {\n  constructor(home) {\n    this.stack = [home];\n    this.i = 0;\n  }\n  visit(url) {\n    this.stack.length = this.i + 1;\n    this.stack.push(url);\n    this.i++;\n  }\n  back() {\n    if (this.i > 0) this.i--;\n    return this.stack[this.i];\n  }\n  forward() {\n    if (this.i < this.stack.length - 1) this.i++;\n    return this.stack[this.i];\n  }\n}\n\nconst h = new BrowserHistory('home');\nh.visit('a'); h.visit('b'); h.visit('c');\nh.back(); h.back();\nh.visit('d');\nconsole.log(h.forward(), h.back(), h.back());\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`d a home`",
+        "correct": true,
+        "why": "Visiting `d` from `a` cuts off `b` and `c`, so the stack is `home, a, d`. `forward()` has nowhere to go and stays on `d`, then two `back()` calls reach `a` and `home`."
+      },
+      {
+        "id": "B",
+        "text": "`b a home`",
+        "correct": false,
+        "why": "`visit` sets `stack.length` to `i + 1`, which deletes the old forward entries, so `b` is no longer reachable."
+      },
+      {
+        "id": "C",
+        "text": "`undefined a home`",
+        "correct": false,
+        "why": "`forward()` only moves when there is a later entry; otherwise it returns the current page, `d`."
+      },
+      {
+        "id": "D",
+        "text": "`d c b`",
+        "correct": false,
+        "why": "That would happen if `visit` appended without truncating. Here `b` and `c` are removed before `d` is pushed."
+      }
+    ],
+    "explanation": "Browser history is a list plus a cursor. Visiting a new page while you're in the middle of the history throws away everything after the cursor, just as a real browser clears the forward stack. Interviewers ask you to predict what happens to forward history after a new visit; truncating with `length = i + 1` (or `splice(i + 1)`) is the key line.",
+    "reference": "MDN: Working with the History API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-browser-history-ds"
+  },
+  {
+    "id": "JSM-IQ4-COD-004",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate writes `visit` with `splice`. What does the last line log?\n\n```js\nclass BrowserHistory {\n  constructor(home) {\n    this.stack = [home];\n    this.i = 0;\n  }\n  visit(url) {\n    this.stack.splice(this.i);\n    this.stack.push(url);\n    this.i = this.stack.length - 1;\n  }\n  back() {\n    if (this.i > 0) this.i--;\n    return this.stack[this.i];\n  }\n}\n\nconst h = new BrowserHistory('home');\nh.visit('a'); h.visit('b'); h.visit('c');\nh.back(); h.back();\nh.visit('d');\nconsole.log(h.back(), h.stack.length);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`a 3`",
+        "correct": false,
+        "why": "That is what a correct `visit` produces. Here `splice(this.i)` also removes the current page."
+      },
+      {
+        "id": "B",
+        "text": "`home 2`",
+        "correct": false,
+        "why": "That assumes `splice(this.i)` keeps the current entry. It removes from index `i` onward, including the current page, every time."
+      },
+      {
+        "id": "C",
+        "text": "`d 1`",
+        "correct": true,
+        "why": "Each `visit` deletes the entry at `i`, the current page, before pushing, so the stack never holds more than one page. `back()` can't move and returns `d`."
+      },
+      {
+        "id": "D",
+        "text": "`c 4`",
+        "correct": false,
+        "why": "That would need `visit` to keep old entries. This version deletes them, and the current page with them."
+      }
+    ],
+    "explanation": "`splice(start)` removes everything from `start` to the end, including the element at `start`. To keep the current page and drop only the forward entries, the call must be `this.stack.splice(this.i + 1)`. Off-by-one errors like this are exactly what interviewers look for when they ask you to dry-run a browser-history implementation.",
+    "reference": "MDN: Array.prototype.splice()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-browser-history-ds"
+  },
+  {
+    "id": "JSM-IQ4-DOM-004",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "An interviewer asks you to compare feature detection, feature inference and user-agent sniffing. Which statements are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Feature detection checks whether an API exists before using it, for example `if ('IntersectionObserver' in window)`",
+        "correct": true,
+        "why": "It tests the capability you actually need, so it keeps working as browsers add or change support."
+      },
+      {
+        "id": "B",
+        "text": "Feature inference assumes that because one API exists, a related one does too, which breaks when browsers ship features at different times",
+        "correct": true,
+        "why": "Seeing `fetch` and assuming `AbortController`, for example, is an inference, not a test of the feature you use."
+      },
+      {
+        "id": "C",
+        "text": "A polyfill should be installed only after feature detection shows that the native version is missing",
+        "correct": true,
+        "why": "Guarding the polyfill keeps the faster, spec-complete native version wherever it exists."
+      },
+      {
+        "id": "D",
+        "text": "User-agent sniffing is the most reliable approach, because every browser reports a unique and accurate UA string",
+        "correct": false,
+        "why": "UA strings are spoofable, shared between browsers on the same engine, and increasingly reduced or frozen, so they say little about actual support."
+      },
+      {
+        "id": "E",
+        "text": "`CSS.supports()` checks whether a JavaScript API is available",
+        "correct": false,
+        "why": "`CSS.supports()` tests CSS property-value pairs and selectors, such as `CSS.supports('display', 'grid')`, not JavaScript APIs."
+      },
+      {
+        "id": "F",
+        "text": "Once a polyfill is loaded, it should always replace the native method so that every browser runs identical code",
+        "correct": false,
+        "why": "Overwriting a native method throws away a faster, fully conformant implementation and can break code that relies on its exact behaviour."
+      }
+    ],
+    "explanation": "Feature detection asks \"can I use this exact thing?\" and is the basis for safe polyfills. Feature inference and UA sniffing guess support from something else and break as browsers evolve. Interviewers want you to tie polyfills to detection: load or define them only when the check fails.",
+    "reference": "MDN: Implementing feature detection",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/javascript-questions",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-feature-detection"
+  },
+  {
+    "id": "JSM-IQ4-DOM-005",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You add a `flat` polyfill, `flatImpl`, for old browsers. It must not replace a native `Array.prototype.flat`, and it must not appear as a key when code runs `for...in` over an array. Which line meets both requirements?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`if (!Array.prototype.flat) Array.prototype.flat = flatImpl;`",
+        "correct": false,
+        "why": "The guard is right, but plain assignment creates an enumerable property, so `for (const k in ['x'])` yields `'0'` and `'flat'`."
+      },
+      {
+        "id": "B",
+        "text": "`Object.defineProperty(Array.prototype, 'flat', { value: flatImpl, writable: true, configurable: true });`",
+        "correct": false,
+        "why": "It is non-enumerable, but there is no guard, so it replaces the native method in every modern browser."
+      },
+      {
+        "id": "C",
+        "text": "`if (!/Chrome|Firefox/.test(navigator.userAgent)) Array.prototype.flat = flatImpl;`",
+        "correct": false,
+        "why": "It guesses support from the user agent instead of testing for `flat`, and plain assignment still makes the property enumerable."
+      },
+      {
+        "id": "D",
+        "text": "`if (!Array.prototype.flat) Object.defineProperty(Array.prototype, 'flat', { value: flatImpl, writable: true, configurable: true });`",
+        "correct": true,
+        "why": "It only runs when `flat` is missing, and `defineProperty` leaves `enumerable` as `false`, matching how native prototype methods are defined."
+      }
+    ],
+    "explanation": "A well-behaved polyfill tests for the feature first, then defines it the way the spec does: non-enumerable, writable and configurable. Plain assignment to a built-in prototype creates an enumerable property that leaks into `for...in` loops. This is the follow-up interviewers ask after \"what is a polyfill?\".",
+    "reference": "MDN: Object.defineProperty()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/javascript-questions",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-feature-detection"
+  },
+  {
+    "id": "JSM-IQ4-DOM-006",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A dashboard shows live order-status updates. Data flows only from server to client, messages are small JSON strings, the connection must recover on its own after network drops, and it has to work through ordinary HTTP infrastructure. Which transport fits best?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A WebSocket connection",
+        "correct": false,
+        "why": "It works, but it is full-duplex when you only need one direction, has no built-in reconnection, and needs proxies that support the protocol upgrade."
+      },
+      {
+        "id": "B",
+        "text": "Server-sent events with `EventSource`",
+        "correct": true,
+        "why": "It is a one-way, server-to-client stream over a normal HTTP response, and the browser reconnects automatically."
+      },
+      {
+        "id": "C",
+        "text": "Short polling with `setInterval` every second",
+        "correct": false,
+        "why": "Each poll is a full request, most return nothing new, and updates can still be up to a second late."
+      },
+      {
+        "id": "D",
+        "text": "Long polling, re-issuing a request each time the server answers",
+        "correct": false,
+        "why": "It gets updates promptly, but you have to build reconnection and resume logic yourself; `EventSource` provides both."
+      }
+    ],
+    "explanation": "Pick the simplest transport that fits the data flow. Server-sent events suit one-way text streams (notifications, feeds, progress) and reconnect for free. WebSockets suit two-way, low-latency traffic such as chat, games or collaborative editing. Polling is the fallback when neither is available. Interviewers want you to justify the choice from the requirements.",
+    "reference": "MDN: Using server-sent events",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://github.com/sudheerj/javascript-interview-questions"
+      ]
+    },
+    "source": "interview:js-websockets-sse"
+  },
+  {
+    "id": "JSM-IQ4-DOM-007",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about WebSockets and server-sent events are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A WebSocket starts as an HTTP request with an `Upgrade` header; after a `101 Switching Protocols` response, either side can send messages at any time",
+        "correct": true,
+        "why": "The handshake reuses HTTP, then the connection switches to the WebSocket protocol, which is full-duplex."
+      },
+      {
+        "id": "B",
+        "text": "`EventSource` reconnects automatically and can send the last received event id in a `Last-Event-ID` header so the server can resume",
+        "correct": true,
+        "why": "If the server sets `id:` fields on events, the browser sends the last one when it reconnects."
+      },
+      {
+        "id": "C",
+        "text": "Server-sent events carry UTF-8 text only, so binary data has to be encoded first, for example as base64",
+        "correct": true,
+        "why": "The event-stream format is line-based text; WebSockets can send binary frames directly."
+      },
+      {
+        "id": "D",
+        "text": "The browser's `EventSource` lets you set custom request headers such as `Authorization`",
+        "correct": false,
+        "why": "The constructor takes only a URL and a `withCredentials` option. Use cookies, a token in the URL, or a fetch-based client for custom headers."
+      },
+      {
+        "id": "E",
+        "text": "A `WebSocket` reconnects automatically after the connection drops",
+        "correct": false,
+        "why": "When a WebSocket closes, it stays closed. You have to write reconnection, usually with exponential backoff."
+      },
+      {
+        "id": "F",
+        "text": "WebSockets are always cheaper than polling, so they are the right default even for data that changes once an hour",
+        "correct": false,
+        "why": "A persistent connection costs server resources and adds infrastructure work; for rare updates, plain requests or polling are simpler."
+      }
+    ],
+    "explanation": "WebSocket: two-way, binary or text, upgraded from HTTP, no automatic reconnection. Server-sent events: one-way, text only, plain HTTP, automatic reconnection with resume through `Last-Event-ID`, and no custom headers in the native API. Interviewers look for these trade-offs rather than \"WebSockets are faster\".",
+    "reference": "MDN: EventSource",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://github.com/sudheerj/javascript-interview-questions"
+      ]
+    },
+    "source": "interview:js-websockets-sse"
+  },
+  {
+    "id": "JSM-IQ4-COD-005",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate implements a queue with two stacks. What does it log, and what is the fix?\n\n```js\nclass Queue {\n  inbox = [];\n  outbox = [];\n  enqueue(x) {\n    this.inbox.push(x);\n  }\n  dequeue() {\n    while (this.inbox.length) this.outbox.push(this.inbox.pop());\n    return this.outbox.pop();\n  }\n}\n\nconst q = new Queue();\nq.enqueue(1);\nq.enqueue(2);\nconst first = q.dequeue();\nq.enqueue(3);\nconsole.log(first, q.dequeue(), q.dequeue());\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`1 2 3`; the queue is correct and `dequeue` is amortized O(1)",
+        "correct": false,
+        "why": "After the first `dequeue`, `2` is still in `outbox`. Moving `3` on top of it makes `3` come out next."
+      },
+      {
+        "id": "B",
+        "text": "`1 3 2`; only move items from `inbox` to `outbox` when `outbox` is empty",
+        "correct": true,
+        "why": "Refilling while `outbox` still holds older items puts newer items on top of them. Refilling only when `outbox` is empty keeps FIFO order."
+      },
+      {
+        "id": "C",
+        "text": "`2 1 3`; `outbox` should use `shift()` instead of `pop()`",
+        "correct": false,
+        "why": "Reversing into `outbox` is what makes `pop()` return the oldest item. The first value is `1`, as expected."
+      },
+      {
+        "id": "D",
+        "text": "`1 2 3`, but every `dequeue` is O(n) because it moves the whole `inbox`",
+        "correct": false,
+        "why": "The output is wrong (`3` comes before `2`). In the fixed version, each item moves at most once, so `dequeue` is amortized O(1)."
+      }
+    ],
+    "explanation": "In a two-stack queue, `outbox` holds the oldest items in reverse order. Move from `inbox` only when `outbox` is empty. Each item is then pushed and popped at most twice, so both operations are amortized O(1). Interviewers then ask where a UI needs a queue (task schedulers, BFS over a tree, request throttling) or a priority queue (scheduling by importance, usually a binary heap with O(log n) operations).",
+    "reference": "MDN: Array.prototype.pop()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/data-structures-interview-questions-for-senior-frontend-engineers"
+      ]
+    },
+    "source": "interview:js-priority-queue"
+  },
+  {
+    "id": "JSM-IQ4-DOM-008",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `getElementsByStyle(root, property, value)`. It must return the descendants of `root` (not `root` itself) whose style for a dashed property name such as `'font-size'` equals `value`, including styles that come from stylesheets. Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[...root.querySelectorAll('*')].filter((el) => el.style.getPropertyValue(property) === value)`",
+        "correct": false,
+        "why": "`el.style` reflects only the inline `style` attribute, so rules from stylesheets and inherited values are missed."
+      },
+      {
+        "id": "B",
+        "text": "`[...root.querySelectorAll('*')].filter((el) => getComputedStyle(el).getPropertyValue(property) === value)`",
+        "correct": true,
+        "why": "`querySelectorAll('*')` returns every descendant but not `root`, and `getComputedStyle` returns the resolved value from all sources."
+      },
+      {
+        "id": "C",
+        "text": "A recursive walk that starts by checking `root`, then each of `root.children`, comparing `getComputedStyle(el).getPropertyValue(property)`",
+        "correct": false,
+        "why": "The comparison is right, but `root` is included in the results, which the requirements rule out."
+      },
+      {
+        "id": "D",
+        "text": "`[...root.querySelectorAll('*')].filter((el) => el.getAttribute('style')?.includes(value))`",
+        "correct": false,
+        "why": "It only sees inline styles, and a substring match can hit a different property that happens to share the value."
+      }
+    ],
+    "explanation": "`element.style` is the inline declaration only. `getComputedStyle(el)` gives the resolved style after the cascade and inheritance, read with dashed names through `getPropertyValue`. Google-style DOM questions like this check that you know the difference and that you handle the traversal boundaries (descendants only).",
+    "reference": "MDN: Window.getComputedStyle()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prepfully.com/interview-questions/google/frontend-engineer?page=23",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Google"
+      ]
+    },
+    "source": "interview:js-get-elements-by-style"
+  },
+  {
+    "id": "JSM-IQ4-DOM-009",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your `getElementsByStyle` compares `getComputedStyle(el).getPropertyValue(property) === value`. A stylesheet has `p.alert { color: red; }`, yet `getElementsByStyle(document.body, 'color', 'red')` returns an empty array. Why, and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`getComputedStyle` returns stale values until the next frame; read it inside `requestAnimationFrame`",
+        "correct": false,
+        "why": "`getComputedStyle` forces style to be up to date when you read from it, so the values are current (and reading them can trigger a style recalculation)."
+      },
+      {
+        "id": "B",
+        "text": "`getComputedStyle` can't see rules from stylesheets loaded with `<link>`, because of the same-origin policy",
+        "correct": false,
+        "why": "Computed styles include every rule that applies. Cross-origin limits only stop scripts from reading another origin's `cssRules`."
+      },
+      {
+        "id": "C",
+        "text": "`getPropertyValue` reads only inline styles; compare `el.style.color` instead",
+        "correct": false,
+        "why": "This is backwards: `el.style` is the inline-only view, while the computed declaration reflects the cascade."
+      },
+      {
+        "id": "D",
+        "text": "Computed colours are serialised in resolved form, `rgb(255, 0, 0)`; normalise `value` first, for example by applying it to a temporary element in the document and reading back its computed value",
+        "correct": true,
+        "why": "Resolved values use a canonical form, so keyword colours never string-match. Normalising the input the same way makes the comparison fair."
+      }
+    ],
+    "explanation": "Resolved values are serialised canonically: colours as `rgb()` or `rgba()`, lengths in `px`, and so on. A robust `getElementsByStyle` normalises the expected value through the same pipeline before comparing. The probe element must be connected to the document, because a detached element has no computed style.",
+    "reference": "MDN: Window.getComputedStyle()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prepfully.com/interview-questions/google/frontend-engineer?page=23",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Google"
+      ]
+    },
+    "source": "interview:js-get-elements-by-style"
+  },
+  {
+    "id": "JSM-IQ4-COD-006",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "This `curry` supports a placeholder. What does the last line log?\n\n```js\nfunction curry(fn) {\n  return function curried(...args) {\n    const done = args.length >= fn.length &&\n      args.slice(0, fn.length).every((a) => a !== curry.placeholder);\n    if (done) return fn.apply(this, args);\n    return (...next) => {\n      const merged = args.map((a) =>\n        a === curry.placeholder && next.length ? next.shift() : a);\n      return curried.apply(this, [...merged, ...next]);\n    };\n  };\n}\ncurry.placeholder = Symbol('_');\n\nconst _ = curry.placeholder;\nconst join = (a, b, c) => `${a}_${b}_${c}`;\nconst curriedJoin = curry(join);\n\nconsole.log(curriedJoin(_, _, 'c')(_, 'a')('b'));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`a_b_c`",
+        "correct": false,
+        "why": "That assumes each argument goes back to its \"natural\" position. Placeholders are filled left to right by the next call's arguments, wherever they are."
+      },
+      {
+        "id": "B",
+        "text": "`b_a_c`",
+        "correct": true,
+        "why": "The second call fills the first gap with another placeholder and the second gap with `'a'`, giving `[_, 'a', 'c']`. The third call puts `'b'` in the remaining gap."
+      },
+      {
+        "id": "C",
+        "text": "A function, because a placeholder is still unfilled",
+        "correct": false,
+        "why": "After the third call no placeholder is left in the first three positions, so `done` is true and `join` runs."
+      },
+      {
+        "id": "D",
+        "text": "It throws a `TypeError` because a symbol ends up in the template literal",
+        "correct": false,
+        "why": "The `done` check refuses to call `join` while any of the first three arguments is still a placeholder."
+      }
+    ],
+    "explanation": "With placeholders, each call fills the existing gaps from left to right, and passing `_` again keeps a gap open. Extra arguments are appended. The function runs only when the first `fn.length` arguments are all real values. Senior-level curry questions ask you to predict this argument order, so trace the merged array call by call.",
+    "reference": "MDN: Function: length",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript"
+      ]
+    },
+    "source": "interview:js-curry-placeholder"
+  },
+  {
+    "id": "JSM-IQ4-COD-007",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate's placeholder `curry` decides when to call `fn` like this:\n\n```js\nfunction curry(fn) {\n  return function curried(...args) {\n    if (args.length >= fn.length) return fn.apply(this, args);\n    return (...next) => {\n      const merged = args.map((a) =>\n        a === curry.placeholder && next.length ? next.shift() : a);\n      return curried.apply(this, [...merged, ...next]);\n    };\n  };\n}\ncurry.placeholder = Symbol('_');\n\nconst _ = curry.placeholder;\nconst join = (a, b, c) => `${a}_${b}_${c}`;\ncurry(join)(_, _, 'c')('a')('b');\n```\n\nWhat happens on the last line?",
+    "options": [
+      {
+        "id": "A",
+        "text": "It returns `'a_b_c'`",
+        "correct": false,
+        "why": "That is the intended result, but `join` never gets to see `'a'` and `'b'`."
+      },
+      {
+        "id": "B",
+        "text": "It returns a function, because the first call is still waiting for its placeholders to be filled",
+        "correct": false,
+        "why": "That is how it should behave, but the length check counts placeholders as real arguments, so it does not wait."
+      },
+      {
+        "id": "C",
+        "text": "It throws a `TypeError`: three arguments satisfy `fn.length`, so `join` runs at once with two symbol placeholders, and a template literal can't convert a symbol to a string",
+        "correct": true,
+        "why": "The completion check must ignore placeholders. Calling `join(_, _, 'c')` immediately throws \"Cannot convert a Symbol value to a string\"."
+      },
+      {
+        "id": "D",
+        "text": "It returns `'c_a_b'`",
+        "correct": false,
+        "why": "Placeholders hold their positions; `'c'` stays third. And in this version `join` runs before `'a'` and `'b'` arrive anyway."
+      }
+    ],
+    "explanation": "The completion condition is the subtle part of placeholder currying: call `fn` only when the first `fn.length` arguments contain no placeholder, for example `args.length >= fn.length && args.slice(0, fn.length).every((a) => a !== curry.placeholder)`. Interviewers often give the basic curry first, then add placeholders to see whether you update this check.",
+    "reference": "MDN: Symbol",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript"
+      ]
+    },
+    "source": "interview:js-curry-placeholder"
+  },
+  {
+    "id": "JSM-IQ4-COD-008",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are writing your own `JSON.stringify` and want it to match the native one. Which behaviours must it reproduce? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[undefined, () => 1, Symbol()]` becomes `[null,null,null]`",
+        "correct": true,
+        "why": "Inside arrays, values that JSON can't represent become `null` so that positions are kept."
+      },
+      {
+        "id": "B",
+        "text": "In an object, properties whose value is `undefined`, a function or a symbol are left out: `{ a: undefined }` becomes `{}`",
+        "correct": true,
+        "why": "Object members with unrepresentable values are skipped entirely rather than written as `null`."
+      },
+      {
+        "id": "C",
+        "text": "`NaN` and `Infinity` become `null`, and a `Date` goes through its `toJSON()` method to become an ISO string",
+        "correct": true,
+        "why": "JSON has no `NaN` or `Infinity`, and any value with a `toJSON` method is replaced by what that method returns."
+      },
+      {
+        "id": "D",
+        "text": "`JSON.stringify(undefined)` returns the string `'undefined'`",
+        "correct": false,
+        "why": "It returns the value `undefined`, not a string, because there is no JSON text for it."
+      },
+      {
+        "id": "E",
+        "text": "A `Map` is serialised as an array of its `[key, value]` entries",
+        "correct": false,
+        "why": "A `Map` has no own enumerable properties, so it becomes `{}`. Convert it yourself, for example with `Object.fromEntries(map)`."
+      },
+      {
+        "id": "F",
+        "text": "A `BigInt` is written as its digits, without the `n` suffix",
+        "correct": false,
+        "why": "`JSON.stringify` throws a `TypeError` for a `BigInt` unless you supply a `toJSON` or a replacer."
+      }
+    ],
+    "explanation": "A faithful `JSON.stringify` needs the special cases: `undefined`, functions and symbols are dropped from objects but become `null` in arrays; non-finite numbers become `null`; `toJSON` is honoured; `BigInt` and circular references throw. Strings also need escaping. Interviewers grade the edge cases more than the recursion.",
+    "reference": "MDN: JSON.stringify()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-json-stringify-impl"
+  },
+  {
+    "id": "JSM-IQ4-COD-009",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Compare this hand-written `stringify` with `JSON.stringify` for the input below. Which three differences does it produce? (Choose three.)\n\n```js\nfunction stringify(v) {\n  if (v === null) return 'null';\n  if (typeof v === 'string') return `\"${v}\"`;\n  if (typeof v === 'number' || typeof v === 'boolean') return String(v);\n  if (Array.isArray(v)) return `[${v.map(stringify).join(',')}]`;\n  if (typeof v === 'object') {\n    return `{${Object.keys(v).map((k) => `\"${k}\":${stringify(v[k])}`).join(',')}}`;\n  }\n}\n\nstringify({ name: 'Ann', age: undefined, tags: ['x', undefined], score: NaN });\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`age` is written as `\"age\":undefined` instead of being left out",
+        "correct": true,
+        "why": "`stringify(undefined)` returns `undefined`, which the template literal turns into the text `undefined`. Native output drops the key."
+      },
+      {
+        "id": "B",
+        "text": "The `undefined` in `tags` leaves an empty slot, `[\"x\",]`, instead of `null`",
+        "correct": true,
+        "why": "`join` turns `undefined` into an empty string. Native output writes `[\"x\",null]`."
+      },
+      {
+        "id": "C",
+        "text": "`score` is written as `NaN`, which isn't valid JSON, instead of `null`",
+        "correct": true,
+        "why": "`String(NaN)` is `'NaN'`. Native output uses `null` for non-finite numbers."
+      },
+      {
+        "id": "D",
+        "text": "The keys come out in a different order from the native output",
+        "correct": false,
+        "why": "Both walk the object's own enumerable string keys in the same order, so the order matches."
+      },
+      {
+        "id": "E",
+        "text": "`'Ann'` is written without quotes",
+        "correct": false,
+        "why": "Strings are wrapped in double quotes. The real gap is that quotes, backslashes and control characters inside strings aren't escaped."
+      }
+    ],
+    "explanation": "The native output is `{\"name\":\"Ann\",\"tags\":[\"x\",null],\"score\":null}`; this version gives `{\"name\":\"Ann\",\"age\":undefined,\"tags\":[\"x\",],\"score\":NaN}`. A complete answer also escapes strings, calls `toJSON`, and detects cycles. Spotting where a home-grown serializer breaks is a common senior follow-up.",
+    "reference": "MDN: JSON.stringify()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-json-stringify-impl"
+  },
+  {
+    "id": "JSM-IQ4-PRM-002",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A search box runs this handler:\n\n```js\ninput.addEventListener('input', async (e) => {\n  const res = await fetch(`/search?q=${encodeURIComponent(e.target.value)}`);\n  render(await res.json());\n});\n```\n\nA user types \"ja\" and then \"jav\". The \"ja\" request is slower, so its results replace the \"jav\" results. Which change guarantees that only the latest query's results are shown and also cancels the requests that are no longer needed?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Debounce the handler by 300 ms",
+        "correct": false,
+        "why": "Fewer requests are sent, but if two still go out, a slow earlier response can still arrive last and overwrite the newer results."
+      },
+      {
+        "id": "B",
+        "text": "Keep an `AbortController` outside the handler; abort the previous one at the start of each event, pass the new `signal` to `fetch`, and ignore `AbortError` in a `catch`",
+        "correct": true,
+        "why": "Aborting rejects the superseded `fetch` (or its `res.json()`) with an `AbortError`, so stale data never reaches `render`, and the network work stops."
+      },
+      {
+        "id": "C",
+        "text": "Increment a request counter in each call and only `render` if the counter still matches after the response arrives",
+        "correct": false,
+        "why": "It stops stale results from rendering, but the outdated requests keep running to completion, which misses the second requirement."
+      },
+      {
+        "id": "D",
+        "text": "Chain each request onto the previous one's promise so that responses are handled in the order they were sent",
+        "correct": false,
+        "why": "Results then render in order, but every query waits for the slow one before it, stale intermediate results still flash, and nothing is cancelled."
+      }
+    ],
+    "explanation": "Out-of-order responses are the classic typeahead race. Ignoring stale responses (a counter or a captured query) fixes correctness; `AbortController` fixes correctness and wastes no bandwidth. Production code usually combines it with debouncing. Interviewers want you to name the race and to say how cancellation reaches `fetch` through its `signal`.",
+    "reference": "MDN: AbortController",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/javascript-interview-questions-for-5-years-experience",
+        "https://namastedev.com/topics/how-to-prepare-for-web-developer-interview/frontend-interview-questions-from-top-companies"
+      ],
+      "companies": [
+        "MakeMyTrip"
+      ]
+    },
+    "source": "interview:js-race-conditions-stale"
+  },
+  {
+    "id": "JSM-IQ4-PRM-003",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What is logged, and when?\n\n```js\nconst wait = (s) => new Promise((r) => setTimeout(r, s * 1000));\n\nclass LazyMan {\n  constructor(name) {\n    this.tasks = [() => console.log(`Hi, I'm ${name}`)];\n    queueMicrotask(async () => {\n      for (const task of this.tasks) await task();\n    });\n  }\n  eat(food) {\n    this.tasks.push(() => console.log(`Eat ${food}`));\n    return this;\n  }\n  sleep(s) {\n    this.tasks.push(() => wait(s).then(() => console.log(`Wake up after ${s}`)));\n    return this;\n  }\n  sleepFirst(s) {\n    this.tasks.unshift(() => wait(s).then(() => console.log(`Wake up after ${s}`)));\n    return this;\n  }\n}\n\nnew LazyMan('Jack').eat('apple').sleepFirst(1).sleep(2).eat('banana');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Straight away: `Hi, I'm Jack`, `Eat apple`; after 1 s: `Wake up after 1`; 2 s later: `Wake up after 2`, `Eat banana`",
+        "correct": false,
+        "why": "The queue only starts in a microtask, after the whole chain has run, so `sleepFirst` has already moved its task to the front."
+      },
+      {
+        "id": "B",
+        "text": "After 1 s: `Wake up after 1`, `Hi, I'm Jack`, `Eat apple`; 2 s later: `Wake up after 2`, `Eat banana`",
+        "correct": true,
+        "why": "`sleepFirst` puts its task at the front before the runner starts, and the runner awaits each task, so every step waits for the previous one."
+      },
+      {
+        "id": "C",
+        "text": "Straight away: `Hi, I'm Jack`, `Eat apple`, `Eat banana`; the two wake-up lines come later",
+        "correct": false,
+        "why": "That happens when tasks are started without awaiting them. Here `await task()` waits for each sleep promise."
+      },
+      {
+        "id": "D",
+        "text": "Nothing for 3 s, then all five lines at once",
+        "correct": false,
+        "why": "Each task logs as soon as it runs; only the steps after a sleep are delayed."
+      }
+    ],
+    "explanation": "LazyMan-style chaining has two parts: every method only records a task and returns `this`, and execution starts after the synchronous chain has finished (a microtask or `setTimeout`), so methods like `sleepFirst` can still reorder the queue. A sequential `for...of` with `await` makes each step wait for the one before it.",
+    "reference": "MDN: queueMicrotask() global function",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions"
+      ]
+    },
+    "source": "interview:js-lazyman-chain"
+  },
+  {
+    "id": "JSM-IQ4-PRM-004",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 4,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "In the `LazyMan` class below, the constructor starts the task runner. Which runner gives `Wake up after 1`, `Hi, I'm Jack`, `Eat apple`, then (2 s later) `Wake up after 2`, `Eat banana`?\n\n```js\nconst wait = (s) => new Promise((r) => setTimeout(r, s * 1000));\n\nclass LazyMan {\n  constructor(name) {\n    this.tasks = [() => console.log(`Hi, I'm ${name}`)];\n    // start the runner here\n  }\n  eat(food) {\n    this.tasks.push(() => console.log(`Eat ${food}`));\n    return this;\n  }\n  sleep(s) {\n    this.tasks.push(() => wait(s).then(() => console.log(`Wake up after ${s}`)));\n    return this;\n  }\n  sleepFirst(s) {\n    this.tasks.unshift(() => wait(s).then(() => console.log(`Wake up after ${s}`)));\n    return this;\n  }\n}\n\nnew LazyMan('Jack').eat('apple').sleepFirst(1).sleep(2).eat('banana');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`(async () => { for (const task of this.tasks) await task(); })();`",
+        "correct": false,
+        "why": "The greeting runs synchronously inside the constructor. When `sleepFirst` later unshifts, the loop's next index lands on the greeting again, so it logs twice and the 1 s wait is skipped."
+      },
+      {
+        "id": "B",
+        "text": "`setTimeout(() => this.tasks.forEach((task) => task()), 0);`",
+        "correct": false,
+        "why": "It starts after the chain is built, but `forEach` doesn't wait for the sleep promises, so all the non-sleep lines log at once."
+      },
+      {
+        "id": "C",
+        "text": "`queueMicrotask(async () => { for (const task of this.tasks) await task(); });`",
+        "correct": true,
+        "why": "The microtask runs after the synchronous chain has finished, so the queue is complete, and `await` makes each task wait for the one before."
+      },
+      {
+        "id": "D",
+        "text": "`setTimeout(() => Promise.all(this.tasks.map((task) => task())), 0);`",
+        "correct": false,
+        "why": "`Promise.all` starts every task at the same moment, so the sleeps overlap instead of delaying the steps that follow them."
+      }
+    ],
+    "explanation": "Two decisions make the chain work: defer the start until the chain has been built (a microtask or a timer), and run tasks one at a time, awaiting each. The eager async IIFE fails in a subtle way: a `for...of` over an array tracks an index, so an `unshift` during iteration makes it revisit an element. Interviewers ask this to test whether you understand when code inside an async function actually runs.",
+    "reference": "MDN: queueMicrotask() global function",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions"
+      ]
+    },
+    "source": "interview:js-lazyman-chain"
+  },
+  {
+    "id": "JSM-IQ4-MOD-001",
+    "domain": 4,
+    "skill": "modern-features",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "This runner drives a generator as a coroutine, the way libraries such as `co` did before `async/await`:\n\n```js\nfunction run(gen) {\n  return new Promise((resolve, reject) => {\n    const it = gen();\n    function step(method, arg) {\n      let r;\n      try {\n        r = it[method](arg);\n      } catch (e) {\n        return reject(e);\n      }\n      if (r.done) return resolve(r.value);\n      Promise.resolve(r.value).then(\n        (v) => step('next', v),\n        (e) => step('throw', e),\n      );\n    }\n    step('next');\n  });\n}\n```\n\nWhich statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "When a yielded promise fulfils, its value becomes the result of the `yield` expression inside the generator",
+        "correct": true,
+        "why": "`step('next', v)` resumes the generator with `v`, just as `await` hands back a fulfilled value."
+      },
+      {
+        "id": "B",
+        "text": "When a yielded promise rejects, the error is thrown at the paused `yield`, so a `try/catch` around it inside the generator can handle it",
+        "correct": true,
+        "why": "`it.throw(e)` raises the error at the `yield` where the generator is paused, mirroring how `await` throws on rejection."
+      },
+      {
+        "id": "C",
+        "text": "Yielding a plain value, such as `yield 3`, makes the runner reject because it only accepts promises",
+        "correct": false,
+        "why": "`Promise.resolve(3)` wraps the value, so the generator resumes with `3`, just as `await 3` does."
+      },
+      {
+        "id": "D",
+        "text": "All yielded promises run in parallel, because the runner calls `it.next()` without waiting",
+        "correct": false,
+        "why": "The next `step` only runs inside the `then` callback, after the current promise settles, so steps are sequential."
+      },
+      {
+        "id": "E",
+        "text": "If the generator doesn't catch a rejection, the runner resumes it with `undefined` and carries on",
+        "correct": false,
+        "why": "The uncaught error propagates out of `it.throw()`, is caught by the `try/catch` in `step`, and rejects the promise returned by `run`."
+      }
+    ],
+    "explanation": "`async/await` is essentially a generator plus this runner built into the language: `await` plays the role of `yield`, fulfilled values are sent back in with `next`, and rejections are thrown in with `throw`. Generators remain more flexible, because the caller controls resumption, which is useful for cancellation and for libraries like redux-saga. Interviewers ask this to see whether you understand what `async/await` does underneath.",
+    "reference": "MDN: Generator.prototype.throw()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ]
+    },
+    "source": "interview:js-generators-as-coroutines"
+  },
+  {
+    "id": "JSM-IQ4-COD-010",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 4,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You're writing a small fake-timer utility for tests:\n\n```js\nclass FakeTimer {\n  install() {\n    this.now = 0;\n    this.nextId = 0;\n    this.queue = [];\n    globalThis.setTimeout = (cb, ms = 0, ...args) => {\n      const id = ++this.nextId;\n      this.queue.push({ id, at: this.now + ms, cb, args });\n      return id;\n    };\n    globalThis.clearTimeout = (id) => {\n      this.queue = this.queue.filter((t) => t.id !== id);\n    };\n    Date.now = () => this.now;\n  }\n  tick() { /* ? */ }\n}\n\nconst timer = new FakeTimer();\ntimer.install();\nconst log = [];\nsetTimeout(() => log.push(`A@${Date.now()}`), 100);\nsetTimeout(() => {\n  log.push(`B@${Date.now()}`);\n  setTimeout(() => log.push(`C@${Date.now()}`), 10);\n}, 50);\ntimer.tick();\nconsole.log(log.join(' ')); // should be \"B@50 C@60 A@100\"\n```\n\nWhich `tick()` body produces the expected log?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Copy the queue, sort the copy by `at` then `id`, empty `this.queue`, then run each timer in the copy after setting `this.now = t.at`",
+        "correct": false,
+        "why": "`C` is scheduled during `B` into the live queue, which this loop never looks at again, so the log is `B@50 A@100`."
+      },
+      {
+        "id": "B",
+        "text": "`while (this.queue.length) { this.queue.sort((a, b) => a.at - b.at || a.id - b.id); const t = this.queue.shift(); t.cb(...t.args); }`",
+        "correct": false,
+        "why": "The order is right, but `this.now` never advances, so every `Date.now()` reads `0`: `B@0 C@0 A@0`."
+      },
+      {
+        "id": "C",
+        "text": "`while (this.queue.length) { const t = this.queue.shift(); this.now = t.at; t.cb(...t.args); }`",
+        "correct": false,
+        "why": "Without sorting, timers run in the order they were scheduled, giving `A@100 B@50 C@60`, and the clock even moves backwards."
+      },
+      {
+        "id": "D",
+        "text": "`while (this.queue.length) { this.queue.sort((a, b) => a.at - b.at || a.id - b.id); const t = this.queue.shift(); this.now = t.at; t.cb(...t.args); }`",
+        "correct": true,
+        "why": "It re-sorts on every pass, so timers added by callbacks are included; it runs the earliest timer first, breaking ties by id; and it moves the clock to each timer's due time."
+      }
+    ],
+    "explanation": "A fake timer needs to replace `setTimeout`, `clearTimeout` and `Date.now`, and keep a queue ordered by due time and then by scheduling order. `tick` must advance the clock to each timer as it fires and must pick up timers scheduled during callbacks. A real utility also restores the originals in `uninstall()`. This is how Jest's and Sinon's fake timers work, and interviewers ask for it to test your understanding of both timers and testing.",
+    "reference": "MDN: setTimeout() global function",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript"
+      ]
+    },
+    "source": "interview:js-fake-timers-spy"
+  },
+  {
+    "id": "JSM-IQ4-COD-011",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate writes a `jest.spyOn`-style helper. In an ES module, `counter.inc(2)` now throws `TypeError: Cannot read properties of undefined (reading 'n')`. What is the correct fix?\n\n```js\nfunction spyOn(obj, method) {\n  const orig = obj[method];\n  const spy = { calls: [] };\n  obj[method] = (...args) => {\n    spy.calls.push(args);\n    return orig(...args);\n  };\n  return spy;\n}\n\nconst counter = { n: 0, inc(by) { this.n += by; return this.n; } };\nconst spy = spyOn(counter, 'inc');\ncounter.inc(2);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the arrow function, but call `orig.apply(this, args)` so that the receiver is forwarded",
+        "correct": false,
+        "why": "An arrow function takes `this` from where it was defined, here the module's top level, where `this` is `undefined`. It still throws."
+      },
+      {
+        "id": "B",
+        "text": "Make the wrapper a regular `function` and call `orig.apply(this, args)`",
+        "correct": true,
+        "why": "A regular function receives `this` from the call site (`counter`), and `apply` forwards both that `this` and the arguments to the original method."
+      },
+      {
+        "id": "C",
+        "text": "Call `orig(args)` instead of `orig(...args)`",
+        "correct": false,
+        "why": "It passes the array as one argument and still calls `orig` with no `this`, so it throws in the same way."
+      },
+      {
+        "id": "D",
+        "text": "Record the call after calling `orig` instead of before",
+        "correct": false,
+        "why": "The order of the bookkeeping doesn't matter; the error comes from calling `orig` without a receiver."
+      }
+    ],
+    "explanation": "A spy wraps a method, so it has to stay transparent: forward `this` and every argument, return the original's result, and record the call. A detached call such as `orig(...args)` loses the receiver; in strict code (modules and classes) `this` is `undefined`. Real spies also keep a way to restore the original method. Interviewers use this to probe your understanding of `this` binding in a practical setting.",
+    "reference": "MDN: Function.prototype.apply()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/front-end-interview-playbook/javascript"
+      ]
+    },
+    "source": "interview:js-fake-timers-spy"
+  },
+  {
+    "id": "JSM-IQ4-COD-012",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "roleLevel": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks you to memoize a recursive Fibonacci. Two versions are written:\n\n```js\n// Version 1\nfunction fib1(n, memo = {}) {\n  if (n <= 1) return n;\n  if (memo[n]) return memo[n];\n  return (memo[n] = fib1(n - 1, memo) + fib1(n - 2, memo));\n}\n\n// Version 2\nfunction fib2(n, memo = {}) {\n  if (n <= 1) return n;\n  if (memo[n]) return memo[n];\n  return (memo[n] = fib2(n - 1) + fib2(n - 2));\n}\n```\n\nHow do they compare?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Both run in O(n) time, because both versions store every computed result in `memo` before returning it",
+        "correct": false,
+        "why": "Version 2 stores results, but in a cache that no other call ever reads."
+      },
+      {
+        "id": "B",
+        "text": "Version 1 is O(n); Version 2 stays exponential, since each recursive call gets a new empty `memo`",
+        "correct": true,
+        "why": "Only Version 1 shares one cache across the whole recursion. For `n = 25`, Version 1 makes 49 calls and Version 2 makes 242,785."
+      },
+      {
+        "id": "C",
+        "text": "Both are exponential, because a cache passed through a default parameter is recreated on every call",
+        "correct": false,
+        "why": "The default only applies when the argument is missing. Version 1 passes `memo` explicitly, so every call shares it."
+      },
+      {
+        "id": "D",
+        "text": "Version 2 throws a `TypeError`, because `memo` is `undefined` in the recursive calls",
+        "correct": false,
+        "why": "When the argument is omitted, the default `{}` is used, so `memo` is always an object; it is just a new one each time."
+      }
+    ],
+    "explanation": "Naive recursive Fibonacci is exponential (roughly O(1.6ⁿ)), because it recomputes the same subproblems. Memoization makes it O(n), but only if every call shares the same cache, through a parameter that is actually passed down, a closure, or a module-level `Map`. An iterative loop gives O(n) time and O(1) space. Freshers are often asked to write it, then improve it.",
+    "reference": "MDN: Default parameters",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6869754"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-fibonacci-memo"
+  },
+  {
+    "id": "JSM-IQ4-DOM-010",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "roleLevel": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "What is the difference between `window` and `document` in a browser? Which statements are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`document` is a property of `window`: `window.document === document`",
+        "correct": true,
+        "why": "`window` is the global object for the tab or frame, and the loaded page's `Document` hangs off it."
+      },
+      {
+        "id": "B",
+        "text": "`setTimeout`, `localStorage` and `innerWidth` belong to `window`",
+        "correct": true,
+        "why": "Timers, storage, viewport size, `location` and `history` are all features of the browser window, not of the page's DOM tree."
+      },
+      {
+        "id": "C",
+        "text": "`getElementById` and `querySelector` are methods of `document`, which represents the page's DOM tree",
+        "correct": true,
+        "why": "`document` is the entry point for finding, creating and changing nodes in the page."
+      },
+      {
+        "id": "D",
+        "text": "`document` is the global object, so global `var` declarations become properties of `document`",
+        "correct": false,
+        "why": "The global object is `window`; top-level `var` and function declarations in classic scripts become properties of `window`."
+      },
+      {
+        "id": "E",
+        "text": "`window.getElementById('app')` works, because `window` inherits all of `document`'s methods",
+        "correct": false,
+        "why": "`window` has no `getElementById` method. You have to call it on `document` (or on an element)."
+      },
+      {
+        "id": "F",
+        "text": "An `<iframe>` shares its parent page's `window` and `document`",
+        "correct": false,
+        "why": "Each iframe has its own browsing context, with its own `window` and `document` (reachable through `iframe.contentWindow`)."
+      }
+    ],
+    "explanation": "`window` represents the browser tab or frame: the global object, timers, storage, location, history and viewport. `document` represents the HTML page loaded in that window: the DOM tree and the methods to query and change it. Freshers are asked this to check that they know where browser APIs live.",
+    "reference": "MDN: Window",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=413789"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-window-vs-document"
+  },
+  {
+    "id": "JSM-IQ4-OBJ-001",
+    "domain": 1,
+    "skill": "objects-prototypes",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This code runs in an ES module (strict mode). What does it log?\n\n```js\nconst cfg = Object.freeze({ api: { retries: 1 }, mode: 'dev' });\n\ncfg.api.retries = 3;\ntry {\n  cfg.mode = 'prod';\n} catch (e) {\n  console.log(e.constructor.name);\n}\nconsole.log(cfg.api.retries, cfg.mode, Object.isFrozen(cfg.api));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`TypeError`, then `1 dev true`",
+        "correct": false,
+        "why": "`Object.freeze` is shallow. The nested `api` object is not frozen, so its `retries` can change."
+      },
+      {
+        "id": "B",
+        "text": "`TypeError`, then `3 dev false`",
+        "correct": true,
+        "why": "Writing to the frozen top level throws in strict mode, while the nested object is still an ordinary, mutable object."
+      },
+      {
+        "id": "C",
+        "text": "Nothing from the `catch`, then `3 prod false`",
+        "correct": false,
+        "why": "`cfg` itself is frozen, so `cfg.mode = 'prod'` fails. In strict mode the failure is a `TypeError`, not a silent no-op."
+      },
+      {
+        "id": "D",
+        "text": "An uncaught `TypeError` from the `cfg.api.retries = 3` line, so nothing is logged",
+        "correct": false,
+        "why": "That line writes to `cfg.api`, which is not frozen, so it succeeds."
+      }
+    ],
+    "explanation": "`Object.freeze` only freezes the object's own properties. Nested objects stay mutable unless you freeze them too, usually with a recursive \"deep freeze\". In sloppy mode the write to a frozen property fails silently; in strict mode (modules, classes) it throws a `TypeError`.",
+    "reference": "MDN: Object.freeze()",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6650158"
+      ],
+      "companies": [
+        "DP World"
+      ]
+    },
+    "source": "interview:js-freeze-nested"
+  },
+  {
+    "id": "JSM-IQ4-COL-003",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which version of `groupBy` correctly returns `{ Pune: [a, c], Delhi: [b] }` for the call below?\n\n```js\n// Version 1\nconst groupBy1 = (arr, fn) =>\n  arr.reduce((acc, x) => { acc[fn(x)] = [x]; return acc; }, {});\n\n// Version 2\nconst groupBy2 = (arr, fn) =>\n  arr.reduce((acc, x) => { (acc[fn(x)] ||= []).push(x); return acc; }, {});\n\n// Version 3\nconst groupBy3 = (arr, fn) =>\n  arr.reduce((acc, x) => {\n    const k = fn(x);\n    acc[k] = acc[k] ? acc[k].push(x) : [x];\n    return acc;\n  }, {});\n\n// Version 4\nconst groupBy4 = (arr, fn) =>\n  arr.reduce((acc, x) => { (acc[fn(x)] ||= []).push(x); }, {});\n\nconst a = { n: 'a', city: 'Pune' };\nconst b = { n: 'b', city: 'Delhi' };\nconst c = { n: 'c', city: 'Pune' };\ngroupByN([a, b, c], (p) => p.city); // N is 1, 2, 3 or 4\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Version 1",
+        "correct": false,
+        "why": "It assigns a new one-item array every time, so later items overwrite earlier ones: `Pune` ends up as `[c]`."
+      },
+      {
+        "id": "B",
+        "text": "Version 2",
+        "correct": true,
+        "why": "`||=` creates the array only the first time a key is seen, `push` appends to it, and the accumulator is returned each time."
+      },
+      {
+        "id": "C",
+        "text": "Version 3",
+        "correct": false,
+        "why": "`push` returns the new length, not the array, so the second Pune item turns `acc.Pune` into the number `2`."
+      },
+      {
+        "id": "D",
+        "text": "Version 4",
+        "correct": false,
+        "why": "The callback doesn't return `acc`, so the second iteration gets `undefined` and throws a `TypeError`."
+      }
+    ],
+    "explanation": "A `reduce`-based `groupBy` must create each group once, append to it, and always return the accumulator. ES2024 adds `Object.groupBy(items, fn)` (and `Map.groupBy`), which return a null-prototype object or a `Map`. Interviewers still ask for the hand-written version, then often ask what changes when keys are objects (use a `Map`).",
+    "reference": "MDN: Object.groupBy()",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years"
+      ],
+      "companies": [
+        "Paytm"
+      ]
+    },
+    "source": "interview:js-groupby-implement"
+  },
+  {
+    "id": "JSM-IQ4-COD-013",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `callAfter(fn, ms)`: it returns a function that, when called with any arguments, runs `fn` with those same arguments `ms` milliseconds later. For example, `callAfter(add, 500)(1, 2)` should call `add(1, 2)` after 500 ms. Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const callAfter = (fn, ms) => (...args) => setTimeout(fn(...args), ms);`",
+        "correct": false,
+        "why": "`fn(...args)` runs immediately, and `setTimeout` receives its return value instead of a function."
+      },
+      {
+        "id": "B",
+        "text": "`const callAfter = (fn, ms) => function () { setTimeout(function () { fn(...arguments); }, ms); };`",
+        "correct": false,
+        "why": "`arguments` belongs to the inner function, which the timer calls with no arguments, so `fn` gets `undefined` for both."
+      },
+      {
+        "id": "C",
+        "text": "`const callAfter = (fn, ms) => (...args) => setTimeout(() => fn(...args), ms);`",
+        "correct": true,
+        "why": "Rest parameters capture the arguments, and the arrow callback closes over them and calls `fn` only when the timer fires."
+      },
+      {
+        "id": "D",
+        "text": "`const callAfter = (fn, ms) => (...args) => setTimeout(fn, ms, args);`",
+        "correct": false,
+        "why": "It passes the whole array as a single argument, so `fn` is called as `fn([1, 2])`."
+      }
+    ],
+    "explanation": "The wrapper has to capture the arguments when it is called and use them later, which is a closure. Rest parameters with an arrow callback is the clearest form; `setTimeout(fn, ms, ...args)` also works. The traps are calling `fn` too early, losing the arguments to the inner function's own `arguments`, and passing the array instead of spreading it.",
+    "reference": "MDN: Rest parameters",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=413789"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-call-after-delay"
+  },
+  {
+    "id": "JSM-IQ4-DOM-011",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a machine-coding round, clicking inside `#box` must draw a circle centred where the user clicked. Circles are absolutely positioned children of the box, the box is nested inside other positioned elements, and users often click on top of an existing circle. Which coordinates should the click handler on `#box` use for the new circle?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`e.offsetX` and `e.offsetY`",
+        "correct": false,
+        "why": "These are relative to the event's target. A click on an existing circle gives coordinates inside that circle, not inside the box."
+      },
+      {
+        "id": "B",
+        "text": "`e.pageX - box.offsetLeft` and `e.pageY - box.offsetTop`, because `pageX` and `pageY` already include page scrolling",
+        "correct": false,
+        "why": "`offsetLeft` is measured from the box's offset parent, not from the document, so this is wrong once the box is inside another positioned element."
+      },
+      {
+        "id": "C",
+        "text": "`e.screenX - rect.left` and `e.screenY - rect.top`",
+        "correct": false,
+        "why": "`screenX` and `screenY` are measured from the physical screen, while the rectangle is relative to the viewport, so the two can't be combined."
+      },
+      {
+        "id": "D",
+        "text": "`e.clientX - rect.left` and `e.clientY - rect.top`, where `rect = box.getBoundingClientRect()`",
+        "correct": true,
+        "why": "Both values are viewport-relative, so subtracting gives the position inside the box wherever the click lands and however the box is nested or scrolled."
+      }
+    ],
+    "explanation": "For \"relative to this element\", combine `clientX`/`clientY` with `getBoundingClientRect()`; subtract `box.clientLeft`/`clientTop` too if the box has a border, because absolute positioning starts at the padding edge. For the follow-up (a circle that follows the cursor), interviewers expect you to throttle `mousemove` with `requestAnimationFrame` and move the circle with `transform` so it doesn't trigger layout.",
+    "reference": "MDN: Element.getBoundingClientRect()",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience"
+      ],
+      "companies": [
+        "Swiggy"
+      ]
+    },
+    "source": "interview:js-mc-cursor-circle"
+  },
+  {
+    "id": "JSM-IQ4-MOD-002",
+    "domain": 4,
+    "skill": "modern-features",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A form field must accept a CSS hex colour: `#` followed by exactly 3 or exactly 6 hex digits, in any case, with nothing else in the string. Which regex is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`/^#[0-9a-fA-F]{3}|[0-9a-fA-F]{6}$/`",
+        "correct": false,
+        "why": "Alternation has the lowest precedence, so this means `^#[0-9a-fA-F]{3}` or `[0-9a-fA-F]{6}$`, and `'#abcxyz'` passes."
+      },
+      {
+        "id": "B",
+        "text": "`/^#([0-9a-f]{3}|[0-9a-f]{6})$/i`",
+        "correct": true,
+        "why": "The group keeps both alternatives between the anchors, and `i` allows upper case. `'#fff'` and `'#A1B2C3'` pass; `'#abcd'` fails."
+      },
+      {
+        "id": "C",
+        "text": "`/^#[0-9a-f]{3,6}$/i`",
+        "correct": false,
+        "why": "`{3,6}` also allows 4 and 5 digits, so `'#abcd'` passes."
+      },
+      {
+        "id": "D",
+        "text": "`/#([0-9a-f]{3}){1,2}/i`",
+        "correct": false,
+        "why": "Without `^` and `$`, `test` finds a match anywhere, so `'x#abcz'` and `'#12345g'` pass."
+      }
+    ],
+    "explanation": "Validation regexes need anchors around the whole pattern, and alternatives inside a group so the anchors apply to both. Exact counts (`{3}`, `{6}`) avoid accepting lengths in between. Interviewers often show near-miss patterns like these and ask which inputs slip through.",
+    "reference": "MDN: Regular expressions",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6869754"
+      ],
+      "companies": [
+        "Wingify"
+      ]
+    },
+    "source": "interview:js-regex-string-problem"
+  },
+  {
+    "id": "JSM-IQ4-DOM-012",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The server answers `GET /api/user` with status `404` and the body `{\"error\":\"User not found\"}`. What state does this code end in, and what is the fix?\n\n```js\nasync function load() {\n  setState({ status: 'loading' });\n  try {\n    const res = await fetch('/api/user');\n    const data = await res.json();\n    setState({ status: 'success', data });\n  } catch (e) {\n    setState({ status: 'error', error: e.message });\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`'error'`, because `fetch` rejects for 4xx and 5xx responses; no fix is needed",
+        "correct": false,
+        "why": "`fetch` only rejects for network failures, aborts and similar errors. An HTTP error status still resolves with a `Response`."
+      },
+      {
+        "id": "B",
+        "text": "`'loading'` forever, because `res.json()` never settles when the response has an error status; add a timeout",
+        "correct": false,
+        "why": "The body is valid JSON, so `res.json()` resolves with the parsed object."
+      },
+      {
+        "id": "C",
+        "text": "`'error'`, because `res.json()` throws when the status is 404",
+        "correct": false,
+        "why": "`json()` only rejects when the body isn't valid JSON (or reading it fails); it doesn't look at the status."
+      },
+      {
+        "id": "D",
+        "text": "`'success'`, with the error body as `data`; throw when `res.ok` is `false`",
+        "correct": true,
+        "why": "The 404 resolves normally and the error body is treated as data. Throwing on `!res.ok` routes it to the `catch` and the error state."
+      }
+    ],
+    "explanation": "`fetch` resolves for any HTTP response, so the code must check `res.ok` (status 200–299) itself. A complete data-fetching state machine also has an `idle` state before the first request, clears old errors when a new request starts, and ignores responses from requests that have been superseded. Interviewers use this to see whether you handle the unhappy paths.",
+    "reference": "MDN: Using the Fetch API",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.glassdoor.com.au/Interview/Microsoft-Interview-E1651-RVW89496139.htm"
+      ],
+      "companies": [
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-fetch-loading-error-states"
+  }
+]

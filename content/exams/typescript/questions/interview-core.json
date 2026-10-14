@@ -1,0 +1,1703 @@
+[
+  {
+    "id": "TSM-IQ4-EVR-001",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Warm-up task: add types to this JavaScript helper so it compiles under `\"strict\": true` and keeps full type checking.\n\n```js\nfunction banner(name, times) {\n  return name.repeat(times);\n}\n```\n\nWhich version should you hand back?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function banner(name: string, times: number) { ... }`",
+        "correct": true,
+        "why": "`String.prototype.repeat` takes a count, so `times` is a number, and the return type is inferred as `string`. Every value is checked."
+      },
+      {
+        "id": "B",
+        "text": "`function banner(name: any, times: any) { ... }`",
+        "correct": false,
+        "why": "This compiles, but `any` switches checking off. `banner(5, 'x')` would compile and crash at runtime, which defeats the point of the task."
+      },
+      {
+        "id": "C",
+        "text": "`function banner(name: string, times: string): string { ... }`",
+        "correct": false,
+        "why": "`repeat` expects a number, so passing a string `times` is a compile error (TS2345)."
+      },
+      {
+        "id": "D",
+        "text": "`function banner(name, times: number): string { ... }`",
+        "correct": false,
+        "why": "Under `strict`, the unannotated `name` is an implicit `any` and is reported (TS7006)."
+      }
+    ],
+    "explanation": "Typing a small JavaScript function is the most common TypeScript warm-up. Read how each parameter is used (`repeat` needs a number), annotate the parameters, and let the return type be inferred or write it out. Interviewers are checking that you reach for precise types instead of `any`, and that you know `strict` turns on `noImplicitAny`.",
+    "reference": "TypeScript Handbook: Everyday Types (Functions)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com.hk/Interview/Zalando-Interview-E613421-RVW96362803.htm",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-freshers-guide",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.techinterview.org/companies/vercel/"
+      ],
+      "companies": [
+        "Zalando",
+        "Vercel"
+      ]
+    },
+    "source": "interview:ts-typing-warmup"
+  },
+  {
+    "id": "TSM-IQ4-EVR-002",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A reviewer flags the `any` in this helper:\n\n```ts\nfunction cartTotal(items: any) {\n  return items.reduce((sum, i) => sum + i.price * i.qty, 0);\n}\n```\n\nWhich parameter type removes the `any` and still compiles under `strict`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`items: Array<{ [key: string]: unknown }>`",
+        "correct": false,
+        "why": "Every property is `unknown`, so `i.price * i.qty` fails until you narrow each value (TS18046)."
+      },
+      {
+        "id": "B",
+        "text": "`items: Array<any>`",
+        "correct": false,
+        "why": "It compiles, but every element is still `any`, and so is the return value. The `any` has only moved."
+      },
+      {
+        "id": "C",
+        "text": "`items: unknown`",
+        "correct": false,
+        "why": "`unknown` is safe but unusable here: you can't call `reduce` on it without narrowing first (TS18046)."
+      },
+      {
+        "id": "D",
+        "text": "`items: { price: number; qty: number }[]`",
+        "correct": true,
+        "why": "Each element now has a known `price` and `qty`, so `reduce` infers `sum` as `number` and the result is `number`."
+      }
+    ],
+    "explanation": "Replacing `any` means describing the shape you actually use. Here that is an array of objects with numeric `price` and `qty`. `object` and `unknown` are too vague to use without extra checks, and `Array<any>` hides the same problem. Interviewers treat loose `any` as a negative signal, so a precise type is the expected fix.",
+    "reference": "TypeScript Handbook: Object Types",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com.hk/Interview/Zalando-Interview-E613421-RVW96362803.htm",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-freshers-guide",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.techinterview.org/companies/vercel/"
+      ],
+      "companies": [
+        "Zalando",
+        "Vercel"
+      ]
+    },
+    "source": "interview:ts-typing-warmup"
+  },
+  {
+    "id": "TSM-IQ4-EVR-003",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Live exercise: convert this state-update helper to TypeScript. The interviewer adds one rule: the function must not be able to change the array it receives.\n\n```ts\ntype Todo = { id: number; title: string; done: boolean };\n\nfunction toggle(todos, id) {\n  return todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));\n}\n```\n\nWhich signature meets the rule?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function toggle(todos: Todo[], id: number): readonly Todo[]`",
+        "correct": false,
+        "why": "Only the returned array is read-only. The input is a plain `Todo[]`, so the function can still mutate it."
+      },
+      {
+        "id": "B",
+        "text": "`function toggle(todos: any[], id: number): Todo[]`",
+        "correct": false,
+        "why": "It compiles, but `any[]` allows anything, including mutation and wrong element shapes."
+      },
+      {
+        "id": "C",
+        "text": "`function toggle(todos: readonly Todo[], id: number): Todo[]`",
+        "correct": true,
+        "why": "A `readonly Todo[]` has no `push`, `sort` or index assignment, so accidental mutation is a compile error. `map` still returns a new `Todo[]`."
+      },
+      {
+        "id": "D",
+        "text": "`function toggle(todos: Readonly<Todo>[], id: number): Todo[]`",
+        "correct": false,
+        "why": "This makes each todo's properties read-only, but the array itself is mutable. `todos.push(...)` and `todos.sort()` still compile."
+      }
+    ],
+    "explanation": "`readonly T[]` (or `ReadonlyArray<T>`) removes the mutating methods from the array type, so the compiler enforces the immutable-update style. `Readonly<Todo>[]` protects the elements, not the array. Annotating the return type as read-only does nothing for the input. This exercise checks that you can type a parameter and also express an intent such as \"don't mutate\" in the type.",
+    "reference": "TypeScript Handbook: Object Types (The ReadonlyArray Type)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com.hk/Interview/Zalando-Interview-E613421-RVW96362803.htm",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-freshers-guide",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.techinterview.org/companies/vercel/"
+      ],
+      "companies": [
+        "Zalando",
+        "Vercel"
+      ]
+    },
+    "source": "interview:ts-typing-warmup"
+  },
+  {
+    "id": "TSM-IQ4-EVR-004",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```ts\ntype Settings = { volume?: number; theme?: string };\nconst s: Settings = { volume: 0, theme: \"\" };\n\nconsole.log([s.volume || 50, s.volume ?? 50, s.theme || \"dark\", s.theme ?? \"dark\"]);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[ 0, 50, '', 'dark' ]`",
+        "correct": false,
+        "why": "The two operators are swapped here."
+      },
+      {
+        "id": "B",
+        "text": "`[ 50, 0, 'dark', '' ]`",
+        "correct": true,
+        "why": "`||` falls back on any falsy value (`0`, `''`), while `??` falls back only on `null` or `undefined`."
+      },
+      {
+        "id": "C",
+        "text": "`[ 0, 0, '', '' ]`",
+        "correct": false,
+        "why": "That would mean `||` keeps falsy values. It doesn't: `0 || 50` is `50`."
+      },
+      {
+        "id": "D",
+        "text": "`[ 50, 50, 'dark', 'dark' ]`",
+        "correct": false,
+        "why": "That treats `??` like `||`. `0` and `''` are not nullish, so `??` keeps them."
+      }
+    ],
+    "explanation": "`a || b` returns `b` whenever `a` is falsy, which includes `0`, `''`, `false` and `NaN`. `a ?? b` returns `b` only when `a` is `null` or `undefined`. For settings where `0` or an empty string is a real value, `??` is the right default operator. This is the classic follow-up interviewers ask after \"what is nullish coalescing?\".",
+    "reference": "TypeScript 3.7 release notes: Nullish Coalescing",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://arc.dev/developer-blog/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-optional-chaining-nullish"
+  },
+  {
+    "id": "TSM-IQ4-EVR-005",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the type of `city`, and what does `cityOf({ name: \"Ravi\" })` return?\n\n```ts\ntype User = { name: string; address?: { city: string } };\n\nfunction cityOf(user: User | undefined) {\n  const city = user?.address?.city;\n  return city;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`string | undefined`; it returns `undefined`",
+        "correct": true,
+        "why": "Each `?.` stops and yields `undefined` when the value to its left is `null` or `undefined`, so the type gains `| undefined`. Here `address` is missing."
+      },
+      {
+        "id": "B",
+        "text": "`string`; it returns `undefined`",
+        "correct": false,
+        "why": "TypeScript adds `undefined` to the type of an optional chain, because the chain can stop early."
+      },
+      {
+        "id": "C",
+        "text": "`string | undefined`; it throws a TypeError",
+        "correct": false,
+        "why": "Optional chaining exists to avoid that error. `user.address.city` without `?.` would throw, and would not compile under `strict`."
+      },
+      {
+        "id": "D",
+        "text": "`string | null`; it returns `null`",
+        "correct": false,
+        "why": "A short-circuited optional chain produces `undefined`, never `null`."
+      }
+    ],
+    "explanation": "`?.` reads a property only if the value on its left is not `null` or `undefined`. Otherwise the whole chain evaluates to `undefined`. TypeScript models this by adding `undefined` to the result type, so you still have to handle the missing case, often with `?? \"unknown\"`. Writing `user.address.city` here is a strict-mode error (\"'user.address' is possibly 'undefined'\").",
+    "reference": "TypeScript 3.7 release notes: Optional Chaining",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://arc.dev/developer-blog/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-optional-chaining-nullish"
+  },
+  {
+    "id": "TSM-IQ4-EVR-006",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A bug report says: \"Customers with a 0% discount are charged as if they had 10% off.\" Which fix is correct?\n\n```ts\ntype Opts = { discount?: number };\n\nfunction finalPrice(price: number, opts: Opts) {\n  return price * (1 - (opts.discount || 0.1));\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Change the fallback to `opts?.discount || 0.1`",
+        "correct": false,
+        "why": "`?.` only guards against `opts` being nullish. The `||` still replaces `0` with `0.1`."
+      },
+      {
+        "id": "B",
+        "text": "Change the fallback to `opts.discount! || 0.1`",
+        "correct": false,
+        "why": "`!` is a compile-time assertion with no runtime effect. The `||` behaves exactly as before."
+      },
+      {
+        "id": "C",
+        "text": "Make `discount` a required property of `Opts`",
+        "correct": false,
+        "why": "Callers would have to pass a value, but `0 || 0.1` would still give `0.1`. The operator is the bug."
+      },
+      {
+        "id": "D",
+        "text": "Change the fallback to `opts.discount ?? 0.1`",
+        "correct": true,
+        "why": "`??` uses `0.1` only when `discount` is missing (`undefined`) or `null`, so an explicit `0` is kept."
+      }
+    ],
+    "explanation": "`||` treats every falsy value, including `0`, as missing. `??` treats only `null` and `undefined` as missing, which is what an optional numeric option needs. With `??`, `finalPrice(100, { discount: 0 })` returns `100`, and `finalPrice(100, {})` still applies the default and returns `90`.",
+    "reference": "TypeScript 3.7 release notes: Nullish Coalescing",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://arc.dev/developer-blog/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-optional-chaining-nullish"
+  },
+  {
+    "id": "TSM-IQ4-EVR-007",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "An interviewer asks: \"What's the difference between `readonly` and `const`?\" Which two statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`readonly` applies to a property (or an array or tuple type) and stops writes through that type",
+        "correct": true,
+        "why": "`readonly` is a modifier on properties, index signatures and array types, not on variables."
+      },
+      {
+        "id": "B",
+        "text": "`readonly` is also enforced at runtime, so writing to the property throws in strict mode",
+        "correct": false,
+        "why": "`readonly` is erased from the JavaScript output. Only `Object.freeze` or a getter-only property stops writes at runtime."
+      },
+      {
+        "id": "C",
+        "text": "`const` makes the whole object deeply immutable",
+        "correct": false,
+        "why": "`const` only protects the binding. Nested and top-level properties can still be changed."
+      },
+      {
+        "id": "D",
+        "text": "You can write `readonly x = 5;` at the top level of a module instead of `const x = 5;`",
+        "correct": false,
+        "why": "`readonly` is not a variable declaration keyword. It is only valid on class properties, interface or type members, and array or tuple types."
+      },
+      {
+        "id": "E",
+        "text": "`const` applies to a variable binding: the variable can't be reassigned, but the object it points to can still change",
+        "correct": true,
+        "why": "`const cfg = { a: 1 }; cfg.a = 2;` is allowed. Only `cfg = ...` is rejected."
+      }
+    ],
+    "explanation": "A short way to say it: use `const` for variables and `readonly` for properties. `const` stops reassignment of the binding, and `readonly` stops writes to a property through a particular type. Neither makes values deeply immutable, and `readonly` exists only at compile time. For literal values, `as const` combines the two ideas by making every property `readonly` and keeping literal types.",
+    "reference": "TypeScript Handbook: Object Types (readonly Properties)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-readonly-vs-const"
+  },
+  {
+    "id": "TSM-IQ4-EVR-008",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two marked lines are compile errors? (Choose two.)\n\n```ts\nconst config = { retries: 3 };\nconfig.retries = 5;            // line 1\n\ninterface Point { readonly x: number }\nconst p: Point = { x: 1 };\np.x = 2;                       // line 2\n\nlet q: Point = { x: 1 };\nq = { x: 2 };                  // line 3\n\nconst limit = 10;\nlimit = 11;                    // line 4\n\nconst ro: readonly number[] = [1];\nconst copy = [...ro];\ncopy.push(2);                  // line 5\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "line 3",
+        "correct": false,
+        "why": "`q` is a `let`, so it can point to a new `Point`. `readonly` limits writes to `x`, not replacing the whole object."
+      },
+      {
+        "id": "B",
+        "text": "line 4",
+        "correct": true,
+        "why": "`limit` is a `const` binding and can't be reassigned (TS2588)."
+      },
+      {
+        "id": "C",
+        "text": "line 5",
+        "correct": false,
+        "why": "Spreading creates a new, ordinary `number[]`, so `push` is allowed on the copy."
+      },
+      {
+        "id": "D",
+        "text": "line 1",
+        "correct": false,
+        "why": "`const` protects the `config` binding, not its properties, so changing `retries` is allowed."
+      },
+      {
+        "id": "E",
+        "text": "line 2",
+        "correct": true,
+        "why": "`x` is `readonly` on `Point`, so assigning to it is TS2540."
+      }
+    ],
+    "explanation": "`const` and `readonly` protect different things. `const` locks a variable binding, and `readonly` locks a property through a type. A `let` holding a `readonly` type can still be reassigned, and a `const` object can still have its properties changed. Copying a read-only array with spread gives you a normal mutable array.",
+    "reference": "TypeScript Handbook: Object Types (readonly Properties)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://www.techprep.app/blog/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-readonly-vs-const"
+  },
+  {
+    "id": "TSM-IQ4-EVR-009",
+    "domain": 1,
+    "skill": "everyday-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "With default compiler options (no `isolatedModules`, no `preserveConstEnums`), what JavaScript does `tsc` emit for this file?\n\n```ts\nconst enum Direction { Up = 1, Down = 2 }\nconst d = Direction.Down;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const d = 2 /* Direction.Down */;` and nothing for `Direction`",
+        "correct": true,
+        "why": "Members of a `const enum` are inlined at each use, and the enum declaration is removed from the output."
+      },
+      {
+        "id": "B",
+        "text": "A `Direction` object with a reverse mapping, and `const d = Direction.Down;`",
+        "correct": false,
+        "why": "That is the output for a regular `enum`. A `const enum` produces no runtime object."
+      },
+      {
+        "id": "C",
+        "text": "`const Direction = Object.freeze({ Up: 1, Down: 2 });` and `const d = Direction.Down;`",
+        "correct": false,
+        "why": "TypeScript never emits `Object.freeze` for enums."
+      },
+      {
+        "id": "D",
+        "text": "Nothing at all, because `const enum` values exist only at compile time",
+        "correct": false,
+        "why": "The declaration disappears, but `d` still needs its value, so `2` is inlined."
+      }
+    ],
+    "explanation": "A regular enum compiles to an object (with a reverse mapping for numeric members), so you can iterate over it or look up `Direction[2]`. A `const enum` is inlined at every use and leaves no object behind, which makes the output smaller but means no runtime lookup. Because single-file transpilers such as Babel, esbuild and SWC can't see another file's enum values, `const enum` is restricted under `isolatedModules`. Many teams now prefer union types or `as const` objects instead.",
+    "reference": "TypeScript Handbook: Enums (const enums)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://lets-code.co.in/articles/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-const-enum"
+  },
+  {
+    "id": "TSM-IQ4-FNC-001",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "\"Interface or abstract class: what's the difference?\" Which three statements belong in a good answer? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "An interface can declare `private` members that implementing classes must also keep private",
+        "correct": false,
+        "why": "Interfaces describe the public shape only. Access modifiers are not allowed on interface members."
+      },
+      {
+        "id": "B",
+        "text": "An abstract class can be instantiated with `new` once all of its abstract members have bodies",
+        "correct": false,
+        "why": "A class marked `abstract` can never be instantiated directly, whatever its members look like (TS2511)."
+      },
+      {
+        "id": "C",
+        "text": "Only interfaces can be used as the type of a variable or parameter",
+        "correct": false,
+        "why": "A class name, abstract or not, is also usable as a type."
+      },
+      {
+        "id": "D",
+        "text": "An abstract class can contain a constructor, fields and implemented methods; an interface only describes a shape",
+        "correct": true,
+        "why": "Abstract classes often hold shared code. Interfaces have no implementation at all."
+      },
+      {
+        "id": "E",
+        "text": "An abstract class exists at runtime, so `instanceof` works with it; an interface is erased",
+        "correct": true,
+        "why": "The abstract class is emitted as a normal JavaScript class. The interface leaves nothing in the output."
+      },
+      {
+        "id": "F",
+        "text": "A class can implement several interfaces but can extend only one class, abstract or not",
+        "correct": true,
+        "why": "JavaScript has single inheritance; `implements` can list many interfaces."
+      }
+    ],
+    "explanation": "Use an interface for a pure contract that many unrelated classes or plain objects can satisfy. Use an abstract class when subclasses should share real code or state and you want a runtime base you can check with `instanceof`. The interviewer wants the runtime difference (erased vs emitted), the implementation difference, and single vs multiple inheritance.",
+    "reference": "TypeScript Handbook: Classes (abstract Classes and Members)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/net-with-angular-interview-questions-SRCH_KO0,16.htm",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-interface-vs-abstract-class"
+  },
+  {
+    "id": "TSM-IQ4-FNC-002",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You are adding payment providers (Razorpay, Stripe, PayPal). Each one has its own `charge()` call, but all of them must share the same retry-with-backoff and logging code. Plain mock objects should not count as providers. Which design fits best?",
+    "options": [
+      {
+        "id": "A",
+        "text": "An interface with an optional `chargeWithRetry?()` method that providers may implement",
+        "correct": false,
+        "why": "Interfaces can't carry a default implementation, and making it optional means callers must check whether it exists."
+      },
+      {
+        "id": "B",
+        "text": "A union type `Razorpay | Stripe | PayPal` with a `switch` in every caller",
+        "correct": false,
+        "why": "This spreads the shared logic across callers and has to change every time a provider is added."
+      },
+      {
+        "id": "C",
+        "text": "An abstract class `PaymentProvider` with an `abstract charge()` and a concrete `chargeWithRetry()` that calls it",
+        "correct": true,
+        "why": "The shared retry and logging logic lives once in the base class, and each provider only supplies `charge()`. A plain object can't extend the class, so the requirement holds at both compile time and runtime (`instanceof`)."
+      },
+      {
+        "id": "D",
+        "text": "An interface `PaymentProvider { charge(): Promise<void> }` that each provider implements",
+        "correct": false,
+        "why": "An interface can't hold the retry code, so each provider would copy it. Any object with a `charge` method would also satisfy it."
+      }
+    ],
+    "explanation": "This is the template-method pattern. The abstract base class implements the common algorithm and leaves the varying step abstract. Interfaces are the better tool when you only need a contract, for example `Chargeable`, and possibly many implementations with nothing to share. Interviewers ask for a scenario like this to see whether you can justify the choice, not just list differences.",
+    "reference": "TypeScript Handbook: Classes (abstract Classes and Members)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/net-with-angular-interview-questions-SRCH_KO0,16.htm",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-interface-vs-abstract-class"
+  },
+  {
+    "id": "TSM-IQ4-FNC-003",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two marked lines are compile errors? (Choose two.)\n\n```ts\ninterface Shape { area(): number }\n\nabstract class Base {\n  abstract area(): number;\n  describe() { return \"area \" + this.area(); }\n}\n\nclass Square extends Base implements Shape {\n  constructor(private side: number) { super(); }\n  area() { return this.side ** 2; }\n}\n\nconst x: unknown = new Square(2);\nif (x instanceof Base) console.log(x.describe());  // line 1\nif (x instanceof Shape) console.log(x.area());     // line 2\nconst b = new Base();                               // line 3\nconst s: Shape = { area: () => 1 };                // line 4\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "line 2",
+        "correct": true,
+        "why": "`Shape` is an interface, so it only exists as a type: \"'Shape' only refers to a type, but is being used as a value here\" (TS2693)."
+      },
+      {
+        "id": "B",
+        "text": "line 3",
+        "correct": true,
+        "why": "An abstract class can't be instantiated directly (TS2511)."
+      },
+      {
+        "id": "C",
+        "text": "line 4",
+        "correct": false,
+        "why": "Any object with a matching `area` method satisfies an interface. No class is needed."
+      },
+      {
+        "id": "D",
+        "text": "None of the four lines compile, because `Square` both extends and implements",
+        "correct": false,
+        "why": "A class can extend one class and implement interfaces at the same time."
+      },
+      {
+        "id": "E",
+        "text": "line 1",
+        "correct": false,
+        "why": "`Base` is a real class at runtime, so `instanceof Base` works and narrows `x` to `Base`."
+      }
+    ],
+    "explanation": "The runtime difference is the one candidates miss. An abstract class is emitted as JavaScript, so it works with `instanceof`, but it can't be created with `new`. An interface is erased, so you can't use it in `instanceof`. To check an interface at runtime you write a type guard instead (for example `\"area\" in x`).",
+    "reference": "TypeScript Handbook: Classes (abstract Classes and Members)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.glassdoor.com/Interview/net-with-angular-interview-questions-SRCH_KO0,16.htm",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-interface-vs-abstract-class"
+  },
+  {
+    "id": "TSM-IQ4-FNC-004",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "\"How are TypeScript classes different from plain ES6 classes?\" Which three of these class features exist only in TypeScript? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Parameter properties, as in `constructor(private name: string) {}`",
+        "correct": true,
+        "why": "TypeScript expands this into a field plus `this.name = name`. Plain JavaScript has no such shorthand."
+      },
+      {
+        "id": "B",
+        "text": "`abstract` classes and `abstract` methods",
+        "correct": true,
+        "why": "`abstract` is a TypeScript keyword. JavaScript has no way to forbid `new` on a class at the language level."
+      },
+      {
+        "id": "C",
+        "text": "The `private` and `protected` access modifiers",
+        "correct": true,
+        "why": "These are compile-time checks that are erased from the output."
+      },
+      {
+        "id": "D",
+        "text": "`#name` private fields",
+        "correct": false,
+        "why": "`#` private fields are standard JavaScript (ES2022) and are enforced at runtime."
+      },
+      {
+        "id": "E",
+        "text": "`static { ... }` initialisation blocks",
+        "correct": false,
+        "why": "Static blocks are standard JavaScript (ES2022)."
+      },
+      {
+        "id": "F",
+        "text": "`get` and `set` accessors",
+        "correct": false,
+        "why": "Accessors have been part of JavaScript classes since ES2015."
+      }
+    ],
+    "explanation": "TypeScript classes are JavaScript classes plus a type layer: access modifiers (`public`, `private`, `protected`), `readonly`, `abstract`, `implements`, parameter properties and typed fields. Most of this is removed when compiling. A strong answer also mentions that `private` is compile-time only while `#private` is real runtime privacy.",
+    "reference": "TypeScript Handbook: Classes",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://github.com/Devinterview-io/typescript-interview-questions",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-ts-classes-vs-es6"
+  },
+  {
+    "id": "TSM-IQ4-FNC-005",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You paste this valid JavaScript class into a `.ts` file. What does TypeScript report?\n\n```ts\nclass Point {\n  constructor(x: number, y: number) {\n    this.x = x;\n    this.y = y;\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Nothing; TypeScript infers the fields `x` and `y` from the assignments in the constructor",
+        "correct": false,
+        "why": "That inference happens only in JavaScript files checked by TypeScript, not in `.ts` files."
+      },
+      {
+        "id": "B",
+        "text": "An error saying the constructor needs a return type annotation",
+        "correct": false,
+        "why": "Constructors never take a return type annotation."
+      },
+      {
+        "id": "C",
+        "text": "An error saying that `x` and `y` must be marked `public`",
+        "correct": false,
+        "why": "Members are public by default. The problem is that they aren't declared at all."
+      },
+      {
+        "id": "D",
+        "text": "\"Property 'x' does not exist on type 'Point'\" (and the same for `y`), because fields must be declared",
+        "correct": true,
+        "why": "In TypeScript a class's instance shape comes from its declarations. Assigning to an undeclared `this.x` is an error (TS2339)."
+      }
+    ],
+    "explanation": "In ES6 you can create instance properties just by assigning to `this`. TypeScript wants them declared, either as fields (`x: number;`) or as parameter properties (`constructor(public x: number, public y: number) {}`). This is one of the first things people meet when moving a JavaScript class to TypeScript.",
+    "reference": "TypeScript Handbook: Classes (Fields)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://github.com/Devinterview-io/typescript-interview-questions",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-ts-classes-vs-es6"
+  },
+  {
+    "id": "TSM-IQ4-FNC-006",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "You compile this file with `tsc` (target ES2022). Which two things appear in the emitted JavaScript? (Choose two.)\n\n```ts\ninterface Named { name: string }\n\nexport class User implements Named {\n  constructor(public name: string, private age: number) {}\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "A `typeof age === \"number\"` check in the constructor",
+        "correct": false,
+        "why": "TypeScript never emits runtime type checks for annotations."
+      },
+      {
+        "id": "B",
+        "text": "Assignments `this.name = name;` and `this.age = age;` inside the constructor",
+        "correct": true,
+        "why": "Parameter properties are compiled into ordinary assignments in the constructor."
+      },
+      {
+        "id": "C",
+        "text": "A class named `User`",
+        "correct": true,
+        "why": "The class itself is real JavaScript and is emitted."
+      },
+      {
+        "id": "D",
+        "text": "The `private` keyword on `age`",
+        "correct": false,
+        "why": "Access modifiers are erased. At runtime `age` is a normal public property."
+      },
+      {
+        "id": "E",
+        "text": "A runtime check that `User` matches `Named`",
+        "correct": false,
+        "why": "`implements` is a compile-time check only, and the `Named` interface is erased."
+      }
+    ],
+    "explanation": "TypeScript class syntax is mostly erased: interfaces, `implements`, access modifiers and type annotations all disappear. What remains is the JavaScript class, and parameter properties turn into real assignments. That's why `private` doesn't stop `(user as any).age` at runtime, and why `#age` is the choice when you need runtime privacy.",
+    "reference": "TypeScript Handbook: Classes (Parameter Properties)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://github.com/Devinterview-io/typescript-interview-questions",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-ts-classes-vs-es6"
+  },
+  {
+    "id": "TSM-IQ4-FNC-007",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You want `greet` to take an object with a string `name` and a number `age`. Which declaration compiles under `strict` and types both properties?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function greet(name: string, age: number) { ... }` called as `greet({ name, age })`",
+        "correct": false,
+        "why": "That signature takes two separate arguments, so passing one object is a compile error (\"Expected 2 arguments, but got 1\")."
+      },
+      {
+        "id": "B",
+        "text": "`function greet({ name, age }: { name: string; age: number }) { ... }`",
+        "correct": true,
+        "why": "The type annotation goes after the whole destructuring pattern, as a type for the single object parameter."
+      },
+      {
+        "id": "C",
+        "text": "`function greet({ name: string, age: number }) { ... }`",
+        "correct": false,
+        "why": "Inside a destructuring pattern, `name: string` means \"rename `name` to a variable called `string`\". Both new variables are implicit `any` under `strict` (TS7031)."
+      },
+      {
+        "id": "D",
+        "text": "`function greet({ name: string; age: number }) { ... }`",
+        "correct": false,
+        "why": "This is a syntax error: a destructuring pattern uses commas and has no type positions."
+      }
+    ],
+    "explanation": "When you destructure a parameter, the type describes the whole object and follows the pattern: `({ a, b }: { a: string; b: number })`. A named type keeps it readable: `({ name, age }: Person)`. The `{ name: string }` form is a common trap, because the colon inside a pattern renames the property instead of typing it.",
+    "reference": "TypeScript Handbook: More on Functions (Parameter Destructuring)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-rest-destructured-params"
+  },
+  {
+    "id": "TSM-IQ4-FNC-008",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A logger takes a level and then any number of message strings, as in `log(\"warn\", \"disk\", \"almost full\")`. Which declaration compiles?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function log(level: string, ...messages: string[]) { ... }`",
+        "correct": true,
+        "why": "A rest parameter collects the remaining arguments into an array, so its type is an array type, and it comes last."
+      },
+      {
+        "id": "B",
+        "text": "`function log(level: string, ...messages: string) { ... }`",
+        "correct": false,
+        "why": "A rest parameter must have an array (or tuple) type (TS2370)."
+      },
+      {
+        "id": "C",
+        "text": "`function log(...messages: string[], level: string) { ... }`",
+        "correct": false,
+        "why": "A rest parameter must be the last parameter (TS1014)."
+      },
+      {
+        "id": "D",
+        "text": "`function log(level: string, messages?: ...string[]) { ... }`",
+        "correct": false,
+        "why": "This is not valid syntax. The `...` belongs before the parameter name."
+      }
+    ],
+    "explanation": "Rest parameters are written `...name: T[]` (or a tuple type) and must come last. Inside the function, `messages` is a normal `string[]`. Default values go on the parameter itself, as in `level = \"info\"`, and TypeScript infers `string` from the default.",
+    "reference": "TypeScript Handbook: More on Functions (Rest Parameters)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://www.interviewbit.com/typescript-interview-questions/",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.datacamp.com/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-rest-destructured-params"
+  },
+  {
+    "id": "TSM-IQ4-FNC-009",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Interview task: write a `@log` method decorator using TypeScript 5 standard decorators (no `experimentalDecorators`). It should log the method name and then call the original method with the same `this` and arguments. It is used like this:\n\n```ts\nclass Cart {\n  items = [1, 2];\n  @log count() { return this.items.length; }\n}\n```\n\nWhich implementation compiles under `strict` and works?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\nfunction log(target: Function, ctx: ClassMethodDecoratorContext) {\n  return (...args: unknown[]) => {\n    console.log(`calling ${String(ctx.name)}`);\n    return target.apply(this, args);\n  };\n}\n```",
+        "correct": false,
+        "why": "An arrow function doesn't get the instance as `this`; it captures the outer `this`. Under `strict` this is a compile error (\"'this' implicitly has type 'any'\")."
+      },
+      {
+        "id": "B",
+        "text": "```ts\nfunction log(target: (...args: any[]) => any, ctx: ClassMethodDecoratorContext) {\n  return function (...args: any[]) {\n    console.log(`calling ${String(ctx.name)}`);\n    return target(...args);\n  };\n}\n```",
+        "correct": false,
+        "why": "This compiles, but `target(...args)` drops `this`. `new Cart().count()` throws \"Cannot read properties of undefined (reading 'items')\"."
+      },
+      {
+        "id": "C",
+        "text": "```ts\nfunction log(target: any, key: string, descriptor: PropertyDescriptor) {\n  const original = descriptor.value;\n  descriptor.value = function (...args: any[]) {\n    console.log(`calling ${key}`);\n    return original.apply(this, args);\n  };\n}\n```",
+        "correct": false,
+        "why": "This is the legacy `experimentalDecorators` signature. Standard decorators receive two arguments, so TypeScript reports TS1241."
+      },
+      {
+        "id": "D",
+        "text": "```ts\nfunction log<This, Args extends unknown[], R>(\n  target: (this: This, ...args: Args) => R,\n  ctx: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => R>\n) {\n  return function (this: This, ...args: Args): R {\n    console.log(`calling ${String(ctx.name)}`);\n    return target.call(this, ...args);\n  };\n}\n```",
+        "correct": true,
+        "why": "It returns a regular function, so `this` is the instance at call time, and `target.call(this, ...args)` forwards both. The generics keep the method's types."
+      }
+    ],
+    "explanation": "A TypeScript 5 method decorator receives the original method and a context object, and it can return a replacement function. The replacement must be a regular `function` so it receives the instance as `this`, and it must forward `this` with `call` or `apply`. The three-argument `(target, key, descriptor)` form is the older experimental API that Angular and NestJS still use, and it needs `experimentalDecorators`. Interviewers like to ask which of the two you are using.",
+    "reference": "TypeScript 5.0 release notes: Decorators",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/angular-technical-lead-interview-questions-SRCH_KO0,22.htm",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://www.techprep.app/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-decorators-usage"
+  },
+  {
+    "id": "TSM-IQ4-FNC-010",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log (TypeScript 5 standard decorators)?\n\n```ts\nfunction register(value: Function, ctx: ClassDecoratorContext) {\n  console.log(\"decorating\", ctx.kind, String(ctx.name));\n}\n\n@register\nclass Service {\n  constructor() { console.log(\"constructed\"); }\n}\n\nconsole.log(\"start\");\nnew Service();\nnew Service();\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`start`, `decorating class Service`, `constructed`, `constructed`",
+        "correct": false,
+        "why": "The decorator runs as part of the class declaration, which comes before `console.log(\"start\")`."
+      },
+      {
+        "id": "B",
+        "text": "`start`, `constructed`, `constructed`; class decorators only take effect with `experimentalDecorators`",
+        "correct": false,
+        "why": "Standard decorators work in TypeScript 5 without any flag."
+      },
+      {
+        "id": "C",
+        "text": "`decorating class Service`, `start`, `constructed`, `constructed`",
+        "correct": true,
+        "why": "A class decorator runs once, when the class is defined, before any of the following code runs. Creating instances doesn't run it again."
+      },
+      {
+        "id": "D",
+        "text": "`start`, `decorating class Service`, `constructed`, `decorating class Service`, `constructed`",
+        "correct": false,
+        "why": "Decorators are not called on each `new`. They run once at class definition."
+      }
+    ],
+    "explanation": "Decorators are functions that run when the class is defined. A class decorator receives the class itself and a context with `kind: \"class\"` and the class `name`. It can return a replacement class. Frameworks use this moment to register metadata: Angular's `@Component` and NestJS's `@Injectable` record information about the class so the framework can create it later.",
+    "reference": "TypeScript 5.0 release notes: Decorators",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/angular-technical-lead-interview-questions-SRCH_KO0,22.htm",
+        "https://www.geeksforgeeks.org/typescript/typescript-interview-questions/",
+        "https://www.techprep.app/blog/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-decorators-usage"
+  },
+  {
+    "id": "TSM-IQ4-FNC-011",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log? (TypeScript 5.2+, with `esnext.disposable` in `lib`.)\n\n```ts\nfunction acquire(name: string) {\n  console.log(\"open \" + name);\n  return { [Symbol.dispose]() { console.log(\"close \" + name); } };\n}\n\nfunction run() {\n  using a = acquire(\"a\");\n  using b = acquire(\"b\");\n  console.log(\"work\");\n}\n\nrun();\nconsole.log(\"done\");\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`open a`, `close a`, `open b`, `close b`, `work`, `done`",
+        "correct": false,
+        "why": "A `using` resource stays alive until the end of the enclosing block."
+      },
+      {
+        "id": "B",
+        "text": "`open a`, `open b`, `work`, `close b`, `close a`, `done`",
+        "correct": true,
+        "why": "Resources are disposed when the block ends, in reverse order of declaration, like a stack."
+      },
+      {
+        "id": "C",
+        "text": "`open a`, `open b`, `work`, `close a`, `close b`, `done`",
+        "correct": false,
+        "why": "Disposal is last-in, first-out, so `b` is closed before `a`."
+      },
+      {
+        "id": "D",
+        "text": "`open a`, `open b`, `work`, `done`, `close b`, `close a`",
+        "correct": false,
+        "why": "Disposal happens when `run`'s block exits, not later after other code."
+      }
+    ],
+    "explanation": "A `using` declaration (explicit resource management) calls the value's `[Symbol.dispose]()` method automatically when the enclosing block exits. Several resources are disposed in reverse order, so later resources that may depend on earlier ones are cleaned up first. It replaces hand-written `try`/`finally` cleanup for file handles, locks and connections. The async form is `await using` with `[Symbol.asyncDispose]()`.",
+    "reference": "TypeScript 5.2 release notes: using Declarations and Explicit Resource Management",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.kore1.com/typescript-developer-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-using-declaration"
+  },
+  {
+    "id": "TSM-IQ4-FNC-012",
+    "domain": 2,
+    "skill": "functions-classes",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate asks whether `using` still cleans up when the block throws. What does this log?\n\n```ts\nfunction lock() {\n  console.log(\"acquire\");\n  return { [Symbol.dispose]() { console.log(\"release\"); } };\n}\n\ntry {\n  using l = lock();\n  console.log(\"start\");\n  throw new Error(\"boom\");\n} catch (e) {\n  console.log(\"caught \" + (e as Error).message);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`acquire`, `start`, `release`, `caught boom`",
+        "correct": true,
+        "why": "Disposal runs as the `try` block exits, even when it exits by throwing, and before the `catch` runs."
+      },
+      {
+        "id": "B",
+        "text": "`acquire`, `start`, `caught boom`, `release`",
+        "correct": false,
+        "why": "`l` is scoped to the `try` block, so it is disposed as soon as that block exits, before the handler runs."
+      },
+      {
+        "id": "C",
+        "text": "`acquire`, `start`, `caught boom`",
+        "correct": false,
+        "why": "Cleanup on exceptions is the main reason `using` exists; it behaves like a `finally`."
+      },
+      {
+        "id": "D",
+        "text": "It doesn't compile: an object literal can't be used with `using`",
+        "correct": false,
+        "why": "Any object with a `[Symbol.dispose]()` method is accepted. Only values without it (other than `null` or `undefined`) are rejected (TS2850)."
+      }
+    ],
+    "explanation": "`using` works like an automatic `finally`. When the block exits, whether normally, by `return` or by `throw`, the resource's `[Symbol.dispose]()` runs, and then the exception continues to the `catch`. If disposal itself throws while an error is already in flight, both errors are combined in a `SuppressedError`. The interviewer is checking that you understand it as guaranteed cleanup, not just new syntax.",
+    "reference": "TypeScript 5.2 release notes: using Declarations and Explicit Resource Management",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.kore1.com/typescript-developer-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-using-declaration"
+  },
+  {
+    "id": "TSM-IQ4-NAR-001",
+    "domain": 2,
+    "skill": "narrowing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "This doesn't compile. What is wrong, and what is the right fix?\n\n```ts\ntype Cat = { name: string; meow(): string };\ntype Dog = { name: string; bark(): string };\n\nfunction speak(pet: Cat | Dog) {\n  if (typeof pet === \"Cat\") return pet.meow();\n  return pet.bark();\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Write `if (pet instanceof Cat)` instead, because `instanceof` works with type aliases",
+        "correct": false,
+        "why": "`Cat` is a type alias and is erased. `instanceof` needs a runtime constructor (TS2693)."
+      },
+      {
+        "id": "B",
+        "text": "Write `if (typeof pet === \"object\")` instead",
+        "correct": false,
+        "why": "Both are objects, so this check is always true and narrows nothing; `pet.meow()` is still an error."
+      },
+      {
+        "id": "C",
+        "text": "Write `return (pet as Cat).meow();`",
+        "correct": false,
+        "why": "The assertion compiles, but a `Dog` would crash at runtime because it has no `meow`."
+      },
+      {
+        "id": "D",
+        "text": "Both are `\"object\"` to `typeof`; check `if (\"meow\" in pet)` instead",
+        "correct": true,
+        "why": "The `in` operator checks a property at runtime, and TypeScript narrows `pet` to `Cat` in that branch and `Dog` after it."
+      }
+    ],
+    "explanation": "`typeof` only returns JavaScript's built-in categories (`\"string\"`, `\"number\"`, `\"object\"`, `\"function\"` and so on). Type names don't exist at runtime, which is why TypeScript reports that comparing with `\"Cat\"` has no overlap. To tell object shapes apart, use the `in` operator, a discriminant property such as `kind: \"cat\"`, `instanceof` with real classes, or a custom type guard.",
+    "reference": "TypeScript Handbook: Narrowing (The in operator narrowing)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://lets-code.co.in/articles/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-typeof-cannot-tell-shapes"
+  },
+  {
+    "id": "TSM-IQ4-GEN-001",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Interview task: write a generic `Stack<T>` with `push` and `pop`. Which version compiles under `strict` and keeps the element type?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\nclass Stack {\n  private items: T[] = [];\n  push<T>(item: T): void { this.items.push(item); }\n}\n```",
+        "correct": false,
+        "why": "`T` is declared only on `push`, so the field can't see it (\"Cannot find name 'T'\"). A class-wide type parameter belongs after the class name."
+      },
+      {
+        "id": "B",
+        "text": "```ts\nclass Stack {\n  private items: any[] = [];\n  push(item: any): void { this.items.push(item); }\n  pop(): any { return this.items.pop(); }\n}\n```",
+        "correct": false,
+        "why": "It compiles, but every popped value is `any`, so `const s: string = stack.pop()` compiles even after pushing numbers."
+      },
+      {
+        "id": "C",
+        "text": "```ts\nclass Stack<T> {\n  private items: T[] = [];\n  push(item: T): void { this.items.push(item); }\n  pop(): T | undefined { return this.items.pop(); }\n}\n```",
+        "correct": true,
+        "why": "`T` is declared on the class, so every member shares it. `pop` honestly returns `T | undefined`, because the stack may be empty."
+      },
+      {
+        "id": "D",
+        "text": "```ts\nclass Stack<T> {\n  private items: T[] = [];\n  push(item: T): void { this.items.push(item); }\n  pop(): T { return this.items.pop(); }\n}\n```",
+        "correct": false,
+        "why": "`Array.prototype.pop` returns `T | undefined`, so under `strict` this is TS2322: 'T | undefined' is not assignable to 'T'."
+      }
+    ],
+    "explanation": "A generic class declares its type parameter after the class name, and every field and method uses the same `T`. The instance type is fixed when you write `new Stack<number>()` or when TypeScript infers it. Interviewers also look for an honest `pop()`/`peek()` return type of `T | undefined`, rather than hiding the empty case.",
+    "reference": "TypeScript Handbook: Generics (Generic Classes)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techinterview.org/post/3233460485/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-generic-stack-class"
+  },
+  {
+    "id": "TSM-IQ4-GEN-002",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Using a `Stack<T>` whose `peek()` returns `T | undefined`, what does TypeScript report?\n\n```ts\nconst s = new Stack<number>();\ns.push(1);\ns.push(\"2\");               // line A\nconst top = s.peek();\nconst n: number = top;     // line B\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "No errors; the stack infers `T` from the values pushed",
+        "correct": false,
+        "why": "Inference happens only from constructor arguments, and here `T` was given explicitly as `number`."
+      },
+      {
+        "id": "B",
+        "text": "Errors on both line A and line B",
+        "correct": true,
+        "why": "With `T` fixed to `number`, `push` only accepts numbers, and `peek()` may return `undefined`, which a plain `number` can't hold."
+      },
+      {
+        "id": "C",
+        "text": "An error only on line A",
+        "correct": false,
+        "why": "Line B is also an error: `top` has type `number | undefined`, and `undefined` is not assignable to `number` under `strict`."
+      },
+      {
+        "id": "D",
+        "text": "An error only on line B; `push` widens `T` to `string | number`",
+        "correct": false,
+        "why": "An explicit type argument fixes `T` when the instance is created. Later calls can't widen it."
+      }
+    ],
+    "explanation": "Once you write `new Stack<number>()`, `T` is `number` for that instance, so `push(\"2\")` fails with TS2345. The stack can be empty, so `peek()` returns `number | undefined`, and you need a check (`if (top !== undefined)`) or a default (`?? 0`) before using it as a `number`. This is the follow-up question that comes after \"write a generic stack\".",
+    "reference": "TypeScript Handbook: Generics (Generic Classes)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/m_midas/30-frontend-interview-questions-typescript-12c2",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techinterview.org/post/3233460485/typescript-interview-questions/"
+      ]
+    },
+    "source": "interview:ts-generic-stack-class"
+  },
+  {
+    "id": "TSM-IQ4-GEN-003",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Write a generic `ApiResponse<T>` type: a response holds either the data (`T`) or an error message, never both and never neither. Which declaration enforces that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`type ApiResponse<T> = { success: true; data: T } | { success: false; error: string };`",
+        "correct": true,
+        "why": "A discriminated union: the literal `success` field picks the variant, and each variant has exactly the fields it needs."
+      },
+      {
+        "id": "B",
+        "text": "`type ApiResponse<T> = { data?: T; error?: string };`",
+        "correct": false,
+        "why": "Both `{}` and `{ data, error }` are valid values of this type, so it allows neither or both."
+      },
+      {
+        "id": "C",
+        "text": "`type ApiResponse<T> = { success: boolean; data: T | null; error: string | null };`",
+        "correct": false,
+        "why": "Nothing ties `success` to which field is set, so `{ success: true, data: null, error: \"x\" }` is valid."
+      },
+      {
+        "id": "D",
+        "text": "`interface ApiResponse { data: any; error?: string }`",
+        "correct": false,
+        "why": "It isn't generic, and `any` throws away the data type."
+      }
+    ],
+    "explanation": "Model the two outcomes as separate object types joined by a union, with a literal discriminant (`success`, `ok` or `status`). Callers must check the discriminant before reading `data`, and TypeScript narrows to the right variant. Optional fields look simpler but allow invalid states. The interviewer wants to see you make invalid states impossible to represent.",
+    "reference": "TypeScript Handbook: Narrowing (Discriminated unions)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-api-response-wrapper"
+  },
+  {
+    "id": "TSM-IQ4-GEN-004",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Given\n\n```ts\ntype ApiResponse<T> = { success: true; data: T } | { success: false; error: string };\ndeclare function get<T>(url: string): Promise<ApiResponse<T>>;\n\nconst res = await get<User>(\"/me\");\nconsole.log(res.data.name);\n```\n\nThe last line fails with \"Property 'data' does not exist on type 'ApiResponse<User>'\". Which change is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Write `res.data!.name`",
+        "correct": false,
+        "why": "`!` removes `null` and `undefined`; it doesn't add a missing property. This is still TS2339."
+      },
+      {
+        "id": "B",
+        "text": "Write `(res as any).data.name`",
+        "correct": false,
+        "why": "It compiles, but it crashes when the request failed, because `data` is then `undefined`."
+      },
+      {
+        "id": "C",
+        "text": "Change the call to `get<User | undefined>(\"/me\")`",
+        "correct": false,
+        "why": "This only changes `T`. The union still has a variant without `data`, so the property access still fails."
+      },
+      {
+        "id": "D",
+        "text": "Check `if (res.success)` first and read `res.data.name` inside that branch",
+        "correct": true,
+        "why": "Checking the discriminant narrows `res` to the success variant, where `data: User` exists."
+      }
+    ],
+    "explanation": "With a discriminated union, you can only read the fields common to every variant (here just `success`) until you narrow. Checking `res.success` is the narrowing step, and the `else` branch gets `res.error`. This is the point of the wrapper: the compiler won't let anyone use `data` without handling the error case.",
+    "reference": "TypeScript Handbook: Narrowing (Discriminated unions)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-api-response-wrapper"
+  },
+  {
+    "id": "TSM-IQ4-GEN-005",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You add a helper that returns the data or throws:\n\n```ts\ntype ApiResponse<T> = { success: true; data: T } | { success: false; error: string };\n```\n\nWhich implementation compiles under `strict`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`function unwrap<T>(r: ApiResponse<T>): T { return r.success ? r.data : null; }`",
+        "correct": false,
+        "why": "`null` is not assignable to `T` (TS2322). The return type would have to be `T | null`."
+      },
+      {
+        "id": "B",
+        "text": "`function unwrap<T>(r: ApiResponse<T>): T { if (!r.success) { console.error(r.error); } return r.data; }`",
+        "correct": false,
+        "why": "Logging doesn't leave the function, so after the `if` `r` can still be either variant, and `r.data` is TS2339."
+      },
+      {
+        "id": "C",
+        "text": "`function unwrap<T>(r: ApiResponse<T>): T { if (r.success) return r.data; throw new Error(r.error); }`",
+        "correct": true,
+        "why": "Inside the `if`, `r` is the success variant; after it, TypeScript knows `r` is the failure variant, so `r.error` is a string."
+      },
+      {
+        "id": "D",
+        "text": "`function unwrap<T>(r: ApiResponse<T>): T { return r.data; }`",
+        "correct": false,
+        "why": "`data` doesn't exist on the failure variant, so reading it without narrowing is TS2339."
+      }
+    ],
+    "explanation": "Narrowing follows control flow. Only a branch that returns or throws removes the failure variant from what comes after it. A `T` return type means every path must produce a `T` or throw. Writing `unwrap` this way gives callers a plain `T` and turns API errors into exceptions in one checked place.",
+    "reference": "TypeScript Handbook: Narrowing (Control flow analysis)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers"
+      ]
+    },
+    "source": "interview:ts-api-response-wrapper"
+  },
+  {
+    "id": "TSM-IQ4-GEN-006",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which return type annotation compiles for this function?\n\n```ts\nasync function getCount() {\n  return 42;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Awaited<Promise<number>>`",
+        "correct": false,
+        "why": "`Awaited<Promise<number>>` is just `number`, so this is the same TS1064 error."
+      },
+      {
+        "id": "B",
+        "text": "`Promise<number>`",
+        "correct": true,
+        "why": "An `async` function always returns a promise, so its declared return type must be `Promise<T>` of the value it returns."
+      },
+      {
+        "id": "C",
+        "text": "`number`",
+        "correct": false,
+        "why": "TS1064: the return type of an async function must be the global `Promise<T>` type."
+      },
+      {
+        "id": "D",
+        "text": "`Promise<void>`",
+        "correct": false,
+        "why": "Returning `42` from a function declared to resolve to `void` is TS2322."
+      }
+    ],
+    "explanation": "`async` wraps whatever you `return` in a promise, so `getCount()` is inferred as `Promise<number>` and an explicit annotation must say the same. Inside the function you write `return 42`, not `return Promise.resolve(42)`. Errors are not part of the type: a rejected promise has no type parameter for its error, and `catch (e)` gives `e: unknown` under `strict`.",
+    "reference": "TypeScript Handbook: More on Functions (Return type of async functions)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026"
+      ]
+    },
+    "source": "interview:ts-async-function-typing"
+  },
+  {
+    "id": "TSM-IQ4-GEN-007",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Write the type for your own `all` function so that `await all([userPromise, 42, namePromise])` has type `[User, number, string]`. `userPromise` is a `Promise<User>` and `namePromise` is a `Promise<string>`. Which signature does it?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`declare function all<T extends readonly unknown[]>(values: [...T]): Promise<{ -readonly [K in keyof T]: Awaited<T[K]> }>;`",
+        "correct": true,
+        "why": "`[...T]` makes TypeScript infer a tuple, not an array. Mapping over a tuple keeps each position, and `Awaited` unwraps each one."
+      },
+      {
+        "id": "B",
+        "text": "`declare function all<T extends unknown[]>(values: T): Promise<{ [K in keyof T]: Awaited<T[K]> }>;`",
+        "correct": false,
+        "why": "Without `[...T]`, the array literal is inferred as `(number | Promise<User> | Promise<string>)[]`, so the result is `(string | number | User)[]`."
+      },
+      {
+        "id": "C",
+        "text": "`declare function all<T>(values: Promise<T>[]): Promise<T[]>;`",
+        "correct": false,
+        "why": "One `T` must fit every element, so mixing `Promise<User>` and `Promise<string>` is a compile error, and the plain `42` isn't a promise."
+      },
+      {
+        "id": "D",
+        "text": "`declare function all<T extends readonly unknown[]>(values: T): Promise<Awaited<T[number]>[]>;`",
+        "correct": false,
+        "why": "`T[number]` merges all elements into one union, giving `(string | number | User)[]` and losing positions."
+      }
+    ],
+    "explanation": "Two ideas are needed. First, a variadic tuple hint (`[...T]`) so the argument is inferred as a tuple. Second, a mapped type over that tuple, which maps each element separately and keeps the tuple shape, with `Awaited` to unwrap promises and pass plain values through. This is essentially how the built-in `Promise.all` is declared. Interviewers use it to check that you understand tuple inference, not just generics.",
+    "reference": "TypeScript 4.0 release notes: Variadic Tuple Types",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233474950/javascript-typescript-fundamentals-frontend-interview/"
+      ]
+    },
+    "source": "interview:ts-typed-promise-all"
+  },
+  {
+    "id": "TSM-IQ4-GEN-008",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What are the types of `a` and `b`?\n\n```ts\ndeclare const userP: Promise<User>;\ndeclare const nameP: Promise<string>;\n\nconst a = await Promise.all([userP, nameP]);\n\nconst tasks = [userP, nameP];\nconst b = await Promise.all(tasks);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Both are `[User, string]`",
+        "correct": false,
+        "why": "`tasks` has type `(Promise<User> | Promise<string>)[]` before `Promise.all` sees it, so there is no tuple left to map."
+      },
+      {
+        "id": "B",
+        "text": "Both are `(string | User)[]`",
+        "correct": false,
+        "why": "When the literal is written inline, `Promise.all`'s signature infers a tuple from it."
+      },
+      {
+        "id": "C",
+        "text": "`a` is `[User, string]`; the second call is a compile error",
+        "correct": false,
+        "why": "`Promise.all` accepts any iterable of values or promises; you just get an array type back."
+      },
+      {
+        "id": "D",
+        "text": "`a` is `[User, string]`; `b` is `(string | User)[]`",
+        "correct": true,
+        "why": "An inline array literal is inferred as a tuple. The `tasks` variable was already widened to an array of a union, so positions are lost."
+      }
+    ],
+    "explanation": "The built-in `Promise.all` maps a tuple to a tuple, but only if it receives a tuple type. A separate `const tasks = [...]` is inferred as an array, so you get an array of a union back. To keep positions, pass the array inline, declare `tasks` with `as const`, or annotate it as a tuple. This is a common real-world surprise, and interviewers ask it after the signature question.",
+    "reference": "TypeScript Handbook: Object Types (Tuple Types)",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233474950/javascript-typescript-fundamentals-frontend-interview/"
+      ]
+    },
+    "source": "interview:ts-typed-promise-all"
+  },
+  {
+    "id": "TSM-IQ4-GEN-009",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate's typed `Promise.all` polyfill passes simple tests. What does it log for these inputs?\n\n```ts\nfunction myAll<T>(values: readonly (T | PromiseLike<T>)[]): Promise<T[]> {\n  return new Promise((resolve, reject) => {\n    const results: T[] = [];\n    values.forEach((v, i) => {\n      Promise.resolve(v).then((val) => {\n        results[i] = val;\n        if (results.length === values.length) resolve(results);\n      }, reject);\n    });\n  });\n}\n\nconst delay = <V>(ms: number, v: V) => new Promise<V>((r) => setTimeout(() => r(v), ms));\nmyAll([delay(30, \"a\"), delay(10, \"b\"), delay(20, \"c\")]).then(console.log);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[ 'b', 'c', 'a' ]`",
+        "correct": false,
+        "why": "Results are stored by index, so they aren't in completion order. Code using `push` would have that bug."
+      },
+      {
+        "id": "B",
+        "text": "Nothing, because the returned promise never resolves",
+        "correct": false,
+        "why": "It resolves too early, not never. (A version with no empty-array check would never resolve for `[]`.)"
+      },
+      {
+        "id": "C",
+        "text": "`[ <1 empty item>, 'b', 'c' ]`, because it resolves before the first promise settles",
+        "correct": true,
+        "why": "Assigning `results[2]` sets `length` to 3, so the check passes once `b` and `c` finish while index 0 is still a hole."
+      },
+      {
+        "id": "D",
+        "text": "`[ 'a', 'b', 'c' ]`",
+        "correct": false,
+        "why": "That needs a separate completion counter. `length` reflects the highest index assigned, not how many results arrived."
+      }
+    ],
+    "explanation": "A correct polyfill stores each result at its index and counts completions separately (`if (++done === values.length) resolve(results)`). It also resolves `[]` immediately, and it rejects on the first rejection. JavaScript array `length` is one more than the highest index, so it is not a count. The types compiled fine here; the bug is in the runtime logic, and the interviewer is checking whether you test with out-of-order timings.",
+    "reference": "MDN: Promise.all()",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233474950/javascript-typescript-fundamentals-frontend-interview/"
+      ]
+    },
+    "source": "interview:ts-typed-promise-all"
+  },
+  {
+    "id": "TSM-IQ4-GEN-010",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With this builder type, what is the type of `result`?\n\n```ts\ntype Chainable<T = {}> = {\n  option<K extends string, V>(key: K, value: V): Chainable<T & Record<K, V>>;\n  get(): T;\n};\n\ndeclare const config: Chainable;\nconst result = config.option(\"port\", 8080).option(\"host\", \"localhost\").get();\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Record<string, unknown>`",
+        "correct": false,
+        "why": "The generic `K` and `V` capture each call's key and value precisely; nothing widens to `string` keys."
+      },
+      {
+        "id": "B",
+        "text": "`Record<\"port\", number> & Record<\"host\", string>`, which behaves like `{ port: number; host: string }`",
+        "correct": true,
+        "why": "Each call infers `K` as the key's literal type and `V` from the value, then adds `Record<K, V>` to the accumulated `T`. Plain `V` widens `8080` to `number`."
+      },
+      {
+        "id": "C",
+        "text": "`{ port: 8080; host: \"localhost\" }`",
+        "correct": false,
+        "why": "`V` is not a `const` type parameter, so the value literals widen to `number` and `string`. The keys stay literal because `K extends string`."
+      },
+      {
+        "id": "D",
+        "text": "`{}`",
+        "correct": false,
+        "why": "Each `option` call returns a `Chainable` with a bigger `T`, so `get()` returns the accumulated type, not the starting `{}`."
+      }
+    ],
+    "explanation": "This is the type-challenges \"Chainable Options\" problem. The trick is to make the method generic in both the key and the value, and to return the same builder type with an updated state parameter. Each call threads the growing type forward, and `get()` returns it. Interviewers use it to check that you can make type state accumulate across calls.",
+    "reference": "TypeScript Handbook: Generics (Using Type Parameters in Generic Constraints)",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    },
+    "source": "interview:ts-chainable-options"
+  },
+  {
+    "id": "TSM-IQ4-GEN-011",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "With the intersection-based builder, setting the same key twice breaks:\n\n```ts\ntype Chainable<T = {}> = {\n  option<K extends string, V>(key: K, value: V): Chainable<T & Record<K, V>>;\n  get(): T;\n};\n\nconst r = config.option(\"a\", 1).option(\"a\", \"x\").get();\n// r.a is never\n```\n\nThe requirement: a later `option` call for the same key replaces that key's type. Which change to the return type does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Chainable<Omit<T, K> & Record<K, V>>`",
+        "correct": true,
+        "why": "`Omit` first removes the old `K` property, so the new `Record<K, V>` is the only one, and `r.a` becomes `string`."
+      },
+      {
+        "id": "B",
+        "text": "`Chainable<T | Record<K, V>>`",
+        "correct": false,
+        "why": "A union means `get()` returns one of the two shapes, so keys added earlier are no longer guaranteed to exist."
+      },
+      {
+        "id": "C",
+        "text": "`Chainable<Partial<T> & Record<K, V>>`",
+        "correct": false,
+        "why": "`a` is still in both parts, so it is still `number & string`, which is `never`."
+      },
+      {
+        "id": "D",
+        "text": "`Chainable<T & Record<K, V | T[keyof T]>>`",
+        "correct": false,
+        "why": "The old `a: number` is still intersected with the new `a: string | number`, so `r.a` stays `number` instead of becoming `string`."
+      }
+    ],
+    "explanation": "Intersecting `{ a: number }` with `{ a: string }` gives `a: number & string`, which is `never`. To override a key, remove it before adding it again: `Omit<T, K> & Record<K, V>`. The type-challenges version goes further and rejects a repeated key at the call site, with a conditional type on the `key` parameter. Interviewers like this edge case because the first answer usually uses a plain intersection.",
+    "reference": "TypeScript Handbook: Utility Types (Omit)",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    },
+    "source": "interview:ts-chainable-options"
+  },
+  {
+    "id": "TSM-IQ4-GEN-012",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You need a type for `curry` that turns `(n: number, unit: string, upper: boolean) => string` into `(arg: number) => (arg: string) => (arg: boolean) => string`.\n\n```ts\ndeclare function curry<A extends unknown[], R>(fn: (...args: A) => R): Curried<A, R>;\n```\n\nWhich definition of `Curried` does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Curried<A extends unknown[], R> =\n  A extends [infer F, ...infer Rest]\n    ? (arg: F) => Curried<Rest, R>\n    : never;\n```",
+        "correct": false,
+        "why": "With no parameters left, the recursion hits `never` instead of `R`, so `curry(fmt)(5)(\"kg\")(true)` has type `never`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Curried<A extends unknown[], R> =\n  A extends [unknown, ...infer Rest]\n    ? (arg: A[number]) => (Rest extends [] ? R : Curried<Rest, R>)\n    : R;\n```",
+        "correct": false,
+        "why": "`A[number]` is a union of all remaining parameter types, so the first call accepts `\"5\"` or `true` as well as a number. Positions are lost."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Curried<A extends unknown[], R> = (arg: A[0]) => R;\n```",
+        "correct": false,
+        "why": "This only handles the first argument and claims that one call returns the final result."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Curried<A extends unknown[], R> =\n  A extends [infer F, ...infer Rest]\n    ? (arg: F) => (Rest extends [] ? R : Curried<Rest, R>)\n    : R;\n```",
+        "correct": true,
+        "why": "It peels off the first parameter, returns a one-argument function for it, and recurses on the rest. When nothing is left, the last function returns `R`."
+      }
+    ],
+    "explanation": "Typed currying needs a recursive conditional type over the parameter tuple: `infer` the head, produce `(arg: Head) => ...`, and recurse on the tail until it is empty, then return `R`. Variants that also allow several arguments per call use the same recursion with variadic tuples. Getting the base case right (`R`, not `never`) is the detail interviewers watch for.",
+    "reference": "TypeScript Handbook: Conditional Types (Inferring Within Conditional Types)",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-typed-curry"
+  },
+  {
+    "id": "TSM-IQ4-GEN-013",
+    "domain": 3,
+    "skill": "generics",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Using the working `Curried` type below, what is the type of `step`?\n\n```ts\ntype Curried<A extends unknown[], R> =\n  A extends [infer F, ...infer Rest]\n    ? (arg: F) => (Rest extends [] ? R : Curried<Rest, R>)\n    : R;\ndeclare function curry<A extends unknown[], R>(fn: (...args: A) => R): Curried<A, R>;\n\nconst fmt = (n: number, unit: string, upper: boolean) => `${n}${upper ? unit.toUpperCase() : unit}`;\nconst step = curry(fmt)(5);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`(arg: number) => (arg: string) => (arg: boolean) => string`",
+        "correct": false,
+        "why": "That is the type of `curry(fmt)` itself, before the first call."
+      },
+      {
+        "id": "B",
+        "text": "`string`",
+        "correct": false,
+        "why": "Two more arguments are still needed before the original function runs."
+      },
+      {
+        "id": "C",
+        "text": "`(arg: string) => (arg: boolean) => string`",
+        "correct": true,
+        "why": "`curry(fmt)` is `(arg: number) => (arg: string) => (arg: boolean) => string`, and calling it once with `5` removes the first layer."
+      },
+      {
+        "id": "D",
+        "text": "`(arg: string, arg2: boolean) => string`",
+        "correct": false,
+        "why": "This `Curried` type returns one-argument functions at every step; it never groups the remaining parameters."
+      }
+    ],
+    "explanation": "Each call to a curried function removes one parameter from the front of the tuple. Reading recursive types one layer at a time like this is how interviewers check that you understand the type you wrote, rather than having memorised it. TypeScript also checks each step: `curry(fmt)(\"5\")` is an error because the first parameter is `number`.",
+    "reference": "TypeScript Handbook: Conditional Types (Inferring Within Conditional Types)",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions"
+      ]
+    },
+    "source": "interview:ts-typed-curry"
+  }
+]

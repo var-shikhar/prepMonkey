@@ -1,0 +1,2079 @@
+[
+  {
+    "id": "JSM-IQ3-COD-001",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks for a tiny Redux-style store. A candidate writes this. What does it log?\n\n```js\nfunction createStore(reducer, initial) {\n  let state = initial;\n  const listeners = [];\n  return {\n    getState: () => state,\n    subscribe(fn) { listeners.push(fn); },\n    dispatch(action) {\n      listeners.forEach((fn) => fn());\n      state = reducer(state, action);\n    },\n  };\n}\n\nconst store = createStore((s, a) => (a.type === 'inc' ? s + 1 : s), 0);\nstore.subscribe(() => console.log(store.getState()));\nstore.dispatch({ type: 'inc' });\nstore.dispatch({ type: 'inc' });\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`0` then `1`",
+        "correct": true,
+        "why": "Listeners run before the reducer, so each one reads the state from before that dispatch."
+      },
+      {
+        "id": "B",
+        "text": "`1` then `2`",
+        "correct": false,
+        "why": "That is what a correct store logs. Here the listeners are called before `state` is reassigned."
+      },
+      {
+        "id": "C",
+        "text": "`1` then `1`",
+        "correct": false,
+        "why": "The second dispatch still increments the state; only the timing of the notification is wrong."
+      },
+      {
+        "id": "D",
+        "text": "Nothing, because `subscribe` does not return an unsubscribe function",
+        "correct": false,
+        "why": "A missing return value only means callers cannot unsubscribe. The listener is still pushed and still called."
+      }
+    ],
+    "explanation": "`dispatch` must run the reducer first (`state = reducer(state, action)`) and only then notify subscribers, so every listener sees the new state. Here the order is reversed, so each listener sees stale state and is always one action behind. Interviewers use this exercise to check that you understand the one-way flow: action, then reducer, then notify. They also expect `subscribe` to return an unsubscribe function.",
+    "reference": "Redux docs: Store",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-flipkart-frontend-engineer-sde2",
+        "https://leetcode.com/discuss/interview-experience/1056168/flipkart-ui-engineer-2-bangalore"
+      ],
+      "companies": [
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-redux-store"
+  },
+  {
+    "id": "JSM-IQ3-COD-002",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The store's `subscribe` now returns an unsubscribe function. One listener unsubscribes itself the first time it runs. What does this log, and what is the usual fix?\n\n```js\nconst listeners = [];\nfunction subscribe(fn) {\n  listeners.push(fn);\n  return () => listeners.splice(listeners.indexOf(fn), 1);\n}\nfunction notify() {\n  listeners.forEach((fn) => fn());\n}\n\nconst unsubA = subscribe(() => { console.log('A'); unsubA(); });\nsubscribe(() => console.log('B'));\nsubscribe(() => console.log('C'));\nnotify();\nnotify();\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`A C B C`; notify a copy of the array, such as `[...listeners].forEach(...)`",
+        "correct": true,
+        "why": "Removing A shifts B into index 0 while forEach moves on to index 1, so B is skipped once. Iterating over a snapshot avoids that."
+      },
+      {
+        "id": "B",
+        "text": "`A B C B C`; the code is already correct",
+        "correct": false,
+        "why": "forEach reads the live array by index, so removing an earlier element during the loop makes it skip the next one."
+      },
+      {
+        "id": "C",
+        "text": "`A B C A B C`; `splice` inside a listener has no effect until `notify` returns",
+        "correct": false,
+        "why": "splice changes the array immediately, and A never runs again after it unsubscribes."
+      },
+      {
+        "id": "D",
+        "text": "`A C B C`; use `listeners.filter(...)` instead of `splice` inside `notify`",
+        "correct": false,
+        "why": "The output is right, but the fix is not. The problem is mutating the array that is being iterated, so notify should loop over a copy."
+      }
+    ],
+    "explanation": "`Array.prototype.forEach` visits indexes in order over the live array. When A removes itself at index 0, B shifts down to index 0 and the loop continues at index 1, which is now C, so B is skipped for that one notification. Redux avoids this by taking a snapshot of the listener list before notifying. This edge case is the usual follow-up once you have written a basic `getState`/`dispatch`/`subscribe`.",
+    "reference": "MDN: Array.prototype.forEach()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-flipkart-frontend-engineer-sde2",
+        "https://leetcode.com/discuss/interview-experience/1056168/flipkart-ui-engineer-2-bangalore"
+      ],
+      "companies": [
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-redux-store"
+  },
+  {
+    "id": "JSM-IQ3-COD-003",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "This FizzBuzz is supposed to print `FizzBuzz` for multiples of both 3 and 5. What does it print for `i = 15`?\n\n```js\nfor (let i = 1; i <= 15; i++) {\n  if (i % 3 === 0) console.log('Fizz');\n  else if (i % 5 === 0) console.log('Buzz');\n  else if (i % 15 === 0) console.log('FizzBuzz');\n  else console.log(i);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Fizz`",
+        "correct": true,
+        "why": "15 % 3 is 0, so the first branch runs and the else-if chain stops there."
+      },
+      {
+        "id": "B",
+        "text": "`FizzBuzz`",
+        "correct": false,
+        "why": "The `% 15` check is never reached for 15, because the `% 3` branch matches first."
+      },
+      {
+        "id": "C",
+        "text": "`Buzz`",
+        "correct": false,
+        "why": "The `% 5` branch comes after the `% 3` branch, which already matched."
+      },
+      {
+        "id": "D",
+        "text": "`Fizz` and then `Buzz` on separate lines",
+        "correct": false,
+        "why": "With `else if`, at most one branch runs per iteration."
+      }
+    ],
+    "explanation": "In an if/else-if chain the most specific condition must come first. Check `i % 15 === 0` (or `i % 3 === 0 && i % 5 === 0`) before the separate 3 and 5 checks, or build the output string instead. Interviewers use FizzBuzz as a warm-up to see whether you think about the order of conditions and test the edge case (15) before saying you are done.",
+    "reference": "MDN: if...else",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/ibm/experiences/frontend-developer-india-may-21-2025-no-offer-positive-16656ea6/",
+        "https://www.frontendinterviewhandbook.com/javascript-questions"
+      ],
+      "companies": [
+        "IBM"
+      ]
+    },
+    "source": "interview:js-fizzbuzz"
+  },
+  {
+    "id": "JSM-IQ3-COD-004",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two loop bodies print the correct FizzBuzz sequence for `i` from 1 to 15 (`1, 2, Fizz, 4, Buzz, …, 14, FizzBuzz`)? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nlet s = '';\nif (i % 3 === 0) s += 'Fizz';\nif (i % 5 === 0) s += 'Buzz';\nconsole.log(s || i);\n```",
+        "correct": true,
+        "why": "Both checks run independently, so 15 builds \"FizzBuzz\", and `||` falls back to the number when the string is empty."
+      },
+      {
+        "id": "B",
+        "text": "```js\nif (i % 15 === 0) console.log('FizzBuzz');\nelse if (i % 3 === 0) console.log('Fizz');\nelse if (i % 5 === 0) console.log('Buzz');\nelse console.log(i);\n```",
+        "correct": true,
+        "why": "The most specific case is tested first, so each branch is reached only when it should be."
+      },
+      {
+        "id": "C",
+        "text": "```js\nlet s = '';\nif (i % 3 === 0) s += 'Fizz';\nif (i % 5 === 0) s += 'Buzz';\nconsole.log(s ?? i);\n```",
+        "correct": false,
+        "why": "`??` only falls back for null or undefined. An empty string is kept, so the numbers print as blank lines."
+      },
+      {
+        "id": "D",
+        "text": "```js\nif (i % 3 === 0) console.log('Fizz');\nif (i % 5 === 0) console.log('Buzz');\nelse console.log(i);\n```",
+        "correct": false,
+        "why": "For 3 this prints Fizz and then 3, because the else belongs only to the second if. 15 prints on two lines."
+      },
+      {
+        "id": "E",
+        "text": "```js\nconst s = (i % 3 ? '' : 'Fizz') + (i % 5 ? '' : 'Buzz');\nconsole.log(s === '' ? null : s);\n```",
+        "correct": false,
+        "why": "It prints null instead of the number for non-multiples."
+      }
+    ],
+    "explanation": "There are two standard shapes: test the combined case first in an else-if chain, or concatenate \"Fizz\" and \"Buzz\" independently and fall back to the number when the string is empty. The fallback must use `||`, because the empty string is falsy but not nullish. Interviewers often follow up with \"now add Bazz for 7\", which favours the concatenation version.",
+    "reference": "MDN: Nullish coalescing operator (??)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/ibm/experiences/frontend-developer-india-may-21-2025-no-offer-positive-16656ea6/",
+        "https://www.frontendinterviewhandbook.com/javascript-questions"
+      ],
+      "companies": [
+        "IBM"
+      ]
+    },
+    "source": "interview:js-fizzbuzz"
+  },
+  {
+    "id": "JSM-IQ3-COD-005",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Given this `classNames` helper, what does the call at the bottom return?\n\n```js\nfunction classNames(...args) {\n  const out = [];\n  for (const arg of args) {\n    if (!arg) continue;\n    if (typeof arg === 'string' || typeof arg === 'number') out.push(arg);\n    else if (Array.isArray(arg)) {\n      const inner = classNames(...arg);\n      if (inner) out.push(inner);\n    } else if (typeof arg === 'object') {\n      for (const [key, on] of Object.entries(arg)) if (on) out.push(key);\n    }\n  }\n  return out.join(' ');\n}\n\nclassNames('btn', { active: true, disabled: false }, null, ['lg', { round: 1 }], 0, '');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`\"btn active lg round\"`",
+        "correct": true,
+        "why": "Falsy arguments are skipped, the object adds only keys with truthy values, and the array is flattened recursively."
+      },
+      {
+        "id": "B",
+        "text": "`\"btn active disabled lg round\"`",
+        "correct": false,
+        "why": "Object keys are added only when their value is truthy, and `disabled` is false."
+      },
+      {
+        "id": "C",
+        "text": "`\"btn active lg round 0\"`",
+        "correct": false,
+        "why": "`0` is falsy, so `if (!arg) continue` skips it before the number check."
+      },
+      {
+        "id": "D",
+        "text": "`\"btn active lg [object Object]\"`",
+        "correct": false,
+        "why": "The array branch calls classNames recursively, so the nested object is handled by the object branch."
+      }
+    ],
+    "explanation": "A classnames helper accepts strings, numbers, objects (whose truthy keys are included) and arrays (handled recursively), and ignores every falsy value. The order of checks matters: arrays are objects, so `Array.isArray` must run before the generic object branch, and `null` must be filtered out before `Object.entries`. Meta and other companies ask this one to test careful type handling rather than algorithms.",
+    "reference": "MDN: Array.isArray()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-classnames-helper"
+  },
+  {
+    "id": "JSM-IQ3-COD-006",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A shorter `classNames` crashes in production. What happens when it is called as `cn('btn', null, { open: true })`, and why?\n\n```js\nconst cn = (...args) =>\n  args\n    .map((a) => (typeof a === 'object'\n      ? Object.keys(a).filter((k) => a[k]).join(' ')\n      : a))\n    .filter(Boolean)\n    .join(' ');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It throws a TypeError: `typeof null` is `\"object\"`, and `Object.keys(null)` throws",
+        "correct": true,
+        "why": "null goes into the object branch, and Object.keys throws on null and undefined."
+      },
+      {
+        "id": "B",
+        "text": "It returns `\"btn open\"`, because `.filter(Boolean)` removes the `null`",
+        "correct": false,
+        "why": "The filter runs after `.map`, and the map callback has already thrown on null."
+      },
+      {
+        "id": "C",
+        "text": "It returns `\"btn null open\"`, because `join` turns `null` into the string \"null\"",
+        "correct": false,
+        "why": "join actually turns null into an empty string. In any case the crash happens earlier, in `Object.keys(null)`."
+      },
+      {
+        "id": "D",
+        "text": "It returns `\"btn\"`, because `Object.keys` returns an empty array for `null`",
+        "correct": false,
+        "why": "Object.keys throws a TypeError for null and undefined; it returns [] only for objects with no own enumerable keys."
+      }
+    ],
+    "explanation": "`typeof null === 'object'` is the classic trap in helpers that branch on type. Filter falsy values first, or test `a && typeof a === 'object'`. Also handle arrays explicitly: this version would turn `['x', 'y']` into `\"0 1\"` because it reads array indexes as keys. Interviewers watch for both edge cases.",
+    "reference": "MDN: typeof (typeof null)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-classnames-helper"
+  },
+  {
+    "id": "JSM-IQ3-COD-007",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`before(n, fn)` should run `fn` for at most the first `n` calls, and later calls should return the last result. What does this log?\n\n```js\nfunction before(n, fn) {\n  let count = 0;\n  let last;\n  return (...args) => {\n    if (count < n) {\n      count++;\n      last = fn(...args);\n    }\n    return last;\n  };\n}\n\nconst f = before(2, (x) => x * 10);\nconsole.log(f(1), f(2), f(3), f(4));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`10 20 20 20`",
+        "correct": true,
+        "why": "The first two calls run fn. After that the closure keeps returning the cached last result, 20."
+      },
+      {
+        "id": "B",
+        "text": "`10 20 undefined undefined`",
+        "correct": false,
+        "why": "Later calls skip fn but still `return last`, which holds 20."
+      },
+      {
+        "id": "C",
+        "text": "`10 20 30 40`",
+        "correct": false,
+        "why": "count reaches 2 after the second call, so fn never runs again."
+      },
+      {
+        "id": "D",
+        "text": "`10 10 10 10`",
+        "correct": false,
+        "why": "That is the behaviour of `once`. Here fn runs on the second call too, because 1 < 2."
+      }
+    ],
+    "explanation": "`before` and `after` are closure exercises: the counter and the cached result live in the returned function's closure, separately for each wrapper. Note that lodash's `_.before(n, fn)` runs fn only n − 1 times, so in an interview, say which convention you are implementing. `once` is the same as `before` with n = 1.",
+    "reference": "MDN: Closures",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/learnersbucket/dream11-sde2-frontend-interview-experience-5a65",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Dream11"
+      ]
+    },
+    "source": "interview:js-after-before-n-calls"
+  },
+  {
+    "id": "JSM-IQ3-COD-008",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`after(3, fn)` should ignore the first two calls and run `fn` on the third call and every call after it. Each wrapper must keep its own count. Which implementation does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction after(n, fn) {\n  let count = 0;\n  return (...args) => {\n    if (++count >= n) return fn(...args);\n  };\n}\n```",
+        "correct": true,
+        "why": "The count is incremented first and compared with >=, so the third call runs fn. Each call to after creates a new count."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction after(n, fn) {\n  let count = 0;\n  return (...args) => {\n    if (++count > n) return fn(...args);\n  };\n}\n```",
+        "correct": false,
+        "why": "This is off by one: with n = 3 it first runs fn on the fourth call."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction after(n, fn) {\n  let count = 0;\n  return (...args) => {\n    if (++count === n) return fn(...args);\n  };\n}\n```",
+        "correct": false,
+        "why": "It runs fn only on exactly the third call, not on the calls after it."
+      },
+      {
+        "id": "D",
+        "text": "```js\nlet count = 0;\n\nfunction after(n, fn) {\n  return function (...args) {\n    if (++count >= n) return fn(...args);\n  };\n}\n```",
+        "correct": false,
+        "why": "The counter is shared by every wrapper, so calls to one wrapper move the count of all the others."
+      }
+    ],
+    "explanation": "Keep the counter inside `after` so every wrapper gets its own closure, and be explicit about the boundary: \"from the nth call\" means `++count >= n`. Off-by-one errors and a shared module-level counter are the two mistakes interviewers most often see here.",
+    "reference": "MDN: Closures",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/learnersbucket/dream11-sde2-frontend-interview-experience-5a65",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Dream11"
+      ]
+    },
+    "source": "interview:js-after-before-n-calls"
+  },
+  {
+    "id": "JSM-IQ3-COD-009",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two expressions turn `s = 'myKeyName'` into `'my_key_name'`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase())`",
+        "correct": true,
+        "why": "The global regex matches every capital, and the callback adds an underscore and lowercases it."
+      },
+      {
+        "id": "B",
+        "text": "`s.replace(/[A-Z]/g, '_$&').toLowerCase()`",
+        "correct": true,
+        "why": "`$&` inserts the matched capital after the underscore, and the final toLowerCase handles the case."
+      },
+      {
+        "id": "C",
+        "text": "`s.replace(/([A-Z])/, '_$1').toLowerCase()`",
+        "correct": false,
+        "why": "Without the g flag only the first capital is replaced, giving \"my_keyname\"."
+      },
+      {
+        "id": "D",
+        "text": "`s.split(/[A-Z]/).join('_').toLowerCase()`",
+        "correct": false,
+        "why": "split drops the separators, so the capitals disappear: \"my_ey_ame\"."
+      },
+      {
+        "id": "E",
+        "text": "`s.replace(/[A-Z]/g, '_' + '$&'.toLowerCase())`",
+        "correct": false,
+        "why": "`'$&'.toLowerCase()` runs once, before replace, so the pattern stays `_$&` and the result is \"my_Key_Name\"."
+      }
+    ],
+    "explanation": "For camelCase to snake_case, match each capital with a global regex and either use a replacer function or the `$&` replacement pattern followed by `toLowerCase()`. The usual follow-ups are acronyms (`userID`), keys that start with a capital, and applying the conversion recursively to nested objects and arrays.",
+    "reference": "MDN: String.prototype.replace()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Paytm"
+      ]
+    },
+    "source": "interview:js-case-convert-keys"
+  },
+  {
+    "id": "JSM-IQ3-COD-010",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This function converts every key of a nested API response to snake_case. What does it log, and what is the fix?\n\n```js\nconst toSnake = (k) => k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase());\n\nfunction snakeKeys(v) {\n  if (typeof v !== 'object' || v === null) return v;\n  return Object.fromEntries(\n    Object.entries(v).map(([k, x]) => [toSnake(k), snakeKeys(x)])\n  );\n}\n\nconsole.log(JSON.stringify(snakeKeys({ userList: [{ firstName: 'A' }] })));\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`{\"user_list\":{\"0\":{\"first_name\":\"A\"}}}`; add `if (Array.isArray(v)) return v.map(snakeKeys);` before the object case",
+        "correct": true,
+        "why": "Arrays are objects, so Object.entries turns the array into index keys. Mapping arrays separately keeps them as arrays."
+      },
+      {
+        "id": "B",
+        "text": "`{\"user_list\":[{\"first_name\":\"A\"}]}`; the function is already correct",
+        "correct": false,
+        "why": "Object.fromEntries always builds a plain object, so the array does not survive."
+      },
+      {
+        "id": "C",
+        "text": "`{\"user_list\":[{\"firstName\":\"A\"}]}`; recursion stops at arrays, so call `snakeKeys` on each element",
+        "correct": false,
+        "why": "The recursion does reach the array elements; the problem is that the array itself becomes an object."
+      },
+      {
+        "id": "D",
+        "text": "It throws a TypeError, because `Object.entries` cannot read an array",
+        "correct": false,
+        "why": "Object.entries works on arrays and returns [index, value] pairs, which is exactly how the array gets turned into an object."
+      }
+    ],
+    "explanation": "Recursive key transforms need three cases: primitives and null are returned as they are, arrays are mapped element by element, and plain objects have their keys rebuilt. Without the array case, arrays become index-keyed objects. A similar issue affects `Date` and `Map` values, which become `{}`. Interviewers at product companies, such as Paytm, use this to probe recursion and type checks together.",
+    "reference": "MDN: Object.fromEntries()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/paytm/paytm-interview-experience-by-anuj-sharma-senior-frontend-engineer-jan-2025-exp-0-2-years",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Paytm"
+      ]
+    },
+    "source": "interview:js-case-convert-keys"
+  },
+  {
+    "id": "JSM-IQ3-COD-011",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when the last line runs?\n\n```js\nclass Calc {\n  constructor(v = 0) { this.value = v; }\n  add(n) { this.value += n; return this; }\n  multiply(n) { this.value *= n; }\n  subtract(n) { this.value -= n; return this; }\n}\n\nconsole.log(new Calc().add(2).multiply(3).subtract(1).value);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It throws a TypeError",
+        "correct": true,
+        "why": "multiply has no `return this`, so it returns undefined and `.subtract` is then read from undefined."
+      },
+      {
+        "id": "B",
+        "text": "It logs `5`",
+        "correct": false,
+        "why": "That would be right if multiply returned this. As written, the chain never reaches subtract."
+      },
+      {
+        "id": "C",
+        "text": "It logs `6`, because the `.subtract(1)` call on `undefined` is silently skipped",
+        "correct": false,
+        "why": "Plain property access on undefined throws; it is not skipped. Only `?.` short-circuits."
+      },
+      {
+        "id": "D",
+        "text": "It logs `NaN`, because `this.value` is lost after `multiply`",
+        "correct": false,
+        "why": "this.value is still 6 on the instance; the chain fails because multiply returns undefined."
+      }
+    ],
+    "explanation": "Method chaining works because every chainable method returns the object it was called on (`return this`), so the next call has something to run on. Builders and query wrappers like jQuery's `$(el).css(...).show()` follow the same pattern. A terminal method, or a property such as `value`, ends the chain. Missing `return this` is the bug interviewers expect you to spot.",
+    "reference": "MDN: this",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-chainable-calculator"
+  },
+  {
+    "id": "JSM-IQ3-COD-012",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A chainable calculator is built from a factory. What does this log?\n\n```js\nfunction calc() {\n  return {\n    value: 0,\n    add(n) { this.value += n; return this; },\n  };\n}\n\nconst base = calc();\nconst a = base.add(5);\nconst b = base.add(1);\nconsole.log(a.value, b.value, a === b);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`6 6 true`",
+        "correct": true,
+        "why": "Every call mutates and returns the same object, so a, b and base all point to one calculator whose value is 6."
+      },
+      {
+        "id": "B",
+        "text": "`5 6 false`",
+        "correct": false,
+        "why": "That would need add to return a new object, for example `calc` called with the new value."
+      },
+      {
+        "id": "C",
+        "text": "`5 1 false`",
+        "correct": false,
+        "why": "Both chains start from the same base object, and nothing creates a copy."
+      },
+      {
+        "id": "D",
+        "text": "`6 6 false`",
+        "correct": false,
+        "why": "The values are right, but `return this` hands back the same object, so a === b is true."
+      }
+    ],
+    "explanation": "`return this` gives a mutable, fluent API: branching from a shared starting point means the branches affect each other. If the interviewer asks for chains that can safely branch from a shared base, each method must return a new instance, for example `add(n) { return makeCalc(this.value + n); }`. That is the same design choice immutable builders make.",
+    "reference": "MDN: this",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-chainable-calculator"
+  },
+  {
+    "id": "JSM-IQ3-COD-013",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "For `arr = ['x', 'y', 'z']`, the built-in `Array.prototype.at` gives `at(-1) → 'z'`, `at(1.5) → 'y'`, `at(-4) → undefined` and `at(5) → undefined`. Which polyfill matches the built-in for all four calls?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction at(n) {\n  const i = Math.trunc(n) || 0;\n  return this[i < 0 ? this.length + i : i];\n}\n```",
+        "correct": true,
+        "why": "It truncates the index, as the spec does, and counts negatives from the end. Out-of-range indexes such as -1 or 5 read missing properties, which give undefined."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction at(n) {\n  if (n < 0) n = this.length + n;\n  if (n < 0 || n >= this.length) return undefined;\n  return this[n];\n}\n```",
+        "correct": false,
+        "why": "The range checks are fine, but it does not truncate, so at(1.5) reads the property \"1.5\" and returns undefined."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction at(n) {\n  return this.slice(n)[0];\n}\n```",
+        "correct": false,
+        "why": "slice clamps a negative start to 0, so at(-4) returns \"x\" instead of undefined."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction at(n) {\n  return this[(n + this.length) % this.length];\n}\n```",
+        "correct": false,
+        "why": "It wraps around, so at(5) returns \"z\", and at(1.5) gives a fractional index that reads undefined."
+      }
+    ],
+    "explanation": "`at` converts its argument to an integer (truncating toward zero, with NaN becoming 0), adds `length` when it is negative, and returns `undefined` when the result is outside `0 … length − 1`. It never wraps or clamps. Polyfill questions like this check whether you know the edge cases of the spec, not just the happy path.",
+    "reference": "MDN: Array.prototype.at()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/focus-areas/javascript-polyfills",
+        "https://www.greatfrontend.com/interviews/company/apple/questions-guides"
+      ],
+      "companies": [
+        "Apple",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-at-concat-polyfill"
+  },
+  {
+    "id": "JSM-IQ3-COD-014",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This `concat` polyfill is installed as `Array.prototype.myConcat`. For which call does it behave differently from the built-in `concat`?\n\n```js\nfunction myConcat(...args) {\n  const out = [...this];\n  for (const a of args) {\n    if (typeof a === 'object') out.push(...a);\n    else out.push(a);\n  }\n  return out;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[1].myConcat(null)`",
+        "correct": true,
+        "why": "`typeof null` is \"object\", so it tries to spread null and throws. The built-in returns [1, null]."
+      },
+      {
+        "id": "B",
+        "text": "`[1].myConcat([2, [3]])`",
+        "correct": false,
+        "why": "Both return [1, 2, [3]]: one level is flattened and the inner array is kept."
+      },
+      {
+        "id": "C",
+        "text": "`[1].myConcat('ab')`",
+        "correct": false,
+        "why": "Strings take the else branch and are pushed whole, so both return [1, \"ab\"]."
+      },
+      {
+        "id": "D",
+        "text": "`[1].myConcat(2)`",
+        "correct": false,
+        "why": "Primitive numbers are appended as they are, so both return [1, 2]."
+      }
+    ],
+    "explanation": "`concat` spreads only arguments that are arrays (or objects whose `Symbol.isConcatSpreadable` is true) and appends everything else as a single element, including `null`, strings and plain objects. A correct polyfill tests `Array.isArray(a)`, not `typeof a === 'object'`. This version would also throw on a plain object such as `{ a: 1 }`, because it is not iterable.",
+    "reference": "MDN: Array.prototype.concat()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/focus-areas/javascript-polyfills",
+        "https://www.greatfrontend.com/interviews/company/apple/questions-guides"
+      ],
+      "companies": [
+        "Apple",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-at-concat-polyfill"
+  },
+  {
+    "id": "JSM-IQ3-PRM-001",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`fetchPage(cursor)` resolves to `{ items, nextCursor }`, and `nextCursor` is `null` on the last page. The API has three pages. What happens when `fetchAll()` runs?\n\n```js\nasync function fetchAll() {\n  const all = [];\n  let cursor = null;\n  while (true) {\n    const { items, nextCursor } = await fetchPage(cursor);\n    all.push(...items);\n    if (!nextCursor) break;\n  }\n  return all;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It refetches the first page forever, because `cursor` is never updated",
+        "correct": true,
+        "why": "Every iteration calls fetchPage(null), gets the same non-null nextCursor back, and loops forever while `all` keeps growing."
+      },
+      {
+        "id": "B",
+        "text": "It returns the items of all three pages",
+        "correct": false,
+        "why": "The loop never passes nextCursor back into fetchPage, so it never gets past page one."
+      },
+      {
+        "id": "C",
+        "text": "It returns only the first page, because `const` inside the loop cannot be reassigned",
+        "correct": false,
+        "why": "Each iteration creates fresh const bindings, so destructuring works. The missing `cursor = nextCursor` is the problem."
+      },
+      {
+        "id": "D",
+        "text": "It throws a ReferenceError, because `nextCursor` is not visible in the `if`",
+        "correct": false,
+        "why": "The if is inside the same loop block as the destructuring, so nextCursor is in scope."
+      }
+    ],
+    "explanation": "A paginated fetch needs three things: pass the current cursor in, append the page, and move the cursor forward (`cursor = nextCursor`) before testing whether to stop. Forgetting to advance the cursor gives an infinite loop of identical requests. Interviewers, for example at Rippling, add follow-ups such as a page limit, retries and cancelling with an `AbortSignal`.",
+    "reference": "MDN: async function",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://medium.com/frontend-army/rippling-frontend-interview-experience-senior-software-engineer-f0c86ec2c4fd",
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides"
+      ],
+      "companies": [
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-paginated-fetch"
+  },
+  {
+    "id": "JSM-IQ3-PRM-002",
+    "domain": 3,
+    "skill": "async-promises",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Pages hold 10 items each and there are 10 pages. The consumer stops after it has 25 items. How many times is `getPage` called?\n\n```js\nasync function* allItems() {\n  let page = 0;\n  let hasMore = true;\n  while (hasMore) {\n    const res = await getPage(page++);\n    hasMore = res.hasMore;\n    yield* res.items;\n  }\n}\n\nconst got = [];\nfor await (const item of allItems()) {\n  got.push(item);\n  if (got.length === 25) break;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "3",
+        "correct": true,
+        "why": "The generator is lazy: it fetches a page only when the consumer needs more items. Item 25 is on page three, and `break` then closes the generator."
+      },
+      {
+        "id": "B",
+        "text": "10",
+        "correct": false,
+        "why": "An async generator does not prefetch. It runs only as far as the next `yield` each time the loop asks for a value."
+      },
+      {
+        "id": "C",
+        "text": "4",
+        "correct": false,
+        "why": "The generator is paused inside the third page when break runs, so it never requests a fourth page."
+      },
+      {
+        "id": "D",
+        "text": "2",
+        "correct": false,
+        "why": "Pages one and two give only 20 items, so a third page is needed to reach 25."
+      }
+    ],
+    "explanation": "An async generator turns pagination into a lazy stream: `for await` pulls one value at a time, and the generator fetches the next page only when the current one runs out. `break` calls the generator's `return()`, so no further pages are requested. That is why interviewers like this pattern for \"fetch until you have enough\" problems.",
+    "reference": "MDN: for await...of",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://medium.com/frontend-army/rippling-frontend-interview-experience-senior-software-engineer-f0c86ec2c4fd",
+        "https://www.greatfrontend.com/interviews/company/rippling/questions-guides"
+      ],
+      "companies": [
+        "Rippling"
+      ]
+    },
+    "source": "interview:js-paginated-fetch"
+  },
+  {
+    "id": "JSM-IQ3-MOD-001",
+    "domain": 4,
+    "skill": "modern-features",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This ES module binds `state.name` to a text input. The input's `input` listener runs `state.name = input.value`. What happens when that assignment runs?\n\n```js\nconst input = document.querySelector('#name');\nconst state = new Proxy({ name: '' }, {\n  set(target, key, value) {\n    target[key] = value;\n    if (key === 'name') input.value = value;\n  },\n});\ninput.addEventListener('input', () => { state.name = input.value; });\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It stores the value, then throws a TypeError: the trap does not return `true`",
+        "correct": true,
+        "why": "Module code is strict, and in strict mode a set trap that returns a falsy value makes the assignment throw, after the trap body has already run."
+      },
+      {
+        "id": "B",
+        "text": "It works: the model and the input stay in sync",
+        "correct": false,
+        "why": "The trap returns undefined, which the Proxy treats as \"assignment refused\", and strict mode turns that into a TypeError."
+      },
+      {
+        "id": "C",
+        "text": "It loops forever, because setting `input.value` fires another `input` event",
+        "correct": false,
+        "why": "Setting value from script does not fire an input event; only user edits do."
+      },
+      {
+        "id": "D",
+        "text": "Nothing is stored, because a Proxy cannot write to its target from inside a trap",
+        "correct": false,
+        "why": "The trap writes target[key] directly. That is allowed and is how most set traps work."
+      }
+    ],
+    "explanation": "A two-way binding needs a view-to-model path (an `input` listener) and a model-to-view path (a setter or a Proxy `set` trap that updates the DOM). A `set` trap must return `true` to report success; otherwise strict-mode code, which includes all modules and classes, throws a TypeError. Setting `input.value` from script does not fire `input`, so the binding does not loop.",
+    "reference": "MDN: handler.set()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/Google-Interview-E9079-RVW80269433.htm",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Google"
+      ]
+    },
+    "source": "interview:js-two-way-binding"
+  },
+  {
+    "id": "JSM-IQ3-MOD-002",
+    "domain": 4,
+    "skill": "modern-features",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "An interviewer asks you to build two-way binding between form inputs and a plain object without a framework. Which three statements are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A getter/setter added with `Object.defineProperty` only watches properties defined up front; a property added later is not observed",
+        "correct": true,
+        "why": "Accessors are installed per property. This is why Vue 2 needed `Vue.set` for new keys."
+      },
+      {
+        "id": "B",
+        "text": "A Proxy `set` trap also sees assignments to properties that did not exist before",
+        "correct": true,
+        "why": "The trap runs for every assignment made through the proxy, whether or not the key exists."
+      },
+      {
+        "id": "C",
+        "text": "The `input` event fires on every edit, while `change` on a text input fires only when the value is committed, for example on blur",
+        "correct": true,
+        "why": "That is why live binding listens for input rather than change."
+      },
+      {
+        "id": "D",
+        "text": "Wrapping an object in a Proxy also intercepts writes made through the original object reference",
+        "correct": false,
+        "why": "Only operations on the proxy go through the traps. Writes to the original target bypass them."
+      },
+      {
+        "id": "E",
+        "text": "Assigning `input.value` in script fires an `input` event, so a guard is always needed to avoid an infinite loop",
+        "correct": false,
+        "why": "Programmatic value changes do not fire input or change events."
+      },
+      {
+        "id": "F",
+        "text": "A `defineProperty` setter on `arr` is called when you run `arr.push(4)`",
+        "correct": false,
+        "why": "push creates a new index property; there is no accessor on that index, so nothing is notified."
+      }
+    ],
+    "explanation": "Vue 2 used `Object.defineProperty` accessors and could not detect added properties or most array changes; Vue 3 switched to Proxy, which traps every operation made through the proxy. On the DOM side, listen for `input` for live updates, and remember that changing `value` from code fires no event. That asymmetry is what keeps the binding from looping.",
+    "reference": "MDN: Proxy",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/Google-Interview-E9079-RVW80269433.htm",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Google"
+      ]
+    },
+    "source": "interview:js-two-way-binding"
+  },
+  {
+    "id": "JSM-IQ3-PRF-001",
+    "domain": 4,
+    "skill": "performance-memory",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A feed has 50,000 rows. Rendering them all makes scrolling janky and uses a lot of memory, so you switch to a virtualized list. What does a virtualized list keep in the DOM?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Only the rows in or near the viewport, inside a spacer as tall as the full list",
+        "correct": true,
+        "why": "Rows are created and recycled as you scroll, so the DOM stays small whatever the list length."
+      },
+      {
+        "id": "B",
+        "text": "All 50,000 rows, hidden with `display: none` until they scroll into view",
+        "correct": false,
+        "why": "Hidden nodes still cost memory and DOM work. Virtualization avoids creating them at all."
+      },
+      {
+        "id": "C",
+        "text": "All rows, rendered in a Web Worker so the main thread is not blocked",
+        "correct": false,
+        "why": "Workers cannot touch the DOM, and the problem is the number of DOM nodes, not where they are built."
+      },
+      {
+        "id": "D",
+        "text": "The first page of rows, then more rows appended to the end as you reach the bottom",
+        "correct": false,
+        "why": "That is infinite scroll. The DOM keeps growing, which is exactly what virtualization prevents."
+      }
+    ],
+    "explanation": "Windowing (virtualization) renders only the visible slice plus a small overscan buffer, positions it with a transform or offset, and uses a spacer, or a container with the full height, so the scrollbar matches the whole list. DOM size, layout and memory then stay constant. Interviewers, for example at Zomato and LinkedIn, often ask how it differs from infinite scroll and what makes variable row heights hard.",
+    "reference": "web.dev: Virtualize large lists with react-window",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/zomato-frontend-engineer-interview-4f10c5",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81"
+      ],
+      "companies": [
+        "Zomato",
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-virtualized-list"
+  },
+  {
+    "id": "JSM-IQ3-PRF-002",
+    "domain": 4,
+    "skill": "performance-memory",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A fixed-height virtual list computes which rows to render. What does `range(1010)` return?\n\n```js\nconst rowHeight = 40, viewport = 400, overscan = 2, total = 10000;\n\nfunction range(scrollTop) {\n  const first = Math.floor(scrollTop / rowHeight);\n  const count = Math.ceil(viewport / rowHeight);\n  const start = Math.max(0, first - overscan);\n  const end = Math.min(total, first + count + overscan);\n  return [start, end, start * rowHeight];\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[23, 37, 920]`",
+        "correct": true,
+        "why": "first is floor(1010 / 40) = 25, count is 10, so start = 23, end = 25 + 10 + 2 = 37, and the offset is 23 × 40 = 920."
+      },
+      {
+        "id": "B",
+        "text": "`[25, 35, 1000]`",
+        "correct": false,
+        "why": "That ignores the overscan, which adds two rows on each side."
+      },
+      {
+        "id": "C",
+        "text": "`[23, 37, 1010]`",
+        "correct": false,
+        "why": "The rendered block is positioned at the top of its first row (start × rowHeight), not at the raw scrollTop."
+      },
+      {
+        "id": "D",
+        "text": "`[24, 38, 960]`",
+        "correct": false,
+        "why": "This rounds 25.25 up to 26 before subtracting the overscan; Math.floor gives 25."
+      }
+    ],
+    "explanation": "For fixed-height rows the visible window is pure arithmetic: the first visible index is `floor(scrollTop / rowHeight)`, the number of visible rows is `ceil(viewport / rowHeight)`, and the overscan pads both sides so fast scrolling does not show blank gaps. The rendered slice is translated to `start * rowHeight`. Variable heights need measured or estimated offsets and a binary search instead.",
+    "reference": "web.dev: Virtualize large lists with react-window",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/zomato-frontend-engineer-interview-4f10c5",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81"
+      ],
+      "companies": [
+        "Zomato",
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-virtualized-list"
+  },
+  {
+    "id": "JSM-IQ3-DOM-001",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You are building a six-box OTP input. When a box is already empty and the user presses Backspace, focus should move to the previous box. Which listener can detect that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`keydown`, checking for `e.key === 'Backspace'` and an empty value",
+        "correct": true,
+        "why": "keydown fires for every key press, even when it does not change the value."
+      },
+      {
+        "id": "B",
+        "text": "An `input` listener that checks `e.inputType === 'deleteContentBackward'`",
+        "correct": false,
+        "why": "input fires only when the value changes. Backspace in an empty box changes nothing, so there is no input event."
+      },
+      {
+        "id": "C",
+        "text": "A `change` listener on each box",
+        "correct": false,
+        "why": "change fires when the value is committed, usually on blur, and not for a Backspace in an empty box."
+      },
+      {
+        "id": "D",
+        "text": "A `keypress` listener that checks for `e.key === 'Backspace'`",
+        "correct": false,
+        "why": "keypress is deprecated and does not fire for non-character keys such as Backspace."
+      }
+    ],
+    "explanation": "For OTP inputs, use `input` to accept a typed digit and move forward, and `keydown` to handle Backspace and the arrow keys, because those may not change the value. Paste needs its own handler. Interviewers (Stripe and Flipkart report this one) look for that split, plus `inputmode=\"numeric\"` and `autocomplete=\"one-time-code\"` for mobile keyboards and SMS autofill.",
+    "reference": "MDN: Element: keydown event",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/stripe/questions-guides",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round",
+        "https://dataford.io/interview-guides/flipkart/frontend-engineer"
+      ],
+      "companies": [
+        "Stripe",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-otp-input"
+  },
+  {
+    "id": "JSM-IQ3-DOM-002",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Each box of an OTP input is `<input maxlength=\"1\">`. Users paste the whole six-digit code into the first box. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Handle `paste` on the boxes: call `e.preventDefault()`, read `e.clipboardData.getData('text')`, and put one digit in each box",
+        "correct": true,
+        "why": "The paste event gives synchronous access to the pasted text, and preventDefault stops the browser from inserting it into one box."
+      },
+      {
+        "id": "B",
+        "text": "With only `maxlength=\"1\"`, the pasted code is cut down to its first digit and the other five are lost",
+        "correct": true,
+        "why": "Browsers truncate user input, including pastes, to maxlength."
+      },
+      {
+        "id": "C",
+        "text": "`type=\"number\"` with `maxlength=\"1\"` limits each box to one digit",
+        "correct": false,
+        "why": "maxlength is ignored on number inputs, so a number box accepts any length."
+      },
+      {
+        "id": "D",
+        "text": "`navigator.clipboard.readText()` called in the `input` handler is the standard way to read the pasted text, and needs no permission",
+        "correct": false,
+        "why": "The async Clipboard API is promise-based and may need permission or a user gesture. The paste event already carries the data."
+      },
+      {
+        "id": "E",
+        "text": "The `paste` event fires only on `document`, so the handler must be attached there",
+        "correct": false,
+        "why": "paste fires on the focused editable element and bubbles, so a listener on the input or its container works."
+      }
+    ],
+    "explanation": "A solid OTP component handles four paths: typing (`input`, move forward), deleting (`keydown` Backspace, move back), arrow keys, and paste (spread the digits across the boxes, then focus the last filled one). `maxlength` truncates pasted text, so without a paste handler the code is lost. Also note that `maxlength` does not apply to `type=\"number\"`. Use `inputmode=\"numeric\"` with a text input instead.",
+    "reference": "MDN: Element: paste event",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/stripe/questions-guides",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round",
+        "https://dataford.io/interview-guides/flipkart/frontend-engineer"
+      ],
+      "companies": [
+        "Stripe",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-otp-input"
+  },
+  {
+    "id": "JSM-IQ3-DOM-003",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A data table shows `size` rows per page, and `page` starts at 1. With 23 rows and `size = 10`, page 3 should show rows 21–23. Which expression returns the rows for the current page?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`rows.slice((page - 1) * size, page * size)`",
+        "correct": true,
+        "why": "For page 3 this is slice(20, 30). slice stops at the array end, so it returns the last three rows."
+      },
+      {
+        "id": "B",
+        "text": "`rows.slice(page * size, (page + 1) * size)`",
+        "correct": false,
+        "why": "This treats page as 0-based, so page 3 asks for slice(30, 40) and returns an empty array."
+      },
+      {
+        "id": "C",
+        "text": "`rows.slice((page - 1) * size, page * size - 1)`",
+        "correct": false,
+        "why": "slice already excludes its end index, so the − 1 drops the last row of every full page."
+      },
+      {
+        "id": "D",
+        "text": "`rows.splice((page - 1) * size, size)`",
+        "correct": false,
+        "why": "The indexes are right, but splice removes the rows from the source array, so the data shrinks every time a page renders."
+      }
+    ],
+    "explanation": "For a 1-based page number the slice is `[(page − 1) × size, page × size)`, and the page count is `Math.ceil(total / size)`. `slice` is non-mutating and clamps its end index, so the last partial page needs no special case. Machine-coding rounds, for example at Dropbox and Google, then add sorting, searching and resetting to page 1 when the filter changes.",
+    "reference": "MDN: Array.prototype.slice()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://dataford.io/interview-guides/google/frontend-engineer",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Dropbox",
+        "Google",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-mc-data-table"
+  },
+  {
+    "id": "JSM-IQ3-DOM-004",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A searchable, sortable table has two bugs:\n\n1. After sorting by price and then choosing \"no sort\", the rows stay in price order instead of the original API order.\n2. On page 3, typing a search term shows \"No results\" even though matches exist.\n\nThe code sorts with `data.sort(byPrice)` and runs the search on the rows of the current page. Which two changes fix these bugs? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Sort a copy, such as `data.toSorted(byPrice)` or `[...data].sort(byPrice)`, and keep the original array untouched",
+        "correct": true,
+        "why": "sort mutates in place, so the original order is lost. toSorted returns a new array instead."
+      },
+      {
+        "id": "B",
+        "text": "Filter the full dataset first, then paginate the filtered result, and reset to page 1 when the query changes",
+        "correct": true,
+        "why": "Search must run over all rows. Paginating first hides matches that are on other pages."
+      },
+      {
+        "id": "C",
+        "text": "Use `localeCompare` in the comparator instead of subtracting prices",
+        "correct": false,
+        "why": "localeCompare is for strings. It does not stop sort from mutating, and it does not affect search."
+      },
+      {
+        "id": "D",
+        "text": "Debounce the search input by 300 ms",
+        "correct": false,
+        "why": "Debouncing reduces work but does not change which rows the search looks at."
+      },
+      {
+        "id": "E",
+        "text": "Store the sorted rows in `sessionStorage` so they survive a reload",
+        "correct": false,
+        "why": "Persistence has nothing to do with the original order being overwritten by an in-place sort."
+      }
+    ],
+    "explanation": "Model the table as a pipeline over immutable source data: `source → filter(query) → sort(key, dir) → slice(page)`, recomputed whenever an input changes. `Array.prototype.sort` mutates its array (`toSorted` does not, ES2023), and pagination must come last. Interviewers look for this ordering more than for the UI itself.",
+    "reference": "MDN: Array.prototype.toSorted()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://dataford.io/interview-guides/google/frontend-engineer",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Dropbox",
+        "Google",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-mc-data-table"
+  },
+  {
+    "id": "JSM-IQ3-DOM-005",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`rootA` and `rootB` are two DOM trees with identical structure. Given `node` inside `rootA`, return the element at the same position in `rootB`. Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction find(rootA, rootB, node) {\n  const path = [];\n  while (node !== rootA) {\n    const parent = node.parentNode;\n    path.push([...parent.children].indexOf(node));\n    node = parent;\n  }\n  let cur = rootB;\n  for (let i = path.length - 1; i >= 0; i--) cur = cur.children[path[i]];\n  return cur;\n}\n```",
+        "correct": true,
+        "why": "It records each child index from the node up to the root, then replays them from the root down, so the path is used in reverse order."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction find(rootA, rootB, node) {\n  const path = [];\n  while (node !== rootA) {\n    const parent = node.parentNode;\n    path.push([...parent.children].indexOf(node));\n    node = parent;\n  }\n  let cur = rootB;\n  for (const i of path) cur = cur.children[i];\n  return cur;\n}\n```",
+        "correct": false,
+        "why": "The path was collected leaf-first but is replayed in the same order, so it walks the wrong branches unless the path happens to be symmetric."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction find(rootA, rootB, node) {\n  const path = [];\n  while (node !== rootA) {\n    const parent = node.parentNode;\n    path.push([...parent.childNodes].indexOf(node));\n    node = parent;\n  }\n  let cur = rootB;\n  for (let i = path.length - 1; i >= 0; i--) cur = cur.children[path[i]];\n  return cur;\n}\n```",
+        "correct": false,
+        "why": "The path uses childNodes indexes, which count text nodes such as whitespace, but the walk uses children, which counts only elements, so the indexes do not line up."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction find(rootA, rootB, node) {\n  return [...rootB.querySelectorAll('*')]\n    .find((el) => el.isEqualNode(node));\n}\n```",
+        "correct": false,
+        "why": "isEqualNode compares content, so if two siblings have identical markup it can return the wrong one."
+      }
+    ],
+    "explanation": "The standard answer records the path of child indexes from the node up to `rootA`, then follows those indexes downward from `rootB` in reverse order. That is O(depth × siblings) time with no full traversal. An alternative is to walk both trees in lock-step (DFS or a pair of `TreeWalker`s) and stop when tree A reaches the target. Meta asks this question, and the reversed path is the bug interviewers expect to see.",
+    "reference": "MDN: Element.children",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/data-structures-interview-questions-for-senior-frontend-engineers"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-dom-corresponding-node"
+  },
+  {
+    "id": "JSM-IQ3-DOM-006",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "For the \"find the corresponding node in an identical tree\" problem, which two approaches always return the correct node in `rootB`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Walk both trees together in the same depth-first order, advancing both cursors each step, and return tree B's cursor when tree A's cursor is the target",
+        "correct": true,
+        "why": "Identical structure means the nth node visited in A sits at the same position as the nth node visited in B."
+      },
+      {
+        "id": "B",
+        "text": "Record each child index from the target up to `rootA`, then follow those indexes from `rootB` starting at the top of the path",
+        "correct": true,
+        "why": "This position path identifies the node exactly in any tree with the same shape."
+      },
+      {
+        "id": "C",
+        "text": "Return the first node in `rootB` for which `isEqualNode(target)` is true",
+        "correct": false,
+        "why": "Structurally equal siblings, such as identical list items, make this return the wrong node."
+      },
+      {
+        "id": "D",
+        "text": "Copy the target's `id` and call `rootB.querySelector` with it",
+        "correct": false,
+        "why": "Nodes may have no id, and a cloned tree can share ids with the original, so this is not reliable."
+      },
+      {
+        "id": "E",
+        "text": "Compare `node === candidate` for each node in `rootB`",
+        "correct": false,
+        "why": "The nodes in rootB are different objects, so identity never matches."
+      }
+    ],
+    "explanation": "Both correct approaches rely only on position, which is the one thing guaranteed to match between identically shaped trees. Approaches based on content (`isEqualNode`, tag names) or on attributes (`id`) break with duplicated markup. Interviewers often ask for the index-path version first and then for the lock-step traversal as the follow-up.",
+    "reference": "MDN: Document.createTreeWalker()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/blog/data-structures-interview-questions-for-senior-frontend-engineers"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-dom-corresponding-node"
+  },
+  {
+    "id": "JSM-IQ3-DOM-007",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An analytics SDK queues events and flushes them in batches. When the collector returns 503 for a while, events go missing. What is the bug, and what is the right fix?\n\n```js\nlet queue = [];\n\nasync function flush() {\n  const batch = queue;\n  queue = [];\n  try {\n    await send(batch);\n  } catch {\n    // will retry on the next flush\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "The failed batch is dropped; put it back on the queue and retry later with backoff and jitter",
+        "correct": true,
+        "why": "The queue was cleared before the send and nothing re-queues the batch, so the \"retry\" comment is false. Re-queueing with backoff, and one flush in flight at a time, fixes the loss without hammering the server."
+      },
+      {
+        "id": "B",
+        "text": "`send` should use `await Promise.all` over the events, so each event is sent and retried on its own",
+        "correct": false,
+        "why": "Sending one request per event defeats batching and does nothing to keep failed events."
+      },
+      {
+        "id": "C",
+        "text": "Clear the queue with `queue.length = 0` instead of reassigning it, so the batch and queue stay in sync",
+        "correct": false,
+        "why": "`batch` and `queue` would then point to the same array, so clearing it would also empty the batch before it is sent."
+      },
+      {
+        "id": "D",
+        "text": "Retry immediately in a `while (true)` loop until `send` succeeds",
+        "correct": false,
+        "why": "Tight retries make a struggling server worse, and the loop blocks later flushes. Use backoff with jitter and a retry cap."
+      }
+    ],
+    "explanation": "An analytics client needs: a bounded in-memory queue, flushing by size or by timer, re-queueing a batch when a send fails, exponential backoff with jitter, a single in-flight flush, and a final flush when the page is hidden (`visibilitychange` with `sendBeacon` or `fetch` with `keepalive`). Interviewers at Uber, Flipkart and Swiggy use this to probe reliability thinking more than code.",
+    "reference": "MDN: Navigator.sendBeacon()",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://javascript.plainenglish.io/analytics-manager-javascript-interview-guide-queues-batching-retry-backoff-531dc6594227",
+        "https://dataford.io/interview-guides/uber/frontend-engineer",
+        "https://www.greatfrontend.com/pt-BR/interviews/company/microsoft/questions-guides"
+      ],
+      "companies": [
+        "Uber",
+        "Flipkart",
+        "Swiggy",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:js-sd-analytics-sdk"
+  },
+  {
+    "id": "JSM-IQ3-DOM-008",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your banking page must never be shown inside an iframe on another site. Which two measures do that in current browsers? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Send the response header `Content-Security-Policy: frame-ancestors 'self'`",
+        "correct": true,
+        "why": "frame-ancestors controls which origins may embed the page, and it is the modern standard."
+      },
+      {
+        "id": "B",
+        "text": "Send the response header `X-Frame-Options: DENY`",
+        "correct": true,
+        "why": "This legacy header is still honoured and blocks all framing. It is often sent alongside frame-ancestors."
+      },
+      {
+        "id": "C",
+        "text": "Add `<meta http-equiv=\"Content-Security-Policy\" content=\"frame-ancestors 'none'\">` to the page",
+        "correct": false,
+        "why": "frame-ancestors is ignored when it is delivered in a meta tag; it must be an HTTP header."
+      },
+      {
+        "id": "D",
+        "text": "Send `Content-Security-Policy: frame-src 'self'`",
+        "correct": false,
+        "why": "frame-src limits which pages your page can embed, not who can embed your page."
+      },
+      {
+        "id": "E",
+        "text": "Send `X-Frame-Options: ALLOW-FROM https://partner.example`",
+        "correct": false,
+        "why": "ALLOW-FROM is obsolete and ignored by modern browsers. Use frame-ancestors with a list of origins."
+      }
+    ],
+    "explanation": "Clickjacking loads your page in an invisible iframe and tricks users into clicking it. The defence belongs to the framed page: `frame-ancestors` (CSP, header only) or `X-Frame-Options`. JavaScript frame-busting code can be defeated, for example with a sandboxed iframe, and `SameSite` cookies only reduce the impact. Razorpay and other fintech interviews ask this with the follow-up \"and how do you allow one partner?\", whose answer is `frame-ancestors https://partner.example`.",
+    "reference": "MDN: CSP frame-ancestors",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/frontend-web-security-interview-questions",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer"
+      ],
+      "companies": [
+        "Razorpay"
+      ]
+    },
+    "source": "interview:js-clickjacking"
+  },
+  {
+    "id": "JSM-IQ3-DOM-009",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Your app embeds untrusted user-generated HTML and a third-party widget in iframes. Which three statements about restricting iframes are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "An empty `sandbox` attribute blocks scripts, form submission and popups, and gives the frame an opaque origin",
+        "correct": true,
+        "why": "With no tokens, sandbox applies every restriction."
+      },
+      {
+        "id": "B",
+        "text": "Using `allow-scripts` together with `allow-same-origin` on a same-origin frame lets the framed page remove its own sandbox",
+        "correct": true,
+        "why": "The frame can then reach its parent's DOM and rewrite the iframe element, so this combination gives no protection."
+      },
+      {
+        "id": "C",
+        "text": "Your page's CSP `frame-src` directive limits which origins your page may load into iframes",
+        "correct": true,
+        "why": "frame-src (falling back to child-src, then default-src) controls what you embed."
+      },
+      {
+        "id": "D",
+        "text": "`frame-ancestors` in your page's CSP controls which origins your page may embed",
+        "correct": false,
+        "why": "frame-ancestors controls who may embed your page; frame-src controls what your page embeds."
+      },
+      {
+        "id": "E",
+        "text": "A sandboxed iframe can still read the parent's cookies with `document.cookie` if `allow-forms` is set",
+        "correct": false,
+        "why": "allow-forms only allows form submission. Cookie access depends on origin, and a sandboxed frame without allow-same-origin has an opaque origin."
+      }
+    ],
+    "explanation": "There are two sides to iframe security. As the embedder, use `sandbox` with the fewest tokens possible, avoid combining `allow-scripts` with `allow-same-origin` for same-origin content, limit sources with CSP `frame-src`, and use `postMessage` with origin checks to communicate. As the embedded page, use `frame-ancestors` to choose who may frame you. Senior interviews expect you to keep these two directions apart.",
+    "reference": "MDN: <iframe>: sandbox attribute",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/frontend-web-security-interview-questions",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer"
+      ],
+      "companies": [
+        "Razorpay"
+      ]
+    },
+    "source": "interview:js-clickjacking"
+  },
+  {
+    "id": "JSM-IQ3-DOM-010",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You load a charting library from a public CDN. Security asks you to make sure the browser never runs a modified copy if the CDN is compromised. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add an `integrity` hash and `crossorigin=\"anonymous\"` to the `<script>` tag",
+        "correct": true,
+        "why": "Subresource Integrity checks the fetched bytes against the hash and refuses to run a mismatch. Cross-origin scripts need CORS for the check, hence the crossorigin attribute."
+      },
+      {
+        "id": "B",
+        "text": "Add the CDN host to the CSP `script-src` allowlist so that no other host can serve scripts",
+        "correct": false,
+        "why": "An allowlist trusts everything that host serves, including a tampered file."
+      },
+      {
+        "id": "C",
+        "text": "Load the script with `defer` so it runs after the page is parsed",
+        "correct": false,
+        "why": "defer changes when the script runs, not whether it is trusted."
+      },
+      {
+        "id": "D",
+        "text": "Make sure the CDN URL uses HTTPS",
+        "correct": false,
+        "why": "HTTPS protects the connection, but if the CDN itself serves a modified file it arrives over HTTPS just the same."
+      }
+    ],
+    "explanation": "Subresource Integrity (SRI) pins a script or stylesheet to a cryptographic hash. If the content changes, the browser blocks it and fires an `error` event. It works only for versioned, immutable URLs, so pin exact versions rather than `latest`. Combine it with CSP and self-hosting critical scripts, as interviews at Flipkart and elsewhere expect.",
+    "reference": "MDN: Subresource Integrity",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://www.greatfrontend.com/blog/frontend-web-security-interview-questions"
+      ],
+      "companies": [
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-third-party-scripts"
+  },
+  {
+    "id": "JSM-IQ3-DOM-011",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "As frontend lead you must add a chat widget, an A/B testing tag and an ads script to a logged-in dashboard. Which three practices actually limit the damage a compromised third party can do? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Load widgets that do not need your DOM, such as chat, in a cross-origin iframe and talk to them through `postMessage`, checking `event.origin`",
+        "correct": true,
+        "why": "The iframe is a separate origin, so the widget cannot read your DOM, storage or tokens."
+      },
+      {
+        "id": "B",
+        "text": "Use a strict CSP with nonces or hashes (for example `script-src 'nonce-…' 'strict-dynamic'`) so only scripts you approved can run",
+        "correct": true,
+        "why": "This blocks injected and unexpected scripts, which limits what an attacker can add."
+      },
+      {
+        "id": "C",
+        "text": "Pin exact versions and use SRI wherever the vendor serves immutable files, and review dependency updates",
+        "correct": true,
+        "why": "This stops silent changes to code that runs with full page privileges."
+      },
+      {
+        "id": "D",
+        "text": "Mark session cookies `HttpOnly`, which stops a third-party script from acting as the user",
+        "correct": false,
+        "why": "HttpOnly hides the cookie from JavaScript, but the script can still send credentialed requests from your origin and read the DOM."
+      },
+      {
+        "id": "E",
+        "text": "Load the scripts with `async`, which runs them in an isolated scope without access to `window`",
+        "correct": false,
+        "why": "async only changes timing. The script still runs in your page with full access."
+      }
+    ],
+    "explanation": "Any script on your page has your page's full privileges. Containment means isolation (cross-origin iframes, sandboxing), allowlisting what may run (strict CSP), pinning what you load (versions plus SRI), and keeping the number of scripts small. `async`/`defer` and `HttpOnly` help with performance and cookie theft, but they do not contain a malicious script.",
+    "reference": "MDN: Content Security Policy (CSP)",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://www.greatfrontend.com/blog/frontend-web-security-interview-questions"
+      ],
+      "companies": [
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-third-party-scripts"
+  },
+  {
+    "id": "JSM-IQ3-TYP-001",
+    "domain": 1,
+    "skill": "types-coercion",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this log?\n\n```js\nfunction update(user) {\n  user.name = 'B';\n  user = { name: 'C' };\n  user.name = 'D';\n}\n\nconst u = { name: 'A' };\nupdate(u);\nconsole.log(u.name);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`B`",
+        "correct": true,
+        "why": "The first line changes the shared object. Reassigning the parameter only points the local `user` at a new object."
+      },
+      {
+        "id": "B",
+        "text": "`A`",
+        "correct": false,
+        "why": "The parameter starts as a copy of the reference to the same object, so `user.name = \"B\"` changes u."
+      },
+      {
+        "id": "C",
+        "text": "`D`",
+        "correct": false,
+        "why": "After the reassignment, user refers to a new object, so \"D\" is written to that object, not to u."
+      },
+      {
+        "id": "D",
+        "text": "`C`",
+        "correct": false,
+        "why": "Assigning a new object to the parameter does not change what the caller's variable `u` points to."
+      }
+    ],
+    "explanation": "JavaScript passes every argument by value; for objects, the value is a reference. So a function can mutate the caller's object through the parameter, but reassigning the parameter never changes the caller's variable. This is sometimes called \"call by sharing\". Interviewers ask \"is JS pass-by-reference?\" to see whether you can explain this difference.",
+    "reference": "MDN: Functions (passing arguments)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://bigfrontend.dev/quiz"
+      ]
+    },
+    "source": "interview:js-pass-by-value"
+  },
+  {
+    "id": "JSM-IQ3-TYP-002",
+    "domain": 1,
+    "skill": "types-coercion",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about passing arguments in JavaScript are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Every argument is passed by value; when the argument is an object, that value is a reference to the object",
+        "correct": true,
+        "why": "The function gets a copy of the reference, so both point to the same object."
+      },
+      {
+        "id": "B",
+        "text": "Reassigning a parameter inside a function never changes the variable the caller passed in",
+        "correct": true,
+        "why": "The parameter is a separate binding, so reassigning it does not touch the caller's variable."
+      },
+      {
+        "id": "C",
+        "text": "Objects are passed by reference, so `obj = null` inside the function also makes the caller's variable `null`",
+        "correct": false,
+        "why": "Only mutations are shared. Reassignment changes the local binding alone."
+      },
+      {
+        "id": "D",
+        "text": "Declaring the caller's variable with `const` stops the function from changing the object's properties",
+        "correct": false,
+        "why": "const stops the variable from being reassigned; the object itself can still be mutated."
+      },
+      {
+        "id": "E",
+        "text": "Passing `{ ...obj }` gives the function a deep copy, so nested objects cannot be changed",
+        "correct": false,
+        "why": "Spread makes a shallow copy; nested objects are still shared."
+      }
+    ],
+    "explanation": "There is one rule: the parameter is a new variable initialised with the argument's value. Primitives therefore cannot be changed by the callee, and objects can be mutated but not replaced for the caller. For protection, use a deep copy (`structuredClone`) or `Object.freeze`, not `const`.",
+    "reference": "MDN: Functions (passing arguments)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://bigfrontend.dev/quiz"
+      ]
+    },
+    "source": "interview:js-pass-by-value"
+  },
+  {
+    "id": "JSM-IQ3-TYP-003",
+    "domain": 1,
+    "skill": "types-coercion",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`getType` must return `'null'`, `'array'`, `'date'`, `'map'` and `'object'` for `null`, `[]`, `new Date()`, `new Map()` and `Object.create(null)`, without throwing. Which implementation does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const getType = (v) => Object.prototype.toString.call(v).slice(8, -1).toLowerCase();`",
+        "correct": true,
+        "why": "toString.call returns tags such as \"[object Null]\" and \"[object Map]\" for every value, including null and objects with no prototype."
+      },
+      {
+        "id": "B",
+        "text": "`const getType = (v) => v.constructor.name.toLowerCase();`",
+        "correct": false,
+        "why": "It throws for null and undefined, and for Object.create(null), which has no constructor."
+      },
+      {
+        "id": "C",
+        "text": "`const getType = (v) => (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v);`",
+        "correct": false,
+        "why": "It handles null and arrays, but Date and Map both come back as \"object\"."
+      },
+      {
+        "id": "D",
+        "text": "`const getType = (v) => (v instanceof Object ? v.constructor.name.toLowerCase() : typeof v);`",
+        "correct": false,
+        "why": "Object.create(null) fails instanceof and falls back to typeof \"object\", but null returns \"object\" as well instead of \"null\"."
+      }
+    ],
+    "explanation": "`typeof` cannot tell null, arrays, dates, maps and regexes apart. `Object.prototype.toString.call(v)` returns an internal tag (`[object Array]`, `[object Null]`, `[object Date]`) that works across realms and for objects without a prototype. Classes can customise the tag with `Symbol.toStringTag`. This is the standard answer to \"write a precise typeof\".",
+    "reference": "MDN: Object.prototype.toString()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz"
+      ]
+    },
+    "source": "interview:js-precise-type"
+  },
+  {
+    "id": "JSM-IQ3-EVL-001",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A stopwatch adds 100 ms to `elapsed` on every tick. After a few minutes in a background tab, it is well behind a real clock. What is the bug, and what is the fix?\n\n```js\nlet elapsed = 0;\nsetInterval(() => {\n  elapsed += 100;\n  render(elapsed);\n}, 100);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ticks run late and are throttled in background tabs; compute `Date.now() - start` on each tick instead",
+        "correct": true,
+        "why": "Counting ticks adds up every delay. Measuring against a fixed start time always shows the true elapsed time."
+      },
+      {
+        "id": "B",
+        "text": "`setInterval` drifts but `setTimeout` does not, so schedule each tick with a recursive `setTimeout(tick, 100)`",
+        "correct": false,
+        "why": "setTimeout is delayed and throttled in the same way. The fix is to measure the time, not to count ticks."
+      },
+      {
+        "id": "C",
+        "text": "Use an interval of 10 ms so that the error per tick is smaller",
+        "correct": false,
+        "why": "Shorter intervals are clamped and throttled even more, and counting ticks still adds up the delays."
+      },
+      {
+        "id": "D",
+        "text": "Move the timer into a `Promise` so it runs as a microtask and is never delayed",
+        "correct": false,
+        "why": "Microtasks cannot delay themselves. A timer callback is still a task that waits for the event loop."
+      }
+    ],
+    "explanation": "Timer callbacks run \"no sooner than\" their delay. Busy main threads, nested-timer clamping and background-tab throttling all add lag, so counting ticks drifts. Derive the display from a clock, `Date.now()` or `performance.now()`, minus a start time, and add the time from earlier runs when the user resumes after a pause. For smooth on-screen updates, `requestAnimationFrame` is the usual render loop.",
+    "reference": "MDN: setTimeout() (reasons for delays longer than specified)",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/js/coding",
+        "https://www.greatfrontend.com/zh-CN/blog/machine-coding-interview-questions-for-freshers-2026"
+      ]
+    },
+    "source": "interview:js-mc-stopwatch"
+  },
+  {
+    "id": "JSM-IQ3-EVL-002",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A user double-clicks Start and then clicks Stop. What happens?\n\n```js\nlet timerId = null;\nlet ticks = 0;\n\nfunction start() {\n  timerId = setInterval(() => { ticks++; render(ticks); }, 1000);\n}\nfunction stop() {\n  clearInterval(timerId);\n  timerId = null;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It keeps running after Stop, because the first interval's id was overwritten",
+        "correct": true,
+        "why": "Two intervals were created. Stop clears only the second, so the first keeps ticking."
+      },
+      {
+        "id": "B",
+        "text": "Stop clears both intervals, because `clearInterval` cancels every interval with the same callback",
+        "correct": false,
+        "why": "clearInterval cancels only the one id passed to it."
+      },
+      {
+        "id": "C",
+        "text": "The second `setInterval` call replaces the first, so only one interval ever runs",
+        "correct": false,
+        "why": "Each call creates an independent timer. Assigning to timerId only loses the first id."
+      },
+      {
+        "id": "D",
+        "text": "It throws an error, because only one interval can be active at a time",
+        "correct": false,
+        "why": "Any number of intervals can run at once, and no error is thrown."
+      }
+    ],
+    "explanation": "Make start idempotent: `if (timerId !== null) return;`, or clear any existing timer before creating a new one, and disable the Start button while running. Before Stop, the two intervals also make the display tick twice as fast. This is the most common bug interviewers look for in stopwatch and countdown machine-coding rounds.",
+    "reference": "MDN: clearInterval()",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/js/coding",
+        "https://www.greatfrontend.com/zh-CN/blog/machine-coding-interview-questions-for-freshers-2026"
+      ]
+    },
+    "source": "interview:js-mc-stopwatch"
+  },
+  {
+    "id": "JSM-IQ3-DOM-012",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `<ul>` has two adjacent `<li>` items, and the `ul` has padding around them. The pointer enters the `ul`'s padding, moves onto the first `li`, then onto the second `li`, then leaves the list. How many times do a `mouseover` listener and a `mouseenter` listener on the `ul` run?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`mouseover`: 3 times; `mouseenter`: once",
+        "correct": true,
+        "why": "mouseover fires on the ul and then on each li, and those bubble up to the ul. mouseenter fires once, when the pointer enters the ul."
+      },
+      {
+        "id": "B",
+        "text": "`mouseover`: once; `mouseenter`: 3 times",
+        "correct": false,
+        "why": "This is reversed. mouseenter does not bubble, so moving between children does not trigger the ul's listener again."
+      },
+      {
+        "id": "C",
+        "text": "Both run once, when the pointer first enters the list",
+        "correct": false,
+        "why": "mouseover from each li bubbles to the ul, so its listener runs for every element entered."
+      },
+      {
+        "id": "D",
+        "text": "Both run 3 times",
+        "correct": false,
+        "why": "mouseenter does not bubble, and entering a descendant does not re-enter the ul."
+      }
+    ],
+    "explanation": "`mouseover`/`mouseout` bubble and fire whenever the pointer moves onto any element, including children, so a listener on a container sees every boundary crossing inside it. `mouseenter`/`mouseleave` do not bubble and fire once when the pointer enters or leaves an element and its descendants. Use enter/leave for hover states on a container, and over/out for delegation. This answer comes from the UI Events specification.",
+    "reference": "MDN: Element: mouseenter event",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ]
+    },
+    "source": "interview:js-mouseenter-vs-mouseover"
+  },
+  {
+    "id": "JSM-IQ3-DOM-013",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which three statements about `mouseover`/`mouseout` and `mouseenter`/`mouseleave` are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Moving the pointer from a parent onto its child fires `mouseout` on the parent but not `mouseleave`",
+        "correct": true,
+        "why": "The pointer is still inside the parent's subtree, so it has not left it, but it has left the parent's own box."
+      },
+      {
+        "id": "B",
+        "text": "In a `mouseover` event, `relatedTarget` is the element the pointer came from",
+        "correct": true,
+        "why": "For mouseover, relatedTarget is the element just exited. For mouseout, it is the element being entered."
+      },
+      {
+        "id": "C",
+        "text": "A tooltip on a card that has many child elements flickers less with `mouseenter`/`mouseleave` than with `mouseover`/`mouseout`",
+        "correct": true,
+        "why": "enter/leave ignore movement between children, so the handler does not keep running."
+      },
+      {
+        "id": "D",
+        "text": "`mouseenter` bubbles, so one listener on a list can handle hover for every item through delegation",
+        "correct": false,
+        "why": "mouseenter does not bubble. Delegation needs mouseover, or a capture-phase listener."
+      },
+      {
+        "id": "E",
+        "text": "`mouseenter` fires only on the outermost element, never on its children",
+        "correct": false,
+        "why": "Each element the pointer enters gets its own mouseenter. They just do not bubble to ancestors."
+      }
+    ],
+    "explanation": "The difference is bubbling and what counts as \"leaving\": over/out treat each element's own box separately and bubble, so they fire on child crossings; enter/leave treat the element plus its descendants as one area and do not bubble. Use `relatedTarget` to filter over/out events when you need delegation without flicker. This answer comes from the UI Events specification.",
+    "reference": "MDN: Element: mouseover event",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers"
+      ]
+    },
+    "source": "interview:js-mouseenter-vs-mouseover"
+  },
+  {
+    "id": "JSM-IQ3-DOM-014",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The modal markup is `<div class=\"overlay\"><div class=\"dialog\">…</div></div>`. Clicking the backdrop should close it, but clicking inside the dialog also closes it. Which change fixes the bug?\n\n```js\noverlay.addEventListener('click', (e) => {\n  close();\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Close only when `e.target === overlay`",
+        "correct": true,
+        "why": "A click inside the dialog bubbles to the overlay with the inner element as target, so this ignores it."
+      },
+      {
+        "id": "B",
+        "text": "Close only when `e.currentTarget === overlay`",
+        "correct": false,
+        "why": "currentTarget is always the element the listener is attached to, so this is always true."
+      },
+      {
+        "id": "C",
+        "text": "Register the listener in the capture phase",
+        "correct": false,
+        "why": "Capture still runs the overlay listener for clicks inside the dialog, only earlier."
+      },
+      {
+        "id": "D",
+        "text": "Listen for `mousedown` instead of `click`",
+        "correct": false,
+        "why": "mousedown bubbles from the dialog in exactly the same way."
+      }
+    ],
+    "explanation": "`event.target` is the element actually clicked, and `currentTarget` is the element whose listener is running. Checking `e.target === overlay` limits closing to clicks on the backdrop itself. Calling `stopPropagation` on the dialog also works, but it breaks other delegated listeners, which is a point interviewers often raise.",
+    "reference": "MDN: Event.target",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-mc-modal"
+  },
+  {
+    "id": "JSM-IQ3-DOM-015",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "You build the modal with the native `<dialog>` element. Which three statements are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`dialog.showModal()` makes the rest of the page inert, so it cannot be clicked or reached with Tab",
+        "correct": true,
+        "why": "A modal dialog sits in the top layer and the document behind it becomes inert."
+      },
+      {
+        "id": "B",
+        "text": "Pressing Escape on a dialog opened with `showModal()` fires a `cancel` event and then closes it",
+        "correct": true,
+        "why": "Escape is a close request for modal dialogs; calling preventDefault on cancel can stop it."
+      },
+      {
+        "id": "C",
+        "text": "`dialog.show()` opens the dialog without a `::backdrop` and without making the page inert",
+        "correct": true,
+        "why": "show() opens a non-modal dialog; only showModal() adds the top layer, backdrop and inertness."
+      },
+      {
+        "id": "D",
+        "text": "Clicking the `::backdrop` closes a modal dialog by default",
+        "correct": false,
+        "why": "By default backdrop clicks do nothing. You add a click handler, or use the newer `closedby=\"any\"` attribute where it is supported."
+      },
+      {
+        "id": "E",
+        "text": "You must add `role=\"dialog\"` and `aria-modal=\"true\"` yourself for screen readers",
+        "correct": false,
+        "why": "<dialog> has the dialog role built in, and showModal() makes it modal for assistive technology."
+      }
+    ],
+    "explanation": "`<dialog>` with `showModal()` handles most modal requirements: the top layer, a stylable `::backdrop`, an inert background (which traps focus within the page), and Escape-to-close through the `cancel` event. You still add backdrop-click closing yourself and choose the initial focus, for example with `autofocus`. Interviewers want to hear that you would reach for the native element before building focus traps by hand. This answer comes from the HTML specification and MDN.",
+    "reference": "MDN: <dialog>: The Dialog element",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ]
+    },
+    "source": "interview:js-mc-modal"
+  },
+  {
+    "id": "JSM-IQ3-DOM-016",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The current URL is `/list?q=a+b&page=1&tag=x&tag=y`. When the user moves to page 2, the app must set `page=2`, keep the other parameters, avoid a reload, and not add a new history entry. Which code does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nconst url = new URL(location.href);\nurl.searchParams.set('page', '2');\nhistory.replaceState(null, '', url);\n```",
+        "correct": true,
+        "why": "URLSearchParams updates one key and keeps the rest, and replaceState changes the URL in place without a navigation or a new entry."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst url = new URL(location.href);\nurl.searchParams.set('page', '2');\nhistory.pushState(history.state, '', url);\n```",
+        "correct": false,
+        "why": "The URL is right, but pushState adds a history entry, which the requirement rules out."
+      },
+      {
+        "id": "C",
+        "text": "```js\nconst params = new URLSearchParams(location.search);\nparams.set('page', '2');\nlocation.search = params.toString();\n```",
+        "correct": false,
+        "why": "Assigning location.search navigates, so the page reloads."
+      },
+      {
+        "id": "D",
+        "text": "```js\nhistory.replaceState(null, '', location.href + '&page=2');\n```",
+        "correct": false,
+        "why": "This appends a second page parameter, and `get('page')` still returns the first one, \"1\"."
+      }
+    ],
+    "explanation": "Read and edit query strings with `URL` and `URLSearchParams` rather than string concatenation. They handle encoding (`+` decodes to a space), repeated keys (`getAll('tag')`) and updates in place. Then choose `pushState` when the change should get its own Back-button step, or `replaceState` when it should not. Neither one reloads the page or fires `popstate`.",
+    "reference": "MDN: URLSearchParams",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://bigfrontend.dev/problem"
+      ]
+    },
+    "source": "interview:js-url-query-params"
+  }
+]

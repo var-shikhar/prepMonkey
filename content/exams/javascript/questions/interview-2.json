@@ -1,0 +1,1968 @@
+[
+  {
+    "id": "JSM-IQ2-DOM-001",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "An accordion uses one click listener on its root. Each header looks like this, and the panel is the header's next sibling:\n\n```html\n<button class=\"header\"><span class=\"title\">Shipping</span><svg class=\"chevron\">…</svg></button>\n<div class=\"panel\" hidden>…</div>\n```\n\nUsers report that clicking the title text or the chevron does nothing. Only clicks on the button's padding work. Which handler toggles only the clicked panel, wherever inside the header the user clicks?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`root.addEventListener('click', (e) => { const h = e.target.closest('.header'); if (!h || !root.contains(h)) return; h.nextElementSibling.hidden = !h.nextElementSibling.hidden; });`",
+        "why": "`closest` walks up from the span or svg to the header button, and the `contains` check ignores matches outside this accordion. Only that header's panel is toggled."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`root.addEventListener('click', (e) => { if (!e.target.classList.contains('header')) return; e.target.nextElementSibling.hidden = !e.target.nextElementSibling.hidden; });`",
+        "why": "This is the code that causes the bug. A click on the span or the svg makes that child the `target`, so the class check fails and nothing happens."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`root.addEventListener('click', (e) => { const p = e.currentTarget.nextElementSibling; p.hidden = !p.hidden; });`",
+        "why": "`currentTarget` is the element the listener is attached to, which is the root. Its next sibling is whatever follows the whole accordion, not the clicked panel."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`root.addEventListener('click', () => { root.querySelectorAll('.panel').forEach((p) => { p.hidden = !p.hidden; }); });`",
+        "why": "This flips every panel on any click inside the root, so the panels open and close together."
+      }
+    ],
+    "explanation": "With event delegation, `event.target` is the deepest element that was clicked, which is often an icon or a text span inside the control. `target.closest(selector)` finds the control you care about. Interviewers use this follow-up to check that you know the difference between `target` and `currentTarget`, and that you handle nested markup.",
+    "reference": "MDN: Element.closest()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.explainthis.io/en/career/my-amazon-frontend-interview",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/adobe/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/linkedin/questions-guides",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Amazon",
+        "Adobe",
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-mc-accordion-tabs"
+  },
+  {
+    "id": "JSM-IQ2-DOM-002",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "A tabs component has 3 tabs and 3 panels. What happens when the user clicks the first tab?\n\n```js\nvar tabs = document.querySelectorAll('[role=\"tab\"]');\nvar panels = document.querySelectorAll('[role=\"tabpanel\"]');\n\nfor (var i = 0; i < tabs.length; i++) {\n  tabs[i].addEventListener('click', function () {\n    panels.forEach((p) => (p.hidden = true));\n    panels[i].hidden = false;\n  });\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "All panels are hidden, then a `TypeError` is thrown, because `i` is 3 when the handler runs",
+        "why": "All three handlers share one function-scoped `var i`, which is 3 once the loop ends. `panels[3]` is `undefined`, so setting `hidden` on it throws after the panels have already been hidden."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The first panel is shown and the others are hidden, as intended",
+        "why": "That would only happen if each handler had its own copy of `i`, for example by declaring it with `let`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The last panel is always shown, whichever tab was clicked",
+        "why": "The last panel has index 2, but the shared `i` ends at 3 (the value that failed the loop test), not 2."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing happens, because `NodeList` has no `forEach` method",
+        "why": "`NodeList.prototype.forEach` exists in every current browser. The problem is the index, not the iteration."
+      }
+    ],
+    "explanation": "This is the classic `var`-in-a-loop closure bug, shown in a machine-coding setting. Changing the loop to `let i` gives each iteration its own binding. Another fix is to read the index from the element itself, for example from `data-index` or from `aria-controls`. Interviewers like this one because it appears in real tab and accordion code, not just in trivia.",
+    "reference": "MDN: Closures",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.explainthis.io/en/career/my-amazon-frontend-interview",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/adobe/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/linkedin/questions-guides",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Amazon",
+        "Adobe",
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-mc-accordion-tabs"
+  },
+  {
+    "id": "JSM-IQ2-DOM-003",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "roleLevel": 2,
+    "stem": "The interviewer's follow-up to your tabs and accordion widgets is: \"Make them accessible.\" Which statements match the WAI-ARIA Authoring Practices patterns? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The active tab has `aria-selected=\"true\"`, and every tab points to its panel with `aria-controls`",
+        "why": "The tabs pattern exposes which tab is selected through `aria-selected` and links each tab to its `role=\"tabpanel\"` element."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Only the active tab is in the Tab order (`tabindex=\"0\"`, the rest `-1`), and the arrow keys move between tabs",
+        "why": "This is the \"roving tabindex\". The Tab key moves into and out of the tab list, and the arrow keys move within it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Each accordion header is a `<button>` whose `aria-expanded` reflects whether its panel is open",
+        "why": "A real button gives you focus and Enter/Space activation for free, and `aria-expanded` announces the state."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Every tab gets `tabindex=\"0\"` so the Tab key visits each one in turn before the panel",
+        "why": "That is not the recommended pattern. It forces keyboard users through every tab to reach the content. Arrow keys are expected inside a tab list."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The visible panel gets `aria-hidden=\"true\"` so screen readers do not read it twice",
+        "why": "`aria-hidden` removes content from the accessibility tree. Hidden panels should use the `hidden` attribute, and the visible panel must stay exposed."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "A `<div>` with a click listener is enough, because screen readers announce any element that has a handler",
+        "why": "Screen readers do not infer roles from listeners. A plain div has no role, no focus and no keyboard activation unless you add them."
+      }
+    ],
+    "explanation": "Machine-coding rounds often end with \"now make it accessible\". The expected answer covers semantic buttons, the right roles (`tablist`, `tab`, `tabpanel`), state attributes (`aria-selected`, `aria-expanded`) and keyboard support with a roving tabindex. These patterns are described in the WAI-ARIA Authoring Practices Guide.",
+    "reference": "WAI-ARIA Authoring Practices Guide: Tabs Pattern",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.explainthis.io/en/career/my-amazon-frontend-interview",
+        "https://www.greatfrontend.com/interviews/company/amazon/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/adobe/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/linkedin/questions-guides",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Amazon",
+        "Adobe",
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-mc-accordion-tabs"
+  },
+  {
+    "id": "JSM-IQ2-COL-001",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 1,
+    "stem": "What does this log?\n\n```js\nconst nums = [1, 2, 3];\nconst a = nums.forEach((n) => n * 2);\nconst b = nums.map((n) => n * 2);\nconsole.log(a, b, nums);\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`undefined [2, 4, 6] [1, 2, 3]`",
+        "why": "`forEach` always returns `undefined`. `map` returns a new array of the callback results and leaves `nums` unchanged."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[2, 4, 6] [2, 4, 6] [1, 2, 3]`",
+        "why": "`forEach` ignores what the callback returns and never builds an array."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`undefined [2, 4, 6] [2, 4, 6]`",
+        "why": "`map` does not change the source array. `n * 2` computes a value without assigning it anywhere."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[1, 2, 3] [2, 4, 6] [1, 2, 3]`",
+        "why": "`forEach` does not return the original array, so it cannot be chained."
+      }
+    ],
+    "explanation": "Use `map` when you want a transformed array and `forEach` when you only want side effects such as logging or DOM updates. A common bug is assigning the result of `forEach`, or calling `map` without using what it returns.",
+    "reference": "MDN: Array.prototype.map()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ambitionbox.com/interviews/infosys-interview-questions/full-stack-web-developer",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://www.frontendinterviewhandbook.com/javascript-questions",
+        "https://www.interviewbit.com/javascript-interview-questions/"
+      ],
+      "companies": [
+        "Infosys",
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-map-vs-foreach"
+  },
+  {
+    "id": "JSM-IQ2-COL-002",
+    "domain": 2,
+    "skill": "collections",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "roleLevel": 1,
+    "stem": "Which statements about `map` and `forEach` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`map` builds a new array of the same length from the callback's return values. `forEach` returns `undefined`.",
+        "why": "This is the core difference, and it decides which method fits the job."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Calling `map` only for side effects works, but it hides your intent and allocates an array you then throw away",
+        "why": "Reviewers flag this. If you do not need the returned array, `forEach` or `for...of` says what you mean."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`map` leaves out elements for which the callback returns `undefined`",
+        "why": "`map` keeps every slot. A callback with no `return` gives an array full of `undefined`. Use `filter` to drop items."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`forEach` waits for an `async` callback's promise before it moves to the next element",
+        "why": "`forEach` ignores the returned promise, so all the async callbacks start at once. Use `for...of` with `await` to run them one at a time."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`forEach` returns the original array, so `arr.forEach(f).map(g)` is a valid chain",
+        "why": "It returns `undefined`, so the chain throws a `TypeError`."
+      }
+    ],
+    "explanation": "Freshers are asked this to check that they understand return values and intent. `map` transforms, `filter` selects, `reduce` aggregates, and `forEach` is only for side effects. A good answer adds that neither `map` nor `forEach` can stop early. Use `for...of`, `some` or `find` for that.",
+    "reference": "MDN: Array.prototype.forEach()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ambitionbox.com/interviews/infosys-interview-questions/full-stack-web-developer",
+        "https://dev.to/deng_david/linkedin-frontend-engineer-interview-3f81",
+        "https://www.frontendinterviewhandbook.com/javascript-questions",
+        "https://www.interviewbit.com/javascript-interview-questions/"
+      ],
+      "companies": [
+        "Infosys",
+        "LinkedIn"
+      ]
+    },
+    "source": "interview:js-map-vs-foreach"
+  },
+  {
+    "id": "JSM-IQ2-DOM-004",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "A file explorer renders nested data to HTML. A folder has a `children` array, which may be empty. A file has no `children` property. An empty folder must still render as a folder (`name/` followed by an empty `<ul>`). Which render function is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`const render = (n) => n.children ? '<li>' + n.name + '/<ul>' + n.children.map(render).join('') + '</ul></li>' : '<li>' + n.name + '</li>';`",
+        "why": "It checks whether `children` exists, not its length, so an empty folder still becomes a folder, and `join('')` concatenates the child markup cleanly."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`const render = (n) => n.children && n.children.length ? '<li>' + n.name + '/<ul>' + n.children.map(render).join('') + '</ul></li>' : '<li>' + n.name + '</li>';`",
+        "why": "An empty array has length 0, so an empty folder is rendered as a plain file. Users could then never add items to it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`const render = (n) => n.children ? '<li>' + n.name + '/<ul>' + n.children.map(render) + '</ul></li>' : '<li>' + n.name + '</li>';`",
+        "why": "Interpolating an array calls `toString()`, which joins with commas, so stray `,` characters appear between sibling items."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`const render = (n) => '<li>' + n.name + '/<ul>' + n.children.map(render).join('') + '</ul></li>';`",
+        "why": "There is no base case for files. Reaching the first file reads `undefined.map` and throws a `TypeError`."
+      }
+    ],
+    "explanation": "The file-explorer round (Swiggy, Atlassian, Dropbox) is about recursion over a tree. You need a correct base case and a way to tell a folder from a file that does not depend on how many children it has. In a DOM version the same rules apply: create nodes recursively and use `textContent` for names. The snippets here build strings so that you can check the output.",
+    "reference": "MDN: Array.prototype.map()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round"
+      ],
+      "companies": [
+        "Swiggy",
+        "Atlassian",
+        "Dropbox",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-file-explorer"
+  },
+  {
+    "id": "JSM-IQ2-DOM-005",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "To add a file to a folder, the explorer first looks the folder up by id. Adding to the root works, but adding to any nested folder fails because `findFolder` returns `null`. Why?\n\n```js\nfunction findFolder(node, id) {\n  if (node.id === id) return node;\n  for (const child of node.children ?? []) {\n    findFolder(child, id);\n  }\n  return null;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The recursive call's result is thrown away. It should be stored and returned when it is not `null`.",
+        "why": "The match is found deeper in the tree, but the caller ignores the return value, finishes the loop and returns `null`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`for...of` cannot iterate the result of `??`, so the loop never runs",
+        "why": "`node.children ?? []` is just an array, and `for...of` iterates it normally."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Recursion cannot pass a return value back up through more than one level of calls, so a tree this deep needs an explicit stack instead",
+        "why": "Recursive calls return values through any depth, as long as each level passes the value on."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`node.id === id` fails because ids read from the DOM are numbers",
+        "why": "Ids from `dataset` are strings, but that would break the root as well. Here the root works and only nested folders fail."
+      }
+    ],
+    "explanation": "This is one of the most common recursion mistakes in tree machine-coding rounds. The fix is `const hit = findFolder(child, id); if (hit) return hit;`. Interviewers often follow up by asking for the iterative version with a stack, or for a `Map` from id to node so that lookups take O(1).",
+    "reference": "MDN: Recursion (Glossary)",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round"
+      ],
+      "companies": [
+        "Swiggy",
+        "Atlassian",
+        "Dropbox",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-file-explorer"
+  },
+  {
+    "id": "JSM-IQ2-DOM-006",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "What does this log?\n\n```js\nconst tree = { name: 'src', children: [\n  { name: 'index.js' },\n  { name: 'utils', children: [{ name: 'math.js' }] },\n  { name: 'assets', children: [] },\n]};\n\nfunction paths(node, prefix = '') {\n  const here = prefix + node.name;\n  if (!node.children) return [here];\n  return node.children.flatMap((c) => paths(c, here + '/'));\n}\n\nconsole.log(paths(tree));\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`['src/index.js', 'src/utils/math.js']`",
+        "why": "Files return a one-item array. `flatMap` flattens each level, and the empty `assets` folder contributes an empty array, so it disappears."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['src/index.js', 'src/utils/math.js', 'src/assets']`",
+        "why": "Nothing ever returns the path of a folder. Only the base case for files returns a path."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`['src/index.js', ['src/utils/math.js'], []]`",
+        "why": "That would be the result of `map`. `flatMap` flattens one level at each call, so the nested arrays are merged."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`['index.js', 'math.js']`",
+        "why": "The prefix is passed down through each level, so every path starts with `src/`."
+      }
+    ],
+    "explanation": "Listing every path is a common warm-up before the full file-explorer build. If the interviewer wants empty folders included, return `[here + '/']` when `children.length === 0`. Watch for this kind of edge case in tree code.",
+    "reference": "MDN: Array.prototype.flatMap()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/dropbox/questions-guides",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round"
+      ],
+      "companies": [
+        "Swiggy",
+        "Atlassian",
+        "Dropbox",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-file-explorer"
+  },
+  {
+    "id": "JSM-IQ2-DOM-007",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "A progress bar sets `bar.style.width` from a value `pct` that can arrive out of range (for example `-20` or `130`). Which expression always produces a width between `0%` and `100%`, and leaves in-range values unchanged?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Math.min(100, Math.max(0, pct)) + '%'`",
+        "why": "The inner `max` raises negatives to 0 and the outer `min` caps values at 100. Values in between pass through unchanged."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Math.max(100, Math.min(0, pct)) + '%'`",
+        "why": "With `min` and `max` swapped, every input gives 100."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`(pct % 100) + '%'`",
+        "why": "The remainder wraps 100 to `0%` and 130 to `30%`, and keeps negatives negative."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Math.min(100, Math.abs(Math.round(pct))) + '%'`",
+        "why": "`Math.abs` turns `-20` into `20%`, so a negative input shows a partly filled bar instead of an empty one."
+      }
+    ],
+    "explanation": "Clamping is the first thing interviewers check in a progress-bar round, because the input usually comes from a timer or an upload event and can overshoot. A useful follow-up is to set `aria-valuenow` on a `role=\"progressbar\"` element, or to use the native `<progress>` element.",
+    "reference": "MDN: Math.min()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/cars24/interview-experience-frontend-engineer-jul-2024-exp-0-2-years",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round",
+        "https://dataford.io/interview-guides/flipkart/frontend-engineer"
+      ],
+      "companies": [
+        "Cars24",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-progress-bar"
+  },
+  {
+    "id": "JSM-IQ2-DOM-008",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "This timer-driven bar is supposed to stop at 100%. What actually happens?\n\n```js\nlet progress = 0;\nconst id = setInterval(() => {\n  progress += 15;\n  bar.style.width = progress + '%';\n  if (progress === 100) clearInterval(id);\n}, 100);\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It never equals 100 (90, 105, 120…), so the interval never stops and the width keeps growing",
+        "why": "Steps of 15 jump over 100. The exact equality check never matches, so `clearInterval` is never called."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The bar stops at 90% because the last step would go past 100",
+        "why": "Nothing checks the next step before applying it. The width is set to `105%` on the following tick."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`clearInterval(id)` throws, because `id` is read inside the callback before `setInterval` has returned",
+        "why": "The callback first runs 100 ms later, long after `id` has been assigned."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The browser clamps the width to 100% and stops the interval automatically",
+        "why": "CSS lets an element be wider than its container, and timers never stop on their own."
+      }
+    ],
+    "explanation": "Use `>=` for the stop condition and clamp the value: `progress = Math.min(progress + step, 100)`. Interviewers watch for exact-equality termination checks in timer code, and also for timers that are never cleared when the component is removed.",
+    "reference": "MDN: setInterval()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/cars24/interview-experience-frontend-engineer-jul-2024-exp-0-2-years",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round",
+        "https://dataford.io/interview-guides/flipkart/frontend-engineer"
+      ],
+      "companies": [
+        "Cars24",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-progress-bar"
+  },
+  {
+    "id": "JSM-IQ2-DOM-009",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "Follow-up: \"Clicking Add queues a new progress bar, but at most 3 bars may fill at the same time. When one finishes, the next queued bar starts.\" Each `fill()` starts the animation and returns a promise that resolves when the bar is full. `add(fill)` pushes to `queue` and calls `next()`. Which `next` is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`function next() { while (running < 3 && queue.length) { const fill = queue.shift(); running++; fill().then(() => { running--; next(); }); } }`",
+        "why": "It starts bars until 3 are running, frees a slot only when a bar finishes, and then calls `next()` to pull the next one from the queue."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`function next() { while (running <= 3 && queue.length) { const fill = queue.shift(); running++; fill().then(() => { running--; next(); }); } }`",
+        "why": "With `<=`, a fourth bar starts while `running` is 3. That is an off-by-one in the limit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`function next() { while (running < 3 && queue.length) { const fill = queue.shift(); running++; fill().then(() => { running--; }); } }`",
+        "why": "Slots are freed but nothing restarts the queue, so bars added while 3 were running wait forever unless the user clicks Add again."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`function next() { while (running < 3 && queue.length) { const fill = queue.shift(); running++; fill(); running--; } }`",
+        "why": "`fill()` returns immediately, so `running` drops straight back to 0 and every queued bar starts at once."
+      }
+    ],
+    "explanation": "This is the concurrency-limited version of the progress-bar round, as asked at Flipkart and on GreatFrontEnd. It is the same pattern as a promise pool with a limit. Keep a running count, decrement it only when the work settles, and pull the next item at that point.",
+    "reference": "MDN: Using promises",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/cars24/interview-experience-frontend-engineer-jul-2024-exp-0-2-years",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://namastedev.com/learn/namaste-interview/machine-coding-round",
+        "https://dataford.io/interview-guides/flipkart/frontend-engineer"
+      ],
+      "companies": [
+        "Cars24",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-mc-progress-bar"
+  },
+  {
+    "id": "JSM-IQ2-COD-001",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "Tic-tac-toe stores the board as a flat array of 9 cells, each `'X'`, `'O'` or `null`. `LINES` lists the 8 winning triples, such as `[0, 1, 2]` and `[0, 4, 8]`. Which `winner(board)` returns the winner, or `null` if there is none?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`for (const [a, b, c] of LINES) { if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a]; } return null;`",
+        "why": "It skips lines of empty cells, checks that all three marks match, and only gives up after every line has been checked."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`for (const [a, b, c] of LINES) { if (board[a] === board[b] && board[a] === board[c]) return board[a]; } return null;`",
+        "why": "Three empty cells are equal too. An empty top row returns `null` at once, which hides a real win on a later line."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`for (const [a, b, c] of LINES) { if (board[a] === board[b] === board[c]) return board[a]; } return null;`",
+        "why": "`a === b === c` compares the boolean `a === b` with `c`, which is a mark, so the condition is never true for a real win."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`for (const [a, b, c] of LINES) { if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a]; else return null; }`",
+        "why": "The `else return null` exits after the first line, so only the top row is ever checked."
+      }
+    ],
+    "explanation": "Interviewers at Flipkart, Uber and Airbnb ask for grid games to see clean state modelling and correct win detection. The bugs to avoid are treating empty cells as a match, chained `===`, and returning early inside the loop. Expect a follow-up asking you to generalise to an N x N board.",
+    "reference": "MDN: Strict equality (===)",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://clear.glassdoor.nl/Interview/Flipkart-Interview-E300494-RVW25874877.htm",
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/airbnb/questions-guides",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Flipkart",
+        "Uber",
+        "Airbnb"
+      ]
+    },
+    "source": "interview:js-mc-grid-game"
+  },
+  {
+    "id": "JSM-IQ2-COD-002",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "In Connect Four, `board` is an array of 6 rows, each an array of 7 cells. After a drop, the game counts matching pieces in each direction with this helper. Horizontal checks work, but dropping a piece into the bottom row and counting downwards (`dr = 1, dc = 0`) crashes. Why?\n\n```js\nfunction count(board, r, c, dr, dc, p) {\n  let n = 0;\n  while (board[r][c] === p) {\n    n++;\n    r += dr;\n    c += dc;\n  }\n  return n;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "When `r` goes past the last row, `board[r]` is `undefined`, and reading `[c]` on it throws a `TypeError`",
+        "why": "A column out of range only gives `undefined`, which ends the loop. A row out of range breaks the first property access. `board[r]?.[c]` or an explicit bounds check fixes it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Negative column indexes throw a `RangeError` on arrays",
+        "why": "Arrays treat `-1` as an ordinary missing property and return `undefined`. Nothing is thrown."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The loop never ends: `r` and `c` are copies of the arguments, so updating them does not change which cell `board[r][c]` reads on the next pass",
+        "why": "They are local copies, but the loop condition reads those same locals, so the position does move."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`===` cannot compare strings that are stored in nested arrays",
+        "why": "Strict equality compares the cell values normally, wherever they are stored."
+      }
+    ],
+    "explanation": "Bounds checking is a common source of bugs in grid code. Rows and columns fail differently because of the nesting: the outer lookup gives `undefined`, and the inner lookup then throws. Using `board[r]?.[c]` or checking `0 <= r < rows` first is the fix interviewers expect, along with counting both directions (`count(+d) + count(-d) - 1`).",
+    "reference": "MDN: Optional chaining (?.)",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://clear.glassdoor.nl/Interview/Flipkart-Interview-E300494-RVW25874877.htm",
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/airbnb/questions-guides",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Flipkart",
+        "Uber",
+        "Airbnb"
+      ]
+    },
+    "source": "interview:js-mc-grid-game"
+  },
+  {
+    "id": "JSM-IQ2-COD-003",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "Follow-up: \"Detect a win on an N x N tic-tac-toe board in O(1) per move.\" You keep sums for each row and column and for both diagonals: +1 for X and -1 for O. A player wins when any sum reaches `±n`. What goes in the blank?\n\n```js\nfunction move(r, c, player) {\n  const v = player === 'X' ? 1 : -1;\n  rows[r] += v;\n  cols[c] += v;\n  if (r === c) diag += v;\n  if (/* ??? */) anti += v;\n  return [rows[r], cols[c], diag, anti].some((s) => Math.abs(s) === n) ? player : null;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`r + c === n - 1`",
+        "why": "Cells on the anti-diagonal satisfy `r + c = n - 1`, for example (0, 2), (1, 1) and (2, 0) when n is 3."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`r + c === n`",
+        "why": "This is off by one. On a 3 x 3 board it matches (1, 2) and (2, 1), not the anti-diagonal."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`r === n - c`",
+        "why": "This is the same as `r + c === n`, so it has the same off-by-one error."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`r === c`",
+        "why": "That is the main diagonal again, so the anti-diagonal would never be counted."
+      }
+    ],
+    "explanation": "Keeping running sums per line turns the win check from O(n²) into O(1) for each move. Senior interviewers often push for this. Check the indexes on small cases: the anti-diagonal runs from the top-right corner to the bottom-left, so the row and column always add up to `n - 1`.",
+    "reference": "MDN: Math.abs()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://clear.glassdoor.nl/Interview/Flipkart-Interview-E300494-RVW25874877.htm",
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/airbnb/questions-guides",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Flipkart",
+        "Uber",
+        "Airbnb"
+      ]
+    },
+    "source": "interview:js-mc-grid-game"
+  },
+  {
+    "id": "JSM-IQ2-EVL-001",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "Implement `mySetInterval(fn, ms)` with `setTimeout` only. It returns a `cancel` function, and calling `cancel()` must stop all future runs, including when it is called from inside `fn`. Which implementation meets both requirements?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`let id, active = true; const tick = () => { fn(); if (active) id = setTimeout(tick, ms); }; id = setTimeout(tick, ms); return () => { active = false; clearTimeout(id); };`",
+        "why": "The flag stops rescheduling when `cancel` runs inside `fn`, and `clearTimeout` stops a pending timer when it runs from outside."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`let id; const tick = () => { fn(); id = setTimeout(tick, ms); }; id = setTimeout(tick, ms); return () => clearTimeout(id);`",
+        "why": "This works from outside, but a `cancel()` inside `fn` clears the timer that is already firing, and then `tick` schedules a new one anyway."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`const tick = () => { fn(); setTimeout(tick, ms); }; const id = setTimeout(tick, ms); return () => clearTimeout(id);`",
+        "why": "Only the first timer id is captured. After the first run, the chain uses new ids that `cancel` never sees."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`let id, stopped = false; const tick = () => { if (stopped) return; fn(); id = setTimeout(tick(), ms); }; id = setTimeout(tick(), ms); return () => { stopped = true; clearTimeout(id); };`",
+        "why": "`tick()` is called immediately instead of being passed to `setTimeout`, so it recurses synchronously until a `RangeError` (stack overflow)."
+      }
+    ],
+    "explanation": "This question, asked at Meta and on BigFrontEnd, checks how you track the current timer id and handle cancellation that happens during a callback. Chained timeouts also let you change the delay between runs, which is useful for backoff.",
+    "reference": "MDN: setTimeout()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://dev.to/raviojha/javascript-world-without-setinterval-3ife",
+        "https://bigfrontend.dev/problem",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-setinterval-via-settimeout"
+  },
+  {
+    "id": "JSM-IQ2-EVL-002",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "roleLevel": 3,
+    "stem": "Why might you schedule repeating work with chained `setTimeout` calls instead of `setInterval`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Each run is scheduled only after the previous run finishes, so there is always at least `ms` of idle time between runs",
+        "why": "With `setInterval`, a slow callback can be followed by the next one almost immediately. A chain waits the full delay after each run."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The delay can change on every run, for example for exponential backoff when polling",
+        "why": "Each `setTimeout` call takes a new delay, which `setInterval` cannot do without being cleared and recreated."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It fires at exactly every `ms` milliseconds with no drift",
+        "why": "Chained timeouts drift more, because each delay starts after the callback finishes. Neither API guarantees exact timing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It stops `setInterval` callbacks from running in parallel on separate threads",
+        "why": "Callbacks never run in parallel. JavaScript on the page runs on one thread, and late interval callbacks are delayed, not run concurrently."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Chained timeouts are never clamped by the browser, unlike `setInterval`",
+        "why": "Browsers clamp deeply nested timeouts (after 5 levels) to at least 4 ms, and throttle timers in background tabs."
+      }
+    ],
+    "explanation": "Interviewers want the practical reasons: chaining guarantees a gap between runs and allows a variable delay. That makes it better for polling and retry loops. Don't claim that either API gives exact timing.",
+    "reference": "MDN: setInterval()",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://dev.to/raviojha/javascript-world-without-setinterval-3ife",
+        "https://bigfrontend.dev/problem",
+        "https://learnersbucket.substack.com/p/top-20-javascript-interview-questions"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-setinterval-via-settimeout"
+  },
+  {
+    "id": "JSM-IQ2-COD-004",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 1,
+    "stem": "Which function returns `true` for `'A man, a plan, a canal: Panama'` and `false` for `'race a car'`, ignoring case, spaces and punctuation?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`const s = str.toLowerCase().replace(/[^a-z0-9]/g, ''); return s === [...s].reverse().join('');`",
+        "why": "Lowercasing first means the filter keeps every letter. Removing everything else leaves `amanaplanacanalpanama`, which reads the same backwards."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`return str.split('').reverse().join('') === str;`",
+        "why": "This compares the raw string, so capitals, spaces and the colon all count, and it returns `false` for the Panama sentence."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`const s = str.toLowerCase().replace(/\\s/g, ''); return s === [...s].reverse().join('');`",
+        "why": "Only whitespace is removed. The commas and the colon stay in, so the Panama sentence is not a palindrome."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`const s = str.replace(/[^a-z0-9]/g, '').toLowerCase(); return s === [...s].reverse().join('');`",
+        "why": "Filtering before lowercasing deletes the capital `A` and `P`, which breaks the symmetry, so it returns `false`."
+      }
+    ],
+    "explanation": "This is a standard warm-up (Tata 1mg, Microsoft). It checks normalising input before comparing. A good answer also mentions the two-pointer version, which uses O(1) extra space and can skip non-alphanumeric characters as it goes.",
+    "reference": "MDN: String.prototype.replace()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/heysujal/tata-1mg-sde1-frontend-engineer-interview-experience-21nh",
+        "https://www.glassdoor.com.au/Interview/Microsoft-Interview-E1651-RVW89496139.htm",
+        "https://cracked-code-hub.lovable.app/company/wipro",
+        "https://www.frontendinterviewhandbook.com/javascript-questions"
+      ],
+      "companies": [
+        "Tata 1mg",
+        "Microsoft",
+        "Wipro"
+      ]
+    },
+    "source": "interview:js-palindrome"
+  },
+  {
+    "id": "JSM-IQ2-COD-005",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 1,
+    "stem": "An interviewer asks for an O(1)-space version, and the candidate writes this. What do `isPal('aba')` and `isPal('')` return?\n\n```js\nfunction isPal(s) {\n  let i = 0, j = s.length;\n  while (i < j) {\n    if (s[i] !== s[j]) return false;\n    i++;\n    j--;\n  }\n  return true;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`false` and `true`",
+        "why": "`j` starts one past the end, so the first check compares `'a'` with `undefined`. The empty string skips the loop and returns `true`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`true` and `true`",
+        "why": "That would need `j = s.length - 1`. As written, the first comparison is against an index that does not exist."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`true` and `false`",
+        "why": "The empty string never enters the loop, so it returns `true`. It is also the `'aba'` result that is wrong."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It throws a `RangeError` for `'aba'` because `s[3]` is out of bounds",
+        "why": "Reading a missing index of a string returns `undefined`. It never throws."
+      }
+    ],
+    "explanation": "Off-by-one starting indexes are the most common two-pointer bug. Start `j` at `s.length - 1`. Interviewers often give you this snippet to debug, or check whether you test the edge cases (empty string, single character, even length) yourself.",
+    "reference": "MDN: String: length",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/heysujal/tata-1mg-sde1-frontend-engineer-interview-experience-21nh",
+        "https://www.glassdoor.com.au/Interview/Microsoft-Interview-E1651-RVW89496139.htm",
+        "https://cracked-code-hub.lovable.app/company/wipro",
+        "https://www.frontendinterviewhandbook.com/javascript-questions"
+      ],
+      "companies": [
+        "Tata 1mg",
+        "Microsoft",
+        "Wipro"
+      ]
+    },
+    "source": "interview:js-palindrome"
+  },
+  {
+    "id": "JSM-IQ2-COD-006",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "What does this log?\n\n```js\nfunction flatten(obj, prefix = '', out = {}) {\n  for (const [k, v] of Object.entries(obj)) {\n    const key = prefix ? `${prefix}.${k}` : k;\n    if (typeof v === 'object' && v !== null && !Array.isArray(v)) flatten(v, key, out);\n    else out[key] = v;\n  }\n  return out;\n}\n\nconsole.log(flatten({ a: 1, b: { c: { d: 2 }, e: [3] }, f: null }));\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{ a: 1, 'b.c.d': 2, 'b.e': [3], f: null }`",
+        "why": "Plain objects are flattened recursively. Arrays and `null` are excluded explicitly, so they are stored as values."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{ a: 1, 'b.c.d': 2, 'b.e.0': 3, f: null }`",
+        "why": "That would require recursing into arrays, but `!Array.isArray(v)` stops that."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{ a: 1, 'c.d': 2, e: [3], f: null }`",
+        "why": "The prefix is passed down, so nested keys keep their full path from the top."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It throws a `TypeError` when it reaches `f: null`",
+        "why": "The `v !== null` check stops recursion into `null`. Without it, `Object.entries(null)` would throw."
+      }
+    ],
+    "explanation": "Flattening an object (Wingify, Adobe, and GreatFrontEnd's \"Squash Object\") tests recursion with an accumulator and careful type checks. `typeof null === 'object'`, and arrays are objects too. Ask the interviewer how arrays should be handled, because the expected output varies.",
+    "reference": "MDN: Object.entries()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=413789",
+        "https://leetcode.com/discuss/post/6938276/adobe-mts-2-interview-experience-fe-by-a-5h33/",
+        "https://dev.to/abhishekkgautam/flatten-the-object-javascript-5389",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Wingify",
+        "Adobe",
+        "Stripe",
+        "Meta"
+      ]
+    },
+    "source": "interview:js-flatten-object"
+  },
+  {
+    "id": "JSM-IQ2-COD-007",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "This `flatten` crashes on `{ user: { name: 'Asha', manager: null } }`. What is the cause?\n\n```js\nfunction flatten(obj, prefix = '', out = {}) {\n  for (const [k, v] of Object.entries(obj)) {\n    const key = prefix ? prefix + '.' + k : k;\n    if (typeof v === 'object') flatten(v, key, out);\n    else out[key] = v;\n  }\n  return out;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`typeof null` is `'object'`, so it recurses into `null` and `Object.entries(null)` throws a `TypeError`",
+        "why": "Add `v !== null` to the condition, and decide whether arrays should be stored as values or flattened by index."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The default `out = {}` is shared between calls, so the second call writes into a frozen object",
+        "why": "Default parameter values are evaluated again on every call, and nothing here is frozen."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Object.entries` does not include keys whose value is `null`",
+        "why": "It includes every own enumerable string key, whatever the value is. That is how the loop reaches `manager`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "String concatenation with `+` fails when `prefix` is an empty string",
+        "why": "An empty prefix is handled by the ternary, and `'' + '.'` would not throw anyway."
+      }
+    ],
+    "explanation": "The `typeof null` quirk is an old one, but it still breaks real flatten, deep-clone and deep-equal code. Interviewers use it to see whether you guard against `null` and think about arrays, dates and other non-plain objects.",
+    "reference": "MDN: typeof",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/?p=413789",
+        "https://leetcode.com/discuss/post/6938276/adobe-mts-2-interview-experience-fe-by-a-5h33/",
+        "https://dev.to/abhishekkgautam/flatten-the-object-javascript-5389",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Wingify",
+        "Adobe",
+        "Stripe",
+        "Meta"
+      ]
+    },
+    "source": "interview:js-flatten-object"
+  },
+  {
+    "id": "JSM-IQ2-FUN-001",
+    "domain": 2,
+    "skill": "functions-closures",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "roleLevel": 1,
+    "stem": "Which of these are higher-order functions? (Choose two.)\n\n```js\nconst twice = (f) => (x) => f(f(x));\nconst square = (x) => x * x;\nconst total = (xs) => xs.reduce((a, b) => a + b, 0);\nconst logged = (fn) => (...args) => { const r = fn(...args); console.log(r); return r; };\nfunction add(a, b) { return a + b; }\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`twice`",
+        "why": "It takes a function and returns a new function, so it meets both parts of the definition."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`logged`",
+        "why": "It wraps any function and returns an enhanced version. This decorator pattern is a typical higher-order function."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`total`",
+        "why": "It calls `reduce`, which is a higher-order function, but `total` itself takes an array and returns a number."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`square`",
+        "why": "It takes and returns a number. It is often passed to higher-order functions, but it is not one itself."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`add`",
+        "why": "Both arguments and the result are plain values."
+      }
+    ],
+    "explanation": "A higher-order function takes a function as an argument, returns a function, or both. `map`, `filter`, `reduce`, `setTimeout` and `addEventListener` are built-in examples. Interviewers usually also ask you to write one, for example `once`, `debounce` or a logger wrapper.",
+    "reference": "MDN: First-class Function (Glossary)",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/javascript-questions",
+        "https://www.greatfrontend.com/blog/basic-javascript-interview-questions-and-answers-for-freshers",
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers",
+        "https://github.com/sudheerj/javascript-interview-questions"
+      ]
+    },
+    "source": "interview:js-higher-order-functions"
+  },
+  {
+    "id": "JSM-IQ2-OBJ-001",
+    "domain": 1,
+    "skill": "objects-prototypes",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 1,
+    "stem": "Given `const animal = { eats: true };`, which expression creates a **new** object whose prototype is `animal`, without running a constructor?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Object.create(animal)`",
+        "why": "It creates a fresh, empty object whose `[[Prototype]]` is `animal`, so `eats` is inherited, not copied."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{ ...animal }`",
+        "why": "Spread copies own properties into a new object whose prototype is `Object.prototype`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`new Object(animal)`",
+        "why": "When given an object, `Object(value)` returns that same object. `new Object(animal) === animal` is `true`, so nothing new is created."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Object.assign({}, animal)`",
+        "why": "This copies the properties onto a plain object. The prototype is still `Object.prototype`."
+      }
+    ],
+    "explanation": "The usual ways to create objects are literals, constructor functions with `new`, `class`, `Object.create(proto)`, and factory functions. Only `Object.create`, `new`/`class` (through `.prototype`) and `Object.setPrototypeOf` set up inheritance. Spread and `Object.assign` make copies. Interviewers ask this to see whether you know the difference between inheriting a property and copying it.",
+    "reference": "MDN: Object.create()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/javascript-questions",
+        "https://www.greatfrontend.com/blog/basic-javascript-interview-questions-and-answers-for-freshers",
+        "https://greatfrontend.com/blog/50-must-know-javascript-interview-questions-by-ex-interviewers",
+        "https://www.interviewbit.com/javascript-interview-questions/",
+        "https://github.com/sudheerj/javascript-interview-questions"
+      ]
+    },
+    "source": "interview:js-object-creation-ways"
+  },
+  {
+    "id": "JSM-IQ2-COD-008",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "You need `Array.prototype.findLast` in an old browser. The polyfill must do nothing where the method already exists, and must not add an enumerable property that shows up in `for...in` over arrays. Which shape is correct? (`impl` is your implementation.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`if (!Array.prototype.findLast) { Object.defineProperty(Array.prototype, 'findLast', { value: impl, writable: true, configurable: true }); }`",
+        "why": "It detects the missing method on the prototype, and `defineProperty` makes the property non-enumerable by default, matching the built-ins."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`if (!Array.prototype.findLast) { Array.prototype.findLast = impl; }`",
+        "why": "The guard is right, but plain assignment creates an enumerable property, so `findLast` appears as a key in every `for...in` loop over an array."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`if (typeof findLast === 'undefined') { Object.defineProperty(Array.prototype, 'findLast', { value: impl, writable: true, configurable: true }); }`",
+        "why": "This checks for a global variable named `findLast`, which never exists, so it always replaces the native method."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`if (!Array.findLast) { Object.defineProperty(Array.prototype, 'findLast', { value: impl, writable: true, configurable: true }); }`",
+        "why": "`findLast` is an instance method on `Array.prototype`, not a static method on `Array`, so this guard is always true."
+      }
+    ],
+    "explanation": "A polyfill adds a missing standard API using code that older engines can run. It must detect the feature in the right place before defining it, and should mimic native property attributes. Interviewers usually follow up by asking you to write the body of a polyfill such as `map`, `bind` or `Promise.all`.",
+    "reference": "MDN: Polyfill (Glossary)",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/heysujal/tata-1mg-sde1-frontend-engineer-interview-experience-21nh",
+        "https://leetcode.com/discuss/interview-experience/1618037/intuit-sde2-frontend-bangalore-october-2021-offer",
+        "https://www.greatfrontend.com/interviews/focus-areas/javascript-polyfills"
+      ],
+      "companies": [
+        "Tata 1mg",
+        "Intuit"
+      ]
+    },
+    "source": "interview:js-what-is-polyfill"
+  },
+  {
+    "id": "JSM-IQ2-COD-009",
+    "domain": 5,
+    "skill": "coding-patterns",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "roleLevel": 2,
+    "stem": "Which statements about polyfills are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A polyfill adds a missing API at runtime. New syntax such as `?.` or `class` fields cannot be polyfilled and needs a transpiler such as Babel.",
+        "why": "An old parser rejects syntax it does not know before any code runs. Only APIs, meaning objects and functions, can be added at runtime."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A polyfill should check whether the feature exists first, so that native implementations are kept",
+        "why": "Native versions are faster and fully spec-compliant. Overwriting them can also break other code."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Browsers download the polyfills they need automatically when a script uses a missing feature",
+        "why": "Nothing is loaded automatically. You bundle polyfills yourself (for example core-js) or load them conditionally."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A polyfill can make `async`/`await` run in an engine that cannot parse those keywords",
+        "why": "That needs a transpiler to rewrite the syntax, for example into generators or state machines, before the code runs."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "\"Polyfill\" and \"transpiler\" mean the same thing: tools that convert TypeScript into JavaScript",
+        "why": "A transpiler rewrites source code. A polyfill is runtime code that fills in a missing API."
+      }
+    ],
+    "explanation": "\"What is a polyfill?\" usually comes before \"now write one\". A strong answer explains feature detection, the difference between a polyfill and a transpiler, and the cost of shipping polyfills that modern browsers do not need.",
+    "reference": "MDN: Polyfill (Glossary)",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/heysujal/tata-1mg-sde1-frontend-engineer-interview-experience-21nh",
+        "https://leetcode.com/discuss/interview-experience/1618037/intuit-sde2-frontend-bangalore-october-2021-offer",
+        "https://www.greatfrontend.com/interviews/focus-areas/javascript-polyfills"
+      ],
+      "companies": [
+        "Tata 1mg",
+        "Intuit"
+      ]
+    },
+    "source": "interview:js-what-is-polyfill"
+  },
+  {
+    "id": "JSM-IQ2-DOM-010",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "A rating widget has 5 star elements in `stars`. On hover, `highlight(n)` must fill stars 1 to `n` and clear the rest. Moving from star 4 back to star 2 must leave exactly 2 filled. Which implementation works?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`stars.forEach((s, i) => s.classList.toggle('filled', i < n));`",
+        "why": "The second argument to `toggle` forces the class on or off, so stars at indexes 0 to n−1 are filled and the rest are cleared on every call."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`stars.forEach((s, i) => s.classList.toggle('filled', i <= n));`",
+        "why": "This is off by one. Hovering star 2 fills 3 stars, because indexes start at 0."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`stars.forEach((s, i) => { if (i < n) s.classList.add('filled'); });`",
+        "why": "It never removes the class, so after hovering star 4 and moving back to star 2, all 4 stars stay filled."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`stars.forEach((s) => s.classList.remove('filled')); stars[n - 1].classList.add('filled');`",
+        "why": "Only the hovered star is filled. The stars before it are cleared."
+      }
+    ],
+    "explanation": "The star-rating round (Meta, Amazon) is about deriving the UI from state on every change, instead of making incremental edits that leave stale classes behind. `classList.toggle(name, force)` is the simplest way to do it. Follow-ups usually ask you to restore the clicked rating on `mouseleave`, and to support the keyboard.",
+    "reference": "MDN: DOMTokenList.toggle()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02",
+        "https://www.glassdoor.sg/Interview/Amazon-Interview-E6036-RVW100502450.htm",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Meta",
+        "Amazon"
+      ]
+    },
+    "source": "interview:js-mc-star-rating"
+  },
+  {
+    "id": "JSM-IQ2-DOM-011",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "roleLevel": 2,
+    "stem": "Each star is `<span class=\"star\" data-value=\"1..5\"><svg>…</svg></span>`. With the code below, clicking a star sometimes clears every star, and `thankYou()` never runs, even after the user clicks the fifth star. Which two changes fix these bugs? (Choose two.)\n\n```js\nlet rating = 0;\ncontainer.addEventListener('click', (e) => {\n  rating = e.target.dataset.value;\n  render(rating);\n  if (rating === 5) thankYou();\n});\ncontainer.addEventListener('mouseleave', () => render(rating));\nfunction render(n) {\n  stars.forEach((s, i) => s.classList.toggle('filled', i < n));\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Find the star with `e.target.closest('.star')` and ignore clicks outside a star",
+        "why": "Clicks usually land on the `svg` or `path` inside a star. Those have no `data-value`, so `rating` becomes `undefined` and `i < undefined` clears every star."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Convert the value with `Number(...)` before storing it",
+        "why": "`dataset` values are always strings, so `rating === 5` is never true. `i < '5'` happens to work only because `<` converts the string to a number."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Listen for `mouseout` instead, because `mouseleave` does not fire on a listener attached to the container",
+        "why": "`mouseleave` fires on the element the pointer leaves. Here that is the container, so the listener works. It just does not bubble from children."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use a regular `function` for the click handler, because arrow functions get `e.target` as `undefined`",
+        "why": "Arrow functions only change how `this` is bound. The event object and its `target` are passed in normally."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Call `e.stopPropagation()` so that the svg does not receive the click first",
+        "why": "Stopping propagation does not change `e.target`, and the svg is the target whether or not propagation continues."
+      }
+    ],
+    "explanation": "Two DOM details cause most star-rating bugs. First, `event.target` can be a nested child, so use `closest`. Second, `dataset` values are strings. Interviewers deliberately add these bugs in debugging rounds. A version that always calls `render(rating)` from one state variable is also much easier to reason about.",
+    "reference": "MDN: HTMLElement.dataset",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.teamblind.com/post/facebook-frontend-engineer-onsite-what-kind-of-coding-questions-wjjjav02",
+        "https://www.glassdoor.sg/Interview/Amazon-Interview-E6036-RVW100502450.htm",
+        "https://www.greatfrontend.com/blog/machine-coding-round"
+      ],
+      "companies": [
+        "Meta",
+        "Amazon"
+      ]
+    },
+    "source": "interview:js-mc-star-rating"
+  },
+  {
+    "id": "JSM-IQ2-DOM-012",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 1,
+    "stem": "A sign-up form uses `required` and `type=\"email\"` on its inputs. Saving is done in the click handler of a `type=\"button\"` button, so the browser's submit-time validation never runs. Which single call checks every constraint in the form **and** shows the browser's own error bubble on the first invalid field?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`form.reportValidity()`",
+        "why": "It runs constraint validation, fires `invalid` events, shows the native message for the first invalid control and returns `false` if anything fails."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`form.checkValidity()`",
+        "why": "It returns the same boolean and fires `invalid` events, but it shows no message to the user."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`input.setCustomValidity('')`",
+        "why": "This sets the custom error message. An empty string clears it. It neither checks the form nor shows anything."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`form.validate()`",
+        "why": "There is no `validate` method on `HTMLFormElement`. It is a common guess, but calling it throws a `TypeError`."
+      }
+    ],
+    "explanation": "The Constraint Validation API gives you validation for free: `checkValidity` and `reportValidity` on forms and fields, `validity` flags such as `valueMissing` and `typeMismatch`, and `setCustomValidity` for your own rules. In the machine-coding version (Amazon, Stripe), interviewers like to see it used before custom regex checks.",
+    "reference": "MDN: HTMLFormElement.reportValidity()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.sg/Interview/Amazon-Interview-E6036-RVW100502450.htm",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://www.greatfrontend.com/interviews/company/stripe/questions-guides"
+      ],
+      "companies": [
+        "Amazon",
+        "Stripe"
+      ]
+    },
+    "source": "interview:js-form-validation"
+  },
+  {
+    "id": "JSM-IQ2-OBJ-002",
+    "domain": 1,
+    "skill": "objects-prototypes",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "Add `square()` to arrays so that `[1, 2, 3].square()` returns a **new** array `[1, 4, 9]` and leaves the original unchanged. Which definition works?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Array.prototype.square = function () { return this.map((x) => x * x); };`",
+        "why": "A regular function gets the calling array as `this`, and `map` returns a new array."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Array.prototype.square = () => this.map((x) => x * x);`",
+        "why": "An arrow function takes `this` from the module or script scope, not from the array, so `this.map` throws a `TypeError`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Array.prototype.square = function () { return this.forEach((x) => x * x); };`",
+        "why": "`forEach` returns `undefined`, so the method returns `undefined`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Array.prototype.square = function () { for (let i = 0; i < this.length; i++) this[i] **= 2; return this; };`",
+        "why": "The result is correct, but it changes the original array and returns that same array, which breaks the requirement."
+      }
+    ],
+    "explanation": "The interviewer's next question is usually \"Should you do this in production?\" The answer is no, not for built-ins you do not own. Plain assignment makes the property enumerable (it appears in `for...in`), and it can clash with future standard methods. The \"SmooshGate\" problem with `Array.prototype.flatten` is the well-known example. Prefer utility functions, or use `Object.defineProperty` in a polyfill for a real standard method.",
+    "reference": "MDN: Inheritance and the prototype chain",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/linkedin/questions-guides",
+        "https://www.greatfrontend.com/interviews/company/bytedance/questions-guides",
+        "https://www.frontendinterviewhandbook.com/javascript-questions"
+      ],
+      "companies": [
+        "Uber",
+        "LinkedIn",
+        "ByteDance"
+      ]
+    },
+    "source": "interview:js-extend-array-prototype"
+  },
+  {
+    "id": "JSM-IQ2-FUN-002",
+    "domain": 2,
+    "skill": "functions-closures",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "What does this log?\n\n```js\nconsole.log(typeof greet, typeof sayHi, count);\n\nvar count = 5;\nfunction greet() {}\nvar sayHi = function () {};\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`function undefined undefined`",
+        "why": "In the creation phase, function declarations are fully initialised, and `var` bindings are created with the value `undefined`. Assignments happen later, during execution."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`function function 5`",
+        "why": "The function expression and the `5` are assigned only when those lines run, which is after the `console.log`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`undefined undefined undefined`",
+        "why": "Function declarations are hoisted with their body, so `greet` is already a function."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It throws a `ReferenceError` for `count`",
+        "why": "That would happen with `let` or `const`, which are in the temporal dead zone. A `var` reads as `undefined`."
+      }
+    ],
+    "explanation": "Each execution context goes through two phases. In the creation phase, the engine sets up bindings: function declarations get their function, `var` gets `undefined`, and `let`, `const` and `class` stay uninitialised (the TDZ). In the execution phase, the code runs line by line. Interviewers (Meesho, for example) use this to see whether you can explain hoisting as a result of these phases rather than just remembering the outcome.",
+    "reference": "MDN: Hoisting (Glossary)",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.naukri.com/code360/interview-experiences/meesho/meesho-interview-experience-off-campus-oct-2024",
+        "https://javascript.plainenglish.io/meesho-frontend-interview-experience-3f03f39f79ab"
+      ],
+      "companies": [
+        "Meesho"
+      ]
+    },
+    "source": "interview:js-execution-context"
+  },
+  {
+    "id": "JSM-IQ2-DOM-013",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 2,
+    "stem": "The API returns todos like `{ userId, title }`. Before rendering one block per user, you need an object that maps each `userId` to an array of that user's todos. Which `reduce` call builds it correctly?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`todos.reduce((acc, t) => { (acc[t.userId] ??= []).push(t); return acc; }, {})`",
+        "why": "`??=` creates the array the first time a user appears and reuses it afterwards, and the accumulator is returned on every step."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`todos.reduce((acc, t) => { acc[t.userId] = [t]; return acc; }, {})`",
+        "why": "The array is replaced each time, so every user ends up with only their last todo."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`todos.reduce((acc, t) => { acc[t.userId].push(t); return acc; }, {})`",
+        "why": "The first todo for a user finds no array, and `undefined.push` throws a `TypeError`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`todos.reduce((acc, t) => { (acc[t.userId] ||= []).push(t); }, {})`",
+        "why": "The grouping step is fine, but the callback returns nothing, so the accumulator is `undefined` on the second step and the call throws."
+      }
+    ],
+    "explanation": "This Atlassian round is fetch, group, render. The grouping step is where candidates slip. In ES2024 you can write `Object.groupBy(todos, (t) => t.userId)`, but interviewers often want to see the `reduce` version too. Return the accumulator, and initialise each bucket before pushing.",
+    "reference": "MDN: Object.groupBy()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.it/Colloquio/Atlassian-Colloquio-E115699-RVW95696920.htm",
+        "https://www.glassdoor.com.mx/Entrevista/Atlassian-Entrevista-E115699-RVW79871433.htm"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:js-fetch-group-render"
+  },
+  {
+    "id": "JSM-IQ2-DOM-014",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "roleLevel": 2,
+    "stem": "Todo titles are typed in by users. With this code the page always shows \"Failed: HTTP undefined\". Which two changes fix the real bugs? (Choose two.)\n\n```js\nasync function renderTodos(list) {\n  try {\n    const res = fetch('/api/todos');\n    if (!res.ok) throw new Error('HTTP ' + res.status);\n    const todos = await res.json();\n    for (const t of todos) list.innerHTML += '<li>' + t.title + '</li>';\n  } catch (err) {\n    list.textContent = 'Failed: ' + err.message;\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Add `await` before `fetch(...)`",
+        "why": "Without it, `res` is a `Promise`. Its `ok` and `status` are `undefined`, so the error is thrown every time."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Create each `<li>` with `document.createElement` and set its `textContent` to the title",
+        "why": "Building HTML from user-typed titles is an XSS sink, and `innerHTML +=` also re-parses the whole list on every loop."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Replace `res.ok` with `res.status === 200`, because `Response` has no `ok` property",
+        "why": "`Response.ok` exists and is true for any 2xx status. It is `undefined` here only because `res` is a promise."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `JSON.parse(res)` instead of `res.json()`",
+        "why": "`res.json()` is the right way to read and parse the body. `JSON.parse` on a Response object would throw."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Use `todos.forEach(async (t) => ...)` so that the items render in parallel",
+        "why": "The loop does no async work, so this changes nothing. `forEach` with an async callback is a source of bugs, not a fix."
+      }
+    ],
+    "explanation": "Interviewers watch for three things in this round. Do you `await` the `fetch` and check `res.ok`? Do you handle the loading and error states? Do you render user data safely? Creating nodes with `textContent`, or building them in a `DocumentFragment` and appending once, fixes both the XSS risk and the repeated re-parsing.",
+    "reference": "MDN: Using the Fetch API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.it/Colloquio/Atlassian-Colloquio-E115699-RVW95696920.htm",
+        "https://www.glassdoor.com.mx/Entrevista/Atlassian-Entrevista-E115699-RVW79871433.htm"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:js-fetch-group-render"
+  },
+  {
+    "id": "JSM-IQ2-FUN-003",
+    "domain": 2,
+    "skill": "functions-closures",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "Given `function volume(l, w, h) { return l * w * h; }`, which of these is **partial application** rather than currying?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`const vol10 = volume.bind(null, 10); vol10(2, 3);`",
+        "why": "It fixes the first argument and returns a function that takes the remaining two arguments together. That is partial application."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`const vol = (l) => (w) => (h) => l * w * h; vol(10)(2)(3);`",
+        "why": "This is a curried function: a chain of functions that each take one argument."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`curry(volume)(10)(2)(3);`",
+        "why": "A generic `curry` helper turns the function into a chain of one-argument calls. That is currying."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`const vol = (l, w, h) => volume(l, w, h); vol(10, 2, 3);`",
+        "why": "This wrapper fixes no arguments. It forwards all three, so it is neither currying nor partial application."
+      }
+    ],
+    "explanation": "Currying turns an n-argument function into n one-argument functions. Partial application fixes some arguments now and takes the rest later, in any number. `bind` with leading arguments is the built-in way to apply arguments partially. Interviewers (Amazon, for example) ask this to check that you know the two terms are different.",
+    "reference": "MDN: Function.prototype.bind()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/887718/amazon-fee-1-bangalore-oct-2020-offer",
+        "https://www.greatfrontend.com/questions/javascript-interview-questions/quiz",
+        "https://bigfrontend.dev/problem"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "source": "interview:js-currying-vs-partial"
+  },
+  {
+    "id": "JSM-IQ2-OBJ-003",
+    "domain": 1,
+    "skill": "objects-prototypes",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "Write a polyfill for the one-argument form of `Object.create(proto)`, where `proto` is any object (ignore `null` and the second argument). The result must be a new, empty object that inherits from `proto`. Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`function create(proto) { function F() {} F.prototype = proto; return new F(); }`",
+        "why": "`new F()` makes an object whose `[[Prototype]]` is `F.prototype`, which is `proto`, and the empty constructor adds no own properties."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`function create(proto) { const obj = {}; obj.prototype = proto; obj.constructor = proto.constructor; return obj; }`",
+        "why": "An ordinary object's `prototype` property is just data. It does not set the object's `[[Prototype]]`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`function create(proto) { function F() {} F.prototype = proto; return F; }`",
+        "why": "This returns the constructor function, not an instance, so nothing inherits from `proto`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`function create(proto) { return Object.assign({}, proto); }`",
+        "why": "It copies own properties instead of inheriting them, so later changes to `proto` are not seen, and the prototype is `Object.prototype`."
+      }
+    ],
+    "explanation": "The temporary-constructor trick is the classic ES5 polyfill, asked at Flipkart and on BigFrontEnd. A common follow-up is: \"What about `create(null)`?\" Setting `F.prototype = null` makes `new F()` fall back to `Object.prototype`, so the polyfill cannot create a prototype-less object. Today you would use `Object.setPrototypeOf` for that, or rely on native `Object.create(null)`, which is useful for dictionary objects.",
+    "reference": "MDN: Object.create()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/1056168/flipkart-ui-engineer-2-bangalore",
+        "https://bigfrontend.dev/problem",
+        "https://github.com/sudheerj/javascript-interview-questions"
+      ],
+      "companies": [
+        "Flipkart"
+      ]
+    },
+    "source": "interview:js-object-create-polyfill"
+  },
+  {
+    "id": "JSM-IQ2-DOM-015",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "`render(node)` turns data such as the tree below into real DOM nodes. `children` can be a string, an array that mixes strings and nodes, or missing. Text from the data must always appear as text, never be parsed as HTML. The function begins:\n\n```js\n// { type: 'ul', props: { class: 'list' }, children: [\n//   { type: 'li', children: 'One' },\n//   { type: 'li', children: ['Two ', { type: 'b', children: 'bold' }] },\n//   { type: 'li', children: [{ type: 'br' }] } ] }\nfunction render(node) {\n  if (typeof node === 'string' || typeof node === 'number') {\n    return document.createTextNode(String(node));\n  }\n  const el = document.createElement(node.type);\n  for (const [k, v] of Object.entries(node.props ?? {})) el.setAttribute(k, v);\n  /* children handling goes here */\n  return el;\n}\n```\n\nWhich children handling is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`const kids = node.children == null ? [] : Array.isArray(node.children) ? node.children : [node.children]; for (const c of kids) el.appendChild(render(c));`",
+        "why": "It turns every shape into an array, so strings, mixed arrays and missing children all work, and strings become text nodes through the base case."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`for (const c of node.children) el.appendChild(render(c));`",
+        "why": "A string child is iterated one character at a time, giving one text node per letter, and `{ type: 'br' }` has no `children`, so the loop throws \"not iterable\"."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`if (typeof node.children === 'string') el.innerHTML = node.children; else (node.children ?? []).forEach((c) => el.appendChild(render(c)));`",
+        "why": "The structure works, but `innerHTML` parses user text as markup. That is an XSS hole and breaks the \"text stays text\" requirement."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`if (Array.isArray(node.children)) node.children.forEach((c) => el.appendChild(document.createElement(c.type))); else if (node.children) el.textContent = node.children;`",
+        "why": "It does not recurse. String items in a mixed array become `<undefined>` elements, and grandchildren such as the text inside `<b>` are lost."
+      }
+    ],
+    "explanation": "\"Build DOM from a JSON tree\" (Meta, and the BigFrontEnd virtual-DOM series) tests recursion, normalising inputs that can come in several shapes, and safe text handling. Expect follow-ups on event-handler props and on the reverse direction (DOM to JSON). The snippets were checked with a small mock of `createElement` and `createTextNode`. The real behaviour, such as `createElement(undefined)` creating an `<undefined>` element, follows the DOM spec.",
+    "reference": "MDN: Document.createElement()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-json-to-dom"
+  },
+  {
+    "id": "JSM-IQ2-DOM-016",
+    "domain": 5,
+    "skill": "dom-browser",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 3,
+    "stem": "A candidate's `render` applies props with `el[k] = v` instead of `setAttribute`. Given:\n\n```js\nrender({\n  type: 'button',\n  props: { class: 'primary', 'data-id': 7, onclick: () => save() },\n  children: 'Save',\n});\n```\n\nWhich of the three props actually takes effect on the element?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Only `onclick`. The button runs `save()` when clicked, but it has no `class` attribute and no `data-id` attribute.",
+        "why": "`onclick` is a real event-handler property. Elements have no `class` property (it is `className`), and `data-id` is not a property name, so both become plain JavaScript properties on the object."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "All three: properties and attributes are kept in sync for every name",
+        "why": "Only some attributes are reflected, and under different names. `class` maps to `className`, and `data-*` maps to `dataset`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`class` and `onclick`, but not `data-id`",
+        "why": "Assigning `el.class` creates an expando property. It never touches the `class` attribute."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "None of them, because an element's properties can only be set with `setAttribute`",
+        "why": "Many properties, including `onclick`, `id`, `className` and `value`, can be set by assignment."
+      }
+    ],
+    "explanation": "Interviewers probe the difference between attributes and properties. A robust `render` uses `setAttribute` for ordinary attributes, special-cases `className`/`class` and `style`, and uses `addEventListener` for `on*` function props. Note that `setAttribute('onclick', fn)` would turn the function into its source text, and clicking would then do nothing. This answer is reasoned from the DOM and HTML specs and MDN.",
+    "reference": "MDN: HTML attribute reference: Content versus IDL attributes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm",
+        "https://bigfrontend.dev/problem",
+        "https://www.greatfrontend.com/questions/js/coding"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:js-json-to-dom"
+  },
+  {
+    "id": "JSM-IQ2-EVL-003",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "roleLevel": 4,
+    "stem": "Implement `clearAllTimeouts()` by wrapping `setTimeout`. `origSet` and `origClear` hold the original functions, and `ids` is a `Set`. The wrapper must not keep the ids of timers that have already fired, and `clearAllTimeouts()` must cancel every pending timer. Which wrapper is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`setTimeout = (fn, ms, ...a) => { const id = origSet(() => { ids.delete(id); fn(...a); }, ms); ids.add(id); return id; }; clearAllTimeouts = () => { for (const id of ids) origClear(id); ids.clear(); };`",
+        "why": "Each timer removes its own id when it fires, so the set holds only pending timers, and clearing goes through the original function."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`setTimeout = (fn, ms, ...a) => { const id = origSet(fn, ms, ...a); ids.add(id); return id; }; clearAllTimeouts = () => { for (const id of ids) origClear(id); ids.clear(); };`",
+        "why": "Cancelling works, but ids are never removed when timers fire, so the set grows for the life of the page."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`setTimeout = (fn, ms, ...a) => { const id = setTimeout(() => { ids.delete(id); fn(...a); }, ms); ids.add(id); return id; }; clearAllTimeouts = () => { for (const id of ids) origClear(id); ids.clear(); };`",
+        "why": "Inside the wrapper, `setTimeout` now refers to the wrapper itself, so it recurses until a `RangeError` (stack overflow)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`setTimeout = (fn, ms, ...a) => { const id = origSet(() => { ids.delete(id); fn(...a); }, ms); ids.add(id); return id; }; clearAllTimeouts = () => { for (let i = 0; i < ids.length; i++) origClear([...ids][i]); ids.clear(); };`",
+        "why": "`Set` has `size`, not `length`, so the loop never runs. The set is emptied, but every timer still fires."
+      }
+    ],
+    "explanation": "LinkedIn and Meta ask this to check how you wrap a global without recursing into it, how you keep bookkeeping accurate, and which data structure you choose. A complete answer also wraps `clearTimeout` so that ids are removed when user code cancels a timer.",
+    "reference": "MDN: setTimeout()",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm"
+      ],
+      "companies": [
+        "LinkedIn",
+        "Meta"
+      ]
+    },
+    "source": "interview:js-clear-all-timeouts"
+  },
+  {
+    "id": "JSM-IQ2-EVL-004",
+    "domain": 3,
+    "skill": "event-loop",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "roleLevel": 4,
+    "stem": "Someone suggests this shortcut for `clearAllTimeouts` in the browser:\n\n```js\nlet id = setTimeout(() => {}, 0);\nwhile (id--) clearTimeout(id);\n```\n\nWhich statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The HTML spec only promises that each id is a positive integer that is not already in use, so ids are not guaranteed to be sequential",
+        "why": "The loop assumes that every live timer has a smaller id than the new one, and the spec does not promise that."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Timeouts and intervals share one id list, so the loop also stops `setInterval` timers, including ones owned by third-party scripts",
+        "why": "In browsers, `clearTimeout` and `clearInterval` accept ids from either function, so the loop cancels every timer the page owns, whoever created it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`clearTimeout` throws for an id that does not exist, so the loop crashes on the first gap",
+        "why": "Clearing an unknown id does nothing, which is why the hack appears to work."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It cancels only timers created after this line runs",
+        "why": "It counts down from the newest id, so it targets timers created earlier."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Wrapping `setTimeout` is not possible, because `window.setTimeout` is read-only",
+        "why": "`window.setTimeout` is a writable property. That is what makes the tracking-wrapper approach possible."
+      }
+    ],
+    "explanation": "The id-countdown hack comes up as a \"why not just…?\" follow-up. It relies on how ids happen to be allocated, and it also cancels timers your code does not own. A wrapper that tracks your own ids is the answer interviewers expect. These statements follow the HTML timers section and MDN, not a run in a specific browser.",
+    "reference": "HTML Standard: Timers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/interview-experience-152-linkedin-sde3-ic3-frontend-engineer",
+        "https://www.glassdoor.fr/Entretien/Meta-Entretien-E40772-RVW5916626.htm"
+      ],
+      "companies": [
+        "LinkedIn",
+        "Meta"
+      ]
+    },
+    "source": "interview:js-clear-all-timeouts"
+  }
+]

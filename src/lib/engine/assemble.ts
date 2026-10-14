@@ -24,7 +24,12 @@ export interface AssembleOptions {
   /** key of exam.difficultyModes */
   difficulty?: string | null;
   shuffleOptions?: boolean;
+  /** question id -> how many attempts ago the learner saw it (0 = latest); unseen items are drawn first */
+  seen?: Seen | null;
 }
+
+/** Question id -> attempts since the learner last saw it (0 = the latest attempt). */
+export type Seen = ReadonlyMap<string, number>;
 
 export interface Form {
   itemIds: string[];
@@ -37,7 +42,7 @@ const SHUFFLED_TYPES = new Set(['single', 'multi', 'order', 'match']);
 const mixWeight = (mix: Mix, level: number) => mix[String(level) as keyof Mix] ?? 0;
 
 export function assembleForm(exam: ExamConfig, bank: BankItem[], opts: AssembleOptions): Form {
-  const { seed, total, domains, skills, difficulty, shuffleOptions = true } = opts;
+  const { seed, total, domains, skills, difficulty, shuffleOptions = true, seen = null } = opts;
   const rand = mulberry32(seed);
   const mix = difficultyMode(exam, difficulty).mix;
   let pool = bank;
@@ -46,8 +51,8 @@ export function assembleForm(exam: ExamConfig, bank: BankItem[], opts: AssembleO
   const size = Math.min(total ?? exam.itemCount, pool.length);
 
   const picked = skills?.length || domains?.length
-    ? pickProportional(exam, pool, size, rand, mix, skills?.length ? skills : null, domains ?? null)
-    : pickByBlueprint(exam, pool, size, rand, mix);
+    ? pickProportional(exam, pool, size, rand, mix, skills?.length ? skills : null, domains ?? null, seen)
+    : pickByBlueprint(exam, pool, size, rand, mix, seen);
 
   return orderForm(picked, rand, shuffleOptions);
 }
@@ -69,13 +74,26 @@ function orderForm(picked: BankItem[], rand: () => number, shuffleOptions: boole
 }
 
 /**
+ * Shuffles candidates, then moves items the learner has not seen to the
+ * front, followed by those seen longest ago, so repeat attempts rotate
+ * through the bank instead of redrawing the same questions.
+ */
+export function freshFirst<T extends Pickable>(candidates: readonly T[], rand: () => number, seen?: Seen | null): T[] {
+  const out = shuffle(candidates, rand);
+  if (!seen?.size) return out;
+  const age = (q: T) => seen.get(q.id) ?? Number.POSITIVE_INFINITY;
+  // Array.prototype.sort is stable, so ties keep their shuffled order.
+  return out.sort((a, b) => { const x = age(a), y = age(b); return x === y ? 0 : x > y ? -1 : 1; });
+}
+
+/**
  * Picks n items from candidates so their difficulties follow `mix` as
  * closely as the candidates allow: each draw goes to the difficulty that is
  * furthest behind its target share, falling back to whatever is left.
  */
-export function pickByDifficulty<T extends Pickable>(candidates: T[], n: number, rand: () => number, mix: Mix): T[] {
+export function pickByDifficulty<T extends Pickable>(candidates: T[], n: number, rand: () => number, mix: Mix, seen?: Seen | null): T[] {
   const byLevel: Record<number, T[]> = { 1: [], 2: [], 3: [], 4: [] };
-  for (const q of shuffle(candidates, rand)) (byLevel[q.difficulty] ?? byLevel[2]).push(q);
+  for (const q of freshFirst(candidates, rand, seen)) (byLevel[q.difficulty] ?? byLevel[2]).push(q);
   const got: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
   const out: T[] = [];
   while (out.length < n) {
@@ -91,7 +109,7 @@ export function pickByDifficulty<T extends Pickable>(candidates: T[], n: number,
   return out;
 }
 
-function pickByBlueprint(exam: ExamConfig, pool: BankItem[], size: number, rand: () => number, mix: Mix): BankItem[] {
+function pickByBlueprint(exam: ExamConfig, pool: BankItem[], size: number, rand: () => number, mix: Mix, seen: Seen | null): BankItem[] {
   const need = skillAllocation(exam, size);
   const chosen = new Set<string>();
   const out: BankItem[] = [];
@@ -101,7 +119,7 @@ function pickByBlueprint(exam: ExamConfig, pool: BankItem[], size: number, rand:
   for (const skill of exam.skills) {
     const candidates = pool.filter((q) => q.skill === skill.id);
     const n = need[skill.id];
-    pickByDifficulty(candidates, n, rand, mix).forEach(take);
+    pickByDifficulty(candidates, n, rand, mix, seen).forEach(take);
     if (candidates.length < n) shortfall.push({ domain: skill.domain, missing: n - candidates.length });
   }
 
@@ -109,9 +127,9 @@ function pickByBlueprint(exam: ExamConfig, pool: BankItem[], size: number, rand:
   for (const { domain, missing } of shortfall) {
     let left = missing;
     const sameDomain = pool.filter((x) => x.domain === domain && !chosen.has(x.id));
-    for (const q of pickByDifficulty(sameDomain, left, rand, mix)) { take(q); left -= 1; }
+    for (const q of pickByDifficulty(sameDomain, left, rand, mix, seen)) { take(q); left -= 1; }
     const anywhere = pool.filter((x) => !chosen.has(x.id));
-    for (const q of pickByDifficulty(anywhere, left, rand, mix)) { take(q); left -= 1; }
+    for (const q of pickByDifficulty(anywhere, left, rand, mix, seen)) { take(q); left -= 1; }
   }
   return out.slice(0, size);
 }
@@ -120,14 +138,14 @@ function pickByBlueprint(exam: ExamConfig, pool: BankItem[], size: number, rand:
 // drill on one domain still covers all of its skills.
 function pickProportional(
   exam: ExamConfig, pool: BankItem[], size: number, rand: () => number, mix: Mix,
-  skillIds: string[] | null, domains: number[] | null,
+  skillIds: string[] | null, domains: number[] | null, seen: Seen | null,
 ): BankItem[] {
   const skills = exam.skills.filter((s) => (skillIds ? skillIds.includes(s.id) : domains!.includes(s.domain)));
   const weightSum = skills.reduce((a, s) => a + s.weight, 0) || 1;
   // Order each skill's items by the difficulty mix so the first ones drawn follow it.
   const bySkill = Object.fromEntries(skills.map((s) => {
     const items = pool.filter((q) => q.skill === s.id);
-    return [s.id, pickByDifficulty(items, items.length, rand, mix)];
+    return [s.id, pickByDifficulty(items, items.length, rand, mix, seen)];
   }));
   const out: BankItem[] = [];
   const quota = skills.map((s) => ({ id: s.id, want: (s.weight / weightSum) * size, got: 0 }));

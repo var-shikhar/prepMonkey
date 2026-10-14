@@ -1,0 +1,1929 @@
+[
+  {
+    "id": "TSM-IQ3-CND-001",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks you to implement `ReturnType` without the built-in. Which definition passes all three checks?\n\n```ts\ntype A = MyReturnType<() => string>;                     // string\ntype B = MyReturnType<(a: number, b: string) => boolean>; // boolean\ntype C = MyReturnType<() => Promise<number>>;            // Promise<number>\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype MyReturnType<T> =\n  T extends (...args: any[]) => infer R ? R : never;\n```",
+        "correct": true,
+        "why": "`(...args: any[])` accepts a function with any parameter list, and `infer R` captures the return type exactly as declared, so all three checks pass."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype MyReturnType<T> =\n  T extends () => infer R ? R : never;\n```",
+        "correct": false,
+        "why": "A function with two required parameters is not assignable to `() => R`, so `B` becomes `never`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype MyReturnType<T> =\n  T extends (...args: any[]) => infer R ? Awaited<R> : never;\n```",
+        "correct": false,
+        "why": "`Awaited` unwraps the promise, so `C` becomes `number` instead of `Promise<number>`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype MyReturnType<T> =\n  T extends (...args: infer R) => any ? R : never;\n```",
+        "correct": false,
+        "why": "`infer` sits in the parameter position, so this returns the parameter tuple: `B` becomes `[a: number, b: string]`."
+      }
+    ],
+    "explanation": "`ReturnType` is a one-line conditional type: match `T` against a function type whose parameters accept anything, and put `infer R` where the return type goes. The interviewer is checking three things: that you know where `infer` goes, that the parameter list must accept any arity (`...args: any[]`), and that `ReturnType` reports the return type as declared, without unwrapping promises.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html",
+    "source": "interview:ts-implement-returntype",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers",
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-002",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What do `A` and `B` resolve to?\n\n```ts\nfunction identity<T>(x: T): T { return x; }\nfunction wrap<T extends string>(x: T): T[] { return [x]; }\n\ntype A = ReturnType<typeof identity>;\ntype B = ReturnType<typeof wrap>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`A` is `unknown` and `B` is `string[]`",
+        "correct": true,
+        "why": "When `infer` matches a generic signature, TypeScript replaces each type parameter with its constraint: an unconstrained `T` becomes `unknown`, and `T extends string` becomes `string`."
+      },
+      {
+        "id": "B",
+        "text": "`A` is `T` and `B` is `T[]`",
+        "correct": false,
+        "why": "A type parameter cannot leak out of the signature that declares it. TypeScript substitutes the constraint instead."
+      },
+      {
+        "id": "C",
+        "text": "`A` is `any` and `B` is `any[]`, since generics are erased",
+        "correct": false,
+        "why": "The fallback is the constraint, not `any`. Unconstrained type parameters have the implicit constraint `unknown`."
+      },
+      {
+        "id": "D",
+        "text": "`A` is `never` and `B` is `never[]`",
+        "correct": false,
+        "why": "The match succeeds, because a generic function is still a function, so the `never` branch is not used."
+      }
+    ],
+    "explanation": "`ReturnType<typeof genericFn>` cannot know which `T` you mean, so it uses each type parameter's constraint. To get a specific result, use an instantiation expression (TypeScript 4.7+): `ReturnType<typeof identity<number>>` is `number`. Interviewers ask this as a follow-up to \"implement `ReturnType`\" to see whether you understand how `infer` handles generic signatures.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html",
+    "source": "interview:ts-implement-returntype",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers",
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-003",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which three statements about the built-in `ReturnType<T>` are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`ReturnType<string>` is a compile error, because the type parameter is constrained to `(...args: any) => any`.",
+        "correct": true,
+        "why": "The library declaration is `type ReturnType<T extends (...args: any) => any> = ...`, so non-function arguments fail the constraint."
+      },
+      {
+        "id": "B",
+        "text": "For an overloaded function, it reports the return type of the last overload signature.",
+        "correct": true,
+        "why": "Inference from an overloaded type uses the last signature, which is usually the most general one."
+      },
+      {
+        "id": "C",
+        "text": "For a union of function types it distributes, so `ReturnType<(() => string) | (() => number)>` is `string | number`.",
+        "correct": true,
+        "why": "`T` is checked as a naked type parameter, so the conditional runs once for each union member and the results are joined."
+      },
+      {
+        "id": "D",
+        "text": "`ReturnType<() => Promise<number>>` is `number`, because it unwraps promises.",
+        "correct": false,
+        "why": "It reports `Promise<number>`. Combine it with `Awaited` to unwrap: `Awaited<ReturnType<typeof fn>>`."
+      },
+      {
+        "id": "E",
+        "text": "`ReturnType<typeof SomeClass>` gives the instance type of the class.",
+        "correct": false,
+        "why": "A class constructor type has a construct signature, not a call signature, so this fails the constraint. Use `InstanceType<typeof SomeClass>`."
+      },
+      {
+        "id": "F",
+        "text": "It works only on functions declared with the `function` keyword, not on arrow functions or methods.",
+        "correct": false,
+        "why": "It works on any type with a call signature, including arrow functions and method types such as `typeof obj.method`."
+      }
+    ],
+    "explanation": "The built-in is `type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : any`. The constraint is what turns misuse into an error, the conditional is distributive over unions, and overloads resolve to the last signature. Interviewers use these edge cases to tell apart someone who memorised the one-liner from someone who understands it.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html",
+    "source": "interview:ts-implement-returntype",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers",
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-004",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two `Flatten` implementations pass all of these checks? (Choose two.)\n\n```ts\ntype A = Flatten<[1, [2, [3]]]>;        // [1, 2, 3]\ntype B = Flatten<[[1, [2]], 3, [[4]]]>; // [1, 2, 3, 4]\ntype C = Flatten<[]>;                   // []\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Flatten<T extends unknown[]> =\n  T extends [infer H, ...infer R]\n    ? H extends unknown[] ? [...Flatten<H>, ...Flatten<R>] : [H, ...Flatten<R>]\n    : [];\n```",
+        "correct": true,
+        "why": "It flattens the head recursively when it is an array, flattens the rest, and spreads both, so every nesting level disappears."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Flatten<T extends unknown[]> =\n  T extends [infer H, ...infer R]\n    ? H extends unknown[] ? Flatten<[...H, ...R]> : [H, ...Flatten<R>]\n    : [];\n```",
+        "correct": true,
+        "why": "It splices a nested head back into the list and processes it again. This also reaches every level and gives the same tuples."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Flatten<T extends unknown[]> =\n  T extends [infer H, ...infer R]\n    ? H extends unknown[] ? [...H, ...Flatten<R>] : [H, ...Flatten<R>]\n    : [];\n```",
+        "correct": false,
+        "why": "It spreads a nested array without flattening it, so only one level is removed: `A` becomes `[1, 2, [3]]`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Flatten<T extends unknown[]> =\n  T extends [infer H, ...infer R]\n    ? H extends unknown[] ? [Flatten<H>, ...Flatten<R>] : [H, ...Flatten<R>]\n    : [];\n```",
+        "correct": false,
+        "why": "`Flatten<H>` is placed as a single element instead of being spread, so the nesting stays: `A` is `[1, [2, [3]]]`."
+      },
+      {
+        "id": "E",
+        "text": "```ts\ntype Flatten<T extends unknown[]> =\n  T[number] extends infer U ? (U extends unknown[] ? Flatten<U> : U) : never;\n```",
+        "correct": false,
+        "why": "Indexing with `[number]` produces a union of elements, so `A` becomes `1 | 2 | 3`. The order and the tuple shape are lost."
+      }
+    ],
+    "explanation": "Type-level `Flatten` walks the tuple with `[infer H, ...infer R]`. When the head is itself an array, it must be flattened again, either by recursing on it and spreading the result or by splicing it back into the list. The interviewer is looking for the base case (`[]`), recursion on both parts, and spreading instead of nesting.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html",
+    "source": "interview:ts-flatten-type",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-005",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `A` resolve to?\n\n```ts\ntype FlattenOnce<T extends unknown[]> =\n  T extends [infer H, ...infer R]\n    ? H extends unknown[] ? [...H, ...FlattenOnce<R>] : [H, ...FlattenOnce<R>]\n    : [];\n\ntype A = FlattenOnce<[1, [2, [3]], 4]>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`[1, 2, [3], 4]`",
+        "correct": true,
+        "why": "The nested `[2, [3]]` is spread one level, so its elements `2` and `[3]` become top-level elements. `[3]` itself is never revisited."
+      },
+      {
+        "id": "B",
+        "text": "`[1, 2, 3, 4]`",
+        "correct": false,
+        "why": "That needs a recursive call on `H` too. Here only the rest `R` is recursed into."
+      },
+      {
+        "id": "C",
+        "text": "`[1, [2, [3]], 4]`",
+        "correct": false,
+        "why": "The `H extends unknown[]` branch spreads `H`, so one level of nesting is removed."
+      },
+      {
+        "id": "D",
+        "text": "`(1 | 2 | [3] | 4)[]`",
+        "correct": false,
+        "why": "Spreading a tuple into a tuple keeps a tuple with fixed positions. It does not widen to an array of a union."
+      }
+    ],
+    "explanation": "This mirrors `Array.prototype.flat()` with the default depth of 1. Recursion runs over the rest of the list, but a spread head is not looked at again. For a full flatten you also recurse into `H`. Interviewers often ask for the one-level version first and then for the deep one.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html",
+    "source": "interview:ts-flatten-type",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-006",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You need to type a `flattenDeep` function so that `flattenDeep([1, [2, [3]]])` has the type `number[]`. Which declaration does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype DeepFlat<T> = T extends readonly (infer U)[] ? DeepFlat<U> : T;\ndeclare function flattenDeep<T extends readonly unknown[]>(arr: T): DeepFlat<T>[];\n```",
+        "correct": true,
+        "why": "`DeepFlat` keeps unwrapping array element types until it reaches a non-array type, so `(number | (number | number[])[])[]` reduces to `number`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ndeclare function flattenDeep<T>(arr: T[]): T[];\n```",
+        "correct": false,
+        "why": "`T` is inferred as the element type `number | (number | number[])[]`, so the result keeps the nested array types."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ndeclare function flattenDeep<T>(arr: T[][]): T[];\n```",
+        "correct": false,
+        "why": "The call does not compile: `1` is not an array, so the argument does not match `T[][]`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ndeclare function flattenDeep(arr: unknown[]): unknown[];\n```",
+        "correct": false,
+        "why": "It compiles, but the result is `unknown[]`, so callers lose the element type and have to cast."
+      }
+    ],
+    "explanation": "A typed `flatten` needs a recursive conditional type that unwraps element types. The standard library does something similar: `Array.prototype.flat` returns `FlatArray<Arr, Depth>[]`, so `[1, [2, [3]]].flat()` is typed `(number | number[])[]`. The interviewer wants to see the value-level function and the type-level recursion line up.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html",
+    "source": "interview:ts-flatten-type",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/typescript-interview-questions",
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-007",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `JSONValue` type accepts `{ a: [1, 'x', { b: null }], c: true }` but rejects `{ d: new Date() }`, `{ u: undefined }` and `{ f: () => 1 }` under `strict`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype JSONValue =\n  | string | number | boolean | null\n  | JSONValue[]\n  | { [key: string]: JSONValue };\n```",
+        "correct": true,
+        "why": "Arrays and object values must themselves be `JSONValue`, so nesting works at any depth, while `Date`, `undefined` and functions match no member."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype JSONValue = string | number | boolean | null | object;\n```",
+        "correct": false,
+        "why": "`object` accepts any non-primitive, including `Date` instances and functions."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype JSONValue =\n  | string | number | boolean | null\n  | any[]\n  | Record<string, any>;\n```",
+        "correct": false,
+        "why": "`any` inside the array and record lets anything through, including `undefined` and functions."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype JSONValue =\n  | string | number | boolean\n  | JSONValue[]\n  | { [key: string]: JSONValue };\n```",
+        "correct": false,
+        "why": "`null` is missing, so the valid JSON `{ b: null }` is rejected under `strictNullChecks`."
+      }
+    ],
+    "explanation": "A recursive type alias can refer to itself inside an array or an object type (TypeScript 3.7+). The members are exactly the JSON value kinds: the four primitives including `null`, arrays of JSON values, and string-keyed objects of JSON values. The interviewer is checking that you avoid `any` and `object`, which would make the type useless.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html",
+    "source": "interview:ts-recursive-types",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://adaface.com/blog/typescript-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-008",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which three type aliases compile? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Nested = number | Nested[];\n```",
+        "correct": true,
+        "why": "The self-reference is inside an array type, which TypeScript resolves lazily, so the alias is allowed."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Tree<T> = { value: T; children: Tree<T>[] };\n```",
+        "correct": true,
+        "why": "Properties of an object type are resolved lazily, so a tree node can refer to its own type."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Pair = [Pair, Pair] | null;\n```",
+        "correct": true,
+        "why": "Tuple element types are also deferred, so this recursive binary structure compiles."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Loop = string | Loop;\n```",
+        "correct": false,
+        "why": "A bare union member must be resolved immediately, so tsc reports TS2456: the alias circularly references itself."
+      },
+      {
+        "id": "E",
+        "text": "```ts\ntype Rec = Rec extends string ? 1 : 2;\n```",
+        "correct": false,
+        "why": "The check type of a conditional is needed straight away, so this is also a circular reference error."
+      },
+      {
+        "id": "F",
+        "text": "```ts\ntype Keys = keyof Keys;\n```",
+        "correct": false,
+        "why": "`keyof` needs the full type of its operand, which is the alias being defined, so this is circular too."
+      }
+    ],
+    "explanation": "Recursive type aliases work when the self-reference sits somewhere TypeScript can defer: inside an array, tuple, object property or the type arguments of an interface or class. A reference that must be resolved to produce the alias itself, such as a bare union member, a conditional check type or `keyof`, is a circularity error. Interviewers ask this when you type trees, nested menus or JSON.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html",
+    "source": "interview:ts-recursive-types",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://adaface.com/blog/typescript-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-009",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does the first assignment fail while the second compiles?\n\n```ts\ntype JSONValue =\n  | string | number | boolean | null\n  | JSONValue[]\n  | { [key: string]: JSONValue };\n\ninterface UserI { id: number; name: string }\ntype UserT = { id: number; name: string };\n\ndeclare const a: UserI;\ndeclare const b: UserT;\n\nconst x: JSONValue = a; // error\nconst y: JSONValue = b; // OK\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "An object literal type written with `type` gets an implicit index signature, so `UserT` fits `{ [key: string]: JSONValue }`. An interface does not, because declaration merging could still add members to it.",
+        "correct": true,
+        "why": "This is the documented difference. Interfaces stay open to augmentation, so TypeScript will not assume all their properties match an index signature."
+      },
+      {
+        "id": "B",
+        "text": "Interfaces cannot appear inside recursive types, so `UserI` stops the recursion.",
+        "correct": false,
+        "why": "Interfaces can take part in recursive types. The failure is about index signatures, not recursion."
+      },
+      {
+        "id": "C",
+        "text": "Interfaces are compared nominally, so `UserI` matches only types that explicitly `extend` it.",
+        "correct": false,
+        "why": "Interfaces are compared structurally like any other object type."
+      },
+      {
+        "id": "D",
+        "text": "`UserI` has a hidden `constructor` property, which is not a valid JSON value.",
+        "correct": false,
+        "why": "Interfaces do not get hidden members. Both declarations describe exactly the same two properties."
+      }
+    ],
+    "explanation": "This gotcha shows up as soon as you type JSON payloads. To fix it, use a `type` alias for the payload, or declare `interface UserI extends Record<string, JSONValue> { ... }`. The interviewer is probing whether you know that implicit index signatures are one real behavioural difference between `type` and `interface`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/objects.html",
+    "source": "interview:ts-recursive-types",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://adaface.com/blog/typescript-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-010",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `Trim` passes all three checks?\n\n```ts\ntype WS = ' ' | '\\n' | '\\t';\n\ntype A = Trim<'  hi  '>;   // 'hi'\ntype B = Trim<'hi   '>;    // 'hi'\ntype C = Trim<'\\n hi\\t'>; // 'hi'\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Trim<S extends string> =\n  S extends `${WS}${infer R}` ? Trim<R>\n  : S extends `${infer L}${WS}` ? Trim<L>\n  : S;\n```",
+        "correct": true,
+        "why": "It removes one whitespace character from either end per step and recurses until neither end matches, which handles uneven and mixed whitespace."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Trim<S extends string> =\n  S extends `${WS}${infer R}` ? Trim<R> : S;\n```",
+        "correct": false,
+        "why": "This only trims the left side: `A` becomes `'hi  '` and `B` stays `'hi   '`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Trim<S extends string> =\n  S extends ` ${infer M} ` ? M : S;\n```",
+        "correct": false,
+        "why": "It strips a single space from each end with no recursion, so `A` becomes `' hi '`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Trim<S extends string> =\n  S extends `${WS}${infer M}${WS}` ? Trim<M> : S;\n```",
+        "correct": false,
+        "why": "It only matches when both ends have whitespace, so `B` stays `'hi   '` and `C` stops at `' hi'`."
+      }
+    ],
+    "explanation": "String-manipulation types use template literal patterns with `infer` and recursion: match one character class at an edge, strip it, and recurse. Trimming the two ends with separate branches is what makes uneven input work. The interviewer is checking recursion, base cases, and whether you test inputs with whitespace on only one side.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html",
+    "source": "interview:ts-string-manipulation-types",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-011",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `ReplaceAll` passes every check?\n\n```ts\ntype A = ReplaceAll<'foboorfoboar', 'bo', 'b'>; // 'foborfobar'\ntype B = ReplaceAll<'t y p e s', ' ', ''>;     // 'types'\ntype C = ReplaceAll<'abc', '', 'x'>;            // 'abc'\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype ReplaceAll<S extends string, F extends string, T extends string> =\n  F extends '' ? S\n  : S extends `${infer L}${F}${infer R}` ? `${L}${T}${ReplaceAll<R, F, T>}`\n  : S;\n```",
+        "correct": true,
+        "why": "It guards the empty pattern and recurses only on the text after each match, so replaced output is never scanned again."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype ReplaceAll<S extends string, F extends string, T extends string> =\n  F extends '' ? S\n  : S extends `${infer L}${F}${infer R}` ? ReplaceAll<`${L}${T}${R}`, F, T>\n  : S;\n```",
+        "correct": false,
+        "why": "It rescans the string after each replacement, so new matches made by the replacement are replaced too: `A` becomes `'fobrfobar'`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype ReplaceAll<S extends string, F extends string, T extends string> =\n  F extends '' ? S\n  : S extends `${infer L}${F}${infer R}` ? `${L}${T}${R}`\n  : S;\n```",
+        "correct": false,
+        "why": "With no recursion this replaces only the first match: `A` becomes `'foborfoboar'` and `B` becomes `'ty p e s'`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype ReplaceAll<S extends string, F extends string, T extends string> =\n  S extends `${infer L}${F}${infer R}` ? `${L}${T}${ReplaceAll<R, F, T>}`\n  : S;\n```",
+        "correct": false,
+        "why": "Without the empty-pattern guard, an empty `F` matches after every character, so `C` becomes `'axbxcx'`."
+      }
+    ],
+    "explanation": "A correct `ReplaceAll` recurses on the remainder `R`, not on the rebuilt string, and handles the empty pattern explicitly. These two details are the edge cases type-challenge tests check, and they are what an interviewer probes when you say \"just recurse\".",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html",
+    "source": "interview:ts-string-manipulation-types",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-012",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two implementations make `CamelCase<'foo-bar-baz'>` resolve to `'fooBarBaz'`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype CamelCase<S extends string> =\n  S extends `${infer H}-${infer T}` ? `${H}${CamelCase<Capitalize<T>>}` : S;\n```",
+        "correct": true,
+        "why": "It capitalises the rest before recursing, so each segment after a dash starts with a capital letter: `'foo' + 'Bar' + 'Baz'`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype CamelCase<S extends string> =\n  S extends `${infer H}-${infer T}` ? `${H}${Capitalize<CamelCase<T>>}` : S;\n```",
+        "correct": true,
+        "why": "It converts the rest first (`'barBaz'`) and then capitalises it (`'BarBaz'`), which gives the same result."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype CamelCase<S extends string> =\n  S extends `${infer H}-${infer T}` ? `${Capitalize<H>}${CamelCase<T>}` : S;\n```",
+        "correct": false,
+        "why": "It capitalises every segment except the last, giving `'FooBarbaz'`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype CamelCase<S extends string> =\n  S extends `${infer H}-${infer T}` ? `${H}${Capitalize<T>}` : S;\n```",
+        "correct": false,
+        "why": "There is no recursion, so only the first dash is handled: `'fooBar-baz'`."
+      },
+      {
+        "id": "E",
+        "text": "```ts\ntype CamelCase<S extends string> =\n  S extends `${infer H}-${infer T}` ? `${H}${Uppercase<CamelCase<T>>}` : S;\n```",
+        "correct": false,
+        "why": "`Uppercase` changes every character, not just the first, giving `'fooBARBAZ'`."
+      }
+    ],
+    "explanation": "`${infer H}-${infer T}` splits at the first dash, because `H` matches as little as possible. Recurse on the rest and capitalise it, before or after the recursive call. `Capitalize`, `Uncapitalize`, `Uppercase` and `Lowercase` are the built-in intrinsic string types. Interviewers ask for casing conversions to test template literal inference and recursion together.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html",
+    "source": "interview:ts-string-manipulation-types",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-013",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `Concat` passes both checks exactly?\n\n```ts\nconst tuple = [1] as const;\n\ntype A = Concat<[1], [2, 3]>;        // [1, 2, 3]\ntype B = Concat<typeof tuple, [2]>; // [1, 2]\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Concat<A extends readonly unknown[], B extends readonly unknown[]> =\n  [...A, ...B];\n```",
+        "correct": true,
+        "why": "The `readonly` constraints accept `as const` tuples, and spreading both into a new tuple type gives a plain mutable tuple with the elements in order."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Concat<A extends unknown[], B extends unknown[]> =\n  [...A, ...B];\n```",
+        "correct": false,
+        "why": "`typeof tuple` is `readonly [1]`, which is not assignable to the mutable `unknown[]` constraint, so `B` is a compile error."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Concat<A extends readonly unknown[], B extends readonly unknown[]> =\n  readonly [...A, ...B];\n```",
+        "correct": false,
+        "why": "The elements are right, but the result is `readonly [1, 2, 3]`, which a strict equality check treats as a different type from `[1, 2, 3]`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Concat<A extends readonly unknown[], B extends readonly unknown[]> =\n  [A, ...B];\n```",
+        "correct": false,
+        "why": "`A` is not spread, so it becomes a single nested element: `[[1], 2, 3]`."
+      }
+    ],
+    "explanation": "Variadic tuple types (TypeScript 4.0) let you spread generic tuple types: `[...A, ...B]`. Constrain the inputs to `readonly unknown[]` so both mutable and `as const` tuples are accepted. Interviewers use `Concat` to check that you know spreads keep positions and that `readonly` is part of a tuple's type.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html",
+    "source": "interview:ts-variadic-tuple-concat-push",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://github.com/type-challenges/type-challenges",
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-014",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the type of `f`?\n\n```ts\nfunction partial<A extends unknown[], B extends unknown[], R>(\n  fn: (...args: [...A, ...B]) => R,\n  ...head: A\n) {\n  return (...tail: B) => fn(...head, ...tail);\n}\n\nconst add3 = (a: number, b: string, c: boolean) => 0;\nconst f = partial(add3, 1, 'x');\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`(...tail: [c: boolean]) => number`",
+        "correct": true,
+        "why": "`A` is inferred from the extra arguments as `[number, string]`, and the rest of `add3`'s parameter list, `[c: boolean]`, is left for `B`."
+      },
+      {
+        "id": "B",
+        "text": "`(...tail: [b: string, c: boolean]) => number`",
+        "correct": false,
+        "why": "Both leading arguments are captured in `A`, so only the last parameter remains in `B`."
+      },
+      {
+        "id": "C",
+        "text": "`(...tail: unknown[]) => number`",
+        "correct": false,
+        "why": "Variadic tuple inference splits the parameter list precisely. It does not fall back to the `unknown[]` constraint."
+      },
+      {
+        "id": "D",
+        "text": "The call is a compile error, because TypeScript cannot split a parameter list into two spreads `[...A, ...B]`.",
+        "correct": false,
+        "why": "Splitting a parameter list across generic spreads is the main use case variadic tuples were added for in TypeScript 4.0."
+      }
+    ],
+    "explanation": "With variadic tuple types, a generic rest parameter can be split into a known prefix and an inferred remainder. That is how `partial`, `bind` and `curry` get precise types. Calling `f('x')` is an error, and `partial(add3, 'x')` is an error too because `'x'` is not a `number`. The interviewer is checking that you can explain variadic tuples with a real typing problem.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html",
+    "source": "interview:ts-variadic-tuple-concat-push",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://github.com/type-challenges/type-challenges",
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-015",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What do `A` and `B` resolve to?\n\n```ts\ntype Push<T extends unknown[], U> = [...T, U];\ntype Unshift<T extends unknown[], U> = [U, ...T];\n\ntype A = Push<[1, 2], [3]>;\ntype B = Unshift<[1, 2], 0>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`A` is `[1, 2, [3]]` and `B` is `[0, 1, 2]`",
+        "correct": true,
+        "why": "`U` is added as one element and is never spread, so the tuple `[3]` stays nested. `Unshift` puts `0` at the front."
+      },
+      {
+        "id": "B",
+        "text": "`A` is `[1, 2, 3]` and `B` is `[0, 1, 2]`",
+        "correct": false,
+        "why": "Only `T` is spread. `U` is placed as a single element even when it is a tuple."
+      },
+      {
+        "id": "C",
+        "text": "`A` is a compile error and `B` is `[0, 1, 2]`",
+        "correct": false,
+        "why": "`U` has no constraint, so a tuple is a valid argument for it."
+      },
+      {
+        "id": "D",
+        "text": "`A` is `[1, 2, [3]]` and `B` is `[1, 2, 0]`",
+        "correct": false,
+        "why": "`Unshift` places `U` before the spread `...T`, so `0` comes first."
+      }
+    ],
+    "explanation": "A spread `...T` copies a tuple's elements into a new tuple, while a bare type parameter is a single element. `Push` and `Unshift` are warm-up type challenges, and the trick is noticing which side is spread. Interviewers often follow up by asking you to write `Concat`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html",
+    "source": "interview:ts-variadic-tuple-concat-push",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://listiak.dev/blog/the-45-typescript-interview-questions-interview-cheat-sheet-i-wish-i-had",
+        "https://github.com/type-challenges/type-challenges",
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-016",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `Last` passes both checks?\n\n```ts\ntype A = Last<[1, 2, 3]>; // 3\ntype B = Last<[]>;        // never\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Last<T extends unknown[]> = T extends [...infer _, infer L] ? L : never;\n```",
+        "correct": true,
+        "why": "A leading rest element with `infer` lets the pattern capture the final element, and an empty tuple does not match, which gives `never`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Last<T extends unknown[]> = [any, ...T][T['length']];\n```",
+        "correct": false,
+        "why": "Prepending one element makes `T['length']` index the last item, so `A` is `3`. But for `[]` it reads `[any][0]`, which is `any`, not `never`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Last<T extends unknown[]> =\n  T extends [infer L, ...infer _] ? L : never;\n```",
+        "correct": false,
+        "why": "This captures the first element, so `A` becomes `1`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Last<T extends unknown[]> = T[T['length']];\n```",
+        "correct": false,
+        "why": "It compiles, but indexes one position past the end, so `A` becomes `undefined`."
+      }
+    ],
+    "explanation": "Since TypeScript 4.2, a rest element can appear before other elements, so `[...infer _, infer L]` matches the last element directly. The `[any, ...T][T['length']]` trick is a known answer too, but it gives the wrong result for an empty tuple. Interviewers ask about `Last` to see whether you check edge cases like `[]`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html",
+    "source": "interview:ts-tuple-last-pop-includes",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-017",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `Pop` passes both checks?\n\n```ts\ntype A = Pop<[1, 2, 3]>; // [1, 2]\ntype B = Pop<[]>;        // []\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Pop<T extends unknown[]> =\n  T extends [...infer R, unknown] ? R : [];\n```",
+        "correct": true,
+        "why": "It captures everything before the last element, and the empty tuple falls through to `[]`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Pop<T extends unknown[]> =\n  T extends [...infer R, infer _] ? R : never;\n```",
+        "correct": false,
+        "why": "The pattern is right, but an empty tuple does not match and falls through to `never`, so `B` fails."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Pop<T extends unknown[]> =\n  T extends [infer _, ...infer R] ? R : [];\n```",
+        "correct": false,
+        "why": "This removes the first element (it is `Shift`), so `A` becomes `[2, 3]`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Pop<T extends unknown[]> =\n  T extends [...infer R] ? R : [];\n```",
+        "correct": false,
+        "why": "`[...infer R]` matches the whole tuple, so nothing is removed and `A` stays `[1, 2, 3]`."
+      }
+    ],
+    "explanation": "`Pop` is `Last` in reverse: infer the leading rest and ignore the final element. The false branch decides what happens for `[]`, which is what type-challenge tests check. The interviewer wants to see that you think about the fallback branch rather than writing `never` by habit.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html",
+    "source": "interview:ts-tuple-last-pop-includes",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-018",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Using the `Equal` helper below, which `Includes` passes all three checks?\n\n```ts\ntype Equal<X, Y> =\n  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;\n\ntype A = Includes<[1, 2, 3], 2>;                         // true\ntype B = Includes<[boolean], false>;                     // false\ntype C = Includes<[{ a: 'A' }], { readonly a: 'A' }>;    // false\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Includes<T extends readonly unknown[], U> =\n  T extends [infer F, ...infer R]\n    ? Equal<F, U> extends true ? true : Includes<R, U>\n    : false;\n```",
+        "correct": true,
+        "why": "It compares each element to `U` with exact type identity, so `boolean` is not `false` and a mutable property is not a `readonly` one."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Includes<T extends readonly unknown[], U> =\n  U extends T[number] ? true : false;\n```",
+        "correct": false,
+        "why": "This tests assignability, not identity. `false` is assignable to `boolean`, and the `readonly` object is assignable to the mutable one, so `B` and `C` both become `true`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Includes<T extends readonly unknown[], U> =\n  T extends [infer F, ...infer R]\n    ? F extends U ? true : Includes<R, U>\n    : false;\n```",
+        "correct": false,
+        "why": "`F extends U` distributes over `boolean`, so `B` becomes `boolean`. And `C` is `true`, because `readonly` does not affect assignability."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Includes<T extends readonly unknown[], U> =\n  T[number] extends U ? true : false;\n```",
+        "correct": false,
+        "why": "This asks whether every element is assignable to `U`, so `A` is `false` because `1 | 2 | 3` is not assignable to `2`."
+      }
+    ],
+    "explanation": "`Includes` looks trivial until the tests demand exact identity. Assignability (`extends`) treats `false` as a `boolean` and ignores `readonly`, so you need an identity check like the generic-function `Equal` and a recursive walk over the tuple. Interviewers use this to probe the difference between assignability and type equality.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html",
+    "source": "interview:ts-tuple-last-pop-includes",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-019",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `Paths<T>` makes `Paths<O>` exactly `'id' | 'user' | 'user.name' | 'user.address' | 'user.address.city'`?\n\n```ts\ntype O = { id: number; user: { name: string; address: { city: string } } };\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Paths<T> = T extends object\n  ? { [K in keyof T & string]: K | `${K}.${Paths<T[K]>}` }[keyof T & string]\n  : never;\n```",
+        "correct": true,
+        "why": "Each key contributes itself plus every deeper path prefixed with `key.`. Primitives give `never`, so their prefixed template becomes `never` too, and indexing with `[keyof T & string]` collects everything into one union."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Paths<T> = T extends object\n  ? { [K in keyof T]: K | `${K}.${Paths<T[K]>}` }[keyof T]\n  : never;\n```",
+        "correct": false,
+        "why": "`keyof T` can include `symbol`, which cannot appear in a template literal type, so this is a compile error."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Paths<T> = {\n  [K in keyof T & string]: T[K] extends object ? `${K}.${Paths<T[K]>}` : K;\n}[keyof T & string];\n```",
+        "correct": false,
+        "why": "This only returns leaf paths: `'id' | 'user.name' | 'user.address.city'`. The intermediate `'user'` and `'user.address'` are missing."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Paths<T> = T extends object\n  ? { [K in keyof T & string]: K | `${K}.${Paths<T[K]>}` }\n  : never;\n```",
+        "correct": false,
+        "why": "Without the final indexed access the result is an object type, not a union, and putting it inside a template literal is a compile error."
+      }
+    ],
+    "explanation": "The pattern is: map over the string keys, return each key together with every deeper path prefixed by `key.`, then index the mapped type with its own keys to turn it into a union. `& string` removes symbol and number keys, and a primitive returning `never` ends the recursion. This is the type behind typed form field names and i18n keys, which is why staff-level interviews ask for it.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html",
+    "source": "interview:ts-object-paths",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-020",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate uses this `Paths` to type form field names. Which statement about `Paths<{ tags: string[] }>` is true?\n\n```ts\ntype Paths<T> = T extends object\n  ? { [K in keyof T & string]: K | `${K}.${Paths<T[K]>}` }[keyof T & string]\n  : never;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It contains `'tags'`, `'tags.length'` and array method names such as `'tags.map'`, because an array is an object and its keys are mapped too.",
+        "correct": true,
+        "why": "`string[]` passes `T extends object`, so its string keys (`length`, `map`, `push` and so on) become paths. Adding a `T extends readonly unknown[] ? never : ...` branch first reduces the result to just `'tags'`."
+      },
+      {
+        "id": "B",
+        "text": "It is just `'tags'`, because `string[]` does not extend `object`.",
+        "correct": false,
+        "why": "Arrays are objects, so they pass the `object` check and their keys are listed."
+      },
+      {
+        "id": "C",
+        "text": "It contains `'tags'` and `` `tags.${number}` ``, but no method names.",
+        "correct": false,
+        "why": "`& string` drops the numeric index signature, so no numeric path appears, while the method names are string keys and do appear."
+      },
+      {
+        "id": "D",
+        "text": "It is a compile error, because recursion into arrays is infinitely deep.",
+        "correct": false,
+        "why": "It compiles. Methods are function types whose own key set is empty, so recursion stops after one more level."
+      }
+    ],
+    "explanation": "Recursive key utilities must decide what counts as a leaf. Arrays, `Date` and other built-ins are objects, so a naive `Paths` leaks their members. A production version adds explicit branches, for example stopping at arrays or emitting `` `${K}.${number}` `` for them. The interviewer wants to see you test the type on realistic data, not only on plain nested objects.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html",
+    "source": "interview:ts-object-paths",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-021",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `Permutation` gives all six orderings for `Permutation<'A' | 'B' | 'C'>` (such as `['A', 'B', 'C'] | ['A', 'C', 'B'] | ...`) and `[]` for `Permutation<never>`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Permutation<T, K = T> =\n  [T] extends [never] ? []\n  : K extends K ? [K, ...Permutation<Exclude<T, K>>]\n  : never;\n```",
+        "correct": true,
+        "why": "`K extends K` distributes over each member, which then goes first, while `T` still holds the full union so `Exclude<T, K>` leaves the rest. `[T] extends [never]` detects the empty union."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Permutation<T, K = T> =\n  T extends never ? []\n  : K extends K ? [K, ...Permutation<Exclude<T, K>>]\n  : never;\n```",
+        "correct": false,
+        "why": "`T extends never` distributes over `never`, which yields `never` instead of `[]`. The base case collapses, so the whole result is `never`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Permutation<T> =\n  [T] extends [never] ? []\n  : T extends T ? [T, ...Permutation<Exclude<T, T>>]\n  : never;\n```",
+        "correct": false,
+        "why": "Inside the distribution `T` is a single member, so `Exclude<T, T>` is `never` and the result is `['A'] | ['B'] | ['C']`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Permutation<T, K = T> =\n  [T] extends [never] ? []\n  : [K, ...Permutation<Exclude<T, K>>];\n```",
+        "correct": false,
+        "why": "Nothing distributes, so `K` is the whole union and the result is `['A' | 'B' | 'C']`."
+      }
+    ],
+    "explanation": "`Permutation` combines two tricks: distribute over a copy of the union (`K extends K`) while keeping the full union in another parameter, and detect `never` with the non-distributive check `[T] extends [never]`. It is a staff-level type puzzle that tests whether you really understand distributive conditional types.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html",
+    "source": "interview:ts-permutation-string-to-union",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-CND-022",
+    "domain": 3,
+    "skill": "conditional-types",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `StringToUnion` makes `StringToUnion<'abc'>` exactly `'a' | 'b' | 'c'`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype StringToUnion<S extends string> =\n  S extends `${infer F}${infer R}` ? F | StringToUnion<R> : never;\n```",
+        "correct": true,
+        "why": "`${infer F}${infer R}` takes one character for `F` and the rest for `R`. The empty string does not match, so it adds `never`, which vanishes from the union."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype StringToUnion<S extends string> =\n  S extends `${infer F}${infer R}` ? F | StringToUnion<R> : S;\n```",
+        "correct": false,
+        "why": "The base case returns the empty string itself, so the result is `'a' | 'b' | 'c' | ''`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype StringToUnion<S extends string> =\n  S extends `${infer F}${infer R}` ? F : never;\n```",
+        "correct": false,
+        "why": "There is no recursion, so only the first character is returned: `'a'`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype StringToUnion<S extends string> = S[number];\n```",
+        "correct": false,
+        "why": "Indexing a string literal type with `number` gives `string`. TypeScript does not split string literals into characters this way."
+      }
+    ],
+    "explanation": "When two `infer` placeholders are adjacent in a template literal, the first one matches exactly one character. That makes character-by-character recursion possible. The detail interviewers watch for is the base case: return `never` so no empty string leaks into the union.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html",
+    "source": "interview:ts-permutation-string-to-union",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-001",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `interface User { id: number; name: string }`, which `MyPartial` makes `const p: MyPartial<User> = {}` compile and gives `p.name` the type `string | undefined`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype MyPartial<T> = { [K in keyof T]?: T[K] };\n```",
+        "correct": true,
+        "why": "The `?` modifier makes every mapped key optional, and `T[K]` keeps each property's own type."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype MyPartial<T> = { [K in keyof T]: T[K] | undefined };\n```",
+        "correct": false,
+        "why": "The keys are still required, they just accept `undefined`, so `{}` is rejected for missing `id` and `name`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype MyPartial<T> = { [K in keyof T]?: T };\n```",
+        "correct": false,
+        "why": "Every property gets the whole object type `T` instead of `T[K]`, so `p.name` is `User | undefined`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype MyPartial<T> = { [K in T]?: T[K] };\n```",
+        "correct": false,
+        "why": "`in` needs a union of keys. `T` is an object type, not `string | number | symbol`, so this is a compile error. You need `keyof T`."
+      }
+    ],
+    "explanation": "Implementing `Partial` is the classic first mapped-type question: iterate over `keyof T`, add the `?` modifier, and look up each value with `T[K]`. The interviewer is checking that you know the mapped-type syntax and the difference between an optional key and a required key that allows `undefined`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-implement-partial-readonly",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techinterview.org/post/3233475106/typescript-advanced-patterns-generics-types/",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-002",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Given `type MyPartial<T> = { [K in keyof T]?: T[K] }`, which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "It keeps the `readonly` modifier: `MyPartial<{ readonly id: number }>` is `{ readonly id?: number }`.",
+        "correct": true,
+        "why": "A mapped type over `keyof T` is homomorphic, so it copies the existing modifiers and only adds `?`."
+      },
+      {
+        "id": "B",
+        "text": "It is shallow: with `type N = MyPartial<{ a: { b: number } }>`, the value `{ a: {} }` is still rejected.",
+        "correct": true,
+        "why": "Only the top-level keys become optional. `a` still has the type `{ b: number }`, which requires `b`."
+      },
+      {
+        "id": "C",
+        "text": "It is identical to `{ [K in keyof T]: T[K] | undefined }`.",
+        "correct": false,
+        "why": "That version keeps every key required, so `{}` would be rejected."
+      },
+      {
+        "id": "D",
+        "text": "It removes `readonly`, because adding `?` replaces the other modifiers.",
+        "correct": false,
+        "why": "Modifiers are independent. Removing `readonly` needs an explicit `-readonly`."
+      },
+      {
+        "id": "E",
+        "text": "Keys that were already optional are dropped from the result.",
+        "correct": false,
+        "why": "Optional keys stay in the result and are still optional."
+      }
+    ],
+    "explanation": "Homomorphic mapped types (`[K in keyof T]`) preserve `readonly` and `?` from the source unless you change them with `+` or `-`. They are also shallow, so a deep version needs recursion. Interviewers often follow \"implement `Partial`\" with \"now make it deep\" to see if you know this.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-implement-partial-readonly",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techinterview.org/post/3233475106/typescript-advanced-patterns-generics-types/",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-003",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `interface Todo { title: string; description?: string }`, which `MyReadonly` makes `todo.title = 'x'` a compile error and keeps `description` optional?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype MyReadonly<T> = { readonly [K in keyof T]: T[K] };\n```",
+        "correct": true,
+        "why": "`readonly` is added to each key, and the homomorphic mapping keeps `description` optional."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype MyReadonly<T> = { readonly [K in keyof T]-?: T[K] };\n```",
+        "correct": false,
+        "why": "`-?` removes the optional modifier, so `description` becomes required."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype MyReadonly<T> = { readonly [K in keyof T]?: T[K] };\n```",
+        "correct": false,
+        "why": "`?` makes every key optional, including `title`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype MyReadonly<T> = { [K in keyof T]: Readonly<T[K]> };\n```",
+        "correct": false,
+        "why": "`Readonly` is applied to the property's value type, not to the key, so `todo.title = 'x'` still compiles."
+      }
+    ],
+    "explanation": "Mapping modifiers go on the key: `readonly [K in keyof T]`. Wrapping the value type does not make the property read-only. The interviewer is checking the modifier syntax and that you know `Readonly` is shallow and has no runtime effect, unlike `Object.freeze`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-implement-partial-readonly",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.shadecoder.com/blogs/typescript-interview-questions-in-2026",
+        "https://www.techinterview.org/post/3233475106/typescript-advanced-patterns-generics-types/",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-004",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `interface User { id: number; name: string; email?: string }`, which `MyPick` compiles and makes `MyPick<User, 'id' | 'email'>` equal to `{ id: number; email?: string }`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype MyPick<T, K extends keyof T> = { [P in K]: T[P] };\n```",
+        "correct": true,
+        "why": "The constraint guarantees every `P` is a key of `T`, so `T[P]` is valid, and only the chosen keys are mapped."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype MyPick<T, K> = { [P in K]: T[P] };\n```",
+        "correct": false,
+        "why": "Without `K extends keyof T`, the definition does not compile: `K` might not be a key type, and `T[P]` reports TS2536 (\"Type 'P' cannot be used to index type 'T'\")."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype MyPick<T, K extends keyof T> = { [P in keyof T]: T[P] };\n```",
+        "correct": false,
+        "why": "It maps over every key of `T` and ignores `K`, so the result is the whole `User`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype MyPick<T, K extends keyof T> = T[K];\n```",
+        "correct": false,
+        "why": "Indexed access returns the union of the chosen values' types, `number | string | undefined`, not an object type."
+      }
+    ],
+    "explanation": "`Pick` needs two parts: a constraint `K extends keyof T`, so callers cannot pass unknown keys, and a mapped type over `K`. The interviewer is mainly looking for the constraint. It is what makes `MyPick<User, 'nope'>` an error at the call site.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-implement-pick",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers",
+        "https://master.dev/courses/interviewing-frontend-v2/",
+        "https://www.techinterview.org/post/3233475106/typescript-advanced-patterns-generics-types/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-005",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `A` resolve to?\n\n```ts\ntype MyPick<T, K extends keyof T> = { [P in K]: T[P] };\n\ninterface User { readonly id: number; name: string; email?: string }\ntype A = MyPick<User, 'id' | 'email'>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`{ readonly id: number; email?: string }`",
+        "correct": true,
+        "why": "Because `K` is a type parameter constrained to `keyof T`, TypeScript treats the mapped type as homomorphic and copies the modifiers of each picked key."
+      },
+      {
+        "id": "B",
+        "text": "`{ id: number; email?: string }`",
+        "correct": false,
+        "why": "The `readonly` modifier is copied as well as `?`. Both come from the source property."
+      },
+      {
+        "id": "C",
+        "text": "`{ id: number; email: string | undefined }`",
+        "correct": false,
+        "why": "That is what you get when mapping over a key union that is not tied to `T`. Here the constraint keeps the modifiers."
+      },
+      {
+        "id": "D",
+        "text": "`{ readonly id: number; email: string | undefined }`",
+        "correct": false,
+        "why": "Modifiers are copied together. The optional `?` on `email` survives just like `readonly` on `id`."
+      }
+    ],
+    "explanation": "A mapped type `{ [P in K]: T[P] }` where `K extends keyof T` keeps each property's `readonly` and `?`. This is why the built-in `Pick` (and `Omit`, which is built from `Pick`) preserves modifiers. The interviewer is probing whether you know when modifiers survive a mapping.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-implement-pick",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers",
+        "https://master.dev/courses/interviewing-frontend-v2/",
+        "https://www.techinterview.org/post/3233475106/typescript-advanced-patterns-generics-types/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-006",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After implementing `Pick`, you are asked to build `MyOmit` from it. With `interface User { readonly id: number; name: string; email?: string }`, which definition makes `MyOmit<User, 'name'>` equal to `{ readonly id: number; email?: string }`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype MyOmit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;\n```",
+        "correct": true,
+        "why": "`Exclude` removes the omitted keys, and `Pick` maps the rest while keeping their `readonly` and `?` modifiers. This is how the standard library defines `Omit`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype MyOmit<T, K extends keyof any> = { [P in Exclude<keyof T, K>]: T[P] };\n```",
+        "correct": false,
+        "why": "The keys are right, but mapping over `Exclude<keyof T, K>` is not homomorphic, so the modifiers are lost: `{ id: number; email: string | undefined }`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype MyOmit<T, K extends keyof any> = Exclude<T, K>;\n```",
+        "correct": false,
+        "why": "`Exclude` filters union members, not object keys. `User` is not assignable to `'name'`, so the result is `User` unchanged."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype MyOmit<T, K extends keyof any> = Pick<T, Extract<keyof T, K>>;\n```",
+        "correct": false,
+        "why": "`Extract` keeps the matching keys, so this picks `name` instead of removing it: `{ name: string }`."
+      }
+    ],
+    "explanation": "`Omit<T, K>` is `Pick<T, Exclude<keyof T, K>>`. Routing through `Pick` is what keeps the modifiers. The `K extends keyof any` constraint means `Omit` does not check that the keys exist. Interviewers like this follow-up because it tests both `Exclude` and homomorphic mapping.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html",
+    "source": "interview:ts-implement-pick",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://bigfrontend.dev/typescript",
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.greatfrontend.com/blog/typescript-interview-questions-for-senior-frontend-developers",
+        "https://master.dev/courses/interviewing-frontend-v2/",
+        "https://www.techinterview.org/post/3233475106/typescript-advanced-patterns-generics-types/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-007",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In code review, a teammate asks whether to annotate return types or derive them. `createStore` is exported from a shared package that other teams import, and the package is turning on `isolatedDeclarations`. `getCartTotals` is a private helper used in one file. Which approach is the soundest?\n\n```ts\nexport function createStore() { return { count: 0, inc() {} }; }\n\nfunction getCartTotals(items: Item[]) {\n  // ...\n  return { subtotal, tax };\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Annotate the exported `createStore`, since it is a public contract and `isolatedDeclarations` requires it, and let `getCartTotals` be inferred, using `ReturnType<typeof getCartTotals>` where needed.",
+        "correct": true,
+        "why": "An explicit type on a public API makes accidental changes fail at the definition. Inference stays the source of truth for private code, and `isolatedDeclarations` reports TS9008 for the unannotated export."
+      },
+      {
+        "id": "B",
+        "text": "Infer everything, because `ReturnType<typeof createStore>` always matches the implementation, so annotations add no safety.",
+        "correct": false,
+        "why": "Always matching the implementation is the risk: an accidental change silently becomes the new public type. It also fails under `isolatedDeclarations`."
+      },
+      {
+        "id": "C",
+        "text": "Annotate every function, including private helpers, because inferred return types become `any` under `strict`.",
+        "correct": false,
+        "why": "Inferred return types are precise, not `any`. Annotating private helpers is a style choice, not a safety need."
+      },
+      {
+        "id": "D",
+        "text": "Avoid `ReturnType` altogether, because it runs the function at compile time and slows the build.",
+        "correct": false,
+        "why": "`ReturnType` is purely a type operation. Nothing is executed."
+      }
+    ],
+    "explanation": "Trust inference where the implementation is the source of truth: local helpers, and types derived for internal use with `ReturnType<typeof fn>`. Write explicit return types where a stable contract matters: exported APIs, library boundaries, and code built with `isolatedDeclarations` (TypeScript 5.5+), which needs declarations emitted without inference. The interviewer is looking for this judgement, not a blanket rule.",
+    "reference": "https://www.typescriptlang.org/tsconfig/#isolatedDeclarations",
+    "source": "interview:ts-trust-inferred-returntype",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233460485/typescript-interview-questions/",
+        "https://www.greatfrontend.com/blog/typeScript-Interview-Questions-for-3-Years-Experience"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-008",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What is `R`?\n\n```ts\nfunction parse(s: string) {\n  if (!s) return { ok: false as const, error: 'empty' };\n  return { ok: true as const, value: s.length };\n}\n\ntype R = ReturnType<typeof parse>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`{ ok: false; error: string; value?: undefined } | { ok: true; value: number; error?: undefined }`",
+        "correct": true,
+        "why": "When object literals are combined into a union, TypeScript normalises them: each member gets the other members' properties as optional `undefined`, so `result.value` can be read without narrowing."
+      },
+      {
+        "id": "B",
+        "text": "`{ ok: false; error: string } | { ok: true; value: number }`",
+        "correct": false,
+        "why": "This is close, but inferred unions of object literals are normalised with the missing properties added as optional `undefined`."
+      },
+      {
+        "id": "C",
+        "text": "`{ ok: boolean; error: string; value: number }`",
+        "correct": false,
+        "why": "The two returns are not merged into one object. `as const` keeps `ok` as the literals `false` and `true`, and the union is kept."
+      },
+      {
+        "id": "D",
+        "text": "`{ ok: boolean; error?: string; value?: number }`",
+        "correct": false,
+        "why": "The union is not collapsed into one object type. Each return keeps its own `ok` literal, so the result can still be narrowed on `ok`."
+      }
+    ],
+    "explanation": "Inferred return types are often more precise than a hand-written one, which is a good reason to trust `ReturnType`. You still need to read what TypeScript actually infers: here it builds a discriminated union and adds optional `undefined` properties. Without `as const`, `ok` would widen to `boolean` and the discriminant would be lost. Interviewers ask this to check that you inspect inferred types rather than guessing.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html",
+    "source": "interview:ts-trust-inferred-returntype",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://lets-code.co.in/articles/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233460485/typescript-interview-questions/",
+        "https://www.greatfrontend.com/blog/typeScript-Interview-Questions-for-3-Years-Experience"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-009",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Given `interface User { id: number; name: string; email: string }`, which two definitions of `PartialBy<T, K>` accept `{ name: 'x' }` as a `PartialBy<User, 'id' | 'email'>` while still rejecting `{}`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;\n```",
+        "correct": true,
+        "why": "The chosen keys come back optional through `Partial<Pick<...>>`, and every other key stays required through `Omit`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype PartialBy<T, K extends keyof T> = Partial<T> & Omit<T, K>;\n```",
+        "correct": true,
+        "why": "`Partial<T>` makes everything optional, and intersecting with `Omit<T, K>` makes the non-chosen keys required again, which gives the same set of accepted values."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype PartialBy<T, K extends keyof T> = Partial<Omit<T, K>> & Pick<T, K>;\n```",
+        "correct": false,
+        "why": "This is the wrong way round: `id` and `email` stay required and `name` becomes optional, so `{ name: 'x' }` is rejected."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype PartialBy<T, K extends keyof T> = Omit<T, K> | Partial<Pick<T, K>>;\n```",
+        "correct": false,
+        "why": "A union accepts any value matching either member, so `{ id: 1 }` is accepted even though `name` is missing."
+      },
+      {
+        "id": "E",
+        "text": "```ts\ntype PartialBy<T, K extends keyof T> = Omit<T, K> & Pick<T, K>;\n```",
+        "correct": false,
+        "why": "This rebuilds `User` with every key required, so `{ name: 'x' }` is rejected."
+      }
+    ],
+    "explanation": "`PartialBy` combines utility types: split the object into the chosen keys and the rest, make the chosen part optional, and intersect. In an intersection, a key is required if any member requires it, which is why `Partial<T> & Omit<T, K>` also works. The interviewer wants to see you compose `Omit`, `Pick` and `Partial` rather than write a mapped type from scratch.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html",
+    "source": "interview:ts-partial-by-keys",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233460485/typescript-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-010",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This `PartialByKeys` works in assignments, but the type-challenge test `Expect<Equal<PartialByKeys<User, 'id'>, { id?: number; name: string; email: string }>>` fails, even though the two types are assignable to each other. Why, and what fixes it?\n\n```ts\ntype PartialByKeys<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "It is an intersection, which `Equal` treats as distinct from a flat object type. Wrapping it in `type Simplify<T> = { [P in keyof T]: T[P] }` fixes it.",
+        "correct": true,
+        "why": "Mapping over the intersection produces one object type with the same properties, which the `Equal` helper accepts as identical."
+      },
+      {
+        "id": "B",
+        "text": "`Omit` also removes `name` and `email`, so the intersection is missing those two keys. Replacing `Omit` with `Exclude` keeps them and fixes it.",
+        "correct": false,
+        "why": "`Omit<T, 'id'>` keeps `name` and `email`. `Exclude` works on unions, not object keys, so the change would break the type."
+      },
+      {
+        "id": "C",
+        "text": "`Partial<Pick<T, K>>` makes `id` required with type `number | undefined`. Replacing `Partial` with `Required` fixes it.",
+        "correct": false,
+        "why": "`Partial` adds `?`, so `id` really is optional. `Required` would make it mandatory, which is the opposite of the goal."
+      },
+      {
+        "id": "D",
+        "text": "The constraint `K extends keyof T` rejects `'id'`. Changing it to `K extends string` fixes it.",
+        "correct": false,
+        "why": "`'id'` is a key of `User`, so the constraint is satisfied. Loosening it would only let invalid keys through."
+      }
+    ],
+    "explanation": "Intersections and flattened object types are mutually assignable but not identical, and type-challenge `Equal` checks identity. A `Simplify` (or `Merge`) mapped type over the intersection gives a single object, which also reads better in editor tooltips. Interviewers use this to see whether you know the difference between assignable and identical types.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-partial-by-keys",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233460485/typescript-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-011",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "The reverse utility, `RequiredBy`, should make chosen keys required. Given `interface Opt { id?: number; name?: string; age: number }`, which two definitions reject `{ age: 2 }` as a `RequiredBy<Opt, 'id'>` while keeping `name` optional? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;\n```",
+        "correct": true,
+        "why": "`Required` removes `?` from the picked keys, and the rest keep their original modifiers through `Omit`."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype RequiredBy<T, K extends keyof T> = Omit<T, K> & Pick<Required<T>, K>;\n```",
+        "correct": true,
+        "why": "Making everything required first and then picking the chosen keys gives the same result in a different order."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype RequiredBy<T, K extends keyof T> = Omit<T, K> & Pick<T, K>;\n```",
+        "correct": false,
+        "why": "`Pick` copies `?` from `Opt`, so `id` stays optional and `{ age: 2 }` is accepted."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype RequiredBy<T, K extends keyof T> = Required<Omit<T, K>> & Pick<T, K>;\n```",
+        "correct": false,
+        "why": "This is the wrong way round: `name` becomes required and `id` stays optional."
+      },
+      {
+        "id": "E",
+        "text": "```ts\ntype RequiredBy<T, K extends keyof T> = Omit<T, K> & { [P in K]: T[P] };\n```",
+        "correct": false,
+        "why": "Because `K` is constrained to `keyof T`, this mapped type is homomorphic and copies the `?` from `id`, so `{ age: 2 }` is still accepted."
+      }
+    ],
+    "explanation": "Making selected keys required is the mirror of `PartialBy`: split, apply `Required` to the chosen part, and intersect. The subtle trap is `{ [P in K]: T[P] }`: with `K extends keyof T`, TypeScript keeps the source modifiers, so nothing becomes required. The interviewer is testing whether you know when modifiers are preserved.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html",
+    "source": "interview:ts-partial-by-keys",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://www.simplilearn.com/tutorials/typescript-tutorial/typescript-interview-questions",
+        "https://www.techinterview.org/post/3233460485/typescript-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-012",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What is `Merge<F, S>['b']`?\n\n```ts\ntype F = { a: number; b: string };\ntype S = { b: number; c: boolean };\n\ntype Merge<F, S> = F & S;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`never`",
+        "correct": true,
+        "why": "An intersection keeps both declarations of `b`, so its type is `string & number`, which has no values and reduces to `never`."
+      },
+      {
+        "id": "B",
+        "text": "`number`",
+        "correct": false,
+        "why": "That is what a merge where the second object wins should give, but an intersection does not let one side override the other."
+      },
+      {
+        "id": "C",
+        "text": "`string | number`",
+        "correct": false,
+        "why": "An intersection combines property types with `&`, not `|`."
+      },
+      {
+        "id": "D",
+        "text": "`string`",
+        "correct": false,
+        "why": "The first object does not win either. Both property types are intersected."
+      }
+    ],
+    "explanation": "`F & S` is not a merge: shared keys get intersected property types, and conflicting primitives become `never`. That is why type challenges ask for a `Merge` where the second type overrides the first. The interviewer is checking that you know an intersection is not the same as object spread.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/objects.html",
+    "source": "interview:ts-merge-object-types",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-013",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With `type F = { a: number; b: string }` and `type S = { b: number; c: boolean }`, which `Merge` gives exactly `{ a: number; b: number; c: boolean }`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype Merge<F, S> = {\n  [K in keyof F | keyof S]:\n    K extends keyof S ? S[K] : K extends keyof F ? F[K] : never;\n};\n```",
+        "correct": true,
+        "why": "It maps over the keys of both types and checks `S` first, so the second type wins for shared keys and the result is one flat object type."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype Merge<F, S> = {\n  [K in keyof F | keyof S]: K extends keyof F ? F[K]\n    : K extends keyof S ? S[K]\n    : never;\n};\n```",
+        "correct": false,
+        "why": "`F` is checked first, so the first type wins and `b` stays `string`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype Merge<F, S> = { [K in keyof F & keyof S]: S[K] };\n```",
+        "correct": false,
+        "why": "`keyof F & keyof S` is only the shared keys, so the result is `{ b: number }`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype Merge<F, S> = F & S;\n```",
+        "correct": false,
+        "why": "An intersection makes `b` `string & number`, which is `never`."
+      }
+    ],
+    "explanation": "A merge where the second type wins maps over `keyof F | keyof S` and looks up each key in `S` before `F`. Interviewers often add a follow-up such as `AppendToObject` or `Diff`, which use the same key-union pattern.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-merge-object-types",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-014",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Under default `strict` settings, what is the type of `r`?\n\n```ts\ndeclare const a: { x: number; y: string };\ndeclare const b: { x?: string };\n\nconst r = { ...a, ...b };\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`{ x: string | number; y: string }`",
+        "correct": true,
+        "why": "`b.x` is optional, so it might be missing at runtime and `a.x` would survive. TypeScript joins both possible types and keeps `x` required."
+      },
+      {
+        "id": "B",
+        "text": "`{ x: string; y: string }`",
+        "correct": false,
+        "why": "That assumes `b` always has `x`. An optional property may be missing, so the earlier `number` can survive the spread."
+      },
+      {
+        "id": "C",
+        "text": "`{ x?: string; y: string }`",
+        "correct": false,
+        "why": "`a` always provides `x`, so the result's `x` cannot be missing."
+      },
+      {
+        "id": "D",
+        "text": "`{ x: string | undefined; y: string }`",
+        "correct": false,
+        "why": "TypeScript models an optional property in a spread as possibly missing, not as `undefined`, so `number` from `a` stays in the type."
+      }
+    ],
+    "explanation": "Object spread typing has its own merge rules: a later required property replaces the earlier one, and a later optional property gives a union of the two. A type-level `Merge` that simply takes `S[K]` gets this case wrong. Note the soundness gap: without `exactOptionalPropertyTypes`, `{ x: undefined }` is also a valid `b` and would overwrite `x` with `undefined` at runtime. The interviewer is checking whether your `Merge` type matches what spread really does.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/objects.html",
+    "source": "interview:ts-merge-object-types",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges",
+        "https://master.dev/courses/interviewing-frontend-v2/"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-015",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which pair of definitions behaves like the built-ins, so that `MyRecord<'a' | 1, boolean>` is `{ a: boolean; 1: boolean }` and `MyNonNullable<string | null | undefined>` is `string`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype MyRecord<K extends keyof any, V> = { [P in K]: V };\ntype MyNonNullable<T> = T & {};\n```",
+        "correct": true,
+        "why": "`keyof any` is `string | number | symbol`, so both keys are allowed. Intersecting with `{}` removes `null` and `undefined`, which is how the standard library has defined `NonNullable` since TypeScript 4.8."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype MyRecord<K extends string, V> = { [P in K]: V };\ntype MyNonNullable<T> = T & {};\n```",
+        "correct": false,
+        "why": "The `string` constraint rejects the numeric key `1`, so `MyRecord<'a' | 1, boolean>` is a compile error."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype MyRecord<K extends keyof any, V> = { [P in K]: V };\ntype MyNonNullable<T> = Exclude<T, null>;\n```",
+        "correct": false,
+        "why": "`Exclude<T, null>` removes only `null`, so the result is `string | undefined`."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype MyRecord<K, V> = { [P in keyof K]: V };\ntype MyNonNullable<T> = T extends null | undefined ? never : T;\n```",
+        "correct": false,
+        "why": "`MyNonNullable` is fine, but `MyRecord` maps over the keys of the key type itself. For a union of primitive literals that mapping returns the literals unchanged, `'a' | 1`."
+      }
+    ],
+    "explanation": "`Record<K, V>` is a mapped type over `K` with `K extends keyof any`. `NonNullable<T>` can be written as a distributive conditional or, as in today's standard library, as `T & {}`. The interviewer wants to see the right key constraint and that both `null` and `undefined` are removed.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/utility-types.html",
+    "source": "interview:ts-implement-record-nonnullable",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/typescript"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-016",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What do `A` and `B` resolve to?\n\n```ts\ntype If<C extends boolean, T, F> = C extends true ? T : F;\n\ntype A = If<true, 'a', 'b'>;\ntype B = If<boolean, 'a', 'b'>;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`A` is `'a'` and `B` is `'a' | 'b'`",
+        "correct": true,
+        "why": "`C` is a naked type parameter, so the conditional distributes over `boolean`, which is `true | false`, and both branches are joined."
+      },
+      {
+        "id": "B",
+        "text": "`A` is `'a'` and `B` is `'b'`",
+        "correct": false,
+        "why": "That happens with the non-distributive form `[C] extends [true]`, because `boolean` as a whole is not assignable to `true`."
+      },
+      {
+        "id": "C",
+        "text": "`A` is `'a'` and `B` is `'a'`",
+        "correct": false,
+        "why": "`false` is one of the members of `boolean`, and it takes the false branch."
+      },
+      {
+        "id": "D",
+        "text": "`A` is `'a'` and `B` is a compile error",
+        "correct": false,
+        "why": "`boolean` satisfies the `C extends boolean` constraint. Only values like `null` would be rejected."
+      }
+    ],
+    "explanation": "`If` is an easy type challenge, but `boolean` is the union `true | false`, so a naked `C extends true` distributes over it. Wrapping both sides in a tuple turns distribution off. The interviewer uses this to check that you know distributive conditional types.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html",
+    "source": "interview:ts-if-and-tuple-to-object",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-017",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `const tuple = ['tesla', 'model 3'] as const`, which `TupleToObject` makes `TupleToObject<typeof tuple>` equal to `{ tesla: 'tesla'; 'model 3': 'model 3' }`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype TupleToObject<T extends readonly PropertyKey[]> = { [K in T[number]]: K };\n```",
+        "correct": true,
+        "why": "`T[number]` is the union of the tuple's elements, and mapping over it uses each element as both key and value. The `readonly` constraint accepts the `as const` tuple."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype TupleToObject<T extends readonly any[]> = { [K in keyof T]: K };\n```",
+        "correct": false,
+        "why": "Mapping over `keyof` a tuple maps its positions, so the result is a tuple of index strings: `readonly ['0', '1']`."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype TupleToObject<T extends PropertyKey[]> = { [K in T[number]]: K };\n```",
+        "correct": false,
+        "why": "`typeof tuple` is a `readonly` tuple, which is not assignable to the mutable `PropertyKey[]` constraint, so this is a compile error."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype TupleToObject<T extends readonly PropertyKey[]> = { [K in T[number]]: T[K] };\n```",
+        "correct": false,
+        "why": "`K` is an element value such as `'tesla'`, not an index, so `T[K]` is a compile error."
+      }
+    ],
+    "explanation": "Converting a tuple to an object needs the element union, `T[number]`, as the key set, plus a `readonly` constraint because `as const` produces readonly tuples. Without `as const`, the array is `string[]` and the result is just `{ [x: string]: string }`. Interviewers ask this to test indexed access on tuples and the effect of `as const`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html",
+    "source": "interview:ts-if-and-tuple-to-object",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  },
+  {
+    "id": "TSM-IQ3-MAP-018",
+    "domain": 3,
+    "skill": "mapped-utility",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `interface Todo { title: string; description?: string; completed: boolean }`, which `MyReadonly2` makes only `title` read-only in `MyReadonly2<Todo, 'title'>`, keeps `description` optional, and makes every key read-only when you write `MyReadonly2<Todo>`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```ts\ntype MyReadonly2<T, K extends keyof T = keyof T> =\n  Readonly<Pick<T, K>> & Omit<T, K>;\n```",
+        "correct": true,
+        "why": "The chosen keys become read-only, the rest keep their modifiers through `Omit`, and the default `keyof T` covers the one-argument form."
+      },
+      {
+        "id": "B",
+        "text": "```ts\ntype MyReadonly2<T, K extends keyof T> =\n  Readonly<Pick<T, K>> & Omit<T, K>;\n```",
+        "correct": false,
+        "why": "There is no default for `K`, so `MyReadonly2<Todo>` is a compile error because a type argument is missing."
+      },
+      {
+        "id": "C",
+        "text": "```ts\ntype MyReadonly2<T, K extends keyof T = keyof T> =\n  Readonly<Pick<T, K>> & T;\n```",
+        "correct": false,
+        "why": "Intersecting with the full `T` adds a writable `title` again, and in an intersection the property is writable if any member allows it, so `todo.title = 'x'` compiles."
+      },
+      {
+        "id": "D",
+        "text": "```ts\ntype MyReadonly2<T, K extends keyof T = keyof T> =\n  { readonly [P in K]: T[P] } & { [P in Exclude<keyof T, K>]: T[P] };\n```",
+        "correct": false,
+        "why": "Mapping over `Exclude<keyof T, K>` is not homomorphic, so `description` loses its `?` and becomes required."
+      }
+    ],
+    "explanation": "Per-key modifier utilities follow one recipe: `Pick` the chosen keys and change their modifier, `Omit` the rest so their modifiers are preserved, and intersect. A default type parameter handles the 'all keys' case. The interviewer is testing modifier preservation and how intersections combine `readonly`.",
+    "reference": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html",
+    "source": "interview:ts-pick-by-type-readonly-by-keys",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/type-challenges/type-challenges"
+      ]
+    }
+  }
+]

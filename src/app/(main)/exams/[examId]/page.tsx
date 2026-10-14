@@ -22,7 +22,8 @@ import { examFaq } from '@/lib/exam-faq';
 import { breadcrumbLd, courseLd, examDescription, examPageTitle, faqLd, graph } from '@/lib/seo';
 import { cn } from '@/lib/utils';
 import { getExamHubData, type ExamHubData } from '@/server/analytics';
-import { getExam, getPoolCounts, getSampleQuestions, getSkillCounts, getStudyNotes } from '@/server/exams';
+import { getExam, getPoolCounts, getRoleCounts, getSampleQuestions, getSkillCounts, getStudyNotes } from '@/server/exams';
+import type { RoleCounts } from '@/lib/role-levels';
 import { getStudyPlan } from '@/server/plan';
 import { getUser } from '@/server/session';
 import { WeekPlan } from '@/components/plan/study-plan';
@@ -57,7 +58,7 @@ export default async function ExamHubPage({ params, searchParams }: { params: Pr
   const cfg = ex.config;
   // Catalogue data is cached in-process, so the public page renders straight into the first HTML
   // (what crawlers read). Only the learner's own progress streams in afterwards.
-  const [counts, notes, pools, samples] = await Promise.all([getSkillCounts(ex.id), getStudyNotes(ex.id), getPoolCounts(ex.id), getSampleQuestions(ex.id)]);
+  const [counts, notes, pools, samples, roles] = await Promise.all([getSkillCounts(ex.id), getStudyNotes(ex.id), getPoolCounts(ex.id), getSampleQuestions(ex.id), getRoleCounts(ex.id)]);
   const studySkills = Object.keys(notes);
   const faqs = examFaq(ex);
 
@@ -117,7 +118,7 @@ export default async function ExamHubPage({ params, searchParams }: { params: Pr
 
       {/* ---------------- the learner's own sections stream in behind the public page */}
       <Suspense fallback={<LearnerSectionsSkeleton />}>
-        <LearnerSections examId={ex.id} exam={cfg} counts={counts} hasImported={pools.imported > 0} start={start} />
+        <LearnerSections examId={ex.id} exam={cfg} counts={counts} roles={roles} hasImported={pools.imported > 0} start={start} />
       </Suspense>
 
       <Reveal delay={0.1}>
@@ -151,8 +152,8 @@ export default async function ExamHubPage({ params, searchParams }: { params: Pr
   );
 }
 
-async function LearnerSections({ examId, exam, counts, hasImported, start }: {
-  examId: string; exam: ExamConfig; counts: Record<string, number>; hasImported: boolean; start?: string;
+async function LearnerSections({ examId, exam, counts, roles, hasImported, start }: {
+  examId: string; exam: ExamConfig; counts: Record<string, number>; roles: RoleCounts; hasImported: boolean; start?: string;
 }) {
   const learner = await learnerHub(examId);
   const user = learner?.user ?? null;
@@ -170,6 +171,7 @@ async function LearnerSections({ examId, exam, counts, hasImported, start }: {
           defaultName={user && !user.isAnonymous ? user.name : ''}
           hasImported={hasImported}
           skillCounts={counts}
+          roleCounts={roles}
           due={hub?.due ?? 0}
           mistakes={hub?.mistakes ?? 0}
           autoOpen={user && (start === 'quick' || start === 'full' || start === 'practice') ? start : undefined}
