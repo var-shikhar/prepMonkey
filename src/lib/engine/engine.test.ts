@@ -35,7 +35,8 @@ describe('content', () => {
       for (const row of coverageReport(bundle.config, bundle.questions)) expect(row.ok, `${bundle.config.code} ${row.skill}`).toBe(true);
       for (const id of Object.keys(bundle.study)) expect(bundle.config.skills.some((s) => s.id === id), `study notes for ${id}`).toBe(true);
     }
-  });
+    // Reads and checks every bank (about 9,000 items); slow when other test files run alongside it.
+  }, 180_000);
 
   test('study notes exist for skills', () => {
     expect(Object.keys(STUDY).length).toBeGreaterThan(0);

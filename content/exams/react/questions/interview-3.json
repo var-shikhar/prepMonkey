@@ -1,0 +1,2264 @@
+[
+  {
+    "id": "RCT-IQ3-STA-001",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a machine-coding round you build a sortable table. Clicking the \"Price\" header calls this handler, but the rows stay in their old order on screen. They only jump into sorted order when some unrelated state changes later. What is the bug?\n\n```jsx\nconst [rows, setRows] = useState(initialRows);\n\nfunction sortByPrice() {\n  const sorted = rows.sort((a, b) => a.price - b.price);\n  setRows(sorted);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`sort` reorders the state array in place and returns that same array, so React compares the old and new value with `Object.is`, sees no change and skips the render",
+        "correct": true,
+        "why": "`Array.prototype.sort` mutates and returns its receiver. The next state is the identical reference, so React bails out, while the mutated array shows up on the next unrelated render."
+      },
+      {
+        "id": "B",
+        "text": "The comparator must return a boolean such as `a.price > b.price`; returning a number confuses the sort",
+        "correct": false,
+        "why": "The opposite is true. A comparator must return a negative, zero or positive number. A boolean never signals \"less than\", so it gives unreliable orderings."
+      },
+      {
+        "id": "C",
+        "text": "`setRows` is asynchronous, so the handler must `await` it before the table can re-render",
+        "correct": false,
+        "why": "`setRows` returns nothing to await. Updates are queued and a re-render is scheduled whenever the new value differs from the old one, which is the part that fails here."
+      },
+      {
+        "id": "D",
+        "text": "The table needs a `key` on each row; without keys React cannot reorder rows",
+        "correct": false,
+        "why": "Missing keys cause a console warning and poor reuse, but they would not stop the render from happening. Here no render is scheduled at all."
+      }
+    ],
+    "explanation": "`sort`, `reverse` and `splice` change the array they are called on. When you sort state in place and set the same reference, React's `Object.is` check sees no change and skips the update. You have also mutated state that the current render may still be reading. Copy first: `setRows([...rows].sort(cmp))`, or use the non-mutating ES2023 method `rows.toSorted(cmp)`. Interviewers use this bug to check whether you really understand immutable updates, not just the rule \"don't mutate\".",
+    "reference": "https://react.dev/learn/updating-arrays-in-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://javascript.plainenglish.io/meesho-frontend-sde-interview-experience-30fa9cba5d54",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md",
+        "https://www.frontendinterviewhandbook.com/companies/amazon-front-end-interview-questions",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ],
+      "companies": [
+        "Meesho",
+        "Wayfair",
+        "Amazon",
+        "Verkada"
+      ]
+    },
+    "source": "interview:rx-mc-data-table"
+  },
+  {
+    "id": "RCT-IQ3-STA-002",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `DataTable` receives `rows` (about 5,000 items) as a prop. It has a search box and sortable columns. The interviewer's requirements are: never mutate the `rows` prop, avoid keeping a second copy of the data in state that can go out of sync, and avoid re-filtering when an unrelated state value (an open tooltip) changes. `query` and `sort` (`{ key, dir }`) are already in state. Which version meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nconst visible = useMemo(() => {\n  const q = query.toLowerCase();\n  const sign = sort.dir === 'asc' ? 1 : -1;\n  return rows\n    .filter(r => r.name.toLowerCase().includes(q))\n    .sort((a, b) => compare(a[sort.key], b[sort.key]) * sign);\n}, [rows, query, sort]);\n```",
+        "correct": true,
+        "why": "`filter` always returns a new array, so the `sort` that follows reorders that copy, not the prop. The result is derived during render, and `useMemo` recalculates only when `rows`, `query` or `sort` change."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nconst [visible, setVisible] = useState(rows);\nuseEffect(() => {\n  const q = query.toLowerCase();\n  const sign = sort.dir === 'asc' ? 1 : -1;\n  setVisible(rows\n    .filter(r => r.name.toLowerCase().includes(q))\n    .sort((a, b) => compare(a[sort.key], b[sort.key]) * sign));\n}, [rows, query, sort]);\n```",
+        "correct": false,
+        "why": "This stores a second copy of the data in state. Each change renders once with stale rows and then again after the effect, which is the \"you might not need an effect\" anti-pattern."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nconst visible = useMemo(() => {\n  const q = query.toLowerCase();\n  const sign = sort.dir === 'asc' ? 1 : -1;\n  return rows\n    .sort((a, b) => compare(a[sort.key], b[sort.key]) * sign)\n    .filter(r => r.name.toLowerCase().includes(q));\n}, [rows, query, sort]);\n```",
+        "correct": false,
+        "why": "Sorting first means `sort` runs on the `rows` prop itself and reorders the parent's array in place. That breaks the \"never mutate props\" requirement, even though the screen may look right."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nconst q = query.toLowerCase();\nconst sign = sort.dir === 'asc' ? 1 : -1;\nconst visible = [...rows]\n  .sort((a, b) => compare(a[sort.key], b[sort.key]) * sign)\n  .filter(r => r.name.toLowerCase().includes(q));\n```",
+        "correct": false,
+        "why": "This is correct and does not mutate, but it copies, sorts and filters all 5,000 rows on every render, including the tooltip renders. That fails the third requirement."
+      }
+    ],
+    "explanation": "Keep the minimal state (the query and the sort), and derive the visible rows during render. Wrap the derivation in `useMemo` only when it is expensive and unrelated renders happen. Check which method creates the copy: `filter`, `map`, `slice` and `toSorted` return new arrays, while `sort` and `reverse` work in place. Filtering before sorting also means fewer items to sort. Interviewers watch for a \"filteredRows\" state synced by an effect. It is the most common over-engineering in data-table rounds.",
+    "reference": "https://react.dev/learn/you-might-not-need-an-effect#updating-state-based-on-props-or-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://javascript.plainenglish.io/meesho-frontend-sde-interview-experience-30fa9cba5d54",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md",
+        "https://www.frontendinterviewhandbook.com/companies/amazon-front-end-interview-questions",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ],
+      "companies": [
+        "Meesho",
+        "Wayfair",
+        "Amazon",
+        "Verkada"
+      ]
+    },
+    "source": "interview:rx-mc-data-table"
+  },
+  {
+    "id": "RCT-IQ3-STA-003",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your table sorts with the code below. Clicking the same header flips the direction, and clicking a new header sorts it ascending. The interviewer asks about sort behaviour. Which two statements are true? (Choose two.)\n\n```jsx\nfunction onHeaderClick(key) {\n  setSort(s => s.key === key\n    ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' }\n    : { key, dir: 'asc' });\n}\n\nconst sign = sort.dir === 'asc' ? 1 : -1;\nconst cmp = (a, b) =>\n  (a[sort.key] < b[sort.key] ? -1 : a[sort.key] > b[sort.key] ? 1 : 0) * sign;\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Since ES2019, `Array.prototype.sort` is required to be stable, so rows that compare as equal keep their previous relative order",
+        "correct": true,
+        "why": "The spec has required a stable sort since ES2019, and all modern engines comply. Ties are not shuffled."
+      },
+      {
+        "id": "B",
+        "text": "Building \"descending\" as `ascending.toReversed()` would also reverse the order of tied rows, while multiplying the comparator by -1 keeps ties in their original order",
+        "correct": true,
+        "why": "Reversing the whole array flips equal items too. Negating the comparator still returns 0 for ties, so a stable sort leaves them where they were."
+      },
+      {
+        "id": "C",
+        "text": "If the price column holds strings such as `\"9\"` and `\"10\"`, the `<` comparison orders them numerically",
+        "correct": false,
+        "why": "String comparison is lexicographic, so `\"10\" < \"9\"` is `true`. Convert numeric columns with `Number()`, or use `localeCompare` with `{ numeric: true }`."
+      },
+      {
+        "id": "D",
+        "text": "A comparator that returns `a[key] > b[key]` (a boolean) is an equally reliable shortcut, because `true` and `false` become 1 and 0",
+        "correct": false,
+        "why": "A boolean comparator never returns a negative number, so it is not a consistent comparator, and the resulting order depends on the engine. Always return a negative, zero or positive number."
+      },
+      {
+        "id": "E",
+        "text": "Using the updater form in `onHeaderClick` is required, because reading `sort` directly in an event handler always gives the initial value",
+        "correct": false,
+        "why": "Reading `sort` in a handler gives the value from the current render, which is fine for a single click. The updater form is a good habit, but not because the plain read is always the initial value."
+      }
+    ],
+    "explanation": "Sort stability matters when users sort by one column and then another: with a stable sort, rows tied on the new column stay in the order of the previous sort. Implementing direction by negating the comparator keeps that guarantee, while reversing a sorted array does not. The other classic table bugs are lexicographic comparison of numeric strings and boolean comparators. Interviewers use the follow-up \"what happens to ties?\" to separate candidates who know the `sort` contract from those who only call it.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://javascript.plainenglish.io/meesho-frontend-sde-interview-experience-30fa9cba5d54",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md",
+        "https://www.frontendinterviewhandbook.com/companies/amazon-front-end-interview-questions",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ],
+      "companies": [
+        "Meesho",
+        "Wayfair",
+        "Amazon",
+        "Verkada"
+      ]
+    },
+    "source": "interview:rx-mc-data-table"
+  },
+  {
+    "id": "RCT-IQ3-EFF-001",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Machine-coding prompt: \"Each click on Add appends a progress bar that fills from 0% to 100% in 2 seconds, then reports that it has finished.\" Which `ProgressBar` meets the requirement with the least risk of bugs?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\n// .fill { animation: fill 2s linear forwards; }\n// @keyframes fill { from { width: 0% } to { width: 100% } }\nfunction ProgressBar({ onDone }) {\n  return (\n    <div className=\"track\">\n      <div className=\"fill\" onAnimationEnd={onDone} />\n    </div>\n  );\n}\n```",
+        "correct": true,
+        "why": "A CSS animation starts as soon as the element is inserted, runs off the main thread where possible, and fires `animationend` exactly once when it finishes. No timers or state are needed."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nfunction ProgressBar({ onDone }) {\n  return (\n    <div className=\"track\">\n      <div\n        className=\"fill\"\n        style={{ width: '100%', transition: 'width 2s linear' }}\n        onTransitionEnd={onDone}\n      />\n    </div>\n  );\n}\n```",
+        "correct": false,
+        "why": "A transition only runs when a property changes from a previously computed value. Here the bar is inserted already at 100%, so it appears full immediately and `transitionend` never fires."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nfunction ProgressBar({ onDone }) {\n  const [width, setWidth] = useState(0);\n  useEffect(() => {\n    const id = setInterval(() => setWidth(width + 1), 20);\n    return () => clearInterval(id);\n  }, []);\n  useEffect(() => { if (width === 100) onDone(); }, [width]);\n  return <div className=\"track\"><div className=\"fill\" style={{ width: width + '%' }} /></div>;\n}\n```",
+        "correct": false,
+        "why": "The interval callback closes over the first render's `width` (0), so every tick sets 1. The bar stops at 1% and never finishes."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nfunction ProgressBar({ onDone }) {\n  const [width, setWidth] = useState(0);\n  useEffect(() => {\n    setInterval(() => setWidth(w => Math.min(w + 1, 100)), 20);\n  }, []);\n  useEffect(() => { if (width === 100) onDone(); }, [width]);\n  return <div className=\"track\"><div className=\"fill\" style={{ width: width + '%' }} /></div>;\n}\n```",
+        "correct": false,
+        "why": "This fills correctly, but the interval is never cleared. It keeps ticking after 100% and after unmount, and StrictMode's extra mount in development starts a second one."
+      }
+    ],
+    "explanation": "The progress-bars question (and its \"limit concurrency\" follow-up) is a favourite in frontend machine-coding rounds. For a fixed-duration fill, a CSS animation with `onAnimationEnd` is the simplest correct answer. If you drive it from JavaScript instead, use a functional update and clear the interval in the cleanup. The interviewer is checking that you know why transitions need a starting value and how stale closures stall an interval.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Element/animationend_event",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Nutanix.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CommerceIQ.md",
+        "https://learnersbucket.com/tech/frontend-interview-process-at-coursera/",
+        "https://www.frontendinterviewhandbook.com/companies/uber-front-end-interview-questions",
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ],
+      "companies": [
+        "Nutanix",
+        "CommerceIQ",
+        "Coursera",
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-progress-bars"
+  },
+  {
+    "id": "RCT-IQ3-EFF-002",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Follow-up: \"At most 3 bars may fill at the same time. Extra bars wait, and the next waiting bar starts as soon as any running bar finishes.\" State is `bars`, an array of `{ id, done }` in click order, and a bar animates only when its `id` is in `runningIds`. When a bar finishes, the parent sets its `done` to `true`. Which way of computing `runningIds` meets the requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const runningIds = bars.slice(0, 3).map(b => b.id);`",
+        "correct": false,
+        "why": "This is always the first three bars. Once they finish, nothing else ever starts."
+      },
+      {
+        "id": "B",
+        "text": "`const runningIds = bars.filter(b => !b.done).slice(0, 3).map(b => b.id);`",
+        "correct": true,
+        "why": "The first three unfinished bars run. When one is marked done, the next waiting bar falls into the window on the same render, so nothing extra has to be stored or synchronised."
+      },
+      {
+        "id": "C",
+        "text": "`const runningIds = bars.filter(b => !b.done).length <= 3 ? bars.map(b => b.id) : [];`",
+        "correct": false,
+        "why": "With four or more unfinished bars, nothing runs at all, so the queue never drains."
+      },
+      {
+        "id": "D",
+        "text": "`const runningIds = bars.filter(b => b.done).length < 3 ? bars.map(b => b.id) : [];`",
+        "correct": false,
+        "why": "It counts finished bars instead of running ones. At first every bar starts at once, which breaks the limit, and after three finish nothing more runs."
+      }
+    ],
+    "explanation": "Model the queue as data and derive what runs from it: \"the first K unfinished bars\". The only event you handle is \"bar X finished\", and the next bar starts as a consequence of the derived value. Hand-maintained counters (`running + 1` on start, `running - 1` on finish) are where candidates usually go wrong, through missed decrements, stale closures and double starts in StrictMode. For a priority follow-up, sort the unfinished bars by priority (with a non-mutating sort) before taking the first K.",
+    "reference": "https://react.dev/learn/choosing-the-state-structure#avoid-redundant-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Nutanix.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CommerceIQ.md",
+        "https://learnersbucket.com/tech/frontend-interview-process-at-coursera/",
+        "https://www.frontendinterviewhandbook.com/companies/uber-front-end-interview-questions",
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ],
+      "companies": [
+        "Nutanix",
+        "CommerceIQ",
+        "Coursera",
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-progress-bars"
+  },
+  {
+    "id": "RCT-IQ3-EFF-003",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A JavaScript-driven bar reports completion to its parent so the parent can start the next queued bar. Testers report that finishing one bar starts several queued bars. Which two statements identify real bugs in this code? (Choose two.)\n\n```jsx\nfunction ProgressBar({ onComplete }) {\n  const [progress, setProgress] = useState(0);\n  useEffect(() => {\n    const id = setInterval(() => {\n      setProgress(p => {\n        if (p + 1 >= 100) {\n          onComplete();\n          return 100;\n        }\n        return p + 1;\n      });\n    }, 20);\n    return () => clearInterval(id);\n  }, []);\n  return <div className=\"fill\" style={{ width: progress + '%' }} />;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "The interval keeps running after the bar reaches 100%, and every later tick calls `onComplete` again, because `p + 1 >= 100` stays true",
+        "correct": true,
+        "why": "Nothing clears the interval when progress hits 100, so each 20 ms tick re-enters the branch and reports completion again, dequeuing another bar each time."
+      },
+      {
+        "id": "B",
+        "text": "Updater functions must be pure. React may call them more than once (StrictMode calls them twice in development), so a side effect such as `onComplete()` inside one can run twice",
+        "correct": true,
+        "why": "react.dev documents that StrictMode double-invokes updater functions to expose impurity. Calling a parent callback from inside an updater is exactly the kind of side effect that gets duplicated."
+      },
+      {
+        "id": "C",
+        "text": "`p` is a stale value captured from the first render, so the bar can never pass 1%",
+        "correct": false,
+        "why": "`p` is the updater argument, which React supplies with the latest queued state on every call. This is the fix for stale closures, not an instance of one."
+      },
+      {
+        "id": "D",
+        "text": "The cleanup never runs because the dependency array is empty",
+        "correct": false,
+        "why": "With `[]`, the cleanup runs on unmount (and between StrictMode's development remount). An empty array means \"don't re-run on updates\", not \"never clean up\"."
+      },
+      {
+        "id": "E",
+        "text": "`setProgress` called from `setInterval` is not batched, so each tick renders twice",
+        "correct": false,
+        "why": "Since React 18 updates are batched automatically everywhere, including timers. Each tick schedules one render."
+      }
+    ],
+    "explanation": "Keep side effects out of state updaters, and stop timers when their job is done. A safer shape is a separate effect that reacts to the value: `useEffect(() => { if (progress === 100) onComplete(); }, [progress])`, with the interval cleared once progress reaches 100 (or a `setTimeout` chain keyed on `progress`). Interviewers like this bug because it combines a timer leak with an impure updater. Both are invisible in a single-bar demo and only show up once a queue is attached.",
+    "reference": "https://react.dev/reference/react/useState#my-initializer-or-updater-function-runs-twice",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Nutanix.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CommerceIQ.md",
+        "https://learnersbucket.com/tech/frontend-interview-process-at-coursera/",
+        "https://www.frontendinterviewhandbook.com/companies/uber-front-end-interview-questions",
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ],
+      "companies": [
+        "Nutanix",
+        "CommerceIQ",
+        "Coursera",
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-progress-bars"
+  },
+  {
+    "id": "RCT-IQ3-STA-004",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "For a sortable list, you need a helper `move(list, from, to)` that returns a new array in which the item at index `from` now sits at index `to`, with all other items keeping their order. The state array must not be mutated. For `move(['a','b','c','d','e'], 3, 1)` the answer is `['a','d','b','c','e']`. Which helper is correct for every pair of indexes?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction move(list, from, to) {\n  const next = [...list];\n  next.splice(to, 0, list[from]);\n  next.splice(from, 1);\n  return next;\n}\n```",
+        "correct": false,
+        "why": "Inserting first shifts the indexes. For `(3, 1)` the second `splice` removes `'c'` instead of `'d'`, giving `['a','d','b','d','e']`."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction move(list, from, to) {\n  const next = [...list];\n  [next[from], next[to]] = [next[to], next[from]];\n  return next;\n}\n```",
+        "correct": false,
+        "why": "That is a swap, not a move. `(3, 1)` gives `['a','d','c','b','e']`, so the items in between do not shift along."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction move(list, from, to) {\n  const [item] = list.splice(from, 1);\n  list.splice(to, 0, item);\n  return list;\n}\n```",
+        "correct": false,
+        "why": "The order comes out right, but it mutates the state array and returns the same reference. React's `Object.is` check then skips the re-render."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction move(list, from, to) {\n  const next = [...list];\n  const [item] = next.splice(from, 1);\n  next.splice(to, 0, item);\n  return next;\n}\n```",
+        "correct": true,
+        "why": "It copies, removes the item, then inserts it at the target index. `(3, 1)` gives `['a','d','b','c','e']` and `(1, 3)` gives `['a','c','d','b','e']`, and the original array is untouched."
+      }
+    ],
+    "explanation": "Reordering is \"remove at from, then insert at to\" on a copy. The order of the two `splice` calls matters, because the second call works on indexes that the first one has already shifted. Libraries such as dnd-kit hand you `from`/`to` indexes, and an `arrayMove` helper like this one turns them into new state. Interviewers ask for it because the swap and insert-first versions look right in a quick demo.",
+    "reference": "https://react.dev/learn/updating-arrays-in-state#inserting-into-an-array",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://learnersbucket.com/interview/headout-sde3-lead-frontend-interview-questions-2026/",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ],
+      "companies": [
+        "Headout",
+        "Snowflake",
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-drag-drop-kanban"
+  },
+  {
+    "id": "RCT-IQ3-STA-005",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A Kanban board stores `{ todo: ['t1','t2','t3'], doing: ['d1'] }`. Moving a card to another column works. Dragging `t1` to a new position inside the same column leaves two copies of `t1` in the column. Why?\n\n```js\nfunction moveCard(cols, from, to, id, index) {\n  const dest = [...cols[to]];\n  dest.splice(index, 0, id);\n  return {\n    ...cols,\n    [from]: cols[from].filter(c => c !== id),\n    [to]: dest,\n  };\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`filter` runs after `splice`, so it removes the card from the destination as well",
+        "correct": false,
+        "why": "`filter` runs on `cols[from]`, a different array from `dest`, so it never touches the destination copy."
+      },
+      {
+        "id": "B",
+        "text": "When `from === to`, the later `[to]: dest` key overwrites `[from]`, and `dest` was copied from the original column, which still holds the card",
+        "correct": true,
+        "why": "In an object literal, a repeated key keeps the last value. The filtered array is thrown away, and `dest` still holds the original `t1` plus the inserted one."
+      },
+      {
+        "id": "C",
+        "text": "Spreading `...cols` copies the column arrays by reference, so `dest.splice` also inserts the card into the original column array, and the `filter` then runs on that mutated array",
+        "correct": false,
+        "why": "`dest` is created with `[...cols[to]]`, a fresh copy, so `splice` does not reach the original. The duplicate comes from somewhere else."
+      },
+      {
+        "id": "D",
+        "text": "React batches the two property updates and applies only the first one",
+        "correct": false,
+        "why": "React is not involved. `moveCard` is a plain function, and you can reproduce the duplicate in Node."
+      }
+    ],
+    "explanation": "Make the move one pipeline: remove the card from the source, then insert it into the destination, where the destination is computed after the removal when the columns are the same. For example, `const without = { ...cols, [from]: cols[from].filter(c => c !== id) }`, then insert into `without[to]`. Keeping columns as arrays of ids (with cards in a separate map by id) keeps these updates cheap. Interviewers often ask how keyboard users would move a card. A good answer is a focusable card with arrow-key handlers that call this same pure function, which is how dnd-kit's keyboard sensor works.",
+    "reference": "https://react.dev/learn/updating-arrays-in-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://learnersbucket.com/interview/headout-sde3-lead-frontend-interview-questions-2026/",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ],
+      "companies": [
+        "Headout",
+        "Snowflake",
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-drag-drop-kanban"
+  },
+  {
+    "id": "RCT-IQ3-JSX-001",
+    "domain": 1,
+    "skill": "jsx-components",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A form is rendered from a backend schema such as `[{ type: 'text', name: 'fullName' }, { type: 'select', name: 'role', options: [...] }, { type: 'date', name: 'dob' }]`. The interviewer wants new field types to be added without editing the form, and unknown types must not crash the page. Which rendering code meets both requirements?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nconst registry = { text: TextInput, select: SelectInput };\nschema.map(f => {\n  // look up the component for this field type\n  const field = registry[f.type];\n  return <field key={f.name} {...f} />;\n});\n```",
+        "correct": false,
+        "why": "JSX treats a lowercase tag as a DOM element name, so this renders a literal `<field>` HTML tag rather than `TextInput`. A component variable must start with a capital letter."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nschema.map(f => {\n  if (f.type === 'text') return <TextInput key={f.name} {...f} />;\n  if (f.type === 'select') return <SelectInput key={f.name} {...f} />;\n  return null;\n});\n```",
+        "correct": false,
+        "why": "It works, but every new type means editing this chain, and unknown types fail silently with no fallback."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nconst registry = { text: TextInput, select: SelectInput };\nschema.map(f => {\n  const Field = registry[f.type] ?? UnsupportedField;\n  return <Field key={f.name} {...f} />;\n});\n```",
+        "correct": true,
+        "why": "A registry maps type names to components, a capitalised variable is rendered as a component, and the fallback handles types this client does not know, such as `date`."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nconst registry = { text: TextInput, select: SelectInput };\nschema.map(f => registry[f.type](f));\n```",
+        "correct": false,
+        "why": "Calling components as plain functions makes their hooks belong to the form, so conditional fields change the hook order. There are no keys, and an unknown type throws \"is not a function\"."
+      }
+    ],
+    "explanation": "Config-driven UI comes down to a lookup table from a type string to a component, plus a safe fallback. Two JSX rules matter here. A component reference must be capitalised (a lowercase name becomes a DOM tag). And components should be rendered as elements, not called as functions, so React manages their hooks and state per field. Verified with `react-dom/server`: the lowercase version renders `<field name=\"fullName\"></field>`. The interviewer is checking whether your design is open to extension and survives unknown schema types.",
+    "reference": "https://react.dev/learn/your-first-component#naming-a-component",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Eightfold.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://www.glassdoor.com.mx/Entrevista/Razorpay-Entrevista-E1146550-RVW51997359.htm",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer"
+      ],
+      "companies": [
+        "Eightfold",
+        "OpenEnvoy",
+        "Meesho",
+        "Razorpay"
+      ]
+    },
+    "source": "interview:rx-mc-config-driven-form"
+  },
+  {
+    "id": "RCT-IQ3-JSX-002",
+    "domain": 1,
+    "skill": "jsx-components",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In the same schema-driven form, all values live in one state object keyed by field name, such as `{ fullName: '', role: 'dev' }`. Every field calls `onChange(name, value)`. Which handler is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const onChange = (name, value) => setValues(v => ({ ...v, name: value }));`",
+        "correct": false,
+        "why": "Without brackets, `name` is a literal key, so every field writes to a property literally called \"name\"."
+      },
+      {
+        "id": "B",
+        "text": "`const onChange = (name, value) => { values[name] = value; setValues(values); };`",
+        "correct": false,
+        "why": "This mutates the state object and passes back the same reference, so React skips the render and the input looks frozen."
+      },
+      {
+        "id": "C",
+        "text": "`const onChange = (name, value) => setValues(v => [...v, { name, value }]);`",
+        "correct": false,
+        "why": "This turns the object into an ever-growing array of edits. Reading a field's current value then means searching for the last entry."
+      },
+      {
+        "id": "D",
+        "text": "`const onChange = (name, value) => setValues(v => ({ ...v, [name]: value }));`",
+        "correct": true,
+        "why": "A computed key writes the field that changed, the spread keeps the other fields, and the updater form is safe if several fields change in one event."
+      }
+    ],
+    "explanation": "One values object with computed keys scales to any number of schema fields. Pair it with an errors object keyed the same way, and evaluate conditional fields (for example \"show `company` when `employment === 'employed'`\") during render from `values`. Leave hidden fields out of the submitted payload. Interviewers ask this to see whether you can generalise a single controlled input to N inputs without writing N `useState` calls.",
+    "reference": "https://react.dev/learn/updating-objects-in-state#using-a-single-event-handler-for-multiple-fields",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Eightfold.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://www.glassdoor.com.mx/Entrevista/Razorpay-Entrevista-E1146550-RVW51997359.htm",
+        "https://dataford.io/interview-guides/razorpay/frontend-engineer"
+      ],
+      "companies": [
+        "Eightfold",
+        "OpenEnvoy",
+        "Meesho",
+        "Razorpay"
+      ]
+    },
+    "source": "interview:rx-mc-config-driven-form"
+  },
+  {
+    "id": "RCT-IQ3-STA-006",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A memory card game flips cards with this handler. Pairs that do not match flip back after 800 ms. Which two bugs can a fast-clicking player trigger? (Choose two.)\n\n```jsx\nfunction onCardClick(i) {\n  const next = [...flipped, i];\n  setFlipped(next);\n  if (next.length === 2) {\n    if (cards[next[0]] === cards[next[1]]) {\n      setMatched(m => [...m, ...next]);\n      setFlipped([]);\n    } else {\n      setTimeout(() => setFlipped([]), 800);\n    }\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Clicking the same card twice counts as a match, because `cards[i] === cards[i]` is always true",
+        "correct": true,
+        "why": "Nothing rejects an index that is already in `flipped`. Two clicks on one card produce a \"pair\" made of the same card."
+      },
+      {
+        "id": "B",
+        "text": "While a mismatched pair is waiting to flip back, a third click adds a third card. `next.length` is then 3, so no comparison runs, and the timeout later hides all three",
+        "correct": true,
+        "why": "There is no lock during the 800 ms window. The game should ignore clicks while two cards are face up."
+      },
+      {
+        "id": "C",
+        "text": "`setFlipped([])` inside `setTimeout` reads a stale `flipped` value and restores the old cards",
+        "correct": false,
+        "why": "It sets a constant empty array and does not read `flipped` at all, so there is nothing stale to read."
+      },
+      {
+        "id": "D",
+        "text": "`setMatched(m => [...m, ...next])` loses earlier matches because `m` is captured from the first render",
+        "correct": false,
+        "why": "`m` is the updater argument, which always receives the latest state, so earlier matches are kept."
+      },
+      {
+        "id": "E",
+        "text": "Calling `setFlipped` twice in one handler throws a \"too many re-renders\" error",
+        "correct": false,
+        "why": "Multiple setter calls in one event are batched into a single render. \"Too many re-renders\" comes from setting state during render."
+      }
+    ],
+    "explanation": "Board-game rounds (memory, Connect Four, Wordle, tic-tac-toe) test turn logic under fast input. Guard the handler: ignore clicks while two cards are face up, and ignore cards that are already flipped or matched. Derive \"is the game won\" from the state instead of storing it. Both bugs here are reproducible by simulating the handler in plain JavaScript, and they are exactly the \"race on fast clicks\" follow-up interviewers ask.",
+    "reference": "https://react.dev/learn/queueing-a-series-of-state-updates",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://prachub.com/positions/frontend-engineer",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ],
+      "companies": [
+        "Uber",
+        "Glean",
+        "Ramp",
+        "Moment",
+        "Airbnb",
+        "Waymo"
+      ]
+    },
+    "source": "interview:rx-mc-board-games"
+  },
+  {
+    "id": "RCT-IQ3-STA-007",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Connect Four: `board` is an array of rows (row 0 is the top), each row an array of `null`, `'R'` or `'Y'`. A move in column `col` must land in the lowest empty cell, and the function must return a new board without mutating the old one (the old board is kept for undo). Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction drop(board, col, p) {\n  const r = board.findIndex(row => row[col] === null);\n  if (r === -1) return board;\n  return board.map((row, i) =>\n    i === r ? row.map((v, j) => (j === col ? p : v)) : row);\n}\n```",
+        "correct": false,
+        "why": "`findIndex` searches from the top, so the piece lands in the highest empty cell and floats above the pieces below it."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction drop(board, col, p) {\n  for (let r = board.length - 1; r >= 0; r--) {\n    if (board[r][col] === null) {\n      return board.map((row, i) =>\n        i === r ? row.map((v, j) => (j === col ? p : v)) : row);\n    }\n  }\n  return board;\n}\n```",
+        "correct": true,
+        "why": "It scans from the bottom and copies only the changed row. Untouched rows keep their identity, and a full column returns the board unchanged."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction drop(board, col, p) {\n  const next = [...board];\n  for (let r = next.length - 1; r >= 0; r--) {\n    if (next[r][col] === null) { next[r][col] = p; return next; }\n  }\n  return next;\n}\n```",
+        "correct": false,
+        "why": "The outer copy is shallow, so `next[r]` is the same row array as `board[r]`. Writing into it changes the old board as well, which corrupts undo history."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction drop(board, col, p) {\n  for (let r = board.length - 1; r >= 0; r--) {\n    if (board[r][col] === null) { board[r][col] = p; break; }\n  }\n  return [...board];\n}\n```",
+        "correct": false,
+        "why": "Returning a new outer array makes React re-render, but the cell was written into the old board's row first, so the previous board is mutated."
+      }
+    ],
+    "explanation": "For a 2D grid, an immutable update copies the outer array and the one row that changes. Copying only the outer array is a shallow copy, and it is the most common mistake in grid games. Scanning from the bottom row up gives Connect Four's \"gravity\". Follow-ups usually ask for a generalised win check (scan from the last move in four directions) and for deriving the winner from the board rather than storing it.",
+    "reference": "https://react.dev/learn/tutorial-tic-tac-toe#why-immutability-is-important",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://prachub.com/positions/frontend-engineer",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ],
+      "companies": [
+        "Uber",
+        "Glean",
+        "Ramp",
+        "Moment",
+        "Airbnb",
+        "Waymo"
+      ]
+    },
+    "source": "interview:rx-mc-board-games"
+  },
+  {
+    "id": "RCT-IQ3-STA-008",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a Wordle clone, the answer is `THESE` and the player guesses `GEESE`. Wordle colours repeated letters by count: green for the right letter in the right place, yellow only while unmatched copies of that letter remain in the answer, otherwise gray. What should the five tiles show, in order?",
+    "options": [
+      {
+        "id": "A",
+        "text": "gray, yellow, green, green, green",
+        "correct": false,
+        "why": "This is what you get from `answer.includes(letter)` (or a single pass that counts letters before reserving the greens). The E at position 2 takes a copy of E that the greens at positions 3 and 5 already need."
+      },
+      {
+        "id": "B",
+        "text": "gray, gray, green, green, green",
+        "correct": true,
+        "why": "Positions 3, 4 and 5 (E, S, E) are exact matches and use up both E's in THESE. No unmatched E is left, so the E at position 2 is gray."
+      },
+      {
+        "id": "C",
+        "text": "gray, yellow, green, yellow, green",
+        "correct": false,
+        "why": "S at position 4 matches THESE's S exactly, so it must be green. A guess letter can only be yellow when it is not in the right spot."
+      },
+      {
+        "id": "D",
+        "text": "gray, yellow, yellow, green, green",
+        "correct": false,
+        "why": "The E at position 3 is in the right spot (THESE also has E there), so it is green, not yellow."
+      }
+    ],
+    "explanation": "The correct algorithm takes two passes. First mark the greens and count the answer letters that were not matched. Then go left to right, and mark a letter yellow only while its remaining count is above zero, decrementing as you go. Checked in Node: the two-pass scorer gives gray, gray, green, green, green, while both the `includes` version and the count-without-greens-first version give gray, yellow, green, green, green. This is the edge case interviewers ask about once the basic Wordle grid works.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://prachub.com/positions/frontend-engineer",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ],
+      "companies": [
+        "Uber",
+        "Glean",
+        "Ramp",
+        "Moment",
+        "Airbnb",
+        "Waymo"
+      ]
+    },
+    "source": "interview:rx-mc-board-games"
+  },
+  {
+    "id": "RCT-IQ3-PRF-001",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An interviewer asks you to explain the Core Web Vitals. Which two statements are accurate as of 2024 and later? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "LCP is the time until the largest image or text block in the viewport is rendered, and 2.5 seconds or less counts as good",
+        "correct": true,
+        "why": "Largest Contentful Paint tracks the biggest visible content element, and web.dev sets the \"good\" threshold at 2.5 s at the 75th percentile."
+      },
+      {
+        "id": "B",
+        "text": "INP replaced FID as a Core Web Vital in March 2024. It looks at interactions across the whole visit, measuring from input to the next paint, rather than only the first input's delay",
+        "correct": true,
+        "why": "FID measured only the input delay of the first interaction. INP covers clicks, taps and key presses throughout the page's life, including processing and rendering time."
+      },
+      {
+        "id": "C",
+        "text": "CLS is measured in milliseconds of layout work, and under 100 ms counts as good",
+        "correct": false,
+        "why": "CLS is a unitless score (impact fraction times distance fraction) for unexpected shifts. Good is 0.1 or less."
+      },
+      {
+        "id": "D",
+        "text": "FID is still the responsiveness Core Web Vital, and INP is an optional lab-only metric",
+        "correct": false,
+        "why": "It is the other way round. INP became the stable Core Web Vital in March 2024, and FID was retired."
+      },
+      {
+        "id": "E",
+        "text": "All three vitals are best measured with a single Lighthouse run on a developer laptop",
+        "correct": false,
+        "why": "Lighthouse is lab data and cannot measure INP at all, because it needs real interactions. Core Web Vitals are judged on field data from real users (CrUX or your own RUM)."
+      }
+    ],
+    "explanation": "The three Core Web Vitals are LCP (loading), INP (responsiveness) and CLS (visual stability). The \"good\" thresholds are 2.5 s, 200 ms and 0.1, measured at the 75th percentile of real visits. Interviewers at product companies often follow up with \"how would you improve each in a React app?\", so connect them to images and SSR (LCP), long tasks and transitions (INP), and reserved space (CLS).",
+    "reference": "https://web.dev/articles/vitals",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/MakeMyTrip.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Salesforce.md",
+        "https://medium.com/@prikshit8/sde-2-frontend-interview-exp-mmt-001828ab6dc5",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md"
+      ],
+      "companies": [
+        "MakeMyTrip",
+        "Kotak Mahindra Bank",
+        "Salesforce",
+        "Intuit",
+        "Flipkart",
+        "Meesho"
+      ]
+    },
+    "source": "interview:rx-web-vitals"
+  },
+  {
+    "id": "RCT-IQ3-PRF-002",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A product page's CLS in field data is 0.32. As the page loads, the hero image pops in and pushes the price and \"Add to cart\" button down, and a promo banner fetched after hydration then appears above the title. Which change addresses both shifts?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set `width` and `height` on the hero image (or a CSS `aspect-ratio`), and reserve a fixed-height slot for the banner",
+        "correct": true,
+        "why": "With known dimensions the browser reserves the box before the image loads, and a placeholder slot means the banner fills existing space instead of inserting new space above the content."
+      },
+      {
+        "id": "B",
+        "text": "Lazy-load the hero image with `loading=\"lazy\"` and show a low-quality placeholder, so it no longer competes with the price for bandwidth",
+        "correct": false,
+        "why": "Lazy-loading the main image delays LCP and still shifts layout when it arrives. Lazy loading is for images below the fold."
+      },
+      {
+        "id": "C",
+        "text": "Wrap the banner's state update in `startTransition` so React inserts it at low priority",
+        "correct": false,
+        "why": "A transition changes when React renders, not where the content goes. The banner still pushes the title down when it appears."
+      },
+      {
+        "id": "D",
+        "text": "Wrap the page in `React.memo` so the layout does not re-render when the banner loads",
+        "correct": false,
+        "why": "Memoisation skips React work but does nothing about the browser moving content when new boxes appear."
+      }
+    ],
+    "explanation": "CLS comes from content that appears or resizes without space reserved for it: images without dimensions, late banners and ads, web fonts that swap, and skeletons whose size differs from the final content. The fix is always to reserve the final size ahead of time. Shifts within 500 ms of a user interaction are excluded, so content that expands after a click does not count. The interviewer wants you to diagnose the cause, not just name the metric.",
+    "reference": "https://web.dev/articles/optimize-cls",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/MakeMyTrip.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Salesforce.md",
+        "https://medium.com/@prikshit8/sde-2-frontend-interview-exp-mmt-001828ab6dc5",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md"
+      ],
+      "companies": [
+        "MakeMyTrip",
+        "Kotak Mahindra Bank",
+        "Salesforce",
+        "Intuit",
+        "Flipkart",
+        "Meesho"
+      ]
+    },
+    "source": "interview:rx-web-vitals"
+  },
+  {
+    "id": "RCT-IQ3-PRF-003",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A filter input above a 5,000-row list has poor INP: each keystroke blocks the main thread for about 300 ms while the list re-renders, and the typed character appears late. Which React change most directly improves INP while keeping the input responsive?\n\n```jsx\nconst [text, setText] = useState('');\nconst rows = allRows.filter(r => r.name.includes(text));\n// <input value={text} onChange={e => setText(e.target.value)} />\n// <List rows={rows} />\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wrap `setText` in `startTransition` so the whole update is low priority",
+        "correct": false,
+        "why": "A controlled input's own update must be urgent. react.dev warns that transitions cannot control a text input, because the typed value would lag."
+      },
+      {
+        "id": "B",
+        "text": "Wrap `setText` in `flushSync` so the list renders immediately",
+        "correct": false,
+        "why": "`flushSync` forces the expensive render to happen synchronously right away, which makes the blocking worse."
+      },
+      {
+        "id": "C",
+        "text": "Keep `text` urgent, pass `useDeferredValue(text)` to the filter, and memoise `List` so it re-renders in an interruptible background pass",
+        "correct": true,
+        "why": "The input commits and paints straight away. The list re-renders with the deferred value at lower priority, and React yields or abandons that work if another keystroke arrives."
+      },
+      {
+        "id": "D",
+        "text": "Move the filtering into a `useEffect` that stores the filtered rows in state",
+        "correct": false,
+        "why": "The same 5,000-row render still happens, plus an extra render. The main thread is blocked just as long."
+      }
+    ],
+    "explanation": "INP measures the delay from an interaction to the next paint. In React, the usual fix is to split urgent work (show what the user typed) from expensive work (re-render the big list) with `useDeferredValue` or `startTransition` on a separate state value, so the browser can paint between slices. For the deferred version to help, `List` must be memoised, so the urgent render skips it. CPU-heavy non-render work (parsing or calculations) belongs in a Web Worker instead. Interviewers want to hear \"split the long task\", not \"add useMemo everywhere\".",
+    "reference": "https://react.dev/reference/react/useDeferredValue",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/MakeMyTrip.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Salesforce.md",
+        "https://medium.com/@prikshit8/sde-2-frontend-interview-exp-mmt-001828ab6dc5",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md"
+      ],
+      "companies": [
+        "MakeMyTrip",
+        "Kotak Mahindra Bank",
+        "Salesforce",
+        "Intuit",
+        "Flipkart",
+        "Meesho"
+      ]
+    },
+    "source": "interview:rx-web-vitals"
+  },
+  {
+    "id": "RCT-IQ3-PRF-004",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are asked to implement `memoize(fn)`. The interviewer calls `add(1, 2)` three times on the memoised function and logs how many times the original ran: three times, so nothing was cached. What is wrong?\n\n```js\nfunction memoize(fn) {\n  const cache = new Map();\n  return (...args) => {\n    if (cache.has(args)) return cache.get(args);\n    const result = fn(...args);\n    cache.set(args, result);\n    return result;\n  };\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Map` cannot store arrays as keys, so `cache.set` silently does nothing",
+        "correct": false,
+        "why": "A `Map` accepts any value as a key, including arrays. The entries are stored; there are three of them after three calls."
+      },
+      {
+        "id": "B",
+        "text": "The cache must be created inside the returned function so each call has its own cache",
+        "correct": false,
+        "why": "That would throw the cache away on every call. The closure-level cache is the right place."
+      },
+      {
+        "id": "C",
+        "text": "`fn(...args)` must be `fn.apply(this, args)`, otherwise the result is not cached",
+        "correct": false,
+        "why": "`this` handling matters for methods, but it does not explain the misses. The result is cached; it just can't be found again."
+      },
+      {
+        "id": "D",
+        "text": "`...args` creates a new array on every call, and `Map` compares object keys by reference, so a lookup never finds an earlier entry. Use a serialised key such as `JSON.stringify(args)` for primitive arguments",
+        "correct": true,
+        "why": "Each call creates a fresh array, so `has` is always false, and the cache grows by one entry per call. A string key compares by value."
+      }
+    ],
+    "explanation": "Map and Set compare object keys by identity (SameValueZero), so cache keys must be built from values. For primitives, `JSON.stringify(args)` or `args.join('|')` works. For a single object argument, a `WeakMap` keyed by the object avoids leaks. Running it in Node confirms the bug: three calls and three misses, with a cache size of 3. Interviewers follow up with cache size limits (LRU), and with how `useMemo` differs, because it caches only the last result per component.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map#key_equality",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CoinDCX.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "CoinDCX",
+        "Meesho",
+        "OpenEnvoy",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:rx-memoize-function-cache"
+  },
+  {
+    "id": "RCT-IQ3-PRF-005",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Several components mount together and each calls `getUser(id)` for the same `id`. The interviewer wants exactly one network request for concurrent calls, cached results for later calls, and a fresh retry if a request fails. Which implementation meets all three requirements?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nconst cache = new Map();\nasync function getUser(id) {\n  if (cache.has(id)) return cache.get(id);\n  const user = await fetchUser(id);\n  cache.set(id, user);\n  return user;\n}\n```",
+        "correct": false,
+        "why": "The cache is filled only after the response arrives. Calls made while the first request is in flight all miss and each fires its own request."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst cache = new Map();\nfunction getUser(id) {\n  if (!cache.has(id)) {\n    const p = fetchUser(id).catch(err => {\n      cache.delete(id);\n      throw err;\n    });\n    cache.set(id, p);\n  }\n  return cache.get(id);\n}\n```",
+        "correct": true,
+        "why": "The promise is stored synchronously, so concurrent callers share one request. A rejection removes the entry, so the next call retries instead of reusing the failure."
+      },
+      {
+        "id": "C",
+        "text": "```js\nconst cache = new Map();\nfunction getUser(id) {\n  if (!cache.has(id)) cache.set(id, fetchUser(id));\n  return cache.get(id);\n}\n```",
+        "correct": false,
+        "why": "This dedupes concurrent calls, but a rejected promise stays cached forever, so every later call gets the same error and never retries."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nfunction useUser(id) {\n  const [promise] = useState(() => fetchUser(id));\n  return promise;\n}\n```",
+        "correct": false,
+        "why": "The state belongs to one component instance, so each component starts its own request. It also ignores later changes to `id`."
+      }
+    ],
+    "explanation": "To dedupe async work, cache the promise, not the resolved value, and remove the entry when it rejects. Libraries such as TanStack Query and SWR work this way, and React's `cache` does the same for server requests. Checked in Node with a fake fetch: the value-cache version makes two requests for two concurrent calls, the promise version makes one, and only the delete-on-reject version retries after an error. Interviewers ask this as the async follow-up to \"implement memoize\".",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CoinDCX.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2"
+      ],
+      "companies": [
+        "CoinDCX",
+        "Meesho",
+        "OpenEnvoy",
+        "Flipkart"
+      ]
+    },
+    "source": "interview:rx-memoize-function-cache"
+  },
+  {
+    "id": "RCT-IQ3-PRF-006",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "\"Our large React dashboard feels slow. You have a week. What do you do first?\" Which answer reflects how a senior engineer should approach it?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wrap every component in `React.memo` and every callback in `useCallback`, since memoisation is free and prevents all unnecessary re-renders",
+        "correct": false,
+        "why": "Blanket memoisation adds comparison cost and complexity, and it fixes nothing if the slowness is network, bundle size or one heavy component."
+      },
+      {
+        "id": "B",
+        "text": "Migrate global state to a different library, since state management is usually the bottleneck",
+        "correct": false,
+        "why": "That is a large rewrite based on a guess. The bottleneck may not be state at all."
+      },
+      {
+        "id": "C",
+        "text": "Reproduce the slow flows, measure them (field data, Performance panel, React Profiler), and fix the biggest measured cost first",
+        "correct": true,
+        "why": "Measuring tells you whether the problem is load time, a long task, or unnecessary re-renders, and the Profiler shows which components cost the most. Fixing the biggest cost first gives the most improvement for the week."
+      },
+      {
+        "id": "D",
+        "text": "Turn on React's production mode and assume the remaining slowness is the network",
+        "correct": false,
+        "why": "Production builds matter, but most real dashboards are already shipped in production mode. This skips diagnosis entirely."
+      }
+    ],
+    "explanation": "\"Measure, find the biggest cost, fix it, measure again\" is the answer interviewers want before any technique. Then match the fix to the cause: code splitting and image work for load time, state colocation, memo or virtualisation for render cost, transitions or workers for long tasks. Candidates who start with \"add useMemo everywhere\" are usually marked down at the SDE-2 and senior levels.",
+    "reference": "https://react.dev/reference/react/Profiler",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Atlassian-Entretien-E115699-RVW89329862.htm",
+        "https://www.glassdoor.com/Interview/Uber-Interview-E575263-RVW96767207.htm",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/eBay.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/MakeMyTrip.md"
+      ],
+      "companies": [
+        "Atlassian",
+        "Uber",
+        "OpenEnvoy",
+        "eBay",
+        "MakeMyTrip",
+        "Flipkart",
+        "Infosys"
+      ]
+    },
+    "source": "interview:rx-optimise-large-app"
+  },
+  {
+    "id": "RCT-IQ3-PRF-007",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The React DevTools Profiler shows that every keystroke in the header's search box re-renders `ProductGrid` (about 40 ms per commit). The search text drives only the header's suggestion dropdown. Which change removes the wasted work most directly?\n\n```jsx\nfunction App() {\n  const [search, setSearch] = useState('');\n  const [category, setCategory] = useState('all');\n  return (\n    <>\n      <Header search={search} onSearch={setSearch} />\n      <ProductGrid filters={{ category }} />\n    </>\n  );\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wrap `ProductGrid` in `React.memo` so it skips re-rendering when its props are unchanged",
+        "correct": false,
+        "why": "`filters={{ category }}` is a new object on every `App` render, so memo's shallow prop comparison fails and `ProductGrid` still re-renders on each keystroke."
+      },
+      {
+        "id": "B",
+        "text": "Move the `search` state down into `Header`, the only component that uses it",
+        "correct": true,
+        "why": "When the state lives in `Header`, a keystroke re-renders only `Header` and its children. `App` and `ProductGrid` are not involved, with no memoisation needed."
+      },
+      {
+        "id": "C",
+        "text": "Debounce `setSearch` by 300 ms so the grid re-renders less often",
+        "correct": false,
+        "why": "This reduces how often the wasted render happens, and makes the input feel laggy, but the grid still re-renders for state it does not use."
+      },
+      {
+        "id": "D",
+        "text": "Wrap `setSearch` in `startTransition`",
+        "correct": false,
+        "why": "A transition lowers the priority of the render, but the grid still re-renders, and controlled inputs should not be updated inside a transition."
+      }
+    ],
+    "explanation": "The cheapest re-render is the one that never happens. Keep state as close as possible to the components that use it (colocation), and reach for `memo`, plus stable props via `useMemo`, only when state must stay high. The memo-with-object-literal trap is a frequent follow-up. Interviewers want a fix that is justified by a measurement, which is why this scenario starts from a Profiler reading.",
+    "reference": "https://react.dev/reference/react/memo#minimizing-props-changes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Atlassian-Entretien-E115699-RVW89329862.htm",
+        "https://www.glassdoor.com/Interview/Uber-Interview-E575263-RVW96767207.htm",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/eBay.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/MakeMyTrip.md"
+      ],
+      "companies": [
+        "Atlassian",
+        "Uber",
+        "OpenEnvoy",
+        "eBay",
+        "MakeMyTrip",
+        "Flipkart",
+        "Infosys"
+      ]
+    },
+    "source": "interview:rx-optimise-large-app"
+  },
+  {
+    "id": "RCT-IQ3-PRF-008",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are hand-rolling a virtual list for 10,000 rows with a fixed height of 40 px, a 400 px tall viewport and an overscan of 2 rows. The user has scrolled to `scrollTop = 1000`. Which rows are rendered, and how does the scrollbar stay the right size?\n\n```js\nconst first = Math.floor(scrollTop / ROW);              // ROW = 40\nconst start = Math.max(0, first - OVERSCAN);            // OVERSCAN = 2\nconst end = Math.min(items.length, first + Math.ceil(HEIGHT / ROW) + OVERSCAN); // HEIGHT = 400\nconst visible = items.slice(start, end);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rows 25 to 34 (10 rows). The scroll container's height comes from the rendered rows",
+        "correct": false,
+        "why": "This ignores the overscan, and if the container's height came only from the rendered rows, the scrollbar would be tiny and scrolling past them would be impossible."
+      },
+      {
+        "id": "B",
+        "text": "Rows 23 to 36 (14 rows), placed inside a spacer 10,000 × 40 = 400,000 px tall, with each row (or the group) offset by `start × 40` px",
+        "correct": true,
+        "why": "`first` = 25, `start` = 23 and `end` = 37, so the slice covers indexes 23 to 36. A full-height spacer gives a correct scrollbar, and the translate positions the slice where it belongs."
+      },
+      {
+        "id": "C",
+        "text": "Rows 0 to 36 (37 rows), because the rows above the viewport must stay mounted so the browser can measure their heights and keep the scroll offset",
+        "correct": false,
+        "why": "With a fixed row height nothing needs measuring. Keeping every row above the viewport mounted would defeat virtualisation."
+      },
+      {
+        "id": "D",
+        "text": "Rows 23 to 37 (15 rows), because `slice` includes the end index",
+        "correct": false,
+        "why": "`slice(start, end)` excludes `end`, so the last index is 36."
+      }
+    ],
+    "explanation": "Windowing renders only the visible rows plus a few overscan rows, so the DOM size stays roughly constant no matter how long the list is. You compute the slice from `scrollTop`, keep the scrollbar honest with a full-height inner element, and position the slice with `transform` or absolute `top`. The arithmetic was checked in Node: first 25, start 23, end 37. Variable-height rows need measurement and an offset cache, which is what react-window's variable-size lists and TanStack Virtual provide.",
+    "reference": "https://web.dev/articles/virtualize-long-lists-react-window",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Postman.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Autofleet.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Arctic-Wolf.md",
+        "https://dev.to/gautam_f015817a44372df414/my-honest-interview-experience-for-a-react-developer-role-1j60",
+        "https://www.glassdoor.co.nz/Interview/Meta-Interview-E40772-RVW89989255.htm"
+      ],
+      "companies": [
+        "Postman",
+        "Autofleet",
+        "Arctic Wolf",
+        "Meta",
+        "Headout",
+        "Meesho",
+        "Harvey"
+      ]
+    },
+    "source": "interview:rx-large-lists-virtualization"
+  },
+  {
+    "id": "RCT-IQ3-PRF-009",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "\"How would you show 100,000 products without freezing the page? Compare pagination, infinite scroll and virtualisation.\" Which two statements are accurate? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Infinite scroll on its own keeps appending rows, so the DOM grows without limit; long sessions need virtualisation on top of it",
+        "correct": true,
+        "why": "Infinite scroll solves fetching in chunks, not rendering. After many pages, thousands of DOM nodes slow down layout and use memory."
+      },
+      {
+        "id": "B",
+        "text": "Virtualisation keeps roughly a screenful of rows in the DOM, so rows that are off screen cannot be found with the browser's find-in-page, and assistive technology cannot reach them unless you add extra work",
+        "correct": true,
+        "why": "Unrendered rows do not exist in the DOM. This is the main trade-off to mention, along with the role and `aria-rowcount` work it needs."
+      },
+      {
+        "id": "C",
+        "text": "Virtualisation reduces how much data is fetched from the server",
+        "correct": false,
+        "why": "Virtualisation is purely about rendering. You can virtualise data that is already fully loaded. Fetching less is the job of pagination or cursors."
+      },
+      {
+        "id": "D",
+        "text": "Pagination is outdated; virtualisation is always the better user experience",
+        "correct": false,
+        "why": "Pagination gives shareable URLs, a stable position and \"jump to page N\", which suit search results and admin tables. The right choice depends on the use case."
+      },
+      {
+        "id": "E",
+        "text": "`content-visibility: auto` removes off-screen rows from the DOM, just like a virtual list",
+        "correct": false,
+        "why": "It skips rendering work for off-screen content, but the nodes stay in the DOM, so memory and node count are unchanged."
+      }
+    ],
+    "explanation": "Pagination and infinite scroll decide how data arrives. Virtualisation decides how much of it is rendered. A strong answer combines them, for example cursor-based infinite loading with a virtualised list, and names the costs: lost find-in-page, scroll restoration and accessibility work. Interviewers at product companies ask this as both a coding and a design question.",
+    "reference": "https://web.dev/articles/virtualize-long-lists-react-window",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Postman.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Autofleet.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Arctic-Wolf.md",
+        "https://dev.to/gautam_f015817a44372df414/my-honest-interview-experience-for-a-react-developer-role-1j60",
+        "https://www.glassdoor.co.nz/Interview/Meta-Interview-E40772-RVW89989255.htm"
+      ],
+      "companies": [
+        "Postman",
+        "Autofleet",
+        "Arctic Wolf",
+        "Meta",
+        "Headout",
+        "Meesho",
+        "Harvey"
+      ]
+    },
+    "source": "interview:rx-large-lists-virtualization"
+  },
+  {
+    "id": "RCT-IQ3-PRF-010",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A hand-rolled virtual list renders the visible slice like this. Each `Row` has a checkbox with local `useState` for \"selected\". After the user checks the first visible row and scrolls down a little, the check mark appears on a different product. Why?\n\n```jsx\n{items.slice(start, end).map((item, i) => (\n  <Row key={i} item={item} style={{ top: (start + i) * ROW }} />\n))}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`i` is the position within the slice, so after scrolling the same key belongs to another item. React reuses that `Row`, state included, with new props",
+        "correct": true,
+        "why": "Keys tell React which component instance belongs to which item. When the slice shifts, slot-based keys make the old instances (and their checked state) show different products."
+      },
+      {
+        "id": "B",
+        "text": "Checkbox state is lost because virtualised rows are always remounted on scroll",
+        "correct": false,
+        "why": "With index keys the rows are not remounted; they are reused. That reuse is why the state moves to another product instead of disappearing."
+      },
+      {
+        "id": "C",
+        "text": "The `style` object is recreated on every render, so React treats the row as changed and resets the checkbox's local state to its initial value",
+        "correct": false,
+        "why": "A new style object only updates CSS. It does not reset component state."
+      },
+      {
+        "id": "D",
+        "text": "React batches scroll events, so the checkbox click is applied to whichever row happens to be rendered in that slot at the moment the batch flushes",
+        "correct": false,
+        "why": "The click was applied to the right row. The problem is that the row instance holding that state was later given another item."
+      }
+    ],
+    "explanation": "Use a stable id from the data (`key={item.id}`) for virtualised and filtered lists. Even then, a row's local state is lost when it scrolls out of the window and unmounts, so selection should live in a parent `Set` of ids (or in the store), not inside the row. This combines two classic interview topics: keys and identity, and what virtualisation does to component lifetimes.",
+    "reference": "https://react.dev/learn/rendering-lists#why-does-react-need-keys",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Postman.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Autofleet.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Arctic-Wolf.md",
+        "https://dev.to/gautam_f015817a44372df414/my-honest-interview-experience-for-a-react-developer-role-1j60",
+        "https://www.glassdoor.co.nz/Interview/Meta-Interview-E40772-RVW89989255.htm"
+      ],
+      "companies": [
+        "Postman",
+        "Autofleet",
+        "Arctic Wolf",
+        "Meta",
+        "Headout",
+        "Meesho",
+        "Harvey"
+      ]
+    },
+    "source": "interview:rx-large-lists-virtualization"
+  },
+  {
+    "id": "RCT-IQ3-RND-001",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "\"What is React Fiber, and why did React rewrite its reconciler?\" Which two statements would a well-prepared candidate make? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Fiber (React 16) represents each component as a unit of work, so React can pause rendering, yield to the browser, and resume, restart or abandon the work",
+        "correct": true,
+        "why": "The old stack reconciler walked the whole tree recursively in one go. Fiber's linked units of work make rendering incremental and interruptible."
+      },
+      {
+        "id": "B",
+        "text": "Fiber lets React give updates priorities, so urgent updates such as typing can go ahead of low-priority ones such as transitions; concurrent features are built on this",
+        "correct": true,
+        "why": "Scheduling by priority (lanes in current React) is what `startTransition`, `useDeferredValue` and Suspense rely on."
+      },
+      {
+        "id": "C",
+        "text": "Fiber made the diffing algorithm itself much faster by replacing type-and-key comparison with a full tree diff",
+        "correct": false,
+        "why": "The heuristics (compare type, then keys) stayed essentially the same. The gain was in scheduling, not raw diff speed."
+      },
+      {
+        "id": "D",
+        "text": "Fiber renders components on a background thread, so the main thread is never blocked",
+        "correct": false,
+        "why": "React rendering runs on the main thread. Fiber makes the work splittable so React can yield; it does not move rendering to another thread."
+      },
+      {
+        "id": "E",
+        "text": "Fiber also made the commit phase interruptible, so the DOM can be updated partially and finished later",
+        "correct": false,
+        "why": "Only the render phase can be interrupted. The commit is applied in one synchronous step, so users never see a half-updated UI."
+      }
+    ],
+    "explanation": "Fiber is the reconciler architecture behind React 16 and later. Each fiber is a node of work that holds a component's type, props, state and hooks, and links to its parent, child and sibling. That structure lets React split the render phase into chunks, prioritise updates and throw away work, while keeping the commit atomic. Interviewers mainly want \"interruptible plus priorities, not a faster diff\".",
+    "reference": "https://react.dev/reference/react/startTransition",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://medium.com/@prikshit8/sde-2-frontend-interview-exp-mmt-001828ab6dc5",
+        "https://dev.to/maurya-sachin/650-frontend-interview-questions-javascript-react-nextjs-more-my-complete-prep-journey-12in",
+        "https://leetcode.com/discuss/post/5021709/zomato-sde-1-interview-experience",
+        "https://www.techinterview.org/post/3233474938/react-rendering-deep-dive-interview/",
+        "https://dev.to/finalroundai/40-react-interview-questions-top-tech-companies-are-asking-in-2025-26op"
+      ],
+      "companies": [
+        "MakeMyTrip",
+        "Zomato"
+      ]
+    },
+    "source": "interview:rx-fiber"
+  },
+  {
+    "id": "RCT-IQ3-RND-002",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A tab switch is wrapped in `startTransition`, and rendering the new tab's large tree takes about 200 ms of render work. Halfway through, the user types into a search box elsewhere on the page. What does React do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "It finishes the transition render first, because once React starts rendering a tree it cannot pause until that tree is committed, and only then handles the keystroke",
+        "correct": false,
+        "why": "That describes the pre-Fiber stack reconciler. Transition renders are interruptible."
+      },
+      {
+        "id": "B",
+        "text": "It commits the half-rendered tab to the DOM so the user sees progress, then handles the keystroke",
+        "correct": false,
+        "why": "React never commits a partially rendered tree. The commit is all-or-nothing."
+      },
+      {
+        "id": "C",
+        "text": "It renders the keystroke and the transition in parallel on two threads",
+        "correct": false,
+        "why": "Rendering happens on one main thread. React switches between tasks; it does not run them at the same time."
+      },
+      {
+        "id": "D",
+        "text": "It renders and commits the urgent typing update first, then redoes the transition's render from the latest state, discarding the half-done work",
+        "correct": true,
+        "why": "react.dev says a transition update is interrupted by other state updates. Fiber lets React yield, process the urgent update and then work on the transition again from the latest state."
+      }
+    ],
+    "explanation": "This is what Fiber enables in practice. Rendering is broken into units that yield to the browser regularly (about every 5 ms in the scheduler), and a higher-priority update can interrupt a lower-priority render. The interrupted work is discarded rather than committed, so the UI stays consistent. The commit phase itself is still synchronous. Answer reasoned from react.dev's `startTransition` documentation; interviewers use this scenario to check that \"concurrent\" is understood as interruptible, not parallel.",
+    "reference": "https://react.dev/reference/react/startTransition",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://medium.com/@prikshit8/sde-2-frontend-interview-exp-mmt-001828ab6dc5",
+        "https://dev.to/maurya-sachin/650-frontend-interview-questions-javascript-react-nextjs-more-my-complete-prep-journey-12in",
+        "https://leetcode.com/discuss/post/5021709/zomato-sde-1-interview-experience",
+        "https://www.techinterview.org/post/3233474938/react-rendering-deep-dive-interview/",
+        "https://dev.to/finalroundai/40-react-interview-questions-top-tech-companies-are-asking-in-2025-26op"
+      ],
+      "companies": [
+        "MakeMyTrip",
+        "Zomato"
+      ]
+    },
+    "source": "interview:rx-fiber"
+  },
+  {
+    "id": "RCT-IQ3-STM-001",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "\"Why would you use TanStack Query instead of putting API responses into Redux?\" Which two statements make the strongest argument? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "API data is a cache of state owned by the server. It can go stale, so it needs deduping, refetching, invalidation and garbage collection, which a query library provides out of the box",
+        "correct": true,
+        "why": "Server state has a different lifecycle from UI state, and the hard parts are caching problems, not storage problems."
+      },
+      {
+        "id": "B",
+        "text": "With Redux you typically hand-write loading, error and caching logic for every endpoint, and you still have to decide when that copy is out of date",
+        "correct": true,
+        "why": "This is the practical cost of treating server data as client state. RTK Query exists for the same reason."
+      },
+      {
+        "id": "C",
+        "text": "Redux cannot store data that came from an asynchronous request",
+        "correct": false,
+        "why": "Redux can store anything serialisable. Thunks and RTK Query handle async flows; the argument is about effort and correctness, not ability."
+      },
+      {
+        "id": "D",
+        "text": "TanStack Query should also hold purely client-side state, such as whether a modal is open",
+        "correct": false,
+        "why": "UI state with no server source belongs in `useState`, context or a client store. Query is for asynchronous server data."
+      },
+      {
+        "id": "E",
+        "text": "TanStack Query persists every response to `localStorage` by default, so data survives reloads",
+        "correct": false,
+        "why": "The cache is in memory by default. Persisting it needs an explicit persister plugin."
+      }
+    ],
+    "explanation": "Separate server state (owned remotely, cached locally, possibly stale) from client state (owned by the UI). Server state needs request deduping, stale-time policies, background refetching, invalidation after mutations, and race-free updates. That is why dedicated tools such as TanStack Query, SWR and RTK Query exist. Interviewers ask this to see whether you pick tools by the shape of the problem rather than by habit.",
+    "reference": "https://tanstack.com/query/latest/docs/framework/react/guides/does-this-replace-client-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://github.com/sudheerj/reactjs-interview-questions",
+        "https://www.interviewkickstart.com/interview-questions/advanced-reactjs-interview-questions",
+        "https://bigfrontend.dev/react",
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides"
+      ],
+      "companies": [
+        "OpenEnvoy",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-react-query-server-state"
+  },
+  {
+    "id": "RCT-IQ3-STM-002",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You sketch a minimal query cache in an interview. `staleTime` is 5,000 ms, and `fetchTodos` resolves almost instantly. The calls happen at t = 0, t = 1,000 and t = 7,000 ms. Which statement describes what happens?\n\n```js\nconst cache = new Map();\nfunction fetchQuery(key, fn, staleTime) {\n  const k = JSON.stringify(key);\n  const entry = cache.get(k);\n  if (entry?.promise) return { data: entry.data, fetching: true };\n  if (entry && Date.now() - entry.updatedAt < staleTime) {\n    return { data: entry.data, fetching: false };\n  }\n  const e = entry ?? { data: undefined, updatedAt: 0 };\n  e.promise = fn().then(d => {\n    e.data = d; e.updatedAt = Date.now(); e.promise = null;\n    return d;\n  });\n  cache.set(k, e);\n  return { data: e.data, fetching: true };\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "At t = 1,000 the cached data is returned with no request. At t = 7,000 the cached data is returned at once and a background refetch starts (stale-while-revalidate)",
+        "correct": true,
+        "why": "At 1,000 ms the entry is younger than `staleTime`, so it is fresh. At 7,000 ms it is stale, so a new promise starts while the old `data` is still returned."
+      },
+      {
+        "id": "B",
+        "text": "Every call makes a request, because `JSON.stringify(['todos'])` produces a new string each time",
+        "correct": false,
+        "why": "Strings compare by value in a `Map`, so the same key array always gives the same cache key. That is why the code serialises the key."
+      },
+      {
+        "id": "C",
+        "text": "At t = 7,000 the call returns `data: undefined` until the new request finishes",
+        "correct": false,
+        "why": "The existing entry is reused, so its old `data` is returned straight away while the refetch runs."
+      },
+      {
+        "id": "D",
+        "text": "At t = 1,000 a second request starts, because `staleTime` only applies after the cache has been garbage-collected",
+        "correct": false,
+        "why": "`staleTime` is exactly the freshness window checked here. Garbage collection (`gcTime` in TanStack Query) is a separate timer for unused entries."
+      }
+    ],
+    "explanation": "A query cache needs a key (serialised, so equal keys match), in-flight dedupe (a stored promise), a freshness window (`staleTime`), and stale-while-revalidate (show cached data while refetching). Simulated in Node with a fake clock: one request at t = 0, none at t = 1,000, and a second at t = 7,000 while the old value was returned. In TanStack Query v5 the default `staleTime` is 0, so cached data is treated as stale immediately unless you configure otherwise.",
+    "reference": "https://tanstack.com/query/latest/docs/framework/react/guides/caching",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://github.com/sudheerj/reactjs-interview-questions",
+        "https://www.interviewkickstart.com/interview-questions/advanced-reactjs-interview-questions",
+        "https://bigfrontend.dev/react",
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides"
+      ],
+      "companies": [
+        "OpenEnvoy",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-react-query-server-state"
+  },
+  {
+    "id": "RCT-IQ3-STM-003",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are implementing `subscribe` for a small store. It must return a function that removes exactly that listener, and calling that function twice must be harmless (React may unsubscribe, and so may user code). Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nconst listeners = [];\nfunction subscribe(fn) {\n  listeners.push(fn);\n  return () => listeners.splice(listeners.indexOf(fn), 1);\n}\n```",
+        "correct": false,
+        "why": "On a second call `indexOf` returns -1, and `splice(-1, 1)` removes the last listener, which belongs to someone else."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst listeners = new Set();\nfunction subscribe(fn) {\n  listeners.add(fn);\n  return listeners.delete(fn);\n}\n```",
+        "correct": false,
+        "why": "This calls `delete` immediately and returns a boolean, so the listener is removed as soon as it is added, and callers get no function to call."
+      },
+      {
+        "id": "C",
+        "text": "```js\nlet listeners = new Set();\nfunction subscribe(fn) {\n  listeners.add(fn);\n  return () => { listeners = new Set(); };\n}\n```",
+        "correct": false,
+        "why": "Unsubscribing one component would remove every other subscriber too."
+      },
+      {
+        "id": "D",
+        "text": "```js\nconst listeners = new Set();\nfunction subscribe(fn) {\n  listeners.add(fn);\n  return () => listeners.delete(fn);\n}\n```",
+        "correct": true,
+        "why": "The returned closure removes only `fn`, and deleting a value that is no longer in the `Set` is a no-op, so double unsubscribes are safe."
+      }
+    ],
+    "explanation": "\"Subscribe returns unsubscribe\" is the contract of Redux, Zustand, and the `subscribe` argument of `useSyncExternalStore`. A `Set` gives O(1) removal and idempotent deletes. Checked in Node: with the array version, unsubscribing the first of three listeners twice leaves only the second listener. Interviewers often follow up with \"what if a listener unsubscribes while you are notifying?\", which you can handle by iterating over a copy.",
+    "reference": "https://react.dev/reference/react/useSyncExternalStore#subscribing-to-an-external-store",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://learnersbucket.com/tech/frontend-interview-process-at-coursera/",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://www.frontendinterviewhandbook.com/companies/airbnb-front-end-interview-questions",
+        "https://www.greatfrontend.com/interviews/company/google/questions-guides"
+      ],
+      "companies": [
+        "OpenEnvoy",
+        "Coursera",
+        "Airbnb",
+        "Google",
+        "Meta",
+        "Flipkart",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-pubsub-store"
+  },
+  {
+    "id": "RCT-IQ3-STM-004",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You connect your store to React with `useSyncExternalStore(store.subscribe, getSnapshot)`. One component that uses the version below hits an infinite re-render loop in development. Which `getSnapshot` is the cause?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`() => store.getState().user.name`",
+        "correct": false,
+        "why": "This returns a string, which compares by value. The same name means the same snapshot, so there is no loop."
+      },
+      {
+        "id": "B",
+        "text": "`() => store.getState()`, where `setState` always replaces the state with a new object",
+        "correct": false,
+        "why": "Each read returns the same object until the store actually changes, so React sees a stable snapshot between updates."
+      },
+      {
+        "id": "C",
+        "text": "`() => ({ name: store.getState().user.name, age: store.getState().user.age })`",
+        "correct": true,
+        "why": "A new object on every call means `Object.is` always reports a change. React re-renders, reads again, gets another new object, and loops (react.dev warns that the result of `getSnapshot` should be cached)."
+      },
+      {
+        "id": "D",
+        "text": "`() => store.getState().todos`, where the `todos` array is replaced only when it changes",
+        "correct": false,
+        "why": "The array reference is stable between changes, so this is a valid snapshot."
+      }
+    ],
+    "explanation": "`getSnapshot` must return the same value (by `Object.is`) as long as the store has not changed. Return primitives or references that already exist in the store, or select single fields with separate hooks. If you need a derived object, memoise it on the source reference. Answer reasoned from react.dev's `useSyncExternalStore` reference, which documents this loop. Interviewers who ask you to \"connect your pub-sub store to React\" usually probe this exact pitfall next.",
+    "reference": "https://react.dev/reference/react/useSyncExternalStore#im-getting-an-error-the-result-of-getsnapshot-should-be-cached",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://learnersbucket.com/tech/frontend-interview-process-at-coursera/",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://www.frontendinterviewhandbook.com/companies/airbnb-front-end-interview-questions",
+        "https://www.greatfrontend.com/interviews/company/google/questions-guides"
+      ],
+      "companies": [
+        "OpenEnvoy",
+        "Coursera",
+        "Airbnb",
+        "Google",
+        "Meta",
+        "Flipkart",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-pubsub-store"
+  },
+  {
+    "id": "RCT-IQ3-STM-005",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your store's `setState` accepts either a value or an updater function. The interviewer adds a requirement: subscribers must be notified only when the state actually changes, so `setState(s => s)` must notify nobody. Which implementation meets it?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction setState(update) {\n  const next = typeof update === 'function' ? update(state) : update;\n  state = { ...state, ...next };\n  if (!Object.is(next, state)) listeners.forEach(l => l());\n}\n```",
+        "correct": false,
+        "why": "It merges into a brand-new object and then compares `next` against that new object, so the comparison is always unequal and every call notifies."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction setState(update) {\n  const next = typeof update === 'function' ? update(state) : update;\n  if (Object.is(next, state)) return;\n  state = next;\n  listeners.forEach(l => l());\n}\n```",
+        "correct": true,
+        "why": "It compares the candidate with the current state before assigning. An updater that returns the same reference exits early; a real change is stored before listeners run, so they read the new value."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction setState(update) {\n  const next = typeof update === 'function' ? update(state) : update;\n  listeners.forEach(l => l());\n  if (!Object.is(next, state)) state = next;\n}\n```",
+        "correct": false,
+        "why": "Listeners always run, and they run before the state is assigned, so any listener that reads the store gets the old value."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction setState(update) {\n  const next = typeof update === 'function' ? update(state) : update;\n  if (JSON.stringify(next) === JSON.stringify(state)) return;\n  state = next;\n  listeners.forEach(l => l());\n}\n```",
+        "correct": false,
+        "why": "This works for small plain data, but it serialises the whole state on every update. It also ignores functions, Maps and key order, and costs O(n) where a reference check is O(1)."
+      }
+    ],
+    "explanation": "Notify on change, decided by reference equality, assuming immutable updates. Zustand and `useSyncExternalStore` both use `Object.is`. Simulated in Node: `setState(s => s)` produced no notification and a real change produced one, while the merge-first version notified even for an identical value. Interviewers who ask you to build a pub-sub store are checking the subscription contract, the ordering (assign, then notify) and unnecessary re-renders.",
+    "reference": "https://react.dev/reference/react/useSyncExternalStore",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md",
+        "https://learnersbucket.com/tech/frontend-interview-process-at-coursera/",
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://www.frontendinterviewhandbook.com/companies/airbnb-front-end-interview-questions",
+        "https://www.greatfrontend.com/interviews/company/google/questions-guides"
+      ],
+      "companies": [
+        "OpenEnvoy",
+        "Coursera",
+        "Airbnb",
+        "Google",
+        "Meta",
+        "Flipkart",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-pubsub-store"
+  },
+  {
+    "id": "RCT-IQ3-EFF-004",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Typeahead requirements: wait for a 300 ms pause in typing, never show results for an older query, and cancel requests that are no longer needed. `search(q, { signal })` wraps `fetch`. Which effect meets all three?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nuseEffect(() => {\n  const t = setTimeout(() => {\n    search(query).then(setResults);\n  }, 300);\n  return () => clearTimeout(t);\n}, [query]);\n```",
+        "correct": false,
+        "why": "The debounce is right, but once a request has started nothing cancels or ignores it. A slow earlier request can resolve after a newer one and overwrite its results."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nuseEffect(() => {\n  const controller = new AbortController();\n  search(query, { signal: controller.signal })\n    .then(setResults)\n    .catch(() => {});\n  return () => controller.abort();\n}, [query]);\n```",
+        "correct": false,
+        "why": "It is race-safe, but there is no debounce: every keystroke starts a request (and then aborts it). It also swallows real errors."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nuseEffect(() => {\n  const controller = new AbortController();\n  const t = setTimeout(() => {\n    search(query, { signal: controller.signal })\n      .then(setResults)\n      .catch(err => { if (err.name !== 'AbortError') setError(err); });\n  }, 300);\n  return () => { clearTimeout(t); controller.abort(); };\n}, [query]);\n```",
+        "correct": true,
+        "why": "The cleanup cancels the pending timer and aborts any in-flight request for the previous query, so only the latest query can call `setResults`. Abort errors are ignored and real errors are surfaced."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nconst debouncedSearch = debounce(q => search(q).then(setResults), 300);\nuseEffect(() => {\n  debouncedSearch(query);\n}, [query]);\n```",
+        "correct": false,
+        "why": "`debounce` runs in the component body, so a new debounced function (with its own timer) is created on every render, and the 300 ms wait never groups keystrokes. Nothing handles stale responses either."
+      }
+    ],
+    "explanation": "An effect keyed on the query, with a cleanup that clears the timer and aborts the request, gives you debouncing and race safety in one place. Each new query cleans up the previous one. An `ignore` flag set in the cleanup works too, but it does not save bandwidth. Answer reasoned from react.dev's guidance on fetching in effects and race conditions. Typeahead is one of the most-asked React machine-coding questions, and interviewers almost always ask \"what if responses arrive out of order?\"",
+    "reference": "https://react.dev/learn/you-might-not-need-an-effect#fetching-data",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/4172860/swiggy-frontend-intern-2024-batch",
+        "https://leetcode.com/discuss/post/3709352/tekion-sde2-frontend-bangalore-offer",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md"
+      ],
+      "companies": [
+        "Swiggy",
+        "Tekion",
+        "Intuit",
+        "Meesho",
+        "Wayfair",
+        "Mercor",
+        "xAI",
+        "Amazon",
+        "Waymo",
+        "Airwallex",
+        "Airbnb",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-mc-typeahead"
+  },
+  {
+    "id": "RCT-IQ3-EFF-005",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The interviewer asks you to cache typeahead results so that retyping a previous query (for example, after a backspace) shows results instantly, with no new request. The cache must survive re-renders and belong to this component instance. Which version does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nfunction Typeahead() {\n  const cache = new Map();\n  // effect: if (cache.has(q)) { setResults(cache.get(q)); return; }\n  //         ...fetch, then cache.set(q, data)\n}\n```",
+        "correct": false,
+        "why": "The `Map` is created again on every render, so whatever the last fetch stored is gone by the next keystroke."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nfunction Typeahead() {\n  const [cache, setCache] = useState({});\n  // effect: if (cache[q]) { setResults(cache[q]); return; }\n  //         ...fetch, then cache[q] = data\n}\n```",
+        "correct": false,
+        "why": "The cache survives re-renders, but writing `cache[q] = data` mutates state. If the effect depends on `cache`, it also has to re-run whenever the cache changes."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nfunction Typeahead() {\n  const cacheRef = useRef(null);\n  if (cacheRef.current === null) cacheRef.current = new Map();\n  // effect: const hit = cacheRef.current.get(q);\n  //         if (hit) { setResults(hit); return; }\n  //         ...fetch, then cacheRef.current.set(q, data)\n}\n```",
+        "correct": true,
+        "why": "A ref keeps the same `Map` for the lifetime of the component, and changing it does not cause renders. Lazy initialisation avoids building a throwaway `Map` on every render."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nfunction Typeahead() {\n  const cache = useMemo(() => new Map(), [query]);\n  // effect: if (cache.has(q)) ...\n}\n```",
+        "correct": false,
+        "why": "With `query` in the dependency list, a new empty `Map` is created on every keystroke, which is exactly when the cache is needed."
+      }
+    ],
+    "explanation": "Mutable values that must survive re-renders but should not trigger renders belong in a ref. A cache keyed by query is a textbook example. If several components or a remount need to share it, move the cache to module scope or use a query library. Interviewers use this follow-up to check whether you understand what lives for one render, what lives for the component's lifetime, and what lives for the module.",
+    "reference": "https://react.dev/reference/react/useRef#avoiding-recreating-the-ref-contents",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/4172860/swiggy-frontend-intern-2024-batch",
+        "https://leetcode.com/discuss/post/3709352/tekion-sde2-frontend-bangalore-offer",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md"
+      ],
+      "companies": [
+        "Swiggy",
+        "Tekion",
+        "Intuit",
+        "Meesho",
+        "Wayfair",
+        "Mercor",
+        "xAI",
+        "Amazon",
+        "Waymo",
+        "Airwallex",
+        "Airbnb",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-mc-typeahead"
+  },
+  {
+    "id": "RCT-IQ3-EFF-006",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Typeahead keyboard support uses `active`, the highlighted index, with -1 meaning nothing is highlighted. Users report that ArrowUp from the first item highlights nothing, and that after new results arrive the old index highlights a row that no longer exists (pressing Enter selects `undefined`). Which two changes fix these bugs? (Choose two.)\n\n```jsx\nfunction onKeyDown(e) {\n  if (e.key === 'ArrowDown') setActive(a => (a + 1) % results.length);\n  if (e.key === 'ArrowUp') setActive(a => (a - 1) % results.length);\n  if (e.key === 'Enter') choose(results[active]);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `(a - 1 + results.length) % results.length` for ArrowUp, because in JavaScript `(0 - 1) % n` is `-1`, not `n - 1`",
+        "correct": true,
+        "why": "JavaScript's `%` keeps the sign of the dividend. Adding `n` before taking the remainder wraps from the first item to the last."
+      },
+      {
+        "id": "B",
+        "text": "Reset `active` to -1 in the same code path that stores new results (for example `setResults(data); setActive(-1);` in the fetch handler), so a stale index never points past the new list",
+        "correct": true,
+        "why": "The highlight belongs to one result list. Resetting it when that list is replaced keeps them consistent, without an extra effect and render."
+      },
+      {
+        "id": "C",
+        "text": "Replace `%` with `Math.abs(a - 1) % results.length` so the index is never negative",
+        "correct": false,
+        "why": "From index 0 this gives `1 % n = 1`, which moves the highlight down instead of wrapping to the last item."
+      },
+      {
+        "id": "D",
+        "text": "Store `active` in a ref instead of state so it is always up to date",
+        "correct": false,
+        "why": "The highlight must re-render to show which row is selected, so it has to be state. The bugs are in the arithmetic and the reset, not in staleness."
+      },
+      {
+        "id": "E",
+        "text": "Add `active` to a `useEffect` dependency list so React clamps it automatically",
+        "correct": false,
+        "why": "React never clamps values for you. An effect dependency only controls when an effect re-runs."
+      }
+    ],
+    "explanation": "Keyboard navigation bugs in a typeahead are almost always about bounds: wrapping both ways, resetting when the list changes, and guarding Enter when nothing is highlighted. Verified in Node: `(0 - 1) % 5` is -1 and `(0 - 1 + 5) % 5` is 4. For accessibility, pair the index with `aria-activedescendant` on the input and `role=\"option\"` with `aria-selected` on each row. Interviewers treat this as the polish that separates a passing typeahead from a strong one.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Remainder",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/4172860/swiggy-frontend-intern-2024-batch",
+        "https://leetcode.com/discuss/post/3709352/tekion-sde2-frontend-bangalore-offer",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md"
+      ],
+      "companies": [
+        "Swiggy",
+        "Tekion",
+        "Intuit",
+        "Meesho",
+        "Wayfair",
+        "Mercor",
+        "xAI",
+        "Amazon",
+        "Waymo",
+        "Airwallex",
+        "Airbnb",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-mc-typeahead"
+  },
+  {
+    "id": "RCT-IQ3-RND-003",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A file explorer gets a tree such as `{ id, name, children?: [...] }` of any depth. Folders expand and collapse, and files and folders can be added or deleted at any level. Which rendering approach is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nfunction Node({ node }) {\n  const [open, setOpen] = useState(false);\n  if (!node.children) return <li>{node.name}</li>;\n  return (\n    <li>\n      <button onClick={() => setOpen(o => !o)}>{node.name}</button>\n      {open && <ul>{node.children.map((c, i) => <Node key={i} node={c} />)}</ul>}\n    </li>\n  );\n}\n```",
+        "correct": false,
+        "why": "The recursion is right, but index keys tie each `Node` instance (and its open state) to a position. After a delete or insert, the open state moves to a different sibling."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nfunction Node({ node }) {\n  const [open, setOpen] = useState(false);\n  if (!node.children) return <li>{node.name}</li>;\n  return (\n    <li>\n      <button onClick={() => setOpen(o => !o)}>{node.name}</button>\n      {open && <ul>{node.children.map(c => <Node key={c.id} node={c} />)}</ul>}\n    </li>\n  );\n}\n```",
+        "correct": true,
+        "why": "A component that renders itself for each child handles any depth, and `key={c.id}` keeps each folder's state attached to that folder when siblings are added or removed."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nfunction renderNode(node) {\n  const [open, setOpen] = useState(false);\n  return <li key={node.id}>{node.name}{open && node.children?.map(renderNode)}</li>;\n}\n// <ul>{tree.children.map(renderNode)}</ul>\n```",
+        "correct": false,
+        "why": "`renderNode` is a plain function called in a loop, so its hooks belong to the parent component, and their number changes as folders open and close. That breaks the Rules of Hooks."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nfunction Node({ node }) {\n  return (\n    <li>{node.name}\n      <ul>{node.children?.map(c => <li key={c.id}>{c.name}</li>)}</ul>\n    </li>\n  );\n}\n```",
+        "correct": false,
+        "why": "This renders only one level below the node. Grandchildren never appear, and there is no expand or collapse."
+      }
+    ],
+    "explanation": "Trees in React are rendered by a component that renders itself for its children, with stable ids as keys. Rendering the correct version with `react-dom/server` produced properly nested `<ul>/<li>` markup at every depth. Interviewers then ask about index keys after a delete, about where expanded state should live, and about accessibility (`role=\"tree\"`, `aria-expanded`, arrow-key navigation).",
+    "reference": "https://react.dev/learn/preserving-and-resetting-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://learnersbucket.com/examples/interview/build-a-file-explorer-like-google-drive-in-react",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.frontendinterviewhandbook.com/companies/amazon-front-end-interview-questions"
+      ],
+      "companies": [
+        "Swiggy",
+        "Kotak Mahindra Bank",
+        "Atlassian",
+        "Amazon",
+        "Apple",
+        "Waymo",
+        "UiPath",
+        "Postman",
+        "xAI"
+      ]
+    },
+    "source": "interview:rx-mc-file-explorer"
+  },
+  {
+    "id": "RCT-IQ3-RND-004",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In your file explorer, each `Folder` keeps its own `const [open, setOpen] = useState(false)`, and a folder renders its children only while it is open. A user expands `/src`, then `/src/components`, collapses `/src`, and expands it again. `/src/components` is now collapsed. Why, and what is the most robust fix?",
+    "options": [
+      {
+        "id": "A",
+        "text": "It is a key problem. Giving every `Folder` a random `key` on each render would preserve the state",
+        "correct": false,
+        "why": "A new key on every render forces React to remount the folder, which resets its state each time and makes the problem worse."
+      },
+      {
+        "id": "B",
+        "text": "React batches the two `setOpen` calls and drops the update for the inner folder. Wrapping `setOpen` in `flushSync` makes React apply it immediately",
+        "correct": false,
+        "why": "Nothing is dropped. The inner folder's state is destroyed when the component unmounts."
+      },
+      {
+        "id": "C",
+        "text": "Collapsing `/src` unmounts its child folders, so React discards their state. Keep expanded ids in one `Set` at the root and pass `isOpen` down",
+        "correct": true,
+        "why": "State lives as long as the component is rendered in that position. Lifting the expanded ids above the part of the tree that unmounts preserves them, and also enables \"expand all\" and persistence."
+      },
+      {
+        "id": "D",
+        "text": "`useState(false)` re-runs its initialiser on every render. Use `useState(() => false)` instead",
+        "correct": false,
+        "why": "The initial value is used only on mount. The folder really is mounting again, which is why the initial value appears."
+      }
+    ],
+    "explanation": "React keeps state only while a component stays rendered in the same position. Conditionally rendering children (`{open && ...}`) unmounts them, and their state goes with them. For trees, the standard design is a single `expandedIds` set (or a normalised map) owned by the root, which also makes virtualised or flattened rendering possible later. The alternative of hiding collapsed children with CSS keeps their state, but keeps every node mounted. Reasoned from react.dev's \"Preserving and resetting state\".",
+    "reference": "https://react.dev/learn/preserving-and-resetting-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://learnersbucket.com/examples/interview/build-a-file-explorer-like-google-drive-in-react",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.frontendinterviewhandbook.com/companies/amazon-front-end-interview-questions"
+      ],
+      "companies": [
+        "Swiggy",
+        "Kotak Mahindra Bank",
+        "Atlassian",
+        "Amazon",
+        "Apple",
+        "Waymo",
+        "UiPath",
+        "Postman",
+        "xAI"
+      ]
+    },
+    "source": "interview:rx-mc-file-explorer"
+  },
+  {
+    "id": "RCT-IQ3-RND-005",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The explorer stores the whole tree in one `useState`. You need `addNode(tree, parentId, newNode)` that returns a new tree with `newNode` added to the folder with id `parentId`, at any depth. The original tree must not change, and branches that did not change must keep their object identity (memoised `Folder` components rely on this). Which implementation meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction addNode(node, parentId, newNode) {\n  if (node.id === parentId) {\n    return { ...node, children: [...node.children, newNode] };\n  }\n  if (!node.children) return node;\n  const children = node.children.map(c => addNode(c, parentId, newNode));\n  return children.some((c, i) => c !== node.children[i])\n    ? { ...node, children }\n    : node;\n}\n```",
+        "correct": true,
+        "why": "Only the nodes on the path from the root to the parent are copied. Untouched subtrees are returned as the same objects, so memoised folders can skip re-rendering."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction addNode(tree, parentId, newNode) {\n  const next = structuredClone(tree);\n  find(next, parentId).children.push(newNode);\n  return next;\n}\n```",
+        "correct": false,
+        "why": "The original is safe, but every node becomes a new object, so no unchanged branch keeps its identity, and every memoised folder re-renders. It also costs O(n) on every add."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction addNode(tree, parentId, newNode) {\n  find(tree, parentId).children.push(newNode);\n  return { ...tree };\n}\n```",
+        "correct": false,
+        "why": "A new root triggers a render, but the parent folder's `children` array was mutated in place. The previous tree changed, and a memoised parent folder still sees the same props."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction addNode(tree, parentId, newNode) {\n  return {\n    ...tree,\n    children: tree.children.map(c =>\n      c.id === parentId ? { ...c, children: [...c.children, newNode] } : c),\n  };\n}\n```",
+        "correct": false,
+        "why": "This only looks one level down. A parent deeper in the tree is never found, and the node is silently not added."
+      }
+    ],
+    "explanation": "Immutable updates to nested data copy the path from the root to the change, and nothing else. Checked in Node: after adding under a grandchild, the root and that branch are new objects, the sibling branch is the same object, and the original tree is unchanged. For deep or frequently edited trees, a normalised shape (`{ byId, rootId }` with `childIds`) turns this into a two-entry update. That is usually the interviewer's next follow-up.",
+    "reference": "https://react.dev/learn/updating-objects-in-state#updating-a-nested-object",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://learnersbucket.com/examples/interview/build-a-file-explorer-like-google-drive-in-react",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.frontendinterviewhandbook.com/companies/amazon-front-end-interview-questions"
+      ],
+      "companies": [
+        "Swiggy",
+        "Kotak Mahindra Bank",
+        "Atlassian",
+        "Amazon",
+        "Apple",
+        "Waymo",
+        "UiPath",
+        "Postman",
+        "xAI"
+      ]
+    },
+    "source": "interview:rx-mc-file-explorer"
+  },
+  {
+    "id": "RCT-IQ3-STA-009",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Comments are normalised as `{ rootIds: [...], byId: { [id]: { id, text, childIds: [...] } } }`. Which `addReply(state, parentId, reply)` adds a reply under any comment, at any depth, without mutating the existing state or losing earlier replies?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction addReply(state, parentId, reply) {\n  return {\n    ...state,\n    byId: {\n      ...state.byId,\n      [reply.id]: { ...reply, childIds: [] },\n      [parentId]: { ...state.byId[parentId], childIds: [reply.id] },\n    },\n  };\n}\n```",
+        "correct": false,
+        "why": "It replaces the parent's `childIds` with an array holding only the new reply, so the earlier replies disappear from the thread."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction addReply(state, parentId, reply) {\n  state.byId[parentId].childIds.push(reply.id);\n  return { ...state, byId: { ...state.byId, [reply.id]: { ...reply, childIds: [] } } };\n}\n```",
+        "correct": false,
+        "why": "`push` mutates the parent's existing `childIds` array. The previous state changes too, and a memoised parent `Comment` receives the same array reference."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction addReply(state, parentId, reply) {\n  const parent = state.byId[parentId];\n  return {\n    ...state,\n    byId: {\n      ...state.byId,\n      [parentId]: { ...parent, childIds: [...parent.childIds, reply.id] },\n    },\n  };\n}\n```",
+        "correct": false,
+        "why": "The parent now lists the new id, but the reply itself was never added to `byId`, so rendering the child fails when it looks up the missing id."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction addReply(state, parentId, reply) {\n  const parent = state.byId[parentId];\n  return {\n    ...state,\n    byId: {\n      ...state.byId,\n      [reply.id]: { ...reply, childIds: [] },\n      [parentId]: { ...parent, childIds: [...parent.childIds, reply.id] },\n    },\n  };\n}\n```",
+        "correct": true,
+        "why": "It adds the reply entry and gives the parent a new `childIds` array with the reply appended. Every other comment object is reused unchanged, whatever its depth."
+      }
+    ],
+    "explanation": "With normalised comments, replying at depth 10 costs the same as replying at the top level: one new entry plus one updated parent, with no path copying. Checked in Node: the correct version leaves the original `childIds` untouched and keeps sibling objects identical. Interviewers who give the nested-comments question often start with nested `replies` arrays and then ask \"how would you make deep edits easier?\"",
+    "reference": "https://react.dev/learn/choosing-the-state-structure#avoid-deeply-nested-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CoinDCX.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://www.jointaro.com/interviews/companies/flipkart/work-experiences/ui-engineer-march-12-2024-4-6ea41f07",
+        "https://namastedev.com/topics/machine-coding-round-questions-part-2/advanced-machine-coding-questions-frontend-interviews",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "CoinDCX",
+        "Intuit",
+        "Flipkart",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-mc-nested-comments"
+  },
+  {
+    "id": "RCT-IQ3-STA-010",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "In the normalised comment store, `deleteComment(id)` removes the comment's entry from `byId` and removes its id from its parent's `childIds` (or from `rootIds`). The deleted comment had two replies. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "The comment and its replies disappear from the UI, because rendering walks down from `rootIds` through `childIds` and no longer reaches them",
+        "correct": true,
+        "why": "The replies are only reachable through the deleted comment's `childIds`, so the recursive render never visits them."
+      },
+      {
+        "id": "B",
+        "text": "The two replies remain in `byId` as orphans, so anything that counts or searches `byId` (for example \"142 comments\") is now wrong until they are also removed",
+        "correct": true,
+        "why": "Nothing deleted the descendants' entries. A full delete collects the subtree's ids recursively and removes them all, or the app shows \"[deleted]\" and keeps the subtree on purpose."
+      },
+      {
+        "id": "C",
+        "text": "The orphaned replies are garbage-collected automatically, because nothing refers to them any more",
+        "correct": false,
+        "why": "`byId` still holds them, so they remain reachable and stay in memory."
+      },
+      {
+        "id": "D",
+        "text": "React throws during render because a `childIds` array refers to a missing comment",
+        "correct": false,
+        "why": "The deleted id was removed from its parent's `childIds`, and no remaining `childIds` points at it, so no lookup fails."
+      },
+      {
+        "id": "E",
+        "text": "Deleting from a normalised map requires a deep clone of `byId` so the other comments re-render correctly",
+        "correct": false,
+        "why": "A shallow copy of `byId` without the deleted keys is enough. Unchanged comment objects should keep their identity."
+      }
+    ],
+    "explanation": "Normalisation makes single-entity updates cheap, but deletes need a policy for descendants. Either remove the whole subtree (walk `childIds` recursively and drop each entry), or soft-delete by replacing the text with \"[deleted]\" so the replies stay visible, as Reddit does. Saying which one you would choose, and why, is the design point interviewers look for in the nested-comments round.",
+    "reference": "https://react.dev/learn/choosing-the-state-structure#avoid-deeply-nested-state",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CoinDCX.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://www.jointaro.com/interviews/companies/flipkart/work-experiences/ui-engineer-march-12-2024-4-6ea41f07",
+        "https://namastedev.com/topics/machine-coding-round-questions-part-2/advanced-machine-coding-questions-frontend-interviews",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "CoinDCX",
+        "Intuit",
+        "Flipkart",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-mc-nested-comments"
+  },
+  {
+    "id": "RCT-IQ3-STA-011",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What text order does this recursive comment thread render, reading the HTML from top to bottom?\n\n```jsx\nconst rootIds = ['c1', 'c5'];\nconst byId = {\n  c1: { text: 'A', childIds: ['c2', 'c3'] },\n  c2: { text: 'B', childIds: ['c4'] },\n  c3: { text: 'C', childIds: [] },\n  c4: { text: 'D', childIds: [] },\n  c5: { text: 'E', childIds: [] },\n};\n\nfunction Comment({ id }) {\n  const c = byId[id];\n  return (\n    <li>\n      {c.text}\n      {c.childIds.length > 0 && (\n        <ul>{c.childIds.map(cid => <Comment key={cid} id={cid} />)}</ul>\n      )}\n    </li>\n  );\n}\n// <ul>{rootIds.map(id => <Comment key={id} id={id} />)}</ul>\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "A, B, C, D, E",
+        "correct": false,
+        "why": "That is level-by-level (breadth-first) order. Recursion renders each comment's whole reply subtree inside it before moving to the next sibling."
+      },
+      {
+        "id": "B",
+        "text": "A, E, B, C, D",
+        "correct": false,
+        "why": "This lists every top-level comment first. In fact, A's replies are nested inside A's `<li>`, before E."
+      },
+      {
+        "id": "C",
+        "text": "D, B, C, A, E",
+        "correct": false,
+        "why": "This puts children before their parents. Each `<li>` outputs its own text before its replies list."
+      },
+      {
+        "id": "D",
+        "text": "A, B, D, C, E",
+        "correct": true,
+        "why": "Each comment renders its text, then its replies recursively. A, then A's first reply B, then B's reply D, then A's second reply C, then the next root, E."
+      }
+    ],
+    "explanation": "A recursive component produces depth-first, pre-order output: a parent, then its whole subtree, then the next sibling. That is the natural reading order for threaded comments. Rendered with `react-dom/server`, the markup was `<ul><li>A<ul><li>B<ul><li>D</li></ul></li><li>C</li></ul></li><li>E</li></ul>`. Interviewers then ask for a `depth` prop that caps the indentation, or a \"continue thread\" link beyond a certain depth.",
+    "reference": "https://react.dev/learn/rendering-lists",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/CoinDCX.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://www.jointaro.com/interviews/companies/flipkart/work-experiences/ui-engineer-march-12-2024-4-6ea41f07",
+        "https://namastedev.com/topics/machine-coding-round-questions-part-2/advanced-machine-coding-questions-frontend-interviews",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "CoinDCX",
+        "Intuit",
+        "Flipkart",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-mc-nested-comments"
+  }
+]

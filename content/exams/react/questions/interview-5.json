@@ -1,0 +1,1843 @@
+[
+  {
+    "id": "RCT-IQ5-STA-001",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a nested-checkbox round, the children's checked ids live in one `Set` in state. The parent checkbox must look checked only when every child is checked, look partially checked when some (but not all) are, and never be out of sync with the children, not even for one render.\n\n```jsx\nconst [checkedIds, setCheckedIds] = useState(new Set());\n// children: [{ id: 'a' }, { id: 'b' }, { id: 'c' }]\n```\n\nWhich way of getting the parent's state meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Count checked children `n` during render: `all = n > 0 && n === children.length`, `some = n > 0 && !all`",
+        "correct": true,
+        "why": "Derived on every render from the single source of truth, so it can never lag behind. It also keeps \"all\" and \"some\" mutually exclusive."
+      },
+      {
+        "id": "B",
+        "text": "Keep `parentChecked` in its own `useState` and update it in a `useEffect` that watches `checkedIds`",
+        "correct": false,
+        "why": "The effect runs after commit, so for one render the parent shows the old state. It is also a second copy of data that can drift."
+      },
+      {
+        "id": "C",
+        "text": "`const all = children.some(c => checkedIds.has(c.id)); const some = !all;`",
+        "correct": false,
+        "why": "`some` is true as soon as one child is ticked, so the parent would look fully checked after a single click."
+      },
+      {
+        "id": "D",
+        "text": "`const all = children.every(c => checkedIds.has(c.id)); const some = children.some(c => checkedIds.has(c.id));`",
+        "correct": false,
+        "why": "When every child is checked, `some` is also true, so the parent would be both checked and partially checked at once."
+      }
+    ],
+    "explanation": "The parent's state is fully determined by the children, so it should be **derived**, not stored. Count the checked children during render: all checked means checked, zero means unchecked, anything in between means indeterminate. Clicking the parent then sets every child id or clears them: `setCheckedIds(all ? new Set() : new Set(children.map(c => c.id)))`. Interviewers use this question to see whether you avoid duplicated state and effect-based syncing, and whether you handle the \"all\" and \"some\" edge cases.",
+    "reference": "react.dev: Choosing the State Structure (avoid redundant state)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/companies/google-front-end-interview-questions",
+        "https://github.com/saumyadip25/Frontend-Interview-Experiences",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://namastedev.com/topics/machine-coding-round-questions-part-2/advanced-machine-coding-questions-frontend-interviews"
+      ],
+      "companies": [
+        "Google"
+      ]
+    },
+    "source": "interview:rx-mc-nested-checkboxes"
+  },
+  {
+    "id": "RCT-IQ5-STA-002",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The parent checkbox in a nested-checkbox tree should show the \"partially checked\" dash. The candidate writes:\n\n```jsx\n<input\n  type=\"checkbox\"\n  checked={all}\n  indeterminate={some}\n  onChange={toggleAll}\n/>\n```\n\nThe dash never appears, and React warns: \"Received `true` for a non-boolean attribute `indeterminate`\". What is the correct fix?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Pass a string instead: `indeterminate={String(some)}`",
+        "correct": false,
+        "why": "That writes an HTML attribute named `indeterminate`, which HTML does not define. The browser ignores it, so the dash still does not appear."
+      },
+      {
+        "id": "B",
+        "text": "Set the DOM property through a ref: `ref.current.indeterminate = some` in an effect",
+        "correct": true,
+        "why": "`indeterminate` exists only as a DOM property, not an attribute, so it has to be set from JavaScript on the node."
+      },
+      {
+        "id": "C",
+        "text": "Add `aria-checked=\"mixed\"` to the input; browsers then draw the dash for a native checkbox",
+        "correct": false,
+        "why": "ARIA attributes only describe state to assistive technology. They do not change how a native checkbox is drawn."
+      },
+      {
+        "id": "D",
+        "text": "Replace `checked` with `defaultChecked` so React stops controlling the box",
+        "correct": false,
+        "why": "Making the box uncontrolled has nothing to do with the indeterminate visual, and it breaks syncing with the children."
+      }
+    ],
+    "explanation": "Verified with React 19.3's `react-dom/server`: `indeterminate={true}` is dropped with the \"non-boolean attribute\" warning. HTML has no `indeterminate` attribute; it is a property on `HTMLInputElement` that you can only set from script. In React, the usual way is a ref plus an effect that sets `ref.current.indeterminate` whenever the derived `some` value changes. The interviewer is checking whether you know the difference between DOM attributes and properties, and how to reach the DOM from React when there is no prop for it.",
+    "reference": "MDN: <input type=\"checkbox\"> (indeterminate state checkboxes); react.dev: Manipulating the DOM with Refs",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/companies/google-front-end-interview-questions",
+        "https://github.com/saumyadip25/Frontend-Interview-Experiences",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://namastedev.com/topics/machine-coding-round-questions-part-2/advanced-machine-coding-questions-frontend-interviews"
+      ],
+      "companies": [
+        "Google"
+      ]
+    },
+    "source": "interview:rx-mc-nested-checkboxes"
+  },
+  {
+    "id": "RCT-IQ5-JSX-001",
+    "domain": 1,
+    "skill": "jsx-components",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Build a colour picker: clicking a swatch selects it (and highlights it), a large preview shows the selected colour, and a follow-up adds an opacity slider (`<input type=\"range\">`) that also changes the preview. Which implementation keeps the swatches, the slider and the preview in sync?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Store `color` and `opacity` in state, plus a `previewStyle` state that a `useEffect` recomputes when they change",
+        "correct": false,
+        "why": "The preview style is redundant state. It is one render behind after every change and can drift from the real values."
+      },
+      {
+        "id": "B",
+        "text": "Keep `color` and `opacity` in state, control the slider with `value` + `onChange`, and compute the preview while rendering",
+        "correct": true,
+        "why": "One source of truth for each value, a controlled slider, and a preview derived from both, so everything always matches."
+      },
+      {
+        "id": "C",
+        "text": "Store `color` and `opacity` in state, but render the slider with `value={opacity}` and no `onChange`",
+        "correct": false,
+        "why": "A controlled input without `onChange` is read-only: React keeps resetting it to `opacity`, and React warns about it."
+      },
+      {
+        "id": "D",
+        "text": "Give the slider `defaultValue={100}` and read it through a ref when rendering the preview",
+        "correct": false,
+        "why": "Moving an uncontrolled slider does not trigger a render, so the preview never updates until something else re-renders."
+      }
+    ],
+    "explanation": "The selected colour and the opacity are the only real state. Everything visible (the highlighted swatch, the preview background, the slider position) should be computed from them during render. A range slider is controlled with `value` plus `onChange` (convert `e.target.value` with `Number`). This is a warm-up machine-coding question. The interviewer wants to see controlled inputs and derived values instead of extra state that has to be synced.",
+    "reference": "react.dev: <input> (controlling an input with a state variable)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/companies/google-front-end-interview-questions",
+        "https://dataford.io/interview-guides/zeta/frontend-engineer"
+      ],
+      "companies": [
+        "Google",
+        "Zeta"
+      ]
+    },
+    "source": "interview:rx-mc-color-picker"
+  },
+  {
+    "id": "RCT-IQ5-STA-003",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A poll widget stores `votes` as an array of counts, for example `[1, 2, 0]`, and shows a whole-number percentage next to each option. Before anyone votes, every option must show `0%`. Which `percent(v, t)` function (`t` is the total) meets both requirements?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const percent = (v, t) => Math.round((v / t) * 100);`",
+        "correct": false,
+        "why": "With no votes, `0 / 0` is `NaN`, so every option shows \"NaN%\"."
+      },
+      {
+        "id": "B",
+        "text": "`const percent = (v, t) => Math.round(v / t) * 100;`",
+        "correct": false,
+        "why": "Rounding happens before multiplying, so 1 of 3 votes becomes `0` and 2 of 3 becomes `100`."
+      },
+      {
+        "id": "C",
+        "text": "`const percent = (v, t) => (t ? Math.round((v / t) * 100) : 0);`",
+        "correct": true,
+        "why": "Guards the empty poll, then rounds the real share: `[1, 2, 0]` gives 33, 67 and 0."
+      },
+      {
+        "id": "D",
+        "text": "`const percent = (v, t) => (t === 0 ? 0 : Math.floor(v / t) * 100);`",
+        "correct": false,
+        "why": "Flooring the fraction first gives 0 for every option until a single option has all the votes."
+      }
+    ],
+    "explanation": "Checked in Node: `Math.round((v / t) * 100)` gives 33, 67 and 0 for `[1, 2, 0]`, and `NaN` when the total is 0. Percentages should be **derived** from the vote counts during render (`const total = votes.reduce((a, b) => a + b, 0)`), not kept in state. The other half of this machine-coding question is \"vote once\": keep a `votedFor` state (persisted, for example in `localStorage` or on the server) and disable voting once it is set. Note that rounded percentages may not add up to exactly 100.",
+    "reference": "react.dev: Choosing the State Structure (avoid redundant state)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design"
+      ],
+      "companies": [
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-poll-widget"
+  },
+  {
+    "id": "RCT-IQ5-RSC-001",
+    "domain": 4,
+    "skill": "server-components",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "An interviewer asks: \"What is the difference between React and Next.js, and why is Next.js often better for SEO?\" Which two statements belong in a good answer? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A purely client-rendered React app sends a nearly empty HTML shell, and the content appears only after the JavaScript runs",
+        "correct": true,
+        "why": "Crawlers and link-preview bots that do not run JavaScript, or run it late, see little content in that first response."
+      },
+      {
+        "id": "B",
+        "text": "Next.js is a framework built on React that adds routing, server rendering or static generation, and a build setup",
+        "correct": true,
+        "why": "Because pages can be rendered on the server or at build time, the first HTML already contains the content and metadata."
+      },
+      {
+        "id": "C",
+        "text": "Next.js replaces JSX and components with its own template language that search engines can read",
+        "correct": false,
+        "why": "Next.js uses ordinary React components and JSX. It changes where and when they render, not how you write them."
+      },
+      {
+        "id": "D",
+        "text": "React cannot render on the server, so a framework is the only way to produce HTML on the server",
+        "correct": false,
+        "why": "React ships server rendering APIs such as `renderToString` and `renderToPipeableStream`. Frameworks wire them up for you."
+      },
+      {
+        "id": "E",
+        "text": "Next.js helps SEO mainly because it sends no JavaScript to the browser",
+        "correct": false,
+        "why": "Next.js pages still hydrate and ship client JavaScript for interactivity. The SEO gain comes from content being in the first HTML."
+      }
+    ],
+    "explanation": "React is a UI library. Next.js is a framework on top of it that decides routing, data loading, bundling and **where rendering happens** (server, build time or client). For SEO, what matters is that the server-rendered or static HTML already contains the page text, title and meta tags, so it can be indexed and previewed without running the app. The interviewer is checking whether you understand CSR vs SSR/SSG, not just that \"Next.js is better\".",
+    "reference": "react.dev: Creating a React App; nextjs.org: Rendering",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/interview-experiences/ez-works-frontend-developer-interview-experience-rounds-1-2/",
+        "https://www.geeksforgeeks.org/interview-experiences/ast-consulting-interview-experience-react-next-js-developer/"
+      ],
+      "companies": [
+        "EZ Works",
+        "AST Consulting"
+      ]
+    },
+    "source": "interview:rx-react-vs-nextjs"
+  },
+  {
+    "id": "RCT-IQ5-RND-001",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the difference between the virtual DOM and the Shadow DOM?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The Shadow DOM is the faster replacement for the virtual DOM that React 19 introduced for rendering components",
+        "correct": false,
+        "why": "React does not use the Shadow DOM for rendering. It is a browser standard, not part of React."
+      },
+      {
+        "id": "B",
+        "text": "Both are browser APIs; the virtual DOM is simply the older of the two",
+        "correct": false,
+        "why": "Browsers have no virtual DOM API. It is a concept that libraries such as React implement in JavaScript."
+      },
+      {
+        "id": "C",
+        "text": "The virtual DOM is a library's in-memory UI tree; the Shadow DOM is a browser API for encapsulated subtrees",
+        "correct": true,
+        "why": "One is about efficient updates, the other about isolating markup and styles, for example in web components."
+      },
+      {
+        "id": "D",
+        "text": "The virtual DOM scopes CSS to a component, while the Shadow DOM batches DOM updates",
+        "correct": false,
+        "why": "The roles are swapped. Style scoping is what the Shadow DOM gives you; the virtual DOM has nothing to do with CSS."
+      }
+    ],
+    "explanation": "The **virtual DOM** is React's in-memory tree of elements. On each render React compares the new tree with the previous one and applies only the needed changes to the real DOM. The **Shadow DOM** is a web platform feature: `element.attachShadow()` creates a hidden subtree whose styles and markup do not leak in or out. Web components use it, and you can use both together. This question is common for freshers and juniors and checks that you do not mix up the two terms.",
+    "reference": "MDN: Using shadow DOM; react.dev: Preserving and Resetting State (the UI tree)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers",
+        "https://github.com/sudheerj/reactjs-interview-questions"
+      ]
+    },
+    "source": "interview:rx-vdom-vs-shadow-dom"
+  },
+  {
+    "id": "RCT-IQ5-HKS-001",
+    "domain": 2,
+    "skill": "hooks-advanced",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This `useClickOutside` hook closes a dropdown. After the dropdown has re-rendered a few dozen times, one outside click calls `onOutside` dozens of times. What is the bug?\n\n```jsx\nfunction useClickOutside(ref, onOutside) {\n  useEffect(() => {\n    document.addEventListener('mousedown', (e) => {\n      if (ref.current && !ref.current.contains(e.target)) onOutside();\n    });\n    return () => {\n      document.removeEventListener('mousedown', (e) => {\n        if (ref.current && !ref.current.contains(e.target)) onOutside();\n      });\n    };\n  }, [ref, onOutside]);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "`contains` should be replaced with `e.target === ref.current`",
+        "correct": false,
+        "why": "That would treat clicks on the dropdown's own children as outside clicks. `contains` is the right check."
+      },
+      {
+        "id": "B",
+        "text": "`removeEventListener` gets a new function, so nothing is ever removed",
+        "correct": true,
+        "why": "Listeners are removed by reference. Define the handler once inside the effect and pass that same function to both calls."
+      },
+      {
+        "id": "C",
+        "text": "`ref` in the dependency array re-runs the effect on every render",
+        "correct": false,
+        "why": "A ref object keeps the same identity for the life of the component, so it never triggers a re-run."
+      },
+      {
+        "id": "D",
+        "text": "It needs `useLayoutEffect`, because `useEffect` listeners miss clicks",
+        "correct": false,
+        "why": "Effect timing is not the problem; the listener is attached either way. The leak is in the cleanup."
+      }
+    ],
+    "explanation": "`removeEventListener` only removes a listener if you pass the exact same function reference that was added. Two arrow functions with identical source are still different objects. Here every re-run of the effect (and `onOutside` is often an inline callback, so it changes every render) adds another listener and removes none. The fix is `const handler = (e) => { ... }; document.addEventListener('mousedown', handler); return () => document.removeEventListener('mousedown', handler);`. Interviewers ask this to check effect cleanup and how listeners are identified.",
+    "reference": "react.dev: Synchronizing with Effects (subscribing to events); MDN: EventTarget.removeEventListener()",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://bigfrontend.dev/react"
+      ]
+    },
+    "source": "interview:rx-useclickoutside"
+  },
+  {
+    "id": "RCT-IQ5-HKS-002",
+    "domain": 2,
+    "skill": "hooks-advanced",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A dropdown wraps its trigger in `wrapperRef` and uses `useClickOutside(wrapperRef, close)`, which checks `wrapperRef.current.contains(e.target)` in a `document` `mousedown` listener. To escape an `overflow: hidden` parent, the menu is now rendered with `createPortal(menu, document.body)`. Now clicking a menu item closes the menu, and the item's `onClick` never runs. Why?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`contains` checks the DOM tree, where the portalled menu is no longer inside the wrapper",
+        "correct": true,
+        "why": "React keeps the menu inside the dropdown in the React tree, but the native listener and `contains` only see the DOM tree."
+      },
+      {
+        "id": "B",
+        "text": "Portals stop events from bubbling, so the menu item never receives the click",
+        "correct": false,
+        "why": "React events from a portal bubble through the React tree to its React ancestors. Bubbling is not the problem."
+      },
+      {
+        "id": "C",
+        "text": "`mousedown` fires after `click`, so the menu is removed after the click has already been handled",
+        "correct": false,
+        "why": "`mousedown` fires before `click`. That is exactly why the menu unmounts before the item's click arrives."
+      },
+      {
+        "id": "D",
+        "text": "Inside a portal, `e.target` is the portal container rather than the element that was clicked",
+        "correct": false,
+        "why": "`e.target` is still the clicked element. The check fails because that element is not a DOM descendant of the wrapper."
+      }
+    ],
+    "explanation": "A portal changes where the DOM nodes are placed but not where the component sits in the React tree. React synthetic events bubble through the React tree, but a native `document` listener and `Node.contains` work only with the real DOM. The menu is no longer inside `wrapperRef`, so `mousedown` on an item counts as an outside click, closes the menu, and the `click` never lands. The fix is to also ignore clicks inside the menu (for example, pass both refs to the hook and check `[wrapperRef, menuRef].some(r => r.current?.contains(e.target))`). Reasoned from react.dev's `createPortal` notes on event propagation.",
+    "reference": "react.dev: createPortal (caveats on event propagation)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://bigfrontend.dev/react"
+      ]
+    },
+    "source": "interview:rx-useclickoutside"
+  },
+  {
+    "id": "RCT-IQ5-HKS-003",
+    "domain": 2,
+    "skill": "hooks-advanced",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `useKeyPress(targetKey)`: it returns `true` while that key is held down. The same component may later call it with a different key (for example, it switches from `'a'` to `'Escape'`). Which effect meets the requirements?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add `keydown` and `keyup` listeners on `window` in an effect with `[]` deps, both comparing `e.key` with `targetKey`, and remove them in cleanup",
+        "correct": false,
+        "why": "With empty deps, the handlers keep the first `targetKey` forever, so switching to `Escape` is ignored."
+      },
+      {
+        "id": "B",
+        "text": "Add a `keydown` listener with `[targetKey]` deps that sets `pressed` to `true` when `e.key === targetKey`",
+        "correct": false,
+        "why": "Nothing ever sets it back to `false`, so after the first press the hook reports the key as held forever."
+      },
+      {
+        "id": "C",
+        "text": "`keydown` sets `true` and `keyup` sets `false` for the matching key, deps `[targetKey]`, both removed in cleanup",
+        "correct": true,
+        "why": "It tracks press and release, re-subscribes when the key changes, and leaves no listeners behind."
+      },
+      {
+        "id": "D",
+        "text": "Add `keydown` and `keyup` listeners with `[targetKey]` deps, but do not return a cleanup because `window` outlives the component",
+        "correct": false,
+        "why": "Each key change and each mount adds another pair of listeners, and they keep calling `setPressed` after unmount."
+      }
+    ],
+    "explanation": "A key-press hook needs both events (`keydown` to set `true`, `keyup` to set `false`), a dependency on `targetKey` so the handlers compare against the current key, and a cleanup that removes the exact handler functions it added. The same shape works for `useHover` (`mouseenter` / `mouseleave` on a ref'd node) and `useFocus` (`focus` / `blur`). Interviewers use these small hooks to check listener cleanup and stale values in effects.",
+    "reference": "react.dev: Reusing Logic with Custom Hooks; react.dev: Removing Effect Dependencies",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://bigfrontend.dev/react"
+      ]
+    },
+    "source": "interview:rx-usehover-keypress"
+  },
+  {
+    "id": "RCT-IQ5-EFF-001",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A traffic light cycles red → green → yellow → red, and each colour has its own duration:\n\n```js\nconst LIGHTS = {\n  red:    { duration: 4000, next: 'green' },\n  green:  { duration: 3000, next: 'yellow' },\n  yellow: { duration: 1000, next: 'red' },\n};\nconst [color, setColor] = useState('red');\n```\n\nWhich effect runs the cycle with the right durations and leaves no timer running after unmount?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`useEffect(() => { const id = setTimeout(() => setColor(LIGHTS[color].next), LIGHTS[color].duration); return () => clearTimeout(id); }, [color]);`",
+        "correct": true,
+        "why": "Each colour schedules exactly one timeout with its own duration. The change re-runs the effect, and cleanup cancels any pending timeout."
+      },
+      {
+        "id": "B",
+        "text": "`useEffect(() => { const id = setInterval(() => setColor(c => LIGHTS[c].next), 3000); return () => clearInterval(id); }, []);`",
+        "correct": false,
+        "why": "It cycles and cleans up, but every colour lasts 3 seconds, so it ignores the per-colour durations."
+      },
+      {
+        "id": "C",
+        "text": "`useEffect(() => { setTimeout(() => setColor(LIGHTS[color].next), LIGHTS[color].duration); }, [color]);`",
+        "correct": false,
+        "why": "The timing is right, but there is no cleanup: a pending timeout still fires after unmount."
+      },
+      {
+        "id": "D",
+        "text": "`useEffect(() => { let id; const run = () => { id = setTimeout(() => { setColor(c => LIGHTS[c].next); run(); }, LIGHTS[color].duration); }; run(); return () => clearTimeout(id); }, []);`",
+        "correct": false,
+        "why": "`color` is read from the first render only, so every step waits the red duration (4 seconds)."
+      }
+    ],
+    "explanation": "Model the light as a small state machine: a config of `{ duration, next }` per state, and one `setTimeout` per state change. Because the effect depends on `[color]`, each transition schedules the next one with the current colour's duration, and the cleanup clears a pending timeout on unmount (or if the colour changes another way). The interviewer wants a data-driven config rather than hard-coded `if` chains, plus correct timer cleanup.",
+    "reference": "react.dev: Synchronizing with Effects (how to handle the Effect firing twice in development)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ]
+    },
+    "source": "interview:rx-mc-traffic-light"
+  },
+  {
+    "id": "RCT-IQ5-EFF-002",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Using the same `LIGHTS` config (red 4000 ms → green, green 3000 ms → yellow, yellow 1000 ms → red), a candidate writes:\n\n```jsx\nconst [color, setColor] = useState('red');\n\nuseEffect(() => {\n  const id = setInterval(() => {\n    setColor(LIGHTS[color].next);\n  }, LIGHTS[color].duration);\n  return () => clearInterval(id);\n}, []);\n```\n\nWhat does the user see?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The full cycle, each colour shown for its own duration",
+        "correct": false,
+        "why": "Both the delay and the next colour are fixed when the effect first runs, so it cannot follow the cycle."
+      },
+      {
+        "id": "B",
+        "text": "The full cycle, but every colour lasts 4 seconds",
+        "correct": false,
+        "why": "The interval does fire every 4 seconds, but each tick sets the same colour, so the light never reaches yellow."
+      },
+      {
+        "id": "C",
+        "text": "Red for 4 seconds, then green, and it stays green forever",
+        "correct": true,
+        "why": "The interval callback closes over `color === 'red'`, so every tick sets `'green'` again."
+      },
+      {
+        "id": "D",
+        "text": "It stays red, because `setInterval` inside an effect with `[]` deps never fires",
+        "correct": false,
+        "why": "The interval is created on mount and fires every 4 seconds. The problem is what each tick sets."
+      }
+    ],
+    "explanation": "With `[]` deps the effect runs once, so the interval callback keeps the `color` from the first render: `'red'`. Every 4 seconds it calls `setColor('green')`. The first call changes the light, and later calls set the same value, so nothing changes. Checked by simulating the closure in Node. Fixes: use one `setTimeout` per colour in an effect that depends on `[color]`, or at least use an updater (`setColor(c => LIGHTS[c].next)`), although an updater alone still cannot vary the interval length. This is the classic stale-closure-in-a-timer bug that interviewers like to probe.",
+    "reference": "react.dev: Removing Effect Dependencies (updating state based on previous state from an Effect)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ]
+    },
+    "source": "interview:rx-mc-traffic-light"
+  },
+  {
+    "id": "RCT-IQ5-STA-004",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate avoids `eval()` and models a calculator with a reducer. `apply(a, op, b)` does the arithmetic.\n\n```js\nfunction reducer(state, action) {\n  switch (action.type) {\n    case 'digit':\n      return { ...state, display: state.display === '0' ? action.d : state.display + action.d };\n    case 'operator':\n      return { stored: Number(state.display), op: action.op, display: '0' };\n    case 'equals':\n      return { stored: null, op: null, display: String(apply(state.stored, state.op, Number(state.display))) };\n  }\n}\n```\n\nThe user presses `2 + 3 + 4 =`. What is shown, and why?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`9`, because each operator press adds its operand to the running `stored` total",
+        "correct": false,
+        "why": "The `operator` case overwrites `stored` with the display value; it never adds to it."
+      },
+      {
+        "id": "B",
+        "text": "`7`: the second `+` overwrites the pending `2 +` instead of applying it",
+        "correct": true,
+        "why": "At the second operator, `stored` becomes 3 and the 2 is lost. The case should compute `apply(stored, op, display)` when an operation is pending."
+      },
+      {
+        "id": "C",
+        "text": "`234`, because the digits are joined as strings",
+        "correct": false,
+        "why": "Each operator resets `display` to `'0'` and stores a `Number`, so the digits never join across operators."
+      },
+      {
+        "id": "D",
+        "text": "`5`, because `equals` only applies the first operation",
+        "correct": false,
+        "why": "`equals` uses whatever is stored when it runs, and by then the first operation has already been lost."
+      }
+    ],
+    "explanation": "Running this reducer in Node gives `7`. A calculator needs explicit state (the current `display`, the pending `op` and the `stored` left operand). On each operator press, if an operation is pending, evaluate it first so chained input like `2 + 3 + 4` works left to right. Interviewers ask candidates to avoid `eval` or `new Function` because they run arbitrary code and cannot validate input. They also look for a reducer that is easy to extend with operator precedence or keyboard input.",
+    "reference": "react.dev: Extracting State Logic into a Reducer",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/positions/frontend-engineer?page=5",
+        "https://prachub.com/positions/frontend-engineer?page=4",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges",
+        "https://www.greatfrontend.com/blog/machine-coding-interview-questions-for-freshers-2026"
+      ],
+      "companies": [
+        "Zoox",
+        "Jane Street"
+      ]
+    },
+    "source": "interview:rx-mc-calculator"
+  },
+  {
+    "id": "RCT-IQ5-STA-005",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a transfer list, the user ticks items in the left list and clicks \"Move right\". Which state shape and move logic is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Store `selectedIndexes` as an array, then call `left.splice(i, 1)` for each one and push the items onto `right`",
+        "correct": false,
+        "why": "`splice` mutates state, and every removal shifts the later indexes, so the wrong items get moved."
+      },
+      {
+        "id": "B",
+        "text": "Two arrays plus a `Set` of selected ids; move with `filter` into new arrays, then clear the selection",
+        "correct": true,
+        "why": "Ids stay valid while items move, lookups are O(1), and both lists are replaced with new arrays."
+      },
+      {
+        "id": "C",
+        "text": "Add `item.selected = true` on click, then move the items whose flag is set",
+        "correct": false,
+        "why": "Mutating objects held in state does not trigger a render, and the flag travels with the item to the other list."
+      },
+      {
+        "id": "D",
+        "text": "Keep one array of all items and store the selection as a count, moving the first `count` items",
+        "correct": false,
+        "why": "A count cannot say which items were ticked, so a selection like \"items 2 and 5\" cannot be moved."
+      }
+    ],
+    "explanation": "A good transfer-list state is two arrays of items plus the selection stored as a `Set` of **ids** (not indexes or flags on the items). Moving is pure: `const moving = left.filter(i => selected.has(i.id)); setLeft(left.filter(i => !selected.has(i.id))); setRight([...right, ...moving]); setSelected(new Set());`. The interviewer checks immutable updates and whether you choose a state shape that makes the operation simple.",
+    "reference": "react.dev: Choosing the State Structure; react.dev: Updating Arrays in State",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ]
+    },
+    "source": "interview:rx-mc-transfer-list"
+  },
+  {
+    "id": "RCT-IQ5-STA-006",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In the transfer list, clicking an item's checkbox does not visibly tick it. Clicking \"Move right\" later does move the right items. What is wrong?\n\n```jsx\nconst [selected, setSelected] = useState(new Set());\n\nfunction toggle(id) {\n  selected.has(id) ? selected.delete(id) : selected.add(id);\n  setSelected(selected);\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "A `Set` cannot be stored in React state; it must be converted to an array",
+        "correct": false,
+        "why": "Any value can be state. The problem is mutating it in place, not its type."
+      },
+      {
+        "id": "B",
+        "text": "`setSelected` is asynchronous, so the change shows on the click after next",
+        "correct": false,
+        "why": "Batching delays a render a little, but this code never schedules a visible change at all."
+      },
+      {
+        "id": "C",
+        "text": "The same `Set` is passed back, so React bails out; set a new `Set` instead",
+        "correct": true,
+        "why": "React compares with `Object.is`. Use `setSelected(prev => { const next = new Set(prev); ... return next; })`."
+      },
+      {
+        "id": "D",
+        "text": "The checkboxes need a `key` so React can tell which one changed",
+        "correct": false,
+        "why": "Keys help match list items between renders, but no re-render is happening here in the first place."
+      }
+    ],
+    "explanation": "When the new state is the same object as the current one (`Object.is`), React skips re-rendering. Mutating the `Set` changed its contents, but `setSelected(selected)` passes the same reference, so nothing re-renders until some other update happens. That is why \"Move right\" still works: it reads the mutated set later. Treat `Set` and `Map` like arrays and objects in state: copy, change the copy, set the copy. A functional updater also keeps rapid toggles correct.",
+    "reference": "react.dev: useState (I've updated the state, but the screen doesn't update)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://www.frontendinterviewhandbook.com/coding/build-user-interfaces"
+      ]
+    },
+    "source": "interview:rx-mc-transfer-list"
+  },
+  {
+    "id": "RCT-IQ5-PRF-001",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The list shows \"1 items\". What does it show after one click on Add?\n\n```jsx\nclass List extends PureComponent {\n  render() {\n    return <p>{this.props.items.length} items</p>;\n  }\n}\n\nclass App extends Component {\n  state = { items: ['a'] };\n  add = () => {\n    this.state.items.push('b');\n    this.setState({ items: this.state.items });\n  };\n  render() {\n    return (\n      <>\n        <button onClick={this.add}>Add</button>\n        <List items={this.state.items} />\n      </>\n    );\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "\"2 items\", because `setState` always re-renders the whole subtree",
+        "correct": false,
+        "why": "A class `setState` re-renders `App`, but `PureComponent` children can still skip their own render."
+      },
+      {
+        "id": "B",
+        "text": "\"1 items\": `App` renders, but `List` sees the same array reference and skips",
+        "correct": true,
+        "why": "`PureComponent` compares each prop with `Object.is`. The mutated array is still the same object, so `List` does not render."
+      },
+      {
+        "id": "C",
+        "text": "\"1 items\", because `setState` with the same array makes `App` skip its own render too",
+        "correct": false,
+        "why": "A plain `Component` has no such bail-out: `setState` re-renders it. Only the pure child skips."
+      },
+      {
+        "id": "D",
+        "text": "\"2 items\", because `PureComponent` compares array contents deeply",
+        "correct": false,
+        "why": "The comparison is shallow. It never looks inside arrays or objects."
+      }
+    ],
+    "explanation": "`PureComponent` implements `shouldComponentUpdate` with a **shallow** comparison of props and state: each key is compared by reference. Pushing into an existing array keeps the same reference, so `List` decides nothing changed and keeps showing the old count. The fix is an immutable update: `this.setState(s => ({ items: [...s.items, 'b'] }))`. The same rule applies to `React.memo` in function components. Interviewers combine this with the opposite trap: a new but equal object literal on every render makes the pure child re-render each time. Reasoned from react.dev's `PureComponent` and `memo` docs, because state updates cannot be run with `react-dom/server`.",
+    "reference": "react.dev: PureComponent",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers",
+        "https://github.com/sudheerj/reactjs-interview-questions",
+        "https://www.greatfrontend.com/blog/50-reactjs-interview-questions-for-experienced"
+      ]
+    },
+    "source": "interview:rx-pure-component-shallow-compare"
+  },
+  {
+    "id": "RCT-IQ5-PAT-001",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are building a reusable, accessible custom select (a button that opens a listbox of options). Which three behaviours belong in the implementation? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Close the menu on Escape and on a click outside, using document listeners added in an effect and removed in its cleanup",
+        "correct": true,
+        "why": "These are expected dismiss behaviours, and the listeners must not outlive the open menu or the component."
+      },
+      {
+        "id": "B",
+        "text": "Keep focus on the trigger, move a highlighted index with the arrow keys, and point `aria-activedescendant` at the highlighted option's `id`",
+        "correct": true,
+        "why": "This tells screen readers which option is active without moving DOM focus into the list."
+      },
+      {
+        "id": "C",
+        "text": "Expose `aria-expanded` on the trigger and give the list `role=\"listbox\"` with `role=\"option\"` and `aria-selected` on items",
+        "correct": true,
+        "why": "These roles and states let assistive technology announce the widget, whether it is open, and which item is chosen."
+      },
+      {
+        "id": "D",
+        "text": "Give every option `tabIndex={0}` so that Tab moves through the options one by one",
+        "correct": false,
+        "why": "In a listbox the arrow keys move between options and Tab leaves the widget. Making every option a tab stop breaks that."
+      },
+      {
+        "id": "E",
+        "text": "Render the options as `<div onClick>` elements with a `title` attribute instead of roles, so the markup stays light",
+        "correct": false,
+        "why": "A `title` tooltip does not tell a screen reader that this is a list of options, and the divs cannot be reached by keyboard."
+      }
+    ],
+    "explanation": "A machine-coding dropdown is judged on more than looks: dismiss behaviour (Escape and outside click, with listener cleanup), keyboard support (arrow keys, Enter to choose, Home/End) and ARIA semantics. The WAI-ARIA combobox and listbox patterns keep DOM focus on one element and use `aria-activedescendant` to mark the active option. Senior interviewers often follow up with the props API (controlled `value` and `onChange`).",
+    "reference": "WAI-ARIA Authoring Practices: Combobox and Listbox patterns; react.dev: Synchronizing with Effects",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/positions/frontend-engineer?page=5",
+        "https://prachub.com/positions/frontend-engineer/categories/system-design",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges",
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design"
+      ],
+      "companies": [
+        "Coinbase",
+        "Roblox"
+      ]
+    },
+    "source": "interview:rx-mc-dropdown-select"
+  },
+  {
+    "id": "RCT-IQ5-PAT-002",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A reusable `Select` is used as `<Select value={country} onChange={setCountry} options={...} />`. A form's Reset button sets `country` back to `''`, but the select still shows the old choice.\n\n```jsx\nfunction Select({ value, onChange, options }) {\n  const [selected, setSelected] = useState(value);\n  // ...renders {selected}; clicking an option:\n  //   setSelected(opt.value); onChange(opt.value);\n}\n```\n\nWhich fix gives a clean controlled API with a single source of truth?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add `useEffect(() => setSelected(value), [value])` to copy the prop into state when it changes",
+        "correct": false,
+        "why": "It hides the bug at the cost of an extra render with the stale value, and keeps two copies of the same data."
+      },
+      {
+        "id": "B",
+        "text": "Give `Select` a `key={country}` in the parent so it remounts on every change",
+        "correct": false,
+        "why": "It resets the menu's open and highlight state on every pick and pushes an internal detail onto every caller."
+      },
+      {
+        "id": "C",
+        "text": "Read `value` only through a ref inside `Select` so that it is always up to date",
+        "correct": false,
+        "why": "Reading a ref during render does not cause a re-render, so the UI still would not update when the prop changes."
+      },
+      {
+        "id": "D",
+        "text": "Remove the `selected` state: render `value` directly and call `onChange(opt.value)`; keep only open/highlight state inside",
+        "correct": true,
+        "why": "The parent owns the value, so Reset (or any other change) is reflected immediately."
+      }
+    ],
+    "explanation": "`useState(value)` uses the prop only as the **initial** value; later prop changes are ignored. For a reusable form control, make it controlled: the parent passes `value` and `onChange`, and the component keeps only UI-only state (open, highlighted index) for itself. If you also want an uncontrolled mode, accept `defaultValue` separately, as native inputs do. The interviewer is checking component API design and whether you avoid mirroring props in state.",
+    "reference": "react.dev: Sharing State Between Components (controlled and uncontrolled components)",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/positions/frontend-engineer?page=5",
+        "https://prachub.com/positions/frontend-engineer/categories/system-design",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges",
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design"
+      ],
+      "companies": [
+        "Coinbase",
+        "Roblox"
+      ]
+    },
+    "source": "interview:rx-mc-dropdown-select"
+  },
+  {
+    "id": "RCT-IQ5-PAT-003",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks: \"Is the container/presentational component pattern still relevant now that we have hooks?\" Which answer is most accurate?",
+    "options": [
+      {
+        "id": "A",
+        "text": "No. Hooks made it obsolete, so every component should fetch and own its own data",
+        "correct": false,
+        "why": "Keeping display components free of data logic is still useful for reuse and testing; hooks only changed where that logic lives."
+      },
+      {
+        "id": "B",
+        "text": "The idea remains, but the container's data and state logic usually moves into a custom hook, and the view still gets data through props",
+        "correct": true,
+        "why": "You keep the separation of concerns without an extra wrapper component in the tree."
+      },
+      {
+        "id": "C",
+        "text": "Yes, but containers must be class components and presentational ones must be function components",
+        "correct": false,
+        "why": "That split came from the pre-hooks era. Either role can be a function component today."
+      },
+      {
+        "id": "D",
+        "text": "Yes, because `React.memo` only works on presentational components",
+        "correct": false,
+        "why": "`memo` works on any function component. It has nothing to do with this pattern."
+      }
+    ],
+    "explanation": "The pattern split components into \"how things work\" (containers: data fetching, state, handlers) and \"how things look\" (presentational: props in, UI out). Its original author later said it should not be applied dogmatically, because custom hooks can hold the logic without an extra component. In practice: write `useOrders()` for the logic and keep `<OrderList orders={...} />` pure and easy to test or use in Storybook. Interviewers want the nuance, not a \"yes\" or \"no\".",
+    "reference": "react.dev: Reusing Logic with Custom Hooks",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers",
+        "https://github.com/sudheerj/reactjs-interview-questions",
+        "https://www.greatfrontend.com/questions/react-interview-questions/quiz",
+        "https://www.interviewkickstart.com/interview-questions/advanced-reactjs-interview-questions"
+      ]
+    },
+    "source": "interview:rx-container-presentational"
+  },
+  {
+    "id": "RCT-IQ5-PAT-004",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A React Router app with `BrowserRouter` is deployed as static files to a host with no rewrite rules. Clicking links inside the app works, but refreshing `/orders/42` shows the host's 404 page. What is happening, and what fixes it?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The route needs `path=\"/orders/*\"`; a trailing splat makes nested paths work after a refresh",
+        "correct": false,
+        "why": "The request never reaches the router: the host returns 404 before any JavaScript loads."
+      },
+      {
+        "id": "B",
+        "text": "The server gets `/orders/42` and has no such file; rewrite to `index.html` or use `HashRouter`",
+        "correct": true,
+        "why": "With `HashRouter` the route sits after `#`, which is never sent to the server, so the host only ever serves `/`."
+      },
+      {
+        "id": "C",
+        "text": "Set `basename=\"/\"` on `BrowserRouter` so that the router handles the first request",
+        "correct": false,
+        "why": "`basename` only adds a URL prefix for the app. It cannot make a static server return `index.html`."
+      },
+      {
+        "id": "D",
+        "text": "Switch to `MemoryRouter` so the current route is kept across the refresh instead of being read from the server",
+        "correct": false,
+        "why": "`MemoryRouter` keeps the location in memory and does not use the URL, so a refresh always starts at the initial entry."
+      }
+    ],
+    "explanation": "`BrowserRouter` uses real paths through the History API. In-app navigation never hits the server, but a refresh or a deep link does, so the server must return the SPA's `index.html` for any unknown path (a \"rewrite\" or \"fallback\" rule). If you cannot configure the host, `HashRouter` puts the route in the URL fragment (`/#/orders/42`), which browsers do not send to the server. The trade-off: hash URLs look worse and are not ideal for SEO. This is a common junior question.",
+    "reference": "reactrouter.com: Picking a Router; MDN: URL.hash",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers",
+        "https://dev.to/finalroundai/40-react-interview-questions-top-tech-companies-are-asking-in-2025-26op",
+        "https://www.greatfrontend.com/blog/50-reactjs-interview-questions-for-experienced"
+      ]
+    },
+    "source": "interview:rx-router-modes-nested"
+  },
+  {
+    "id": "RCT-IQ5-PAT-005",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`/orders` must only be visible to signed-in users. A signed-out user who opens it should go to `/login` and, after signing in, land back on `/orders`. Pressing Back on the login page must not bounce them into the guard again. Which guard meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`if (!user) return <Navigate to=\"/login\" />; return children;`",
+        "correct": false,
+        "why": "It redirects, but the requested path is not passed along, and without `replace` the protected URL stays in history."
+      },
+      {
+        "id": "B",
+        "text": "`useEffect(() => { if (!user) navigate('/login'); }, [user]); return children;`",
+        "correct": false,
+        "why": "The protected page renders and paints before the effect runs, so its content flashes, and the original path is not saved."
+      },
+      {
+        "id": "C",
+        "text": "`if (!user) return <Navigate to=\"/login\" replace state={{ from: location }} />; return children;` with `location` from `useLocation()`",
+        "correct": true,
+        "why": "It redirects before rendering the page, replaces the history entry, and tells the login page where to go back to."
+      },
+      {
+        "id": "D",
+        "text": "`if (!user) { window.location.href = '/login'; return null; } return children;`",
+        "correct": false,
+        "why": "A full page load throws away the app's state and the requested path, and it bypasses the router."
+      }
+    ],
+    "explanation": "A route guard (often `RequireAuth` wrapping a route's element, or a layout route that renders `<Outlet />`) should decide **during render** and return `<Navigate replace state={{ from: location }} />`. After signing in, the login page calls `navigate(location.state?.from?.pathname ?? '/', { replace: true })`. `replace` keeps the blocked URL out of history, so Back does not loop. Reasoned from the React Router docs for `Navigate` and `useLocation`.",
+    "reference": "reactrouter.com: Navigate; reactrouter.com: useLocation",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers",
+        "https://dev.to/finalroundai/40-react-interview-questions-top-tech-companies-are-asking-in-2025-26op",
+        "https://www.greatfrontend.com/blog/50-reactjs-interview-questions-for-experienced"
+      ]
+    },
+    "source": "interview:rx-router-modes-nested"
+  },
+  {
+    "id": "RCT-IQ5-HKS-004",
+    "domain": 2,
+    "skill": "hooks-advanced",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A `useArray(initial)` hook returns `[arr, { push, remove }]`. Both helpers must trigger a re-render and keep the same function identity across renders, so they are safe to pass to memoised children. Which pair is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`push = item => { arr.push(item); setArr(arr); }` and `remove = i => { arr.splice(i, 1); setArr(arr); }`",
+        "correct": false,
+        "why": "Both mutate the existing array and pass the same reference back, so React skips the render."
+      },
+      {
+        "id": "B",
+        "text": "`push = useCallback(item => setArr([...arr, item]), [])` and `remove = useCallback(i => setArr(arr.filter((_, j) => j !== i)), [])`",
+        "correct": false,
+        "why": "Stable, but stale: `arr` is frozen at the first render, so each push starts again from the initial array."
+      },
+      {
+        "id": "C",
+        "text": "`push = useCallback(item => setArr(a => [...a, item]), [])` and `remove = useCallback(i => setArr(a => a.filter((_, j) => j !== i)), [])`",
+        "correct": true,
+        "why": "Updater functions always get the latest array and return a new one, so empty deps are safe and the identity is stable."
+      },
+      {
+        "id": "D",
+        "text": "`push = useCallback(item => setArr(a => [...a, item]), [])` and `remove = useCallback(i => setArr(a => a.splice(i, 1)), [])`",
+        "correct": false,
+        "why": "`splice` mutates and returns the removed items, so the state would become an array holding only the removed element."
+      }
+    ],
+    "explanation": "Checked in Node: `splice` returns the removed elements, and a `[...arr, item]` closure that is fixed at the first render loses earlier pushes. Utility hooks such as `useToggle`, `useArray` and `useMap` test two things: immutable updates (new arrays through spread, `filter` or `map`), and stable callbacks. Using updater functions removes the need to list `arr` as a dependency, so `useCallback(..., [])` is correct. For `useToggle`, the same idea is `useCallback(() => setOn(v => !v), [])`.",
+    "reference": "react.dev: Updating Arrays in State; react.dev: useCallback",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://bigfrontend.dev/react"
+      ]
+    },
+    "source": "interview:rx-usetoggle-usearray"
+  },
+  {
+    "id": "RCT-IQ5-EFF-003",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Each card in a long feed must log an impression **once**, when at least half of it has been visible, without scroll listeners. Which effect meets the requirement?\n\n```jsx\n// Version 1\nuseEffect(() => {\n  const el = ref.current;\n  const io = new IntersectionObserver(([entry]) => {\n    if (entry.intersectionRatio >= 0.5) { logImpression(id); io.unobserve(el); }\n  }, { threshold: 0.5 });\n  io.observe(el);\n  return () => io.disconnect();\n}, [id]);\n\n// Version 2\nuseEffect(() => {\n  const io = new IntersectionObserver(([entry]) => {\n    if (entry.intersectionRatio >= 0.5) logImpression(id);\n  }, { threshold: 0.5 });\n  io.observe(ref.current);\n  return () => io.disconnect();\n}, [id]);\n\n// Version 3\nuseEffect(() => {\n  const onScroll = () => {\n    const r = ref.current.getBoundingClientRect();\n    if (r.top < innerHeight && r.bottom > 0) logImpression(id);\n  };\n  window.addEventListener('scroll', onScroll);\n  return () => window.removeEventListener('scroll', onScroll);\n}, [id]);\n\n// Version 4\nuseEffect(() => {\n  const io = new IntersectionObserver(([entry]) => {\n    if (entry.intersectionRatio >= 0.5) { logImpression(id); io.unobserve(ref.current); }\n  }, { threshold: 0.5 });\n  io.observe(ref.current);\n}, [id]);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Version 2",
+        "correct": false,
+        "why": "It never stops observing, so the card logs again every time it scrolls back past 50%."
+      },
+      {
+        "id": "B",
+        "text": "Version 1",
+        "correct": true,
+        "why": "It logs at 50% visibility, stops observing after the first impression, and disconnects on unmount."
+      },
+      {
+        "id": "C",
+        "text": "Version 3",
+        "correct": false,
+        "why": "It uses a scroll listener, which the requirement rules out. It also logs on every scroll event while any part of the card is on screen."
+      },
+      {
+        "id": "D",
+        "text": "Version 4",
+        "correct": false,
+        "why": "It has no cleanup, so the observer stays alive after unmount and in StrictMode two observers are created."
+      }
+    ],
+    "explanation": "`IntersectionObserver` calls back off the scroll path when an element crosses a threshold, so you do not need to measure on every scroll. For \"once only\" tracking, `unobserve` the element after logging, and return `disconnect` from the effect so unmounting cleans up. Checking `intersectionRatio >= 0.5` (not just `isIntersecting`) matters because the observer always sends an initial callback when observing starts, even if the card is only slightly visible. Reasoned from MDN's Intersection Observer docs and react.dev's effect cleanup guidance.",
+    "reference": "MDN: Intersection Observer API",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://medium.com/@prikshit8/sde-2-frontend-interview-exp-mmt-001828ab6dc5",
+        "https://learnersbucket.substack.com/p/decoding-the-frontend-system-design"
+      ],
+      "companies": [
+        "MakeMyTrip"
+      ]
+    },
+    "source": "interview:rx-intersection-observer-visibility"
+  },
+  {
+    "id": "RCT-IQ5-EFF-004",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "An SDE-2 interviewer asks how you would render 100 heavy below-the-fold widgets only when they are about to scroll into view. Which two statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A `rootMargin` such as `'200px'` makes the observer report elements slightly before they enter the viewport, so they can start rendering early",
+        "correct": true,
+        "why": "`rootMargin` grows the root's bounding box, so intersections are reported ahead of time."
+      },
+      {
+        "id": "B",
+        "text": "One shared `IntersectionObserver` can watch all 100 placeholders; its callback gets entries only for those that changed",
+        "correct": true,
+        "why": "Observers are designed to watch many targets, which is cheaper than creating one per element."
+      },
+      {
+        "id": "C",
+        "text": "`React.lazy` alone delays each widget until it scrolls into view",
+        "correct": false,
+        "why": "`lazy` delays loading code until the component first renders, not until it becomes visible. You still need visibility detection."
+      },
+      {
+        "id": "D",
+        "text": "With `threshold: 1`, the callback runs as soon as the first pixel becomes visible",
+        "correct": false,
+        "why": "`threshold: 1` means fully visible. `0` is the value that fires on the first visible pixel."
+      },
+      {
+        "id": "E",
+        "text": "Observer callbacks run synchronously inside every scroll event, so they cost the same as a scroll listener",
+        "correct": false,
+        "why": "Intersection checks are batched by the browser and callbacks are delivered asynchronously, not on every scroll event."
+      }
+    ],
+    "explanation": "The usual approach: render cheap placeholders with a fixed height, observe them (one shared observer is fine), and when one intersects, set a flag that renders the real widget, optionally via `lazy()` so its code loads then too. `rootMargin` gives a head start and `threshold` sets how much must be visible. Unobserve each placeholder once it has been revealed. Interviewers are checking that you know the browser API and do not confuse code splitting with visibility.",
+    "reference": "MDN: Intersection Observer API (rootMargin, threshold); react.dev: lazy",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://medium.com/@prikshit8/sde-2-frontend-interview-exp-mmt-001828ab6dc5",
+        "https://learnersbucket.substack.com/p/decoding-the-frontend-system-design"
+      ],
+      "companies": [
+        "MakeMyTrip"
+      ]
+    },
+    "source": "interview:rx-intersection-observer-visibility"
+  },
+  {
+    "id": "RCT-IQ5-STM-001",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "With the thunk middleware installed, you need `fetchUser(id)` to skip the request if the user is already cached, and otherwise track loading, success and failure in the store. Which implementation is correct?\n\n```js\n// Version 1\nconst fetchUser = (id) => async (dispatch, getState) => {\n  if (getState().users.byId[id]) return;\n  dispatch({ type: 'user/pending', id });\n  try {\n    const user = await api.getUser(id);\n    dispatch({ type: 'user/fulfilled', user });\n  } catch (err) {\n    dispatch({ type: 'user/rejected', id, error: err.message });\n  }\n};\n\n// Version 2\nconst fetchUser = (id) => async (dispatch) => {\n  const user = await api.getUser(id);\n  return { type: 'user/fulfilled', user };\n};\n\n// Version 3: inside the users reducer\ncase 'user/fetch':\n  return api.getUser(action.id).then((user) => ({ ...state, [user.id]: user }));\n\n// Version 4\nconst fetchUser = (id) => (dispatch) => {\n  dispatch(api.getUser(id));\n};\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Version 2",
+        "correct": false,
+        "why": "Returning an action object from a thunk does not dispatch it. Nothing reaches the reducer, and there is no loading or error state."
+      },
+      {
+        "id": "B",
+        "text": "Version 3",
+        "correct": false,
+        "why": "Reducers must be pure and synchronous. This one returns a promise as the new state."
+      },
+      {
+        "id": "C",
+        "text": "Version 1",
+        "correct": true,
+        "why": "The thunk receives `dispatch` and `getState`, checks the cache, and dispatches pending, then fulfilled or rejected, around the request."
+      },
+      {
+        "id": "D",
+        "text": "Version 4",
+        "correct": false,
+        "why": "It dispatches a promise, not an action. Without promise middleware, Redux rejects it because actions must be plain objects."
+      }
+    ],
+    "explanation": "Redux reducers must be pure, so async work belongs in middleware. A thunk is a function the thunk middleware calls with `(dispatch, getState)`. It can read state, run side effects and dispatch plain actions as the work progresses (pending, fulfilled, rejected). Redux Toolkit's `createAsyncThunk` generates exactly that lifecycle. Sagas solve the same problem with generator functions and are useful for complex flows such as cancellation and debouncing. Interviewers want to hear where side effects go and why.",
+    "reference": "redux.js.org: Writing Logic with Thunks",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/finalroundai/40-react-interview-questions-top-tech-companies-are-asking-in-2025-26op",
+        "https://github.com/sudheerj/reactjs-interview-questions"
+      ]
+    },
+    "source": "interview:rx-redux-middleware-thunk"
+  },
+  {
+    "id": "RCT-IQ5-STM-002",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A store is created with Redux's `applyMiddleware(thunk, logger)`, where:\n\n```js\nconst thunk = ({ dispatch, getState }) => (next) => (action) =>\n  typeof action === 'function' ? action(dispatch, getState) : next(action);\n\nconst logger = () => (next) => (action) => {\n  console.log(typeof action === 'function' ? 'fn' : action.type);\n  return next(action);\n};\n\nstore.dispatch((dispatch) => {\n  dispatch({ type: 'a' });\n});\n```\n\nWhat is logged?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`fn`, then `a`",
+        "correct": false,
+        "why": "That is the order you get with `applyMiddleware(logger, thunk)`, where the logger runs first and sees the function."
+      },
+      {
+        "id": "B",
+        "text": "Only `fn`",
+        "correct": false,
+        "why": "The thunk runs the function, and its inner `dispatch` sends `a` through the chain, so the logger does see `a`."
+      },
+      {
+        "id": "C",
+        "text": "Only `a`",
+        "correct": true,
+        "why": "The thunk is first in the chain and handles the function without calling `next`; the inner `dispatch({ type: 'a' })` then goes through the whole chain."
+      },
+      {
+        "id": "D",
+        "text": "Nothing, because a thunk's inner `dispatch` skips the middleware",
+        "correct": false,
+        "why": "The `dispatch` given to middleware is the fully wrapped store dispatch, so inner dispatches pass through every middleware."
+      }
+    ],
+    "explanation": "Middleware has the shape `store => next => action => ...`, and the first middleware listed is the outermost. The thunk sees the function first and calls it instead of passing it on, so the logger never sees it. The `dispatch` that the thunk passes in is the store's full, wrapped dispatch, so `{ type: 'a' }` goes through the thunk (not a function, so `next`) and then the logger. Checked in Node with a re-implementation of `applyMiddleware` that follows Redux's `compose` order. Interviewers use this to see whether you really understand the middleware pipeline.",
+    "reference": "redux.js.org: Middleware (understanding the middleware chain)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/finalroundai/40-react-interview-questions-top-tech-companies-are-asking-in-2025-26op",
+        "https://github.com/sudheerj/reactjs-interview-questions"
+      ]
+    },
+    "source": "interview:rx-redux-middleware-thunk"
+  },
+  {
+    "id": "RCT-IQ5-STM-003",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An infinite feed, newest first, loads pages with `?offset=0&limit=20`, then `?offset=20&limit=20`. Between the two requests, 3 new posts are published at the top. What does the user see when page 2 is appended, and what avoids it?",
+    "options": [
+      {
+        "id": "A",
+        "text": "3 posts are silently skipped and never shown; requesting a bigger `limit` on every page avoids it",
+        "correct": false,
+        "why": "Inserts at the top push items down, so they repeat rather than get skipped. A bigger page size only makes the gap less frequent."
+      },
+      {
+        "id": "B",
+        "text": "Page 1's last 3 posts repeat at the top of page 2; a cursor (`?after=<last id>`) avoids it",
+        "correct": true,
+        "why": "The offset counts from the new top, so it lands 3 items earlier. A cursor continues from a specific item."
+      },
+      {
+        "id": "C",
+        "text": "Nothing changes, because an offset always refers to the same rows",
+        "correct": false,
+        "why": "An offset is a position in the current ordering, and that ordering changed when the new posts arrived."
+      },
+      {
+        "id": "D",
+        "text": "The request fails, because the total count changed while paging",
+        "correct": false,
+        "why": "Servers do not fail an offset query because new rows exist; they return whatever is at that position now."
+      }
+    ],
+    "explanation": "Simulated in Node: after 3 inserts, `slice(20, 40)` begins with the last 3 items of the first page. Offset pagination counts positions, so inserts cause duplicates and deletes cause skipped items in a live list. It also gets slower on large offsets. Cursor (keyset) pagination asks for \"items after this one\" (an opaque token, or the last item's sort key and id), so it stays stable while data changes, and the API returns the next cursor (`nextCursor` or `null`). It is still good practice to de-duplicate by id when appending.",
+    "reference": "graphql.org: Pagination (cursor-based pagination)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md",
+        "https://www.frontendinterviewhandbook.com/companies/microsoft-front-end-interview-questions"
+      ],
+      "companies": [
+        "Wayfair",
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-cursor-vs-offset-pagination"
+  },
+  {
+    "id": "RCT-IQ5-EFF-005",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Grid lights: clicking a cell turns it on. When every cell is on, they turn off one at a time in the **reverse** order they were turned on. Which state lets you produce that order?",
+    "options": [
+      {
+        "id": "A",
+        "text": "An array of booleans, `on[i]`, one per cell",
+        "correct": false,
+        "why": "It records which cells are on but not when, so the reverse order is lost."
+      },
+      {
+        "id": "B",
+        "text": "An array of cell indexes, `order`, appended on each click; a cell is on if `order.includes(i)`, and switching off removes from the end",
+        "correct": true,
+        "why": "The array is the activation history, so removing from the end (like a stack) gives the reverse order."
+      },
+      {
+        "id": "C",
+        "text": "An object such as `{ [index]: true }`, reading `Object.keys` in reverse when switching off",
+        "correct": false,
+        "why": "Integer-like keys are listed in ascending numeric order, not insertion order, so clicking 5 then 2 gives `['2', '5']`."
+      },
+      {
+        "id": "D",
+        "text": "A single counter of how many cells are on",
+        "correct": false,
+        "why": "A count cannot say which cells are on or in which order they were switched on."
+      }
+    ],
+    "explanation": "Checked in Node: `Object.keys` on an object filled with keys 5, 2, 7 gives `['2', '5', '7']`, while an array (or a `Set`) keeps insertion order. The core of this Uber-style question is picking a data structure that holds both \"which\" and \"in what order\": an array of indexes used as a stack. The rest (whether a cell is on, whether all are on) is derived from it. The deactivation then removes one item at a time on a timer, which needs cleanup.",
+    "reference": "react.dev: Choosing the State Structure; MDN: Object.keys() (property order)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-grid-lights"
+  },
+  {
+    "id": "RCT-IQ5-EFF-006",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "When every light is on, `deactivating` becomes `true`, and lights must turn off one by one, 300 ms apart, from the end of `order`. If the user leaves the page mid-way, no timer may keep running. Which effect is correct?\n\n```jsx\n// Version 1\nuseEffect(() => {\n  if (!deactivating) return;\n  if (order.length === 0) { setDeactivating(false); return; }\n  const id = setTimeout(() => setOrder(o => o.slice(0, -1)), 300);\n  return () => clearTimeout(id);\n}, [deactivating, order]);\n\n// Version 2\nuseEffect(() => {\n  if (!deactivating) return;\n  const id = setInterval(() => setOrder(order.slice(0, -1)), 300);\n  return () => clearInterval(id);\n}, [deactivating]);\n\n// Version 3\nuseEffect(() => {\n  if (!deactivating) return;\n  order.forEach((_, k) => {\n    setTimeout(() => setOrder(o => o.slice(0, -1)), 300 * (k + 1));\n  });\n}, [deactivating]);\n\n// Version 4\nuseEffect(() => {\n  if (!deactivating) return;\n  const id = setInterval(() => { order.pop(); setOrder(order); }, 300);\n  return () => clearInterval(id);\n}, [deactivating]);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Version 2",
+        "correct": false,
+        "why": "The interval closes over the `order` from when it started, so every tick sets the same shorter array: only one light ever turns off."
+      },
+      {
+        "id": "B",
+        "text": "Version 3",
+        "correct": false,
+        "why": "The timing works, but none of the timeouts can be cancelled, so they keep firing and setting state after the component unmounts."
+      },
+      {
+        "id": "C",
+        "text": "Version 4",
+        "correct": false,
+        "why": "It mutates the array in state and passes the same reference back, so React skips the re-render."
+      },
+      {
+        "id": "D",
+        "text": "Version 1",
+        "correct": true,
+        "why": "One timeout per light, an updater that removes the last index, a stop when the array is empty, and cleanup on unmount."
+      }
+    ],
+    "explanation": "Each step schedules exactly one timeout and the cleanup cancels it, so unmounting or a StrictMode remount leaves nothing behind. The updater `o => o.slice(0, -1)` removes the most recently activated light without mutating state, and because the effect depends on `order`, the next step is scheduled after each removal. The other versions show the three usual timer bugs: a stale closure in `setInterval`, timers that can never be cancelled, and mutating state. Reasoned from react.dev's effect cleanup and StrictMode guidance; the array logic was checked in Node.",
+    "reference": "react.dev: Synchronizing with Effects (how to handle the Effect firing twice in development)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/uber/questions-guides",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "Uber"
+      ]
+    },
+    "source": "interview:rx-mc-grid-lights"
+  },
+  {
+    "id": "RCT-IQ5-STA-007",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A weekly calendar highlights the selected day (stored in state) and lays out the Sunday-to-Saturday week around it:\n\n```js\nfunction getWeekDays(date) {\n  const start = date;\n  start.setDate(start.getDate() - start.getDay());\n  return Array.from({ length: 7 }, (_, i) => {\n    const d = new Date(start);\n    d.setDate(start.getDate() + i);\n    return d;\n  });\n}\n\nconst [selected, setSelected] = useState(new Date(2026, 9, 14)); // Wed 14 Oct\nconst days = getWeekDays(selected);\n```\n\nThe week shows Sun 11 to Sat 17 correctly, but the highlight sits on Sunday 11 instead of Wednesday 14. Why?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`getDay()` counts from Monday, so the week is shifted by one day",
+        "correct": false,
+        "why": "`getDay()` returns 0 for Sunday, so the week start is right. The highlight is wrong for a different reason."
+      },
+      {
+        "id": "B",
+        "text": "`setDate` with a value below 1 throws, so `getWeekDays` falls back to the week start",
+        "correct": false,
+        "why": "`setDate` rolls over into the previous month for values below 1. It never throws."
+      },
+      {
+        "id": "C",
+        "text": "Dates kept in React state are compared by reference, so the highlight check can never match the selected day",
+        "correct": false,
+        "why": "Comparing by reference would match no day at all. Here it matches Sunday, because `selected` itself now holds Sunday."
+      },
+      {
+        "id": "D",
+        "text": "`const start = date` shares the reference, so `setDate` moves the `Date` held in state to Sunday",
+        "correct": true,
+        "why": "Copy first: `const start = new Date(date);`. Then the state value is never changed during render."
+      }
+    ],
+    "explanation": "Run in Node: after `getWeekDays(selected)`, `selected.toDateString()` is \"Sun Oct 11 2026\". `Date` objects are mutable and assigned by reference, so calling a setter on a \"copy\" changes the original, here a value held in React state, during render. Calendar machine-coding rounds (Swiggy, Robinhood) test exactly these date chores: work on copies (`new Date(date)`), let `setDate` handle month rollover, and keep render pure. Placing an event block is then derived too: top from the start minute, height from the duration.",
+    "reference": "react.dev: Keeping Components Pure; MDN: Date.prototype.setDate()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.geeksforgeeks.org/swiggy-interview-experience-for-sde-1-2/",
+        "https://prachub.com/positions/frontend-engineer?page=4"
+      ],
+      "companies": [
+        "Swiggy",
+        "Robinhood"
+      ]
+    },
+    "source": "interview:rx-mc-calendar"
+  },
+  {
+    "id": "RCT-IQ5-EFF-007",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A chat window must jump to the newest message when one arrives, but **only if the user was already at the bottom**. If they scrolled up to read history, it must not move. It also must not flash the unscrolled position. Which approach meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "In `useEffect(..., [messages])`, always set `list.scrollTop = list.scrollHeight`",
+        "correct": false,
+        "why": "It yanks readers back down, and because `useEffect` can run after paint, the jump may be visible."
+      },
+      {
+        "id": "B",
+        "text": "In `useLayoutEffect(..., [messages])`, check whether `scrollHeight - scrollTop - clientHeight` is under 40 px and scroll only then",
+        "correct": false,
+        "why": "At that point the new message is already in the DOM and has increased `scrollHeight`, so a tall message makes the check fail."
+      },
+      {
+        "id": "C",
+        "text": "Update a `stickToBottom` ref in the list's `onScroll`; in `useLayoutEffect(..., [messages])`, scroll to the bottom only if the ref is true",
+        "correct": true,
+        "why": "The \"was at bottom\" fact is captured before the new message arrives, and the layout effect scrolls before the browser paints."
+      },
+      {
+        "id": "D",
+        "text": "During render, set `listRef.current.scrollTop = listRef.current.scrollHeight` whenever `messages.length` grew",
+        "correct": false,
+        "why": "Rendering must be pure, and during render the DOM does not have the new message yet, so this scrolls to the old bottom."
+      }
+    ],
+    "explanation": "Two facts are needed at two different times: whether the user was at the bottom **before** the update (track it on scroll in a ref, since it does not affect rendering), and the new `scrollHeight` **after** the commit (read it in a layout effect, which runs after DOM mutation but before paint, so there is no flash). Reasoned from react.dev's `useLayoutEffect` and refs guidance. Chat UIs come up at Flipkart and in AI-company rounds, often followed by streaming tokens into the last message.",
+    "reference": "react.dev: useLayoutEffect; react.dev: Referencing Values with Refs",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/flipkart/work-experiences/ui-engineer-march-12-2024-4-6ea41f07",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://prachub.com/positions/frontend-engineer?page=2"
+      ],
+      "companies": [
+        "Flipkart",
+        "Intuit",
+        "OpenAI"
+      ]
+    },
+    "source": "interview:rx-mc-chat-ui"
+  },
+  {
+    "id": "RCT-IQ5-EFF-008",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An assistant reply streams in chunks (`'Hel'`, `'lo'`, `'!'`). An empty assistant message has already been added at the end of `messages`. For each chunk, the app calls `setMessages(update)`. In development (StrictMode), which `update` produces \"Hello!\"?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`prev => { prev[prev.length - 1].text += chunk; return [...prev]; }`",
+        "correct": false,
+        "why": "It mutates the last message object. StrictMode calls updaters twice, so in development each chunk is added twice: \"HelHellolo!!\"."
+      },
+      {
+        "id": "B",
+        "text": "`prev => { const last = prev.at(-1); return [...prev.slice(0, -1), { ...last, text: last.text + chunk }]; }`",
+        "correct": true,
+        "why": "A pure updater: it reads the latest state and returns a new array with a new last message, so running it twice is harmless."
+      },
+      {
+        "id": "C",
+        "text": "`[...messages.slice(0, -1), { ...messages.at(-1), text: messages.at(-1).text + chunk }]` (a value, not an updater)",
+        "correct": false,
+        "why": "`messages` is the snapshot from when streaming started, so every chunk is applied to the same old base and earlier chunks are lost."
+      },
+      {
+        "id": "D",
+        "text": "Append each chunk to `streamRef.current` and call `setMessages(messages)` to refresh",
+        "correct": false,
+        "why": "Passing the same `messages` array is a no-op for React, and the ref text is never copied into state."
+      }
+    ],
+    "explanation": "Simulated in Node: the mutating updater run twice per chunk gives \"HelHellolo!!\", the pure updater gives \"Hello!\", and the snapshot version keeps only the last chunk, \"!\". Streaming code runs in an async loop that closes over one render's `messages`, so every update must be a **functional** update. Updaters must also be pure, because StrictMode deliberately calls them twice to catch mutations (react.dev `useState`). Cancel the stream with an `AbortController` when the component unmounts or the user presses Stop.",
+    "reference": "react.dev: useState (updating state based on the previous state; my initializer or updater function runs twice)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/flipkart/work-experiences/ui-engineer-march-12-2024-4-6ea41f07",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://prachub.com/positions/frontend-engineer?page=2"
+      ],
+      "companies": [
+        "Flipkart",
+        "Intuit",
+        "OpenAI"
+      ]
+    },
+    "source": "interview:rx-mc-chat-ui"
+  },
+  {
+    "id": "RCT-IQ5-STA-008",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A live feed component receives `posts` (each has `score` and a boolean `pinned`) as a prop from its parent's state. It must show pinned posts first, then everything by score from high to low, and must not change the parent's array. Which line does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`const shown = posts.sort((a, b) => (b.pinned - a.pinned) || (b.score - a.score));`",
+        "correct": false,
+        "why": "The order is right, but `sort` reorders the parent's state array in place during render."
+      },
+      {
+        "id": "B",
+        "text": "`const shown = [...posts].sort((a, b) => (b.score - a.score) || (b.pinned - a.pinned));`",
+        "correct": false,
+        "why": "Pinned only breaks ties between equal scores, so a pinned post with a low score sinks."
+      },
+      {
+        "id": "C",
+        "text": "`const shown = posts.toSorted((a, b) => (b.pinned - a.pinned) || (b.score - a.score));`",
+        "correct": true,
+        "why": "`toSorted` returns a new array. Pinned posts come first (`true - false` is 1), then scores from high to low."
+      },
+      {
+        "id": "D",
+        "text": "`const shown = [...posts].sort((a, b) => (a.pinned - b.pinned) || (b.score - a.score));`",
+        "correct": false,
+        "why": "Subtracting in this order puts unpinned (0) before pinned (1), so pinned posts end up last."
+      }
+    ],
+    "explanation": "Checked in Node with four sample posts. `Array.prototype.sort` mutates in place, which is a hidden state mutation when the array comes from props or state. Copy first (`[...posts].sort(...)`) or use ES2023's `toSorted`. Combine sort keys with `||`: the first key decides unless it is equal (0), and then the next key decides. Derive the sorted list during render (with `useMemo` only if it is expensive) rather than storing a sorted copy in state.",
+    "reference": "react.dev: Updating Arrays in State (making other changes to an array); MDN: Array.prototype.toSorted()",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/positions/frontend-engineer",
+        "https://prachub.com/positions/frontend-engineer?page=3"
+      ],
+      "companies": [
+        "Glean",
+        "Citadel"
+      ]
+    },
+    "source": "interview:rx-mc-live-feed"
+  },
+  {
+    "id": "RCT-IQ5-STM-004",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are building a Teams-style notifications panel: a bell with an unread badge, a list where clicking an item marks it read on the server, and live updates over a WebSocket. Which three decisions are sound? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Derive the badge as `notifications.filter(n => !n.read).length` during render",
+        "correct": true,
+        "why": "The count can never drift from the list, because it is computed from it."
+      },
+      {
+        "id": "B",
+        "text": "Keep `unreadCount` in its own state, incrementing it in the socket handler and decrementing it on click",
+        "correct": false,
+        "why": "Two sources of truth drift: duplicate socket messages or a failed request leave the badge wrong."
+      },
+      {
+        "id": "C",
+        "text": "Mark as read optimistically in state, call the API, and roll that item back if the request fails",
+        "correct": true,
+        "why": "The UI responds instantly and still ends up matching the server."
+      },
+      {
+        "id": "D",
+        "text": "Subscribe to the socket in an effect and close or unsubscribe in its cleanup; add incoming items with `setList(prev => [msg, ...prev])`",
+        "correct": true,
+        "why": "Cleanup prevents duplicate subscriptions (StrictMode, remounts), and the updater avoids reading a stale list."
+      },
+      {
+        "id": "E",
+        "text": "Open the WebSocket in the component body so it is ready before the first paint",
+        "correct": false,
+        "why": "The component body runs on every render, so this opens a new socket each time and breaks render purity."
+      },
+      {
+        "id": "F",
+        "text": "In the socket handler, call `setList([msg, ...list])` using the `list` from the render that set up the subscription",
+        "correct": false,
+        "why": "That `list` is frozen at subscribe time, so each new message drops the live messages that arrived before it."
+      }
+    ],
+    "explanation": "This question tests state design under real-time updates. The list is the single source of truth and the badge is derived from it. Writes are optimistic with rollback (or `useOptimistic` with an Action in React 19). The subscription lives in an effect with cleanup, and incoming messages use functional updates. Seniors may add de-duplication by id, pagination of history, and showing a \"new\" divider. Reasoned from react.dev's guidance on redundant state, effect subscriptions and updater functions.",
+    "reference": "react.dev: Choosing the State Structure; react.dev: Synchronizing with Effects",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/companies/microsoft-front-end-interview-questions",
+        "https://prachub.com/positions/frontend-engineer/categories/system-design",
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides"
+      ],
+      "companies": [
+        "Microsoft",
+        "Roblox",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-mc-notifications-panel"
+  },
+  {
+    "id": "RCT-IQ5-EFF-009",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An address book loads 20 contacts at a time. Each response is `{ items, nextToken }`, and `nextToken` is `null` on the last page. Which \"Load more\" design is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "On click, call `setItems(res.items)` with the next page and store `res.nextToken`",
+        "correct": false,
+        "why": "Replacing the list throws away the earlier pages; \"load more\" must append."
+      },
+      {
+        "id": "B",
+        "text": "On click, call `setItems(prev => [...prev, ...res.items])` and keep the button enabled during the request so it stays responsive",
+        "correct": false,
+        "why": "A double click sends two requests with the same token, and both responses are appended, so the page appears twice."
+      },
+      {
+        "id": "C",
+        "text": "Disable while loading, append with an updater (skipping known ids), and hide the button once `nextToken` is `null`",
+        "correct": true,
+        "why": "It blocks duplicate requests, appends from the latest state, and stops exactly when the API says there is nothing more."
+      },
+      {
+        "id": "D",
+        "text": "Hide the button when a page returns fewer than 20 items, and otherwise request `?page=n+1`",
+        "correct": false,
+        "why": "It ignores the token the API returns. A short page is not a reliable end signal, and page numbers shift when data changes."
+      }
+    ],
+    "explanation": "Token pagination means: send the last `nextToken`, append the returned items, and store the new token. `null` means you are done. Guard against duplicate appends both by preventing concurrent requests (a disabled button or a `loading` check) and by de-duplicating by id. Use a functional update so the append works on the latest list. This Microsoft-tagged machine-coding question is usually followed by \"what about the first load in StrictMode?\"",
+    "reference": "react.dev: Updating Arrays in State (adding to an array); react.dev: useState (updating state based on the previous state)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/companies/microsoft-front-end-interview-questions",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-mc-load-more-pagination"
+  },
+  {
+    "id": "RCT-IQ5-EFF-010",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In development, the first page of contacts shows up **twice**. In production it shows once. Which fix follows React's guidance?\n\n```jsx\nuseEffect(() => {\n  fetchPage(null).then((res) => {\n    setItems((prev) => [...prev, ...res.items]);\n    setNextToken(res.nextToken);\n  });\n}, []);\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove `<StrictMode>`, because running effects twice is a development-only bug in React itself",
+        "correct": false,
+        "why": "The double run is deliberate. It exposes an effect without proper cleanup, which can also misbehave after a real remount."
+      },
+      {
+        "id": "B",
+        "text": "Guard with a `hasFetched` ref so the effect body runs only once",
+        "correct": false,
+        "why": "React's docs say not to use refs to stop effects from re-running; the effect still has no cleanup for the in-flight request."
+      },
+      {
+        "id": "C",
+        "text": "Move the fetch into `useLayoutEffect` so it runs before paint",
+        "correct": false,
+        "why": "Layout effects are also mounted, unmounted and mounted again in StrictMode, so both requests still append."
+      },
+      {
+        "id": "D",
+        "text": "Set an `ignore` flag in the effect's cleanup and skip `setItems` when it is set",
+        "correct": true,
+        "why": "The first, discarded run's response is ignored, so only one page is appended. Aborting the request with `AbortController` also works."
+      }
+    ],
+    "explanation": "In development, StrictMode mounts, unmounts and remounts every component, so the effect runs setup, cleanup, setup. Without a cleanup, both requests finish and both append page 1. React's recommended data-fetching pattern is an `ignore` flag (or `AbortController`) set in the cleanup, which also fixes races when inputs change. A framework data layer or a library such as TanStack Query avoids writing this by hand. Reasoned from react.dev's \"Synchronizing with Effects\" (fetching data) and \"How to handle the Effect firing twice in development\".",
+    "reference": "react.dev: Synchronizing with Effects (fetching data)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.frontendinterviewhandbook.com/companies/microsoft-front-end-interview-questions",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://www.greatfrontend.com/blog/machine-coding-round",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-mc-load-more-pagination"
+  },
+  {
+    "id": "RCT-IQ5-STA-009",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A text editor keeps history as `{ past, present, future }`, and `set` pushes the old `present` onto `past` and clears `future`. Several undos followed by redos must step back and forth in the right order. Which `undo` and `redo` pair is correct?\n\n```js\n// Version 1\ncase 'undo': return { past: past.slice(0, -1), present: past.at(-1), future: [present, ...future] };\ncase 'redo': return { past: [...past, present], present: future[0], future: future.slice(1) };\n\n// Version 2\ncase 'undo': { const prev = past.pop(); return { past, present: prev, future: [present, ...future] }; }\ncase 'redo': { const next = future.shift(); return { past: [...past, present], present: next, future }; }\n\n// Version 3\ncase 'undo': return { past: past.slice(0, -1), present: past.at(-1), future: [present, ...future] };\ncase 'redo': return { past: [...past, present], present: future.at(-1), future: future.slice(0, -1) };\n\n// Version 4 (state is { previous, present })\ncase 'undo': return { previous: present, present: previous };\ncase 'redo': return { previous: present, present: previous };\n```\n(Assume each case returns `state` unchanged when the needed stack is empty.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Version 2",
+        "correct": false,
+        "why": "`pop` and `shift` mutate the arrays held in the previous state, which breaks StrictMode's double-invoked reducers and any history comparisons."
+      },
+      {
+        "id": "B",
+        "text": "Version 3",
+        "correct": false,
+        "why": "Undo puts entries at the front of `future` but redo takes from the end, so after two undos one redo jumps two steps ahead."
+      },
+      {
+        "id": "C",
+        "text": "Version 4",
+        "correct": false,
+        "why": "It only remembers one previous value, so \"undo\" and \"redo\" just swap two states instead of walking through the history."
+      },
+      {
+        "id": "D",
+        "text": "Version 1",
+        "correct": true,
+        "why": "Undo moves `present` to the front of `future` and pops `past`; redo does the mirror image, all with new arrays."
+      }
+    ],
+    "explanation": "Checked in Node: after typing \"a\", \"ab\", \"abc\", undoing twice and redoing once, Version 1 gives \"ab\" and Version 3 gives \"abc\". Undo/redo is two stacks around a present value. Undo moves present into future and takes the last item of past; redo is the reverse. Every case returns new arrays, which keeps the reducer pure. That matters because StrictMode calls reducers twice in development. The same idea scales to any app state (Redux \"undoable\" reducers), and senior follow-ups ask about capping history size and grouping keystrokes.",
+    "reference": "react.dev: Extracting State Logic into a Reducer (writing reducers well)",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:rx-undo-redo"
+  },
+  {
+    "id": "RCT-IQ5-STA-010",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This history reducer's `undo` and `redo` are correct, but `set` has a bug:\n\n```js\ncase 'set':\n  return { ...state, past: [...state.past, state.present], present: action.value };\n```\n\nStarting from `{ past: [], present: '', future: [] }`, the user types \"a\", then \"ab\", presses Undo, types \"ax\", then presses Redo. What is `present` now?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`'ax'`, because Redo does nothing after a new edit",
+        "correct": false,
+        "why": "That is the correct behaviour, but this `set` does not clear `future`, so Redo still has an entry to apply."
+      },
+      {
+        "id": "B",
+        "text": "`'a'`, because Redo returns to the state before the last edit",
+        "correct": false,
+        "why": "Going back is Undo. Redo moves forward to `future[0]`."
+      },
+      {
+        "id": "C",
+        "text": "`'ab'`, from a stale `future` entry",
+        "correct": true,
+        "why": "After Undo, `future` is `['ab']`. The new edit keeps it, so Redo jumps to a branch the user abandoned."
+      },
+      {
+        "id": "D",
+        "text": "It throws, because `future` and `past` get out of step",
+        "correct": false,
+        "why": "Nothing throws. The reducer simply returns the leftover `future` value."
+      }
+    ],
+    "explanation": "Run in Node: with this bug, `present` ends as `'ab'`. With the fix, it stays `'ax'` and `future` is empty. When the user makes a new edit after undoing, the old \"future\" is no longer valid; it belongs to a different timeline. So `set` must reset `future: []`. This is the edge case interviewers (for example at Atlassian) push on after the basic undo/redo works.",
+    "reference": "react.dev: Extracting State Logic into a Reducer",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides",
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:rx-undo-redo"
+  }
+]

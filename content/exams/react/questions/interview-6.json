@@ -1,0 +1,2050 @@
+[
+  {
+    "id": "RCT-IQ6-EFF-001",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks for a retry helper to wrap API calls inside a data hook. The requirements are:\n\n- retry at most `retries` times, waiting 300, 600 and then 1200 ms;\n- stop at once if the caller aborts (for example, the component unmounted);\n- never retry errors that `isRetryable(err)` rejects, such as a 404.\n\n`sleep(ms, signal)` rejects when the signal aborts. Which `catch` body meets every requirement?\n\n```js\nasync function withRetry(fn, { retries = 3, base = 300, signal } = {}) {\n  for (let attempt = 0; ; attempt++) {\n    try {\n      return await fn(signal);\n    } catch (err) {\n      // which body goes here?\n    }\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nif (signal?.aborted || !isRetryable(err) || attempt === retries) throw err;\nawait sleep(base * 2 ** attempt, signal);\n```",
+        "correct": true,
+        "why": "Aborts and non-retryable errors are rethrown immediately, and the limit check stops after the third retry (four calls in total). `base * 2 ** attempt` gives 300, 600 and 1200, and passing the signal to `sleep` also cancels a pending wait."
+      },
+      {
+        "id": "B",
+        "text": "```js\nif (attempt === retries) throw err;\nawait sleep(base * 2 ** attempt);\n```",
+        "correct": false,
+        "why": "The backoff and the limit are right, but it retries everything: a 404 is requested four times, and an aborted call keeps waiting and retrying after the component has gone."
+      },
+      {
+        "id": "C",
+        "text": "```js\nif (signal?.aborted || !isRetryable(err)) throw err;\nawait sleep(base * 2 ** attempt, signal);\n```",
+        "correct": false,
+        "why": "There is no attempt limit. A server that keeps answering 503 is retried forever with ever longer waits, and the caller's promise never settles."
+      },
+      {
+        "id": "D",
+        "text": "```js\nif (signal?.aborted || !isRetryable(err) || attempt === retries) {\n  console.warn('Request failed', err);\n  return;\n}\nawait sleep(base * (attempt + 1), signal);\n```",
+        "correct": false,
+        "why": "Two mistakes: the delay grows linearly (300, 600, 900), and `return` swallows the error, so the hook gets `undefined` as if the call had succeeded and never shows an error state."
+      }
+    ],
+    "explanation": "Exponential backoff waits `base * 2^n` before retry n + 1, usually with some random jitter so many clients don't retry in lockstep. A good helper has three exits: success returns the value; a non-retryable error or an abort is rethrown immediately; and running out of attempts rethrows the last error. Interviewers are checking that you know which errors are worth retrying (network failures, 5xx, 429) and that the retry loop respects cancellation when the component unmounts.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://dataford.io/interview-guides/google/frontend-engineer"
+      ],
+      "companies": [
+        "Intuit",
+        "Google"
+      ]
+    },
+    "source": "interview:rx-retry-helper"
+  },
+  {
+    "id": "RCT-IQ6-STA-001",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A reviews list deletes rows optimistically. The requirements are:\n\n- the row disappears immediately;\n- if the API call fails, that row comes back and an error toast shows;\n- if two deletes are in flight and only one fails, only the failed row comes back.\n\nWhich handler meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nasync function handleDelete(id) {\n  const index = items.findIndex((r) => r.id === id);\n  const removed = items[index];\n  setItems((prev) => prev.filter((r) => r.id !== id));\n  try {\n    await api.deleteReview(id);\n  } catch {\n    setItems((prev) => prev.toSpliced(index, 0, removed));\n    toast.error('Could not delete the review');\n  }\n}\n```",
+        "correct": true,
+        "why": "The row is filtered out at once. On failure, a functional update puts back only the removed row into the latest list, so a delete that succeeded in the meantime stays deleted."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nasync function handleDelete(id) {\n  const snapshot = items;\n  setItems((prev) => prev.filter((r) => r.id !== id));\n  try {\n    await api.deleteReview(id);\n  } catch {\n    setItems(snapshot);\n    toast.error('Could not delete the review');\n  }\n}\n```",
+        "correct": false,
+        "why": "Restoring a whole snapshot undoes everything that happened since the click. If another delete succeeded while this one was in flight, that row reappears too, which breaks the last requirement."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nasync function handleDelete(id) {\n  try {\n    await api.deleteReview(id);\n    setItems((prev) => prev.filter((r) => r.id !== id));\n  } catch {\n    toast.error('Could not delete the review');\n  }\n}\n```",
+        "correct": false,
+        "why": "Correct and safe, but not optimistic: the row stays on screen until the server answers, so it fails the first requirement."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nasync function handleDelete(id) {\n  const index = items.findIndex((r) => r.id === id);\n  const [removed] = items.splice(index, 1);\n  setItems(items);\n  try {\n    await api.deleteReview(id);\n  } catch {\n    items.splice(index, 0, removed);\n    setItems(items);\n    toast.error('Could not delete the review');\n  }\n}\n```",
+        "correct": false,
+        "why": "`splice` mutates the state array, and `setItems(items)` passes the same reference. React sees no change and skips the render, so the row never disappears from the screen."
+      }
+    ],
+    "explanation": "An optimistic update changes the UI first and reconciles with the server afterwards. The rollback must be as narrow as the change: put back only the item that failed, with a functional update so it applies to the latest state rather than to a snapshot taken at click time. Updates and deletes must also be immutable (`map` and `filter`, not `splice`), or React's `Object.is` check skips the render. TanStack Query and React 19's `useOptimistic` package this pattern, but interviewers want to see that you can reason about two requests in flight at once.",
+    "reference": "https://react.dev/learn/updating-arrays-in-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://leetcode.com/discuss/interview-experience/6759169",
+        "https://devtoolstech.substack.com/p/flipkarts-frontend-interview-questions",
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ],
+      "companies": [
+        "Flipkart",
+        "Wayfair"
+      ]
+    },
+    "source": "interview:rx-mc-crud"
+  },
+  {
+    "id": "RCT-IQ6-PAT-001",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are asked how you would localise a React app for users in India, Germany and Saudi Arabia. Which two statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "`new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(1234567.5)` returns `₹12,34,567.50`, so locale-specific grouping should come from `Intl` rather than hand-written formatting",
+        "correct": true,
+        "why": "Indian grouping (lakh and crore) differs from the three-digit Western pattern. `Intl` handles it, along with dates, lists and relative times, from the locale tag alone."
+      },
+      {
+        "id": "B",
+        "text": "Each locale's translation bundle can be loaded with a dynamic `import()` when that locale is chosen, so users download only their own language",
+        "correct": true,
+        "why": "Code-splitting translations keeps the initial bundle small. Libraries such as react-i18next and react-intl support lazily loaded message files."
+      },
+      {
+        "id": "C",
+        "text": "Building sentences as `t('you_have') + count + t('new_messages')` works in every language, as long as each fragment is translated",
+        "correct": false,
+        "why": "Word order and grammar differ between languages, so translators need the whole sentence with a placeholder, such as an ICU message `You have {count} new messages`."
+      },
+      {
+        "id": "D",
+        "text": "`count === 1 ? 'item' : 'items'` handles plurals correctly once each word is translated",
+        "correct": false,
+        "why": "Many languages have more plural forms. Arabic has six categories (zero, one, two, few, many, other), so use `Intl.PluralRules` or ICU plural syntax."
+      },
+      {
+        "id": "E",
+        "text": "Formatted strings such as `'₹1,200'` should be stored in state so components don't have to reformat them on every render",
+        "correct": false,
+        "why": "Store raw numbers and dates and format them at render time with the active locale. Pre-formatted strings break sorting and arithmetic, and they don't change when the user switches language."
+      }
+    ],
+    "explanation": "Localisation has two halves. Translating text means message catalogs with placeholders and plural rules, loaded per locale. Formatting data means numbers, currency, dates and lists, which the built-in `Intl` APIs handle. For Arabic you also need right-to-left layout (`dir=\"rtl\"` and logical CSS properties such as `margin-inline-start`). Interviewers check that you know string concatenation and English plural logic do not carry over to other languages.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions/quiz",
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers"
+      ]
+    },
+    "source": "interview:rx-i18n"
+  },
+  {
+    "id": "RCT-IQ6-PAT-002",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are building a reviews widget that partner sites embed on their product pages. The partners have two hard requirements: the widget's JavaScript must not be able to read their page's DOM or cookies, and their global CSS (for example `div { padding: 8px }`) must not change how the widget looks. Which delivery approach meets both?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Serve the widget from your own origin inside an `<iframe>`, and use `postMessage` for resizing and events",
+        "correct": true,
+        "why": "A cross-origin iframe has its own document, styles and JavaScript realm. The same-origin policy keeps it out of the host's DOM and cookies, and host CSS cannot reach inside. The cost is auto-sizing, which needs a `postMessage` from inside the frame."
+      },
+      {
+        "id": "B",
+        "text": "A script tag that renders the widget into a Shadow DOM root attached to an element on the host page",
+        "correct": false,
+        "why": "Shadow DOM isolates styles (apart from inherited properties such as font and colour), but the script still runs in the host page with full access to its DOM and to any cookies not marked HttpOnly. It fails the first requirement."
+      },
+      {
+        "id": "C",
+        "text": "A script tag that renders the widget with CSS Modules, so every class name is hashed and unique",
+        "correct": false,
+        "why": "Hashed class names stop your styles leaking out, but the host's element selectors such as `div { padding }` still match your nodes, and the script still runs with access to the page."
+      },
+      {
+        "id": "D",
+        "text": "A script tag that renders into a `<div>` with a unique id, with every widget rule prefixed by that id and marked `!important`",
+        "correct": false,
+        "why": "This is a specificity arms race the host can still win (an `!important` rule with an id selector of its own), and it does nothing to keep your script away from the host page."
+      }
+    ],
+    "explanation": "Embeddable widgets are usually delivered in one of two ways. An iframe gives the strongest isolation (styles, scripts and storage) at the cost of sizing and messaging work. A script with Shadow DOM is lighter and lets the widget sit inline in the host's layout, but it runs as part of the host page. Interviewers want you to match the choice to the stated constraints: isolation and trust point to an iframe; seamless inline layout with style isolation only points to Shadow DOM.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design"
+      ]
+    },
+    "source": "interview:rx-sd-reusable-widget"
+  },
+  {
+    "id": "RCT-IQ6-PAT-003",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`useCart()` reads `CartContext` and throws if there is no provider above it. You need a test that calls `addItem` and checks that `total` updates, using the real `CartProvider` logic. Which test works?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nconst wrapper = ({ children }) => (\n  <CartProvider initialItems={[]}>{children}</CartProvider>\n);\nconst { result } = renderHook(() => useCart(), { wrapper });\nact(() => result.current.addItem({ id: 'p1', price: 250 }));\nexpect(result.current.total).toBe(250);\n```",
+        "correct": true,
+        "why": "`renderHook` renders the hook inside the wrapper, so `useCart` finds a real provider. After `act`, `result.current` holds the latest return value."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nconst { result } = renderHook(() => (\n  <CartProvider initialItems={[]}>{useCart()}</CartProvider>\n));\nact(() => result.current.addItem({ id: 'p1', price: 250 }));\nexpect(result.current.total).toBe(250);\n```",
+        "correct": false,
+        "why": "`useCart()` runs while the callback builds the JSX, inside the test component itself, before any provider exists above it. The hook finds no context and throws."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nrender(<CartProvider initialItems={[]} />);\nconst cart = useCart();\ncart.addItem({ id: 'p1', price: 250 });\nexpect(cart.total).toBe(250);\n```",
+        "correct": false,
+        "why": "A hook can only be called while React renders a component. Calling it in the test body fails with an invalid hook call, and the provider rendered above has no children anyway."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nvi.spyOn(React, 'useContext').mockReturnValue({ items: [], total: 0, addItem: vi.fn() });\nconst { result } = renderHook(() => useCart());\nact(() => result.current.addItem({ id: 'p1', price: 250 }));\nexpect(result.current.total).toBe(250);\n```",
+        "correct": false,
+        "why": "Mocking `useContext` replaces the provider's logic with a fake, so `addItem` is a spy and `total` stays 0. It tests the mock, not the cart, and it only works at all if the hook calls `React.useContext` through the namespace object."
+      }
+    ],
+    "explanation": "Hooks and components that depend on context or a store should be rendered inside the real provider. Both `render` and `renderHook` from React Testing Library accept a `wrapper` option, which is where `CartProvider`, a Redux `<Provider store={makeStore()}>` with a fresh store per test, or a router goes. Interviewers check that you test behaviour through the public API instead of mocking React internals.",
+    "reference": "https://testing-library.com/docs/react-testing-library/api#renderhook",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers",
+        "https://www.greatfrontend.com/blog/50-reactjs-interview-questions-for-experienced"
+      ]
+    },
+    "source": "interview:rx-test-hooks-context"
+  },
+  {
+    "id": "RCT-IQ6-HKS-001",
+    "domain": 2,
+    "skill": "hooks-advanced",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You wrote this hook to skip an effect on mount:\n\n```jsx\nfunction useUpdateEffect(effect, deps) {\n  const isFirst = useRef(true);\n  useEffect(() => {\n    if (isFirst.current) {\n      isFirst.current = false;\n      return;\n    }\n    return effect();\n  }, deps);\n}\n```\n\nWhich two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A ref suits the flag because it keeps its value between renders and changing it does not cause a re-render",
+        "correct": true,
+        "why": "A `let` variable would be reset on every render, and a state flag would cost an extra render when it flips."
+      },
+      {
+        "id": "B",
+        "text": "In development under `<StrictMode>`, `effect` still runs on mount, because the ref keeps `false` through React's extra setup, cleanup and setup cycle",
+        "correct": true,
+        "why": "Strict Mode re-runs effects on the same component instance, so refs keep their values. The second setup sees `isFirst.current === false` and calls `effect()`. Production has no extra cycle."
+      },
+      {
+        "id": "C",
+        "text": "Passing `[]` as `deps` turns this into an effect that skips the first render and then runs after every later one",
+        "correct": false,
+        "why": "With `[]` the effect never re-runs after mount, so in production `effect` is never called at all."
+      },
+      {
+        "id": "D",
+        "text": "Checking an `isMounted` ref before calling `setState` in async callbacks is the recommended fix for responses that arrive after unmount",
+        "correct": false,
+        "why": "That hides the symptom while the request keeps running. React 18 removed the warning about setting state on an unmounted component; the recommended pattern is to cancel or ignore the work in the effect cleanup (an `ignore` flag or an `AbortController`)."
+      },
+      {
+        "id": "E",
+        "text": "Storing the flag with `useState(true)` would be better, because React tracks it and re-runs the effect when it changes",
+        "correct": false,
+        "why": "Flipping a state flag causes a wasted re-render, and adding it to the deps makes the effect run one extra time."
+      }
+    ],
+    "explanation": "Skipping the first run is a common custom-hook exercise (`useUpdateEffect`, `useDidUpdate`). The key ideas are a persistent flag that doesn't trigger renders (a ref) and an honest account of Strict Mode, which re-runs effects in development to surface missing cleanup. Interviewers also use it to probe the old `isMounted` pattern: the modern answer is to cancel or ignore stale work in the cleanup, not to check whether the component is still mounted.",
+    "reference": "https://react.dev/reference/react/useEffect",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions",
+        "https://bigfrontend.dev/react"
+      ]
+    },
+    "source": "interview:rx-skip-first-render-ismounted"
+  },
+  {
+    "id": "RCT-IQ6-STM-001",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing an e-commerce site with 2 million product pages. The requirements are:\n\n- product pages must be crawlable HTML, served from a CDN cache for speed;\n- a price change must show up within a few minutes;\n- a shopper's cart must never end up in shared, cached HTML.\n\nWhich rendering plan meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Render product pages on first request, cache them with revalidation (ISR), and load the cart in the browser",
+        "correct": true,
+        "why": "Pages are rendered once and then served from cache, and revalidation refreshes them when prices change. The cart is per user, so it is fetched on the client and never baked into shared HTML."
+      },
+      {
+        "id": "B",
+        "text": "Statically generate all 2 million pages at build time, and trigger a full rebuild of the site whenever any price changes",
+        "correct": false,
+        "why": "Build time grows with the catalogue, and every price change waits for a full rebuild, so prices could be hours out of date."
+      },
+      {
+        "id": "C",
+        "text": "A client-only single-page app that fetches the product data after the JavaScript bundle has loaded",
+        "correct": false,
+        "why": "The first HTML is an empty shell, which hurts SEO and Largest Contentful Paint on slow phones."
+      },
+      {
+        "id": "D",
+        "text": "Server-render every request, including the shopper's cart, and send the HTML with a long `Cache-Control: public` header",
+        "correct": false,
+        "why": "Publicly caching HTML that contains a cart can serve one shopper's cart to another. Without the public cache, every request hits the server."
+      }
+    ],
+    "explanation": "E-commerce system design turns on splitting shared content from per-user content. Product listing and detail pages are shared and SEO-critical, so render them on the server and cache them with revalidation (ISR in Next.js, or SSR behind a CDN with `stale-while-revalidate`). Per-user data such as the cart and recommendations is fetched on the client or rendered in a dynamic part of the page. Interviewers look for this split and for awareness that caching personalised HTML is dangerous.",
+    "reference": "https://nextjs.org/docs/app/guides/incremental-static-regeneration",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/MakeMyTrip.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md",
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design"
+      ],
+      "companies": [
+        "MakeMyTrip",
+        "Wayfair"
+      ]
+    },
+    "source": "interview:rx-sd-ecommerce"
+  },
+  {
+    "id": "RCT-IQ6-STM-002",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Follow-up on the e-commerce design: the cart. The requirements are:\n\n- a guest's cart survives closing the browser;\n- when a guest logs in, items they added earlier on another device must not be lost;\n- a logged-in shopper sees the same cart on phone and laptop.\n\nWhich design meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep a guest cart in `localStorage`; on login, merge it into the server-side cart, which is the source of truth from then on",
+        "correct": true,
+        "why": "`localStorage` survives restarts for guests, merging keeps items from both sources, and a server cart follows the user across devices."
+      },
+      {
+        "id": "B",
+        "text": "Keep the cart in `sessionStorage` so it stays private to the tab, and send the whole cart to the server only when the shopper reaches checkout",
+        "correct": false,
+        "why": "`sessionStorage` is cleared when the tab is closed, and the server never sees the cart before checkout, so it can't follow the user to another device."
+      },
+      {
+        "id": "C",
+        "text": "Keep the cart in `localStorage` for everyone; on login, replace the server cart with the local one",
+        "correct": false,
+        "why": "Replacing instead of merging throws away the items the user added on their other device."
+      },
+      {
+        "id": "D",
+        "text": "Store the full cart as JSON in a cookie, so the server can read it on every request and render it",
+        "correct": false,
+        "why": "Cookies are limited to about 4 KB and are sent with every request to the site. A large cart overflows, and the cookie is still tied to one browser."
+      }
+    ],
+    "explanation": "Cart persistence is a classic follow-up. Guests need storage on the device; signed-in users need a cart on the server, keyed by user id. The tricky moment is login, when the guest cart must be merged (summing quantities, or keeping the newer line) rather than overwriting either side. Interviewers also listen for the storage trade-offs: how long `localStorage` and `sessionStorage` last, and the size and overhead of cookies.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/MakeMyTrip.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Wayfair.md",
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design"
+      ],
+      "companies": [
+        "MakeMyTrip",
+        "Wayfair"
+      ]
+    },
+    "source": "interview:rx-sd-ecommerce"
+  },
+  {
+    "id": "RCT-IQ6-STM-003",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 2,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing the client state for a Trello-style board. Moving a card between columns should touch as little state as possible, and editing a card's title should change it in exactly one place. Which shape fits best?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\n{\n  cards: {\n    c1: { id: 'c1', title: 'Fix login' },\n    c2: { id: 'c2', title: 'Write tests' },\n  },\n  columns: {\n    todo: { id: 'todo', title: 'To do', cardIds: ['c1'] },\n    done: { id: 'done', title: 'Done', cardIds: ['c2'] },\n  },\n  columnOrder: ['todo', 'done'],\n}\n```",
+        "correct": true,
+        "why": "Each card is stored once by id, and columns hold only ordered id arrays. A move changes two `cardIds` arrays, and a title edit changes one card entry."
+      },
+      {
+        "id": "B",
+        "text": "```js\n{\n  columns: [\n    { id: 'todo', title: 'To do', cards: [{ id: 'c1', title: 'Fix login' }] },\n    { id: 'done', title: 'Done', cards: [{ id: 'c2', title: 'Write tests' }] },\n  ],\n}\n```",
+        "correct": false,
+        "why": "Fine for a small board, but editing a card means searching every column and copying the nested path, and a move copies the whole card object between arrays."
+      },
+      {
+        "id": "C",
+        "text": "```js\n{\n  cards: {\n    c1: { id: 'c1', title: 'Fix login' },\n    c2: { id: 'c2', title: 'Write tests' },\n  },\n  columns: {\n    todo: { id: 'todo', title: 'To do', cards: [{ id: 'c1', title: 'Fix login' }] },\n    done: { id: 'done', title: 'Done', cards: [{ id: 'c2', title: 'Write tests' }] },\n  },\n  columnOrder: ['todo', 'done'],\n}\n```",
+        "correct": false,
+        "why": "Card data lives in two places, so a title edit in `cards` leaves the copy in the column stale unless you update both."
+      },
+      {
+        "id": "D",
+        "text": "```js\n{\n  'To do': [{ id: 'c1', title: 'Fix login' }],\n  'Done': [{ id: 'c2', title: 'Write tests' }],\n}\n```",
+        "correct": false,
+        "why": "Keying columns by title breaks when a column is renamed, can't hold column order or other column data, and still nests the cards."
+      }
+    ],
+    "explanation": "Normalised state stores each entity once in a lookup by id and refers to it by id everywhere else; it is the shape Redux Toolkit's `createEntityAdapter` produces. On a board, the order of cards is data that belongs to the column, so each column keeps an ordered `cardIds` array. Interviewers ask this to see whether you can design state for cheap updates and a small move API, such as `PATCH /cards/c1 { columnId, index }`.",
+    "reference": "https://redux.js.org/usage/structuring-reducers/normalizing-state-shape",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://learnersbucket.com/tech/frontend-interview-process-at-atlassian/",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://www.frontendinterviewhandbook.com/companies/atlassian-front-end-interview-questions",
+        "https://learnersbucket.substack.com/p/decoding-the-frontend-system-design"
+      ],
+      "companies": [
+        "Atlassian",
+        "Kotak Mahindra Bank"
+      ]
+    },
+    "source": "interview:rx-sd-kanban"
+  },
+  {
+    "id": "RCT-IQ6-STM-004",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The board uses normalised state: `state.columns[id].cardIds` is an ordered array of card ids. On drop, the UI dispatches `{ type: 'move', cardId, from, to, index }` immediately, calls the API, and dispatches the inverse move if the call fails. Each column is a memoised component that receives its column object. Which reducer case handles both moves between columns and reordering within one column?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\ncase 'move': {\n  const { cardId, from, to, index } = action;\n  const columns = { ...state.columns };\n  columns[from] = {\n    ...columns[from],\n    cardIds: columns[from].cardIds.filter((id) => id !== cardId),\n  };\n  const dest = [...columns[to].cardIds];\n  dest.splice(index, 0, cardId);\n  columns[to] = { ...columns[to], cardIds: dest };\n  return { ...state, columns };\n}\n```",
+        "correct": true,
+        "why": "It reads `columns[to]` after the source column has been updated, so a move within one column removes the card and reinserts it once. Only the changed columns get new objects, so memoised columns re-render when they should."
+      },
+      {
+        "id": "B",
+        "text": "```js\ncase 'move': {\n  const { cardId, from, to, index } = action;\n  const source = state.columns[from].cardIds.filter((id) => id !== cardId);\n  const dest = [...state.columns[to].cardIds];\n  dest.splice(index, 0, cardId);\n  return {\n    ...state,\n    columns: {\n      ...state.columns,\n      [from]: { ...state.columns[from], cardIds: source },\n      [to]: { ...state.columns[to], cardIds: dest },\n    },\n  };\n}\n```",
+        "correct": false,
+        "why": "When `from` and `to` are the same column, both arrays are built from the original list. The `[to]` entry wins, and it still contains the card, so moving `c` to the top of `['a', 'b', 'c']` gives `['c', 'a', 'b', 'c']`."
+      },
+      {
+        "id": "C",
+        "text": "```js\ncase 'move': {\n  const { cardId, from, to, index } = action;\n  const source = state.columns[from].cardIds;\n  source.splice(source.indexOf(cardId), 1);\n  state.columns[to].cardIds.splice(index, 0, cardId);\n  return { ...state };\n}\n```",
+        "correct": false,
+        "why": "It mutates the existing arrays. The top-level object is new, but each column object keeps its old reference, so the memoised columns skip re-rendering and keep showing the old order."
+      },
+      {
+        "id": "D",
+        "text": "```js\ncase 'move': {\n  const { cardId, from, to } = action;\n  const columns = { ...state.columns };\n  columns[from] = {\n    ...columns[from],\n    cardIds: columns[from].cardIds.filter((id) => id !== cardId),\n  };\n  columns[to] = { ...columns[to], cardIds: [...columns[to].cardIds, cardId] };\n  return { ...state, columns };\n}\n```",
+        "correct": false,
+        "why": "Immutable and safe within one column, but it ignores the drop position and always puts the card at the bottom, so cards can never be reordered."
+      }
+    ],
+    "explanation": "Moving a card is remove-then-insert. The same-column case is where most hand-written reducers break, because source and destination are the same array. Immutable updates matter because memoised columns and selectors compare references. With an optimistic update, the inverse move (or a saved copy of the two affected columns) is the rollback. Drag-and-drop libraries such as dnd-kit report `from`, `to` and `index`, but the reducer is still yours to write.",
+    "reference": "https://react.dev/learn/updating-arrays-in-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://learnersbucket.com/tech/frontend-interview-process-at-atlassian/",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/KotakBank.md",
+        "https://www.frontendinterviewhandbook.com/companies/atlassian-front-end-interview-questions",
+        "https://learnersbucket.substack.com/p/decoding-the-frontend-system-design"
+      ],
+      "companies": [
+        "Atlassian",
+        "Kotak Mahindra Bank"
+      ]
+    },
+    "source": "interview:rx-sd-kanban"
+  },
+  {
+    "id": "RCT-IQ6-EFF-002",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An AI chat UI streams the assistant's reply from `fetch`:\n\n```jsx\nasync function send(prompt) {\n  setReply('');\n  const res = await fetch('/api/chat', {\n    method: 'POST',\n    body: JSON.stringify({ prompt }),\n  });\n  // read res.body here\n}\n```\n\nText must appear as it arrives, and replies in Hindi or with emoji must not show garbled characters. Which loop meets both requirements?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nconst reader = res.body.getReader();\nconst decoder = new TextDecoder();\nwhile (true) {\n  const { done, value } = await reader.read();\n  if (done) break;\n  const text = decoder.decode(value, { stream: true });\n  setReply((prev) => prev + text);\n}\n```",
+        "correct": true,
+        "why": "One decoder in streaming mode carries a split multi-byte character over to the next chunk, and the functional update appends to the latest reply each time."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst reader = res.body.getReader();\nconst decoder = new TextDecoder();\nwhile (true) {\n  const { done, value } = await reader.read();\n  if (done) break;\n  setReply(reply + decoder.decode(value, { stream: true }));\n}\n```",
+        "correct": false,
+        "why": "`reply` is the value from the render that created `send` (an empty string), and it never changes inside this loop. Each chunk overwrites the previous one, so only the last chunk is left on screen."
+      },
+      {
+        "id": "C",
+        "text": "```js\nconst text = await res.text();\nsetReply(text);\n```",
+        "correct": false,
+        "why": "The text is correct, but nothing appears until the whole reply has arrived, so there is no streaming."
+      },
+      {
+        "id": "D",
+        "text": "```js\nconst reader = res.body.getReader();\nwhile (true) {\n  const { done, value } = await reader.read();\n  if (done) break;\n  const text = new TextDecoder('utf-8').decode(value);\n  setReply((prev) => prev + text);\n}\n```",
+        "correct": false,
+        "why": "Network chunks can split a multi-byte UTF-8 character. Decoding each chunk with a fresh decoder turns the split bytes into `�` replacement characters, which is exactly the garbling the requirement rules out."
+      }
+    ],
+    "explanation": "`response.body` is a `ReadableStream` of bytes. Read it with a reader, decode it with a single `TextDecoder` using `{ stream: true }`, and append with a functional update, because the handler's closure holds the state value from the render that created it. Server-Sent Events (`EventSource`) also stream text, but they only support GET, and chat APIs usually POST, so a fetch stream is common. Interviewers use this to test both the streaming API and the stale-closure trap.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://prachub.com/positions/frontend-engineer/categories/system-design"
+      ],
+      "companies": [
+        "Waymo",
+        "OpenAI",
+        "Intuit"
+      ]
+    },
+    "source": "interview:rx-sd-ai-chat-streaming"
+  },
+  {
+    "id": "RCT-IQ6-EFF-003",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The streaming chat needs a Stop button. `streamReply(prompt, signal)` streams into `reply` state and passes `signal` to `fetch`. The requirements are:\n\n- Stop cancels the network request and keeps the text received so far;\n- sending a new prompt cancels any previous stream;\n- leaving the page cancels it too;\n- a stopped reply must not show an error message.\n\nWhich implementation meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nconst controllerRef = useRef(null);\nuseEffect(() => () => controllerRef.current?.abort(), []);\n\nasync function send(prompt) {\n  controllerRef.current?.abort();\n  const controller = new AbortController();\n  controllerRef.current = controller;\n  try {\n    await streamReply(prompt, controller.signal);\n  } catch (err) {\n    if (err.name !== 'AbortError') setError(err);\n  }\n}\nconst stop = () => controllerRef.current?.abort();\n```",
+        "correct": true,
+        "why": "A fresh controller per request lives in a ref, so Stop, a new send and unmount all abort the current request. An `AbortError` is treated as a normal stop, and the partial reply stays in state."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nconst [controller] = useState(() => new AbortController());\nuseEffect(() => () => controller.abort(), [controller]);\n\nasync function send(prompt) {\n  try {\n    await streamReply(prompt, controller.signal);\n  } catch (err) {\n    if (err.name !== 'AbortError') setError(err);\n  }\n}\nconst stop = () => controller.abort();\n```",
+        "correct": false,
+        "why": "One controller lasts for the whole component. After the first Stop its signal stays aborted, so every later `fetch` rejects immediately and the chat stops working. A new send also can't cancel the previous stream."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nconst [stopped, setStopped] = useState(false);\n\nasync function send(prompt) {\n  setStopped(false);\n  for await (const chunk of streamChunks(prompt)) {\n    if (stopped) break;\n    setReply((prev) => prev + chunk);\n  }\n}\nconst stop = () => setStopped(true);\n```",
+        "correct": false,
+        "why": "`stopped` inside `send` is the value from the render that created it, so the loop never sees `true`. Nothing aborts the request on a new send or on unmount either."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nconst controllerRef = useRef(null);\nuseEffect(() => () => controllerRef.current?.abort(), []);\n\nasync function send(prompt) {\n  controllerRef.current?.abort();\n  controllerRef.current = new AbortController();\n  try {\n    await streamReply(prompt, controllerRef.current.signal);\n  } catch (err) {\n    console.error('Stream failed', err);\n    setReply('');\n    setError(err);\n  }\n}\nconst stop = () => controllerRef.current?.abort();\n```",
+        "correct": false,
+        "why": "Cancelling works, but every abort lands in `catch` as a failure: the partial text is wiped and an error appears after a deliberate Stop."
+      }
+    ],
+    "explanation": "`AbortController` is the standard way to cancel `fetch`, including a body that is still streaming: aborting rejects the pending `reader.read()` with an `AbortError`. A controller can only be aborted once, so create one per request and keep the current one in a ref, where every handler can see it without stale closures. Interviewers look for all three cancel paths (the user, a newer request, unmount) and for treating `AbortError` as expected rather than as a failure.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://prachub.com/positions/frontend-engineer/categories/system-design"
+      ],
+      "companies": [
+        "Waymo",
+        "OpenAI",
+        "Intuit"
+      ]
+    },
+    "source": "interview:rx-sd-ai-chat-streaming"
+  },
+  {
+    "id": "RCT-IQ6-PAT-004",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You are writing an analytics module that many components import. The requirements are:\n\n- one queue for the whole app;\n- send a batch when 20 events are queued or 5 seconds after the oldest unsent event, whichever comes first;\n- events tracked while a request is in flight must not be lost.\n\n`send(batch)` posts a batch and returns a promise. Which module meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nconst queue = [];\nlet timer = null;\n\nexport function track(event) {\n  queue.push({ ...event, ts: Date.now() });\n  if (queue.length >= 20) flush();\n  else if (!timer) timer = setTimeout(flush, 5000);\n}\n\nfunction flush() {\n  clearTimeout(timer);\n  timer = null;\n  if (queue.length) send(queue.splice(0));\n}\n```",
+        "correct": true,
+        "why": "Module scope makes the queue a singleton. The timer starts with the first unsent event and later events don't restart it, and `splice(0)` takes the batch out synchronously, so events tracked during the request go into the next batch."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst queue = [];\nlet timer = null;\n\nexport function track(event) {\n  queue.push({ ...event, ts: Date.now() });\n  clearTimeout(timer);\n  if (queue.length >= 20) flush();\n  else timer = setTimeout(flush, 5000);\n}\n\nfunction flush() {\n  if (queue.length) send(queue.splice(0));\n}\n```",
+        "correct": false,
+        "why": "Restarting the timer on every event makes it a debounce. With one event every 4 seconds the timer never fires, and events wait until 20 have built up (about 80 seconds), which breaks the 5-second rule."
+      },
+      {
+        "id": "C",
+        "text": "```js\nexport function useAnalytics() {\n  const queue = useRef([]);\n  return useCallback((event) => {\n    queue.current.push({ ...event, ts: Date.now() });\n    if (queue.current.length >= 20) {\n      send(queue.current.splice(0));\n    }\n  }, []);\n}\n```",
+        "correct": false,
+        "why": "Every component that calls the hook gets its own queue, so there is no app-wide batch. There is also no timer, and a component's unsent events are lost when it unmounts."
+      },
+      {
+        "id": "D",
+        "text": "```js\nconst queue = [];\nlet timer = null;\n\nexport function track(event) {\n  queue.push({ ...event, ts: Date.now() });\n  if (queue.length >= 20) flush();\n  else if (!timer) timer = setTimeout(flush, 5000);\n}\n\nasync function flush() {\n  clearTimeout(timer);\n  timer = null;\n  if (!queue.length) return;\n  await send([...queue]);\n  queue.length = 0;\n}\n```",
+        "correct": false,
+        "why": "It sends a copy, waits for the response and then empties the whole queue. Events tracked while the request was in flight are wiped without ever being sent."
+      }
+    ],
+    "explanation": "A batching SDK needs one shared queue (a module singleton, or one instance created at startup), a size threshold, and a maximum-wait timer that starts with the first unsent event. Take the batch out of the queue synchronously before sending, so new events land in the next batch. Common follow-ups are retrying failed batches and flushing when the page is hidden.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://learnersbucket.com/tech/frontend-interview-process-at-atlassian/",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:rx-analytics-sdk-batching"
+  },
+  {
+    "id": "RCT-IQ6-PAT-005",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Follow-up on the batching analytics module: users often close the tab before the 5-second timer fires, and those last events never arrive. Which two changes make the final batch reliable? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Flush when `visibilitychange` reports `document.visibilityState === 'hidden'` (and on `pagehide`), instead of relying on `unload` or `beforeunload`",
+        "correct": true,
+        "why": "On mobile, a hidden page is often discarded without `unload` ever firing, so the switch to hidden is the last event you can count on. `unload` handlers also stop the page from entering the back/forward cache."
+      },
+      {
+        "id": "B",
+        "text": "Send that batch with `navigator.sendBeacon(url, blob)` or `fetch(url, { method: 'POST', body, keepalive: true })`",
+        "correct": true,
+        "why": "Both let the browser finish the request after the page has gone. An ordinary `fetch` can be cancelled when the document unloads."
+      },
+      {
+        "id": "C",
+        "text": "In `beforeunload`, `await fetch(...)` the batch; the browser waits for the promise before closing the tab",
+        "correct": false,
+        "why": "The browser does not wait for promises in unload-time handlers, so the request can be cancelled part way through."
+      },
+      {
+        "id": "D",
+        "text": "Send with `sendBeacon` and retry the batch whenever the server returns an error status",
+        "correct": false,
+        "why": "`sendBeacon` returns only a boolean saying whether the browser queued the data. You never see the server's response, so you can't retry based on it."
+      },
+      {
+        "id": "E",
+        "text": "Send the batch with a synchronous `XMLHttpRequest` inside the `unload` handler",
+        "correct": false,
+        "why": "Chrome blocks synchronous XHR during page dismissal, and even where it runs it delays the navigation."
+      }
+    ],
+    "explanation": "Losing the last events is the most common bug in hand-written analytics SDKs. MDN recommends flushing when the page becomes hidden and sending with `sendBeacon` or `fetch` with `keepalive`, which the browser completes in the background. The trade-off: these requests are fire-and-forget and size-limited (keepalive bodies share a quota of about 64 KB), so final batches must stay small.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Navigator/sendBeacon",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://learnersbucket.com/tech/frontend-interview-process-at-atlassian/",
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:rx-analytics-sdk-batching"
+  },
+  {
+    "id": "RCT-IQ6-RND-001",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Two DOM trees, `rootA` and `rootB`, have identical structure. Given `target`, an element inside `rootA`, return the element at the same position inside `rootB`. Elements can have identical tags, classes and text. Which function is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction findMatch(rootA, rootB, target) {\n  const path = [];\n  for (let n = target; n !== rootA; n = n.parentElement) {\n    path.push(Array.prototype.indexOf.call(n.parentElement.children, n));\n  }\n  let m = rootB;\n  for (let i = path.length - 1; i >= 0; i--) m = m.children[path[i]];\n  return m;\n}\n```",
+        "correct": true,
+        "why": "It records the child index at each level from the target up to the root, then replays the path from the root down, which is the reverse of the order it was recorded in."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction findMatch(rootA, rootB, target) {\n  const path = [];\n  for (let n = target; n !== rootA; n = n.parentElement) {\n    path.push(Array.prototype.indexOf.call(n.parentElement.children, n));\n  }\n  let m = rootB;\n  for (let i = 0; i < path.length; i++) m = m.children[path[i]];\n  return m;\n}\n```",
+        "correct": false,
+        "why": "The indices are recorded leaf first but replayed from the root in the same order. The path has to be reversed, so this walks down the wrong branch or runs off the tree."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction findMatch(rootA, rootB, target) {\n  const selector = target.tagName.toLowerCase() +\n    (target.className ? '.' + target.className.split(' ').join('.') : '');\n  return rootB.querySelector(selector);\n}\n```",
+        "correct": false,
+        "why": "It returns the first element with the same tag and classes. When several elements look alike, such as list items or table cells, it returns the wrong one."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction findMatch(rootA, rootB, target) {\n  // visit every element of rootB in document order\n  const walker = document.createTreeWalker(rootB, NodeFilter.SHOW_ELEMENT);\n  for (let n = walker.currentNode; n; n = walker.nextNode()) {\n    if (n.isEqualNode(target)) return n;\n  }\n  return null;\n}\n```",
+        "correct": false,
+        "why": "`isEqualNode` compares content, not position, so it returns the first look-alike element in document order. It also scans the whole tree."
+      }
+    ],
+    "explanation": "Because the trees have the same shape, a node is fully identified by its path of child indices from the root. Walk up from the target recording the index among its parent's `children`, then walk down the other tree in reverse order. Time is proportional to depth times sibling count, and extra space to depth. Interviewers like this question because it leads into how React identifies elements by position and key during reconciliation.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Element/children",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://www.frontendinterviewhandbook.com/companies/meta-front-end-interview-questions"
+      ],
+      "companies": [
+        "Flipkart",
+        "Intuit",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-dom-tree-matching"
+  },
+  {
+    "id": "RCT-IQ6-RND-002",
+    "domain": 1,
+    "skill": "rendering",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Follow-up on finding the matching node in two identical DOM trees by recording the child-index path from the target to the root and replaying it on the other tree. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "It looks only at the nodes on the path and their siblings, never at the whole tree, and its extra memory grows with the depth",
+        "correct": true,
+        "why": "Each step up scans one sibling list to find an index, and the path stores one number per level."
+      },
+      {
+        "id": "B",
+        "text": "It identifies a node by its position under each parent, which is also how React matches children of the same type when no `key` is given",
+        "correct": true,
+        "why": "Without keys, React compares children index by index. Keys let it match by identity instead, which is why inserting at the front of an unkeyed list hands state to the wrong components."
+      },
+      {
+        "id": "C",
+        "text": "Using `childNodes` on one tree and `children` on the other is fine, because both list only elements",
+        "correct": false,
+        "why": "`childNodes` also includes text and comment nodes, so its indices differ from `children`. Both walks must use the same list."
+      },
+      {
+        "id": "D",
+        "text": "It first needs a map from every node in `rootA` to its index, built by traversing the whole tree",
+        "correct": false,
+        "why": "No map is needed; each index is computed on the way up from the target."
+      },
+      {
+        "id": "E",
+        "text": "It still finds the right node if `rootB` has an extra wrapper element around its first child",
+        "correct": false,
+        "why": "The method relies on identical structure. An extra wrapper shifts the path, so the replay lands on a different node."
+      }
+    ],
+    "explanation": "The path idea is a compact way to reason about position in a tree. Interviewers follow up with complexity and with how it maps to React: reconciliation matches elements by type and by position within the parent unless a `key` gives them a stable identity.",
+    "reference": "https://react.dev/learn/preserving-and-resetting-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://roundz.substack.com/p/flipkart-interview-experience-frontend-engineer-sde2",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://www.frontendinterviewhandbook.com/companies/meta-front-end-interview-questions"
+      ],
+      "companies": [
+        "Flipkart",
+        "Intuit",
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-dom-tree-matching"
+  },
+  {
+    "id": "RCT-IQ6-PRF-001",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing a Netflix-style player. Users on patchy mobile networks see long buffering stalls at a fixed high quality, and the product team wants the next episode to start instantly. Which design addresses both?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use adaptive streaming (HLS or DASH) so quality switches per segment, and prefetch the next episode's first segments near the end",
+        "correct": true,
+        "why": "Adaptive bitrate picks the quality of each next segment from measured throughput and buffer level, and fetching only the start of the next episode is cheap."
+      },
+      {
+        "id": "B",
+        "text": "Serve one high-quality MP4 per episode, and add a hidden `<video preload=\"auto\">` element that starts loading the next episode in the background",
+        "correct": false,
+        "why": "A single file can't adapt when the network changes, and preloading a second high-bitrate file competes with the current stream for bandwidth."
+      },
+      {
+        "id": "C",
+        "text": "Read `navigator.connection.effectiveType` when playback starts and choose a low, medium or high quality MP4 file for the rest of the episode",
+        "correct": false,
+        "why": "The quality is chosen once and never adapts mid-episode, and the Network Information API is not available in Safari or Firefox."
+      },
+      {
+        "id": "D",
+        "text": "Wrap the player in `React.memo` and keep playback state in a ref, so React re-renders less while the video is buffering",
+        "correct": false,
+        "why": "The stalls come from the network and the media buffer, not from React rendering, so fewer re-renders won't stop them."
+      }
+    ],
+    "explanation": "Adaptive bitrate streaming (HLS or MPEG-DASH) splits a video into short segments encoded at several quality levels and lists them in a manifest. The player measures download speed and buffer health and picks the level for each next segment. Safari plays HLS natively; elsewhere players such as hls.js or Shaka use Media Source Extensions. On the UI side, keep high-frequency player state (current time, buffered ranges) out of React's render path, and prefetch the next item at low priority. Interviewers want the streaming concept named and the bandwidth cost of preloading considered.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Media_Source_Extensions_API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design",
+        "https://namastedev.com/topics/frontend-system-design/what-is-asked-in-frontend-system-design-interviews"
+      ]
+    },
+    "source": "interview:rx-sd-video-streaming"
+  },
+  {
+    "id": "RCT-IQ6-STM-005",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing the frontend of an Outlook-style email client. The inbox holds 50,000 messages. Marking a message as read must instantly update the folder's unread badge, the bold row in the list and the open reading pane. Which design fits?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Normalise messages by id in one store (cached in IndexedDB), virtualise the list, and mark as read optimistically with rollback",
+        "correct": true,
+        "why": "All three views read the same message entity, so one optimistic write updates them together, and virtualisation keeps only the visible rows in the DOM."
+      },
+      {
+        "id": "B",
+        "text": "Let the sidebar, the list and the reading pane each fetch their own data, and refetch all three after the mark-as-read request succeeds",
+        "correct": false,
+        "why": "Three copies of the same message drift apart, and nothing changes on screen until a round trip plus three refetches have finished."
+      },
+      {
+        "id": "C",
+        "text": "Load all 50,000 messages into state, render every row wrapped in `React.memo`, and recompute the unread badge from that array",
+        "correct": false,
+        "why": "`memo` avoids re-rendering rows, but 50,000 rows are still 50,000 sets of DOM nodes to create, lay out and keep in memory."
+      },
+      {
+        "id": "D",
+        "text": "Cache every message in `localStorage` and recompute the unread badge by reading it back on each render",
+        "correct": false,
+        "why": "`localStorage` is synchronous, holds only strings and is limited to about 5 MB, so it blocks the main thread and can't hold a large mailbox."
+      }
+    ],
+    "explanation": "An email client is a normalisation exercise: messages and threads stored once by id, folder views holding ordered id lists, counts derived from (or kept alongside) the entities, and a virtualised list for large folders. Optimistic updates make actions feel instant, and IndexedDB gives an asynchronous offline cache that survives reloads. Interviewers want one source of truth that every view reads from.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design",
+        "https://www.greatfrontend.com/interviews/company/microsoft/questions-guides"
+      ],
+      "companies": [
+        "Microsoft"
+      ]
+    },
+    "source": "interview:rx-sd-email-client"
+  },
+  {
+    "id": "RCT-IQ6-PRF-002",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A CSV import parses and aggregates 200,000 rows synchronously in a click handler. It takes about 1.5 seconds, and typing in the search box freezes for that whole time. Which two changes keep the page responsive? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Move the parsing and aggregation into a Web Worker and post the result back to the main thread",
+        "correct": true,
+        "why": "The work runs on another thread, so the main thread stays free to handle input and render."
+      },
+      {
+        "id": "B",
+        "text": "Process the rows in chunks and yield to the main thread between chunks, for example with `scheduler.yield()` or `setTimeout`",
+        "correct": true,
+        "why": "Between chunks the browser can run pending input events and paint, so typing stays responsive even though the total work is the same."
+      },
+      {
+        "id": "C",
+        "text": "Wrap the parsing call in `startTransition`",
+        "correct": false,
+        "why": "Transitions make React rendering interruptible. They can't interrupt a single 1.5-second JavaScript function, which still blocks the thread."
+      },
+      {
+        "id": "D",
+        "text": "Wrap the computation in `useMemo` so it runs only when the file changes",
+        "correct": false,
+        "why": "It still runs on the main thread whenever the file changes, so each import freezes the page just the same."
+      },
+      {
+        "id": "E",
+        "text": "Make the click handler an `async` function",
+        "correct": false,
+        "why": "An async function runs synchronously until its first `await`. With no `await` before the loop, the work still blocks the thread."
+      }
+    ],
+    "explanation": "JavaScript that blocks the main thread can only be fixed by moving it off the thread or breaking it into pieces. `startTransition` and `useDeferredValue` help when the slow part is React rendering (many components to re-render), because React can pause between components. Interviewers ask this to see whether you can tell computation cost apart from rendering cost.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md",
+        "https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers",
+        "https://www.greatfrontend.com/blog/50-reactjs-interview-questions-for-experienced"
+      ],
+      "companies": [
+        "Intuit"
+      ]
+    },
+    "source": "interview:rx-expensive-computation-responsive"
+  },
+  {
+    "id": "RCT-IQ6-PRF-003",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A component sets each card's height from its width after rendering:\n\n```js\nuseLayoutEffect(() => {\n  cardRefs.current.forEach((el) => {\n    el.style.height = el.offsetWidth * 0.75 + 'px';\n  });\n}, [cards]);\n```\n\nWith 300 cards this is slow on low-end phones. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Each `offsetWidth` read follows a style write, so the browser may recalculate layout once per card; reading every width first and then writing every height needs only one layout",
+        "correct": true,
+        "why": "Reading a layout property after a write forces a synchronous layout. Separating all reads from all writes removes the repeated work, which is known as layout thrashing."
+      },
+      {
+        "id": "B",
+        "text": "Animating `transform` or `opacity` can skip layout and often paint, while animating `width` or `top` triggers layout on every frame",
+        "correct": true,
+        "why": "Transform and opacity can be handled by the compositor; geometry properties make the browser recompute layout for each frame."
+      },
+      {
+        "id": "C",
+        "text": "React batches DOM reads and writes, so layout thrashing can't happen inside a React effect",
+        "correct": false,
+        "why": "React batches its own DOM mutations during commit. Your effect's reads and writes are plain DOM calls that run in the order you write them."
+      },
+      {
+        "id": "D",
+        "text": "Changing an element's `color` triggers a reflow of the whole page",
+        "correct": false,
+        "why": "A colour change needs only a repaint; the geometry doesn't change."
+      },
+      {
+        "id": "E",
+        "text": "Moving the code into `useEffect` removes the reflow cost",
+        "correct": false,
+        "why": "The same forced layouts happen, just after paint, and users may now see the cards jump to their new heights."
+      }
+    ],
+    "explanation": "Reflow (layout) recomputes geometry, repaint redraws pixels, and compositing moves already-painted layers. Reading `offsetWidth`, `getBoundingClientRect()` and similar properties after a write forces a synchronous layout, and doing that in a loop is layout thrashing. Batch reads before writes, or let CSS do the work: `aspect-ratio: 4 / 3` removes the JavaScript here entirely.",
+    "reference": "https://web.dev/articles/avoid-large-complex-layouts-and-layout-thrashing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.com.mx/Entrevista/Razorpay-Entrevista-E1146550-RVW51997359.htm",
+        "https://leetcode.com/discuss/post/8359475/zomato-sde-1-ui-interview-experience-by-84krj/"
+      ],
+      "companies": [
+        "Razorpay",
+        "Zomato"
+      ]
+    },
+    "source": "interview:rx-reflow-repaint"
+  },
+  {
+    "id": "RCT-IQ6-PAT-006",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 4,
+    "roleLevel": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "The backend sends page layouts such as `[{ type: 'Banner', props: {...} }, { type: 'Carousel', props: {...} }]`, and the client renders them. Some users run a cached older bundle that has no `Carousel` component. Which design is safest?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Map types to components through a client registry, skip and log unknown types, validate props, and version the schema the client supports",
+        "correct": true,
+        "why": "Components stay in the reviewed client bundle, unknown types degrade gracefully instead of crashing, and versioning lets the server avoid sending blocks an old client can't render."
+      },
+      {
+        "id": "B",
+        "text": "Look up `registry[block.type]` and render it directly, because the server team promises never to send a type that the client bundle doesn't have yet",
+        "correct": false,
+        "why": "An unknown type gives `undefined` as the element type, and React throws \"Element type is invalid\", taking down the page unless an error boundary catches it."
+      },
+      {
+        "id": "C",
+        "text": "Have the server send each component's source code as a string, and turn it into a component on the client with `new Function`",
+        "correct": false,
+        "why": "Running server-sent code is a script-injection risk, is blocked by a strict CSP, and skips bundling, type checking and code review."
+      },
+      {
+        "id": "D",
+        "text": "Have the server render each block to an HTML string, and insert it on the client with `dangerouslySetInnerHTML`",
+        "correct": false,
+        "why": "The blocks lose interactivity and React state, and any content that isn't escaped becomes an XSS hole."
+      }
+    ],
+    "explanation": "Server-driven UI lets the backend change layouts without an app release. Its risks are version skew and trust: old clients receive types they don't know, and payloads can be malformed. A safe design keeps components in the client bundle, maps types through a registry with a fallback, validates props, versions the schema, and wraps each block in an error boundary so one bad block doesn't break the page. Staff-level interviewers ask specifically about the version-skew risk.",
+    "reference": "https://react.dev/reference/react/lazy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Meesho.md",
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/OpenEnvoy.md"
+      ],
+      "companies": [
+        "Meesho",
+        "OpenEnvoy"
+      ]
+    },
+    "source": "interview:rx-config-driven-ui"
+  },
+  {
+    "id": "RCT-IQ6-STM-006",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 4,
+    "roleLevel": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing the client data model for a calendar. A daily 9:00 standup in London time repeats with no end date. A user moves only this Thursday's occurrence to 10:00 and deletes next Friday's. Which model handles this?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Store the series once (rule, start, time zone) plus exceptions for deleted and moved dates; expand only the visible range, in that time zone",
+        "correct": true,
+        "why": "This is the iCalendar model (RRULE, EXDATE, RECURRENCE-ID). An endless series stays one record, single-day edits stay local, and expanding in the event's zone keeps 9:00 at 9:00 across clock changes."
+      },
+      {
+        "id": "B",
+        "text": "Generate every occurrence for the next two years as a separate event record when the series is created, and edit or delete those records directly",
+        "correct": false,
+        "why": "An endless series can't be fully stored, and changing the whole series later means rewriting hundreds of rows."
+      },
+      {
+        "id": "C",
+        "text": "Store only the rule, and change the rule itself whenever the user edits a single occurrence",
+        "correct": false,
+        "why": "Changing the rule changes every occurrence. A one-day edit needs an exception, not a new rule."
+      },
+      {
+        "id": "D",
+        "text": "Store the rule, and expand the occurrences for the visible range by repeatedly adding 24 hours in UTC to the series' first start time",
+        "correct": false,
+        "why": "When London's clocks change between GMT and BST, adding 24 UTC hours moves the standup to 8:00 or 10:00 local time. Expansion has to happen in the event's time zone."
+      }
+    ],
+    "explanation": "The iCalendar standard (RFC 5545) models recurrence as a master event with an RRULE, EXDATE entries for deleted occurrences, and override instances identified by RECURRENCE-ID. The frontend expands occurrences only for the week or month on screen (libraries such as rrule.js do this) and caches the result per range. Interviewers want the store-the-rule idea, exceptions, and time-zone-aware expansion.",
+    "reference": "https://datatracker.ietf.org/doc/html/rfc5545",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/8359475/zomato-sde-1-ui-interview-experience-by-84krj/",
+        "https://prachub.com/positions/frontend-engineer/categories/system-design",
+        "https://www.frontendinterviewhandbook.com/companies/uber-front-end-interview-questions"
+      ],
+      "companies": [
+        "Snowflake",
+        "Uber",
+        "Zomato"
+      ]
+    },
+    "source": "interview:rx-sd-calendar"
+  },
+  {
+    "id": "RCT-IQ6-STM-007",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 3,
+    "roleLevel": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "A calendar's day view places overlapping events side by side. The layout sorts events by start time and puts each one in the first column whose last event has already ended (end ≤ start), opening a new column if none is free. Events that overlap, directly or through a chain, form one group and share the width equally across the group's columns.\n\n```\nP   9:00 – 10:00\nQ   9:30 – 10:30\nR  10:00 – 11:00\nS  10:15 – 10:45\n```\n\nWhich columns do the events get, and how wide is each one?",
+    "options": [
+      {
+        "id": "A",
+        "text": "P → column 1, Q → column 2, R → column 1, S → column 3; one group of three columns, so each event is one third wide",
+        "correct": true,
+        "why": "R reuses column 1 because P ends exactly when R starts. At 10:15 both column 1 (R) and column 2 (Q, until 10:30) are busy, so S opens column 3. Q links all four events into one group."
+      },
+      {
+        "id": "B",
+        "text": "P → column 1, Q → column 2, R → column 3, S → column 4; each event is a quarter wide",
+        "correct": false,
+        "why": "R can reuse column 1, because P ends at 10:00 and the rule is end ≤ start. Only three columns are needed."
+      },
+      {
+        "id": "C",
+        "text": "P → column 1, Q → column 2, R → column 1, S → column 2; each event is half wide",
+        "correct": false,
+        "why": "At 10:15, column 2 still holds Q until 10:30, so S can't go there and needs a third column."
+      },
+      {
+        "id": "D",
+        "text": "P and Q form one group of two columns (half width each), and R and S form a separate group of two columns (half width each)",
+        "correct": false,
+        "why": "Q runs until 10:30, so it overlaps R and S and chains all four events into one group. Splitting them would draw Q on top of S."
+      }
+    ],
+    "explanation": "Greedy column packing (sort by start, first free column) is the standard approach to calendar layout and is what interviewers expect you to describe. The width comes from the number of columns in the connected group of overlapping events, not from how many events overlap at one instant. Treat end = start as \"not overlapping\", or back-to-back meetings will be squeezed for no reason.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/8359475/zomato-sde-1-ui-interview-experience-by-84krj/",
+        "https://prachub.com/positions/frontend-engineer/categories/system-design",
+        "https://www.frontendinterviewhandbook.com/companies/uber-front-end-interview-questions"
+      ],
+      "companies": [
+        "Snowflake",
+        "Uber",
+        "Zomato"
+      ]
+    },
+    "source": "interview:rx-sd-calendar"
+  },
+  {
+    "id": "RCT-IQ6-PRF-004",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing an Excalidraw-style whiteboard. A board can hold 20,000 shapes, panning and zooming must stay close to 60 fps, and a click must select the shape under the pointer. Which rendering plan fits?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Draw the visible shapes from a plain data model to a `<canvas>` on animation frames, hit-test with a spatial index, and keep React for the other UI",
+        "correct": true,
+        "why": "Canvas cost scales with what you draw, not with a DOM node per shape. A spatial index (grid, quadtree or R-tree) finds the shape under the pointer without checking all 20,000."
+      },
+      {
+        "id": "B",
+        "text": "Render each shape as an SVG element from React state, wrap every shape component in `React.memo`, and rely on the browser's own hit testing for clicks",
+        "correct": false,
+        "why": "Fine for hundreds of shapes, but 20,000 SVG nodes are expensive to lay out, style and keep in memory, and a zoom touches every one of them."
+      },
+      {
+        "id": "C",
+        "text": "Render each shape as an absolutely positioned `<div>`, and pan by updating every div's `left` and `top` on each pointer move",
+        "correct": false,
+        "why": "Tens of thousands of DOM nodes plus layout-triggering properties on every pan frame will fall far below 60 fps."
+      },
+      {
+        "id": "D",
+        "text": "Render shapes as SVG, but virtualise them like a long list, so only the shapes in the currently visible rows are mounted",
+        "correct": false,
+        "why": "List virtualisation assumes one-dimensional scrolling through rows. Zoomed out, the whole board is visible at once, so there is nothing to cull."
+      }
+    ],
+    "explanation": "DOM and SVG give you events, accessibility and CSS for free, but each shape costs a node. Canvas (or WebGL for very large scenes) draws pixels from your own model, so performance depends on what is drawn rather than on node count; in exchange you own hit testing, usually with a spatial index. Canvas-based tools such as Excalidraw keep React for toolbars, panels and the text-editing overlay.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/system-design",
+        "https://www.frontendinterviewhandbook.com/front-end-system-design"
+      ]
+    },
+    "source": "interview:rx-sd-drawing-tool"
+  },
+  {
+    "id": "RCT-IQ6-PRF-005",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 5,
+    "type": "multi",
+    "select": 2,
+    "stem": "You lead performance for a React app built by six teams. Which two statements about budgets and monitoring are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "A standard Lighthouse page-load run makes no real interactions, so it reports Total Blocking Time instead of INP; field data (RUM via the `web-vitals` library, or CrUX) shows what real users get, judged at the 75th percentile",
+        "correct": true,
+        "why": "Lab data is repeatable and good for catching regressions; field data reflects real devices, networks and interactions. You need both."
+      },
+      {
+        "id": "B",
+        "text": "Per-route JavaScript size budgets can be enforced in CI, for example with size-limit or Lighthouse CI assertions, so a pull request that exceeds them fails",
+        "correct": true,
+        "why": "Automated budgets stop regressions before they ship, which matters when many teams add code to the same bundle."
+      },
+      {
+        "id": "C",
+        "text": "A Lighthouse score of 95 on a developer's laptop means the site will pass Core Web Vitals in the field",
+        "correct": false,
+        "why": "A lab run uses one device profile and no real interactions. Real users' devices and networks differ, so field results can be much worse."
+      },
+      {
+        "id": "D",
+        "text": "First Input Delay (FID) is the Core Web Vital for responsiveness",
+        "correct": false,
+        "why": "INP replaced FID as a Core Web Vital in March 2024. FID measured only the delay before the first interaction was handled."
+      },
+      {
+        "id": "E",
+        "text": "Core Web Vitals are assessed on the mean of all page loads",
+        "correct": false,
+        "why": "They are assessed at the 75th percentile, so most users, not just the average, get a good experience."
+      }
+    ],
+    "explanation": "A performance programme combines budgets that fail the build (bundle size, Lighthouse CI thresholds), lab testing for repeatable checks, and real-user monitoring of LCP, INP and CLS at the 75th percentile, broken down by route and device. At staff level, interviewers look for ownership too: dashboards per team and alerts when a release moves the field numbers.",
+    "reference": "https://web.dev/articles/vitals",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.fr/Entretien/Atlassian-Entretien-E115699-RVW77534475.htm",
+        "https://www.interviewkickstart.com/interview-questions/advanced-reactjs-interview-questions"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:rx-perf-budgets-monitoring"
+  },
+  {
+    "id": "RCT-IQ6-STM-008",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 1,
+    "roleLevel": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A client-only (Vite) app saves the theme in `localStorage` when the user toggles it. Users who chose dark mode see a white flash on every reload before the page turns dark. Why?\n\n```jsx\nfunction App() {\n  const [theme, setTheme] = useState('light');\n\n  useEffect(() => {\n    setTheme(localStorage.getItem('theme') ?? 'light');\n  }, []);\n\n  function toggle() {\n    const next = theme === 'light' ? 'dark' : 'light';\n    setTheme(next);\n    localStorage.setItem('theme', next);\n  }\n\n  return <div className={theme}>{/* ... */}</div>;\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "The first render paints with `'light'`; the effect reads the saved theme only after that paint and re-renders with `'dark'`",
+        "correct": true,
+        "why": "Effects run after the commit, normally after the browser has painted, so the light version is briefly visible. Reading the value in a lazy initialiser, `useState(() => localStorage.getItem('theme') ?? 'light')`, makes the first render dark."
+      },
+      {
+        "id": "B",
+        "text": "`localStorage.getItem` is asynchronous, so the saved value arrives a moment after the first render",
+        "correct": false,
+        "why": "`localStorage` is synchronous. The delay comes from when the effect runs, not from the storage API."
+      },
+      {
+        "id": "C",
+        "text": "React Strict Mode renders the component twice, and users see the first of the two renders in light mode",
+        "correct": false,
+        "why": "Strict Mode's double render happens only in development and is never painted separately, yet production users see the flash too."
+      },
+      {
+        "id": "D",
+        "text": "The empty dependency array makes the effect run after every render, so the theme keeps switching back and forth between the two values",
+        "correct": false,
+        "why": "An empty array runs the effect once after mount. The theme changes once, from light to dark."
+      }
+    ],
+    "explanation": "Effects run after the browser paints, so state that must be right on the first frame should be read before the first render. In a client-only app, use a lazy initialiser for `useState`. In a server-rendered app (Next.js), `localStorage` doesn't exist on the server, so the usual fix is a small inline script in `<head>` that sets a class or `data-theme` on `<html>` before the page paints, with CSS variables driving the colours.",
+    "reference": "https://react.dev/reference/react/useState#avoiding-recreating-the-initial-state",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ],
+      "companies": [
+        "Flipkart",
+        "Swiggy"
+      ]
+    },
+    "source": "interview:rx-mc-theme-toggle"
+  },
+  {
+    "id": "RCT-IQ6-PRF-006",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A circle (`position: fixed`) follows the pointer. On mid-range phones it lags, because the component re-renders on every `pointermove`. The component has:\n\n```jsx\nconst dotRef = useRef(null);\nconst move = (x, y) => {\n  dotRef.current.style.transform = `translate(${x}px, ${y}px)`;\n};\n```\n\nWhich handler moves the circle at most once per frame, without re-rendering?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nconst frame = useRef(0);\nconst last = useRef({ x: 0, y: 0 });\nuseEffect(() => () => cancelAnimationFrame(frame.current), []);\n\nfunction onPointerMove(e) {\n  last.current = { x: e.clientX, y: e.clientY };\n  if (frame.current) return;\n  frame.current = requestAnimationFrame(() => {\n    frame.current = 0;\n    move(last.current.x, last.current.y);\n  });\n}\n```",
+        "correct": true,
+        "why": "Each event only stores the latest position. At most one animation frame is pending, and it applies the newest position with a `transform` written through the ref, so React never re-renders."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nconst [pos, setPos] = useState({ x: 0, y: 0 });\n\nfunction onPointerMove(e) {\n  setPos({ x: e.clientX, y: e.clientY });\n}\n// <div className=\"dot\" style={{ left: pos.x, top: pos.y }} />\n```",
+        "correct": false,
+        "why": "This is the original problem: a re-render for every event, and it animates `left` and `top`, which trigger layout."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nconst onPointerMove = useMemo(\n  () => debounce((e) => move(e.clientX, e.clientY), 16),\n  []\n);\n```",
+        "correct": false,
+        "why": "Debounce waits for the events to stop. While the pointer keeps moving the circle stays still, then jumps when the pointer rests. Following needs throttling, not debouncing."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nfunction onPointerMove(e) {\n  setTimeout(() => move(e.clientX, e.clientY), 16);\n}\n```",
+        "correct": false,
+        "why": "Every event schedules its own timer, so no update is skipped; each position is still applied, just 16 ms late."
+      }
+    ],
+    "explanation": "Pointer events can fire faster than the screen refreshes. Throttle them to the frame rate with `requestAnimationFrame`, keep only the latest position, and write a compositor-friendly `transform` straight to the DOM through a ref, so React doesn't render 60 or more times a second. The same pattern works for drag handles, sliders and scroll-linked effects.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://leetcode.com/discuss/post/6334442/swiggy-sde-1-frontend-interview-experience"
+      ],
+      "companies": [
+        "Swiggy"
+      ]
+    },
+    "source": "interview:rx-mc-mouse-follow"
+  },
+  {
+    "id": "RCT-IQ6-RSC-001",
+    "domain": 4,
+    "skill": "server-components",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a Next.js App Router project (version 15 or later), you need a page at `/blog/:slug`, for example `/blog/hello-world`, that shows the slug. Which file and component are correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`app/blog/[slug]/page.tsx`:\n\n```tsx\nexport default async function Page({\n  params,\n}: {\n  params: Promise<{ slug: string }>;\n}) {\n  const { slug } = await params;\n  return <h1>{slug}</h1>;\n}\n```",
+        "correct": true,
+        "why": "A folder in square brackets defines the dynamic segment and `page.tsx` makes it routable. Since Next.js 15, `params` is a promise that the page awaits."
+      },
+      {
+        "id": "B",
+        "text": "`app/blog/[slug].tsx` with the same component",
+        "correct": false,
+        "why": "In the App Router, folders define segments and only a `page` file makes a segment routable. `[slug].tsx` is the Pages Router convention and is ignored under `app/`."
+      },
+      {
+        "id": "C",
+        "text": "`app/blog/[...slug]/page.tsx`:\n\n```tsx\nexport default async function Page({ params }) {\n  const { slug } = await params;\n  return <h1>{slug}</h1>;\n}\n```",
+        "correct": false,
+        "why": "A catch-all segment also matches `/blog/a/b`, and `slug` is an array of segments such as `['hello-world']`, not a string."
+      },
+      {
+        "id": "D",
+        "text": "`app/blog/[slug]/page.tsx`:\n\n```tsx\n'use client';\nimport { useRouter } from 'next/router';\n\nexport default function Page() {\n  const { query } = useRouter();\n  return <h1>{query.slug as string}</h1>;\n}\n```",
+        "correct": false,
+        "why": "`next/router` belongs to the Pages Router. App Router pages receive `params` as a prop, and Client Components can call `useParams` from `next/navigation`."
+      }
+    ],
+    "explanation": "App Router routing is folder-based: each folder is a URL segment, `[name]` makes a dynamic segment, `[...name]` a catch-all, and a `page.tsx` inside the folder makes the route public (with `layout.tsx` wrapping it). Since Next.js 15, `params` is a promise that you `await` in a Server Component or unwrap with `use` in a Client Component. Interviewers ask this to check you know which router's conventions you are using.",
+    "reference": "https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.geeksforgeeks.org/interview-experiences/ez-works-frontend-developer-interview-experience-rounds-1-2/"
+      ],
+      "companies": [
+        "EZ Works"
+      ]
+    },
+    "source": "interview:rx-nextjs-routing"
+  },
+  {
+    "id": "RCT-IQ6-EFF-004",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A button can be clicked 5 times; then it is disabled for 3 seconds and resets. Testers report that if the parent re-renders during the lock, the count sometimes resets a second time while they are already clicking again. Which fix is correct?\n\n```jsx\nfunction LimitedButton() {\n  const [clicks, setClicks] = useState(0);\n  const locked = clicks >= 5;\n\n  if (locked) {\n    setTimeout(() => setClicks(0), 3000);\n  }\n\n  return (\n    <button disabled={locked} onClick={() => setClicks((c) => c + 1)}>\n      {locked ? 'Wait…' : `${5 - clicks} clicks left`}\n    </button>\n  );\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove the timer from the render body and add:\n\n```jsx\nuseEffect(() => {\n  if (!locked) return;\n  const id = setTimeout(() => setClicks(0), 3000);\n  return () => clearTimeout(id);\n}, [locked]);\n```",
+        "correct": true,
+        "why": "One timer per lock period, started after commit and cleared on unmount. The effect re-runs only when `locked` changes, so extra renders don't add timers."
+      },
+      {
+        "id": "B",
+        "text": "Remove the timer from the render body and add:\n\n```jsx\nuseEffect(() => {\n  if (locked) setTimeout(() => setClicks(0), 3000);\n});\n```",
+        "correct": false,
+        "why": "With no dependency array this runs after every render, so a parent re-render during the lock still starts another timer, and nothing clears the timers."
+      },
+      {
+        "id": "C",
+        "text": "Remove the timer from the render body and add:\n\n```jsx\nuseEffect(() => {\n  if (!locked) return;\n  const id = setTimeout(() => setClicks(0), 3000);\n  return () => clearTimeout(id);\n}, []);\n```",
+        "correct": false,
+        "why": "With `[]` the effect runs only on mount, when `locked` is false, so the button never unlocks."
+      },
+      {
+        "id": "D",
+        "text": "Keep the timer in the render body, but store it in a ref and clear the previous one first:\n\n```jsx\nconst timer = useRef(null);\nif (locked) {\n  clearTimeout(timer.current);\n  timer.current = setTimeout(() => setClicks(0), 3000);\n}\n```",
+        "correct": false,
+        "why": "This avoids duplicate timers, but every render during the lock restarts the 3-second wait. Side effects in render are also unsafe: React may render without committing, and nothing clears the timer on unmount."
+      }
+    ],
+    "explanation": "Starting a timer is a side effect, so it belongs in an effect or an event handler, never in the render body. Render can run many times (parent updates, the extra Strict Mode render), and each run would start another timer. Tie the timer to the state that needs it (`[locked]`) and clear it in the cleanup.",
+    "reference": "https://react.dev/learn/synchronizing-with-effects",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/shrutikapoor08/react-coding-interview-questions"
+      ]
+    },
+    "source": "interview:rx-mc-click-limit-button"
+  },
+  {
+    "id": "RCT-IQ6-JSX-001",
+    "domain": 1,
+    "skill": "jsx-components",
+    "difficulty": 2,
+    "roleLevel": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You are asked to implement a `classnames`-style helper. This call must return `'btn active lg icon'`:\n\n```js\ncx('btn', { active: true, disabled: false }, ['lg', null, ['icon']], 0, undefined);\n```\n\nWhich implementation does that?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction cx(...args) {\n  const out = [];\n  for (const a of args) {\n    if (!a) continue;\n    if (typeof a === 'string' || typeof a === 'number') out.push(a);\n    else if (Array.isArray(a)) {\n      const inner = cx(...a);\n      if (inner) out.push(inner);\n    } else if (typeof a === 'object') {\n      for (const key of Object.keys(a)) if (a[key]) out.push(key);\n    }\n  }\n  return out.join(' ');\n}\n```",
+        "correct": true,
+        "why": "Falsy values are skipped, arrays recurse (so nested arrays and `null` inside them are handled), and objects contribute only keys with truthy values."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst cx = (...args) => args.filter(Boolean).join(' ');\n```",
+        "correct": false,
+        "why": "It works for plain strings only. The object becomes `[object Object]` and the array becomes `lg,,icon`, giving `'btn [object Object] lg,,icon'`."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction cx(...args) {\n  return args\n    .flat(Infinity)\n    .filter(Boolean)\n    .map((a) => (typeof a === 'object' ? Object.keys(a).join(' ') : a))\n    .join(' ');\n}\n```",
+        "correct": false,
+        "why": "Flattening handles the arrays, but objects add every key regardless of its value, so `disabled` appears: `'btn active disabled lg icon'`."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction cx(...args) {\n  return args\n    .filter(Boolean)\n    .map((a) =>\n      Array.isArray(a) ? a.join(' ')\n      : typeof a === 'object' ? Object.keys(a).filter((k) => a[k]).join(' ')\n      : a\n    )\n    .join(' ');\n}\n```",
+        "correct": false,
+        "why": "Arrays are joined without filtering or recursion. `null` becomes an empty string, giving a double space (`'btn active lg  icon'`), and an object inside an array would print as `[object Object]`."
+      }
+    ],
+    "explanation": "The helper has to handle each argument type: truthy strings and numbers are kept, arrays recurse, objects contribute the keys whose values are truthy, and everything falsy is skipped. Interviewers look for the recursive array case and for honouring `false` values in the object form. In real projects, `clsx` or `classnames` does this in a few hundred bytes.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/Element/classList",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/meta/questions-guides"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "source": "interview:rx-classnames-utility"
+  },
+  {
+    "id": "RCT-IQ6-EFF-005",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A toast system: new toasts stack, each one disappears after 4 seconds, and its close button removes it at once. The provider is:\n\n```jsx\nfunction ToastProvider({ children }) {\n  const [toasts, setToasts] = useState([]);\n  const dismiss = useCallback(\n    (id) => setToasts((ts) => ts.filter((t) => t.id !== id)),\n    []\n  );\n  const show = useCallback((msg) => {\n    setToasts((ts) => [...ts, { id: crypto.randomUUID(), msg }]);\n  }, []);\n  // provides show through context and renders:\n  // toasts.map((t) => <Toast key={t.id} {...t} onClose={dismiss} />)\n}\n```\n\nWhich way of adding the auto-dismiss is correct, even while new toasts keep arriving?",
+    "options": [
+      {
+        "id": "A",
+        "text": "In `Toast`:\n\n```jsx\nuseEffect(() => {\n  const timer = setTimeout(() => onClose(id), 4000);\n  return () => clearTimeout(timer);\n}, [id, onClose]);\n```",
+        "correct": true,
+        "why": "Each toast owns one timer. `id` and the memoised `onClose` never change, so the timer isn't restarted by other toasts, and the cleanup clears it when the toast is closed early or unmounted."
+      },
+      {
+        "id": "B",
+        "text": "In `Toast`:\n\n```jsx\nuseEffect(() => {\n  const timer = setTimeout(() => onClose(id), 4000);\n  return () => clearTimeout(timer);\n});\n```",
+        "correct": false,
+        "why": "Without a dependency array the effect re-runs after every render, and each toast re-renders whenever the provider's list changes. Every new toast restarts the other toasts' timers, so under a steady stream none of them disappears."
+      },
+      {
+        "id": "C",
+        "text": "In the provider's `show` (still memoised with `[]`):\n\n```jsx\nconst id = crypto.randomUUID();\nsetToasts((ts) => [...ts, { id, msg }]);\nsetTimeout(() => setToasts(toasts.filter((t) => t.id !== id)), 4000);\n```",
+        "correct": false,
+        "why": "`show` is created once, so `toasts` is always the empty array from the first render. When the first timer fires it sets the list to `[]`, wiping every toast on screen."
+      },
+      {
+        "id": "D",
+        "text": "In the provider, ids come from the list length, and `Toast` uses the effect with cleanup and `[id, onClose]`:\n\n```jsx\nsetToasts((ts) => [...ts, { id: ts.length, msg }]);\n```",
+        "correct": false,
+        "why": "Length-based ids repeat after a dismissal: with toasts 0, 1 and 2, closing 0 and adding one more gives a second toast with id 2. Keys collide, and dismissing id 2 removes both."
+      }
+    ],
+    "explanation": "Each toast should own its timer in an effect with a cleanup, with dependencies that stay stable (`id` and a memoised `onClose`). The cleanup covers both an early manual close and the provider unmounting. The two classic bugs are stale closures inside timers (use functional updates) and effects that restart because a dependency changes on every render. Expose `show` through a `useToast` hook and render the stack through a portal so it sits above the page.",
+    "reference": "https://react.dev/learn/synchronizing-with-effects",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://learnersbucket.com/interview/headout-sde3-lead-frontend-interview-questions-2026/"
+      ],
+      "companies": [
+        "Headout"
+      ]
+    },
+    "source": "interview:rx-mc-toast"
+  },
+  {
+    "id": "RCT-IQ6-STA-002",
+    "domain": 2,
+    "skill": "state-updates",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A form lets users add and remove phone-number rows:\n\n```jsx\nconst [rows, setRows] = useState([{ id: 1, value: '' }]);\nconst add = () => setRows((r) => [...r, { id: r.length + 1, value: '' }]);\nconst remove = (id) => setRows((r) => r.filter((row) => row.id !== id));\n// rows.map((row) => <PhoneRow key={row.id} row={row} onRemove={remove} />)\n```\n\nThe user adds two rows (ids 1, 2 and 3), removes row 1, then clicks Add. What goes wrong?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The new row also gets id 3, so two rows share a key and removing either one removes both",
+        "correct": true,
+        "why": "After the removal the list has two rows, so `r.length + 1` is 3 again. Duplicate keys confuse reconciliation, and `filter` drops every row with that id."
+      },
+      {
+        "id": "B",
+        "text": "Nothing, because an id only has to be unique at the moment the row is created",
+        "correct": false,
+        "why": "An id must stay unique for as long as the rows exist. `r.length + 1` hands out 3 again while row 3 is still in the list."
+      },
+      {
+        "id": "C",
+        "text": "The new row gets id 2, so it takes over the state of row 2",
+        "correct": false,
+        "why": "After removing row 1 the list has two rows, so the new id is 3, not 2. Row 2 is still present and unaffected."
+      },
+      {
+        "id": "D",
+        "text": "React re-mounts every row because the list of keys changed, so all the values typed so far are lost",
+        "correct": false,
+        "why": "Rows 2 and 3 keep their keys and their state. The problem is the duplicate key, not a full re-mount."
+      }
+    ],
+    "explanation": "Rows in a dynamic field array need an id that is generated once and never reused, such as `crypto.randomUUID()` or a counter kept in a ref, not the array length or index. React Hook Form's `useFieldArray` generates these ids for you. Interviewers often ask this right after the index-as-key question, because length-based ids look stable but aren't.",
+    "reference": "https://react.dev/learn/rendering-lists#rules-of-keys",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/blog/50-reactjs-interview-questions-for-experienced"
+      ]
+    },
+    "source": "interview:rx-dynamic-field-arrays"
+  },
+  {
+    "id": "RCT-IQ6-JSX-002",
+    "domain": 1,
+    "skill": "jsx-components",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A controlled phone input formats digits as `98765 43210` on every change:\n\n```jsx\nconst [value, setValue] = useState('');\n\n<input\n  type=\"tel\"\n  value={value}\n  onChange={(e) => setValue(formatPhone(e.target.value))}\n/>\n```\n\nWhen the user corrects a digit in the middle, the caret jumps to the end. Which fix keeps the caret where the user was typing?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Count the digits before the caret in `onChange`; after the re-render, put the caret back after that many digits with `setSelectionRange` in `useLayoutEffect`",
+        "correct": true,
+        "why": "Counting digits maps the caret through the spaces the formatter adds or removes, and a layout effect restores it after React writes the new value but before the browser paints."
+      },
+      {
+        "id": "B",
+        "text": "In `onChange`, save `e.target.selectionStart` as `start` and call `e.target.setSelectionRange(start, start)` right before calling `setValue` with the formatted value",
+        "correct": false,
+        "why": "React writes the formatted value to the input after the handler, and replacing the value moves the caret to the end again. The raw index would also be off by any spaces the formatter changes."
+      },
+      {
+        "id": "C",
+        "text": "Switch to `type=\"number\"` so that the browser manages the caret itself",
+        "correct": false,
+        "why": "A number input can't show the space, so the formatting is lost, and `setSelectionRange` throws on number inputs."
+      },
+      {
+        "id": "D",
+        "text": "Debounce `setValue` by 300 ms so that the formatting only happens after the user stops typing",
+        "correct": false,
+        "why": "A controlled input that isn't updated in `onChange` snaps back to the old value, so typed digits vanish until the debounce fires, and the caret still jumps when it does."
+      }
+    ],
+    "explanation": "When a controlled input's value is replaced by a different string, the browser moves the caret to the end. Inputs that format as you type (phone, card number, currency) must carry the caret through the formatting: remember how many meaningful characters were before it, and restore it after commit. `useLayoutEffect` runs before paint, so the user never sees the jump. Libraries such as react-number-format do exactly this.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/setSelectionRange",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://bigfrontend.dev/react"
+      ]
+    },
+    "source": "interview:rx-phone-input-format"
+  },
+  {
+    "id": "RCT-IQ6-HKS-002",
+    "domain": 2,
+    "skill": "hooks-advanced",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Implement `useIdle(ms)`: it returns `true` after `ms` milliseconds with no pointer, keyboard, touch or wheel activity, and `false` again as soon as there is activity. Which implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nfunction useIdle(ms) {\n  const [idle, setIdle] = useState(false);\n  useEffect(() => {\n    const events = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'];\n    let timer;\n    const reset = () => {\n      setIdle(false);\n      clearTimeout(timer);\n      timer = setTimeout(() => setIdle(true), ms);\n    };\n    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));\n    reset();\n    return () => {\n      clearTimeout(timer);\n      events.forEach((e) => window.removeEventListener(e, reset));\n    };\n  }, [ms]);\n  return idle;\n}\n```",
+        "correct": true,
+        "why": "Every activity clears the pending timeout and starts a new one. The cleanup removes the same `reset` function that was added and clears the last timer."
+      },
+      {
+        "id": "B",
+        "text": "```js\nfunction useIdle(ms) {\n  const [idle, setIdle] = useState(false);\n  useEffect(() => {\n    const events = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'];\n    let timer;\n    const reset = () => {\n      setIdle(false);\n      timer = setTimeout(() => setIdle(true), ms);\n    };\n    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));\n    reset();\n    return () => {\n      clearTimeout(timer);\n      events.forEach((e) => window.removeEventListener(e, reset));\n    };\n  }, [ms]);\n  return idle;\n}\n```",
+        "correct": false,
+        "why": "Earlier timeouts are never cancelled, so the one started by the first activity still fires `ms` later and marks the user idle while they are busy."
+      },
+      {
+        "id": "C",
+        "text": "```js\nfunction useIdle(ms) {\n  const [idle, setIdle] = useState(false);\n  useEffect(() => {\n    const events = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'];\n    let timer;\n    const reset = () => {\n      setIdle(false);\n      clearTimeout(timer);\n      timer = setTimeout(() => setIdle(true), ms);\n    };\n    events.forEach((e) => window.addEventListener(e, () => reset(), { passive: true }));\n    reset();\n    return () => {\n      clearTimeout(timer);\n      events.forEach((e) => window.removeEventListener(e, () => reset()));\n    };\n  }, [ms]);\n  return idle;\n}\n```",
+        "correct": false,
+        "why": "`removeEventListener` needs the same function that was added. Each arrow function is new, so nothing is removed: listeners pile up whenever `ms` changes and keep calling `setIdle` after unmount."
+      },
+      {
+        "id": "D",
+        "text": "```js\nfunction useIdle(ms) {\n  const [idle, setIdle] = useState(false);\n  useEffect(() => {\n    let timer;\n    const reset = () => {\n      setIdle(false);\n      clearTimeout(timer);\n      timer = setTimeout(() => setIdle(true), ms);\n    };\n    window.addEventListener('click', reset);\n    reset();\n    return () => {\n      clearTimeout(timer);\n      window.removeEventListener('click', reset);\n    };\n  }, [ms]);\n  return idle;\n}\n```",
+        "correct": false,
+        "why": "Only clicks count as activity, so a user who is typing, scrolling with the wheel or moving the pointer is reported as idle."
+      }
+    ],
+    "explanation": "An idle detector is a resettable timer: each activity event clears the pending timeout and starts a new one. The cleanup must remove the exact listener functions and clear the last timer. `setIdle(false)` on every pointer move is cheap, because React bails out when the value is unchanged. A common follow-up is sharing activity across tabs with `BroadcastChannel` or `storage` events.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/questions/react-interview-questions"
+      ]
+    },
+    "source": "interview:rx-useidle"
+  },
+  {
+    "id": "RCT-IQ6-PAT-007",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `<Typeahead>` debounces input by 300 ms, then calls the mocked `searchApi(query)`, which resolves to `['react', 'redux']`; each suggestion renders with `role=\"option\"`. You need a test that types `rea`, waits for the suggestions, and checks that exactly one request was made. Which test is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\ntest('shows suggestions', async () => {\n  const user = userEvent.setup();\n  render(<Typeahead />);\n  await user.type(screen.getByRole('combobox'), 'rea');\n  expect(await screen.findByRole('option', { name: 'react' })).toBeInTheDocument();\n  expect(searchApi).toHaveBeenCalledTimes(1);\n  expect(searchApi).toHaveBeenCalledWith('rea');\n});\n```",
+        "correct": true,
+        "why": "Typing is awaited, `findByRole` retries until the debounced request has resolved and the option appears, and the call assertions check the debounce."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\ntest('shows suggestions', async () => {\n  const user = userEvent.setup();\n  render(<Typeahead />);\n  await user.type(screen.getByRole('combobox'), 'rea');\n  expect(screen.getByRole('option', { name: 'react' })).toBeInTheDocument();\n  expect(searchApi).toHaveBeenCalledTimes(1);\n});\n```",
+        "correct": false,
+        "why": "`getByRole` checks immediately, but the suggestions appear only after the 300 ms debounce and the resolved request, so it throws. Async results need a `findBy…` query or `waitFor`."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\ntest('shows suggestions', async () => {\n  const user = userEvent.setup();\n  render(<Typeahead />);\n  await user.type(screen.getByRole('combobox'), 'rea');\n  expect(await screen.findByRole('option', { name: 'react' })).toBeInTheDocument();\n  expect(searchApi).toHaveBeenCalledTimes(3);\n});\n```",
+        "correct": false,
+        "why": "It expects one request per keystroke. With a working debounce, quick typing produces a single call with `'rea'`, so this fails against correct code and would pass only if the debounce were broken."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\ntest('shows suggestions', async () => {\n  vi.useFakeTimers();\n  const user = userEvent.setup();\n  render(<Typeahead />);\n  await user.type(screen.getByRole('combobox'), 'rea');\n  vi.advanceTimersByTime(300);\n  expect(await screen.findByRole('option', { name: 'react' })).toBeInTheDocument();\n  expect(searchApi).toHaveBeenCalledTimes(1);\n});\n```",
+        "correct": false,
+        "why": "With fake timers, user-event's own delays between keystrokes never elapse, because nothing advances the clock while `user.type` is waiting, so the test hangs until it times out."
+      }
+    ],
+    "explanation": "A good component test drives the UI the way a user does (`userEvent`), queries by role, waits for asynchronous UI with `findBy…`, and asserts on observable effects such as calls to the mocked API. If you do switch to fake timers, pass `advanceTimers` to `userEvent.setup()`. Interviewers who ask you to test the component you just built look for exactly these waiting and assertion choices.",
+    "reference": "https://testing-library.com/docs/dom-testing-library/api-async/#findby-queries",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/Intuit.md"
+      ],
+      "companies": [
+        "Intuit"
+      ]
+    },
+    "source": "interview:rx-write-tests-for-component"
+  },
+  {
+    "id": "RCT-IQ6-EFF-006",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 2,
+    "roleLevel": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are adding a D3 bar chart to a React component. The chart must redraw when `data` changes, two charts on the same page must not interfere, and React must not fight D3 over the same DOM nodes. Which integration is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```jsx\nfunction BarChart({ data }) {\n  const svgRef = useRef(null);\n  useEffect(() => {\n    d3.select(svgRef.current)\n      .selectAll('rect')\n      .data(data)\n      .join('rect')\n      .attr('x', (d, i) => i * 22)\n      .attr('y', (d) => 100 - d)\n      .attr('width', 20)\n      .attr('height', (d) => d);\n  }, [data]);\n  return <svg ref={svgRef} width={400} height={100} />;\n}\n```",
+        "correct": true,
+        "why": "React renders only the empty `<svg>`; D3 owns its children and updates them through the data join each time `data` changes. The ref scopes D3 to this component's own node."
+      },
+      {
+        "id": "B",
+        "text": "```jsx\nfunction BarChart({ data }) {\n  d3.select('#chart')\n    .selectAll('rect')\n    .data(data)\n    .join('rect')\n    .attr('height', (d) => d);\n  return <svg id=\"chart\" width={400} height={100} />;\n}\n```",
+        "correct": false,
+        "why": "It runs during render, before the `<svg>` exists on the first render, so the first chart is empty. Render must stay free of DOM side effects, and a fixed id breaks with two charts."
+      },
+      {
+        "id": "C",
+        "text": "```jsx\nfunction BarChart({ data }) {\n  useEffect(() => {\n    d3.select('svg')\n      .selectAll('rect')\n      .data(data)\n      .join('rect')\n      .attr('height', (d) => d);\n  }, [data]);\n  return <svg width={400} height={100} />;\n}\n```",
+        "correct": false,
+        "why": "`d3.select('svg')` finds the first `<svg>` in the whole document, which may be an icon or another chart. A ref ties the code to this component's node."
+      },
+      {
+        "id": "D",
+        "text": "```jsx\nfunction BarChart({ data }) {\n  const svgRef = useRef(null);\n  useEffect(() => {\n    const g = d3.select(svgRef.current).append('g');\n    g.selectAll('rect')\n      .data(data)\n      .join('rect')\n      .attr('x', (d, i) => i * 22)\n      .attr('y', (d) => 100 - d)\n      .attr('width', 20)\n      .attr('height', (d) => d);\n  }, []);\n  return <svg ref={svgRef} width={400} height={100} />;\n}\n```",
+        "correct": false,
+        "why": "With `[]` the chart is drawn once from the first `data` and never updates. Each run also appends a new `<g>` with no cleanup, so Strict Mode's extra setup in development draws the bars twice."
+      }
+    ],
+    "explanation": "There are two sound patterns. Either D3 owns a DOM subtree that React leaves empty (a ref plus an effect that re-runs when the data changes and cleans up anything it appends outside the join), or D3 is used only for the maths (scales, shapes, layouts) and React renders the SVG elements. What to avoid is both libraries changing the same nodes. Interviewers use this to see how you integrate any imperative library: charts, maps or rich-text editors.",
+    "reference": "https://react.dev/learn/manipulating-the-dom-with-refs",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://raw.githubusercontent.com/saumyadip25/Frontend-Interview-Experiences/HEAD/ServiceNow.md"
+      ],
+      "companies": [
+        "ServiceNow"
+      ]
+    },
+    "source": "interview:rx-d3-integration"
+  },
+  {
+    "id": "RCT-IQ6-EFF-007",
+    "domain": 2,
+    "skill": "effects",
+    "difficulty": 3,
+    "roleLevel": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A popover inside a scrollable card uses `position: absolute` and gets cut off, because the card has `overflow: hidden`. Which two changes fix it? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Render the popover with `createPortal` into `document.body`, so the card's overflow no longer clips it",
+        "correct": true,
+        "why": "The portal moves the DOM node outside the clipping ancestor while keeping it in the same place in the React tree, so context and state still work."
+      },
+      {
+        "id": "B",
+        "text": "Position it from the trigger's `getBoundingClientRect()` with `position: fixed`, measured in `useLayoutEffect` and updated on scroll and resize",
+        "correct": true,
+        "why": "Viewport coordinates match `position: fixed`, measuring before paint avoids a visible jump, and the listeners keep it attached to the trigger while the page scrolls."
+      },
+      {
+        "id": "C",
+        "text": "Give the popover `z-index: 9999`",
+        "correct": false,
+        "why": "`z-index` controls stacking order, not clipping. An `overflow: hidden` ancestor still cuts the popover off."
+      },
+      {
+        "id": "D",
+        "text": "Keep it inside the card but switch to `position: fixed`, because a fixed element always escapes its ancestors",
+        "correct": false,
+        "why": "Not always: an ancestor with `transform`, `filter` or `contain` becomes the containing block for fixed elements, so the popover is positioned and clipped relative to it. A portal is the reliable fix."
+      },
+      {
+        "id": "E",
+        "text": "Avoid portals, because events from portaled content stop bubbling to the React parent, so `onClick` handlers above it won't fire",
+        "correct": false,
+        "why": "React propagates events through the React tree, not the DOM tree, so portaled content still bubbles to its React ancestors."
+      }
+    ],
+    "explanation": "Popovers, tooltips and menus are clipped by any ancestor with `overflow` other than `visible`. The standard fix is to portal them to the body and position them from the trigger's viewport rectangle, measuring in `useLayoutEffect` so the first paint is already correct, then flipping or shifting when there isn't room. Floating UI packages this logic, but interviewers want to hear why each step is needed.",
+    "reference": "https://react.dev/reference/react-dom/createPortal",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/sanchit0496/reactjs-machine-coding-challenges"
+      ]
+    },
+    "source": "interview:rx-mc-popover"
+  },
+  {
+    "id": "RCT-IQ6-PRF-007",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A book reader keeps at most `LIMIT` decoded pages in memory (3 in this example). Readers jump around, so the least recently viewed page should be evicted first. After this sequence the cache should hold pages 2, 5 and 1:\n\n```js\nset(5, p5); set(9, p9); set(2, p2);\nget(5);      // page 5 viewed again\nset(1, p1);  // over the limit: evict one page\n```\n\nWhich implementation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```js\nconst pages = new Map();\nconst get = (n) => {\n  if (!pages.has(n)) return undefined;\n  const page = pages.get(n);\n  pages.delete(n);\n  pages.set(n, page);\n  return page;\n};\nconst set = (n, page) => {\n  pages.delete(n);\n  pages.set(n, page);\n  if (pages.size > LIMIT) pages.delete(pages.keys().next().value);\n};\n```",
+        "correct": true,
+        "why": "A `Map` keeps insertion order, and every access moves the page to the end. The first key is always the least recently used, so page 9 is evicted, leaving 2, 5 and 1."
+      },
+      {
+        "id": "B",
+        "text": "```js\nconst pages = new Map();\nconst get = (n) => pages.get(n);\nconst set = (n, page) => {\n  pages.delete(n);\n  pages.set(n, page);\n  if (pages.size > LIMIT) pages.delete(pages.keys().next().value);\n};\n```",
+        "correct": false,
+        "why": "Reading a page doesn't refresh its position, so this is first-in, first-out. Page 5 is evicted even though it was just viewed, leaving 9, 2 and 1."
+      },
+      {
+        "id": "C",
+        "text": "```js\nconst pages = {};\nconst get = (n) => {\n  if (!(n in pages)) return undefined;\n  const page = pages[n];\n  delete pages[n];\n  pages[n] = page;\n  return page;\n};\nconst set = (n, page) => {\n  delete pages[n];\n  pages[n] = page;\n  const keys = Object.keys(pages);\n  if (keys.length > LIMIT) delete pages[keys[0]];\n};\n```",
+        "correct": false,
+        "why": "Integer-like keys of a plain object are listed in ascending numeric order, not insertion order. `keys[0]` is the smallest page number, so the page just added (1) is evicted, leaving 2, 5 and 9."
+      },
+      {
+        "id": "D",
+        "text": "```js\nconst pages = new Map();\nconst get = (n) => {\n  if (!pages.has(n)) return undefined;\n  const page = pages.get(n);\n  pages.delete(n);\n  pages.set(n, page);\n  return page;\n};\nconst set = (n, page) => {\n  pages.delete(n);\n  pages.set(n, page);\n  if (pages.size > LIMIT) pages.delete([...pages.keys()].pop());\n};\n```",
+        "correct": false,
+        "why": "The last key is the page that was just inserted, so each new page is thrown away as soon as the cache is full. This leaves 9, 2 and 5."
+      }
+    ],
+    "explanation": "Because a `Map` remembers insertion order, deleting and re-inserting on every access turns it into an LRU cache with constant-time operations. Around the cache, the reader prefetches neighbouring pages and aborts those requests if the user jumps far away. Interviewers look for the eviction policy, its cost, and awareness of the plain-object key-ordering trap.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://learnersbucket.com/interview/dream11-sde2-frontend-interview-experience/"
+      ],
+      "companies": [
+        "Dream11"
+      ]
+    },
+    "source": "interview:rx-sd-book-reader"
+  },
+  {
+    "id": "RCT-IQ6-PAT-008",
+    "domain": 4,
+    "skill": "patterns-testing",
+    "difficulty": 3,
+    "roleLevel": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You are adding feature flags to a React app. A new checkout button sits behind a flag that is off for most users, and the flags API takes about 400 ms. The requirements: no blank screen while flags load, no flash of the unreleased button, and no layout shift. Which design meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A `FlagProvider` seeded with safe defaults (or flags bootstrapped by the server) that fetches once and exposes `useFlag(name)`; gated slots reserve space",
+        "correct": true,
+        "why": "The first render uses safe or server-supplied values, every component reads the same source, and reserved space prevents a shift when a variant appears."
+      },
+      {
+        "id": "B",
+        "text": "Render nothing at all until the flags request has finished, and then render the whole app in one go",
+        "correct": false,
+        "why": "Users stare at a blank screen for the length of the request, which delays Largest Contentful Paint on every visit."
+      },
+      {
+        "id": "C",
+        "text": "Default every flag to `true` until the response arrives, and then hide whichever of the features turn out to be disabled for this particular user",
+        "correct": false,
+        "why": "Users briefly see, and can click, unreleased features, and the layout shifts when they disappear."
+      },
+      {
+        "id": "D",
+        "text": "Have each gated component fetch `/flags` in its own `useEffect` and render its variant once the response arrives",
+        "correct": false,
+        "why": "Every component makes its own request, the responses arrive at different times, and parts of the page can disagree about the same flag."
+      }
+    ],
+    "explanation": "Feature flags need one source of truth (a provider or store), safe defaults and a loading strategy. The best first paint comes from evaluating flags on the server or bootstrapping them into the page, so the first render already shows the right variant; the client then keeps them fresh. Interviewers look for no flicker, consistent values across the page, and a clean API such as `useFlag`.",
+    "reference": "https://react.dev/learn/passing-data-deeply-with-context",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.greatfrontend.com/interviews/company/atlassian/questions-guides"
+      ],
+      "companies": [
+        "Atlassian"
+      ]
+    },
+    "source": "interview:rx-feature-flags"
+  },
+  {
+    "id": "RCT-IQ6-STM-009",
+    "domain": 4,
+    "skill": "state-management",
+    "difficulty": 2,
+    "roleLevel": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "An interviewer asks when you would choose Redux Toolkit over Zustand. Which two statements are accurate? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "text": "Zustand's `create` returns a hook and needs no Provider; a component that uses a selector such as `useStore((s) => s.count)` re-renders only when that selected value changes",
+        "correct": true,
+        "why": "The store lives outside React, and each selector subscription compares its result with `Object.is`, so unrelated updates don't re-render the component."
+      },
+      {
+        "id": "B",
+        "text": "Redux Toolkit is more structured: slices with Immer-powered reducers, standard middleware, RTK Query for server data and Redux DevTools action history, which helps large teams keep one pattern",
+        "correct": true,
+        "why": "These conventions and tools are the main reason to pick Redux Toolkit on big codebases with many contributors."
+      },
+      {
+        "id": "C",
+        "text": "Zustand state can only be read and updated from inside React components",
+        "correct": false,
+        "why": "`useStore.getState()` and `useStore.setState()` work anywhere, for example in an API helper or a WebSocket handler."
+      },
+      {
+        "id": "D",
+        "text": "Redux Toolkit reducers must still use spread syntax, because mutating `state` inside a reducer is always a bug",
+        "correct": false,
+        "why": "`createSlice` uses Immer, so \"mutating\" the draft state is the intended style and still produces an immutable update."
+      },
+      {
+        "id": "E",
+        "text": "Calling `useStore()` with no selector re-renders the component only when the fields it actually reads change",
+        "correct": false,
+        "why": "Without a selector, the component subscribes to the whole state and re-renders on every change."
+      }
+    ],
+    "explanation": "Both are external stores that React reads through `useSyncExternalStore`. Zustand is minimal: a hook-based store, selectors, and optional middleware (including devtools and persist). Redux Toolkit is more opinionated and brings conventions and tooling that pay off in large codebases. A good answer weighs team size, the need for strict patterns, and how much server state is already handled by a data-fetching library.",
+    "reference": "https://redux-toolkit.js.org/introduction/getting-started",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.interviewkickstart.com/interview-questions/advanced-reactjs-interview-questions"
+      ]
+    },
+    "source": "interview:rx-redux-vs-zustand"
+  },
+  {
+    "id": "RCT-IQ6-PRF-008",
+    "domain": 3,
+    "skill": "performance",
+    "difficulty": 4,
+    "roleLevel": 5,
+    "type": "single",
+    "select": 1,
+    "stem": "A logistics dashboard must show 100 million GPS points on a map, from the whole country down to street level, without freezing the page. Which approach works?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Aggregate on the server into per-zoom tiles (clusters or density bins), load only the tiles in view, and draw with WebGL or canvas",
+        "correct": true,
+        "why": "Data is reduced before it reaches the browser, the client loads only what the viewport needs, and the GPU draws thousands of points per frame without DOM nodes."
+      },
+      {
+        "id": "B",
+        "text": "Fetch all of the points once on page load, and render each one as a React marker component wrapped in `React.memo` to skip re-renders",
+        "correct": false,
+        "why": "Hundreds of millions of points can't be downloaded or held in memory, and one DOM node per point is impossible at this scale; `memo` doesn't reduce the node count."
+      },
+      {
+        "id": "C",
+        "text": "Fetch all the points and virtualise the markers, so that only the ones inside the current viewport are mounted",
+        "correct": false,
+        "why": "At country zoom every point is inside the viewport, so virtualisation culls nothing, and the download is still gigabytes."
+      },
+      {
+        "id": "D",
+        "text": "Render one SVG `<circle>` per point and add `will-change: transform` so that the GPU handles them",
+        "correct": false,
+        "why": "`will-change` promotes layers, but it doesn't remove the cost of creating, styling and hit-testing millions of SVG nodes."
+      }
+    ],
+    "explanation": "At this scale the answer is mostly not about React. Reduce the data before it reaches the browser (server-side tiling, clustering or binning per zoom level, as vector-tile services do), send only what the viewport needs, and draw with the GPU using WebGL libraries such as deck.gl or MapLibre, decoding tiles in a Web Worker. React stays in charge of controls, filters and tooltips. Staff-level interviewers look for the data-reduction step, not just a faster renderer.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://prachub.com/positions/frontend-engineer/categories/system-design"
+      ],
+      "companies": [
+        "Google"
+      ]
+    },
+    "source": "interview:rx-sd-huge-dataset"
+  }
+]
