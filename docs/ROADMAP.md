@@ -125,3 +125,40 @@ stays out of the main app.
    snapshots sent to the proctoring service.
 4. Review dashboard and a risk score.
 5. Optional lockdown desktop client for high-stakes exams.
+
+## 4. Real interview questions and role levels
+
+Agreed on 14 October 2026. The first banks tested knowledge well but did not
+always ask what interviewers actually ask. We keep every existing question and
+add questions researched from real interviews.
+
+**Role levels.** Every question now has a role level, separate from difficulty:
+L1 Fresher (0–1 yrs), L2 Junior/SDE-1 (1–3), L3 Mid/SDE-2 (3–5), L4 Senior/SDE-3
+(5–8) and L5 Staff/Lead (8+). Questions that test deep understanding rather
+than common interview asks were moved to L4–L5. Questions reported as asked in
+interviews carry `asked` with how common they are and up to five source links.
+
+**Process per subject** (briefs in `docs/interview-research/`):
+1. Research first-hand interview reports (GeeksforGeeks, LeetCode Discuss,
+   Glassdoor, Blind, dev.to and others) and curated lists (`BRIEF.md`).
+2. Merge into one catalog, tag every bank question, and plan the gaps
+   (`GAP-BRIEF.md`, output `<subject>.catalog.json`, `.tags.json`, `.gaps.md`).
+3. Write the missing questions as output, bug, implementation-choice or
+   scenario MCQs, each one run or compiled (`WRITE-BRIEF.md`).
+4. Apply tags with `npx tsx scripts/apply-interview-tags.ts <examId> <subject>`,
+   rebuild the interview room's list with `npx tsx scripts/build-interview-prompts.ts`.
+
+| Subject | Catalog | New questions | Bank now | Marked as asked |
+|---|---|---|---|---|
+| JavaScript | 263 | 190 | 688 | 487 |
+| TypeScript | 195 | 155 | 634 | 447 |
+| React | 223 | 231 | 720 | 570 |
+| Other 10 subjects | | | | Next, one at a time |
+
+**In the app:**
+- Mock and drill setup has a "Preparing for" role picker (questions up to that
+  level), and drills have a "Real interview questions only" switch.
+- New attempts prefer questions the learner hasn't seen in their last 15
+  attempts; shared challenges give each person their own order.
+- Frontend and full-stack AI interviews ask from a shortlist of researched real
+  questions for the candidate's level (`content/interview-prompts/frontend.json`).
