@@ -7,8 +7,9 @@ import type { ExamConfig, Question } from '@/lib/engine/types';
 
 const ALLOWED_FIELDS = new Set([
   'id', 'domain', 'skill', 'difficulty', 'type', 'select', 'stem', 'options', 'explanation', 'reference', 'source',
-  'answerOrder', 'prompts', 'accepted', 'caseId',
+  'answerOrder', 'prompts', 'accepted', 'caseId', 'roleLevel', 'asked',
 ]);
+const FREQUENCIES = ['very-common', 'common', 'occasional'];
 const TYPES = ['single', 'multi', 'truefalse', 'order', 'match', 'fill'];
 const LETTER_REF = /\b(option|answer|choice)s? [A-F]\b|\([A-F]\)/;
 
@@ -29,6 +30,17 @@ export function validateQuestion(exam: ExamConfig, q: Partial<Question> & Record
   else if (q.domain !== skill.domain) err(`domain ${q.domain} does not match skill domain ${skill.domain}`);
 
   if (![1, 2, 3, 4].includes(q.difficulty as number)) err('difficulty must be 1, 2, 3 or 4');
+  if (q.roleLevel != null && ![1, 2, 3, 4, 5].includes(q.roleLevel as number)) err('roleLevel must be 1 to 5');
+  if (q.asked != null) {
+    const a = q.asked as unknown as Record<string, unknown>;
+    if (!FREQUENCIES.includes(a.frequency as string)) err(`asked.frequency must be one of ${FREQUENCIES.join(', ')}`);
+    const ev = a.evidence;
+    if (!Array.isArray(ev) || !ev.length || ev.length > 5 || ev.some((u) => typeof u !== 'string' || !/^https?:\/\//.test(u))) {
+      err('asked.evidence must list 1 to 5 source URLs');
+    }
+    if (a.companies != null && (!Array.isArray(a.companies) || a.companies.some((c) => typeof c !== 'string'))) err('asked.companies must be a list of names');
+    for (const k of Object.keys(a)) if (!['frequency', 'evidence', 'companies'].includes(k)) err(`unknown field "asked.${k}"`);
+  }
   if (!TYPES.includes(q.type as string)) err(`type must be one of ${TYPES.join(', ')}`);
   if (typeof q.stem !== 'string' || q.stem.trim().length < 20) err('stem missing or too short');
   if (typeof q.explanation !== 'string' || q.explanation.trim().length < 20) err('explanation missing or too short');

@@ -47,6 +47,20 @@ export interface Question {
   accepted?: string[];
   /** questions sharing a case study show its scenario above the stem */
   caseId?: string | null;
+  /** the role this question is pitched at: 1 fresher, 2 junior, 3 mid, 4 senior, 5 staff/lead */
+  roleLevel?: RoleLevel | null;
+  /** set when the question (or the question it is built from) is reported as asked in real interviews */
+  asked?: AskedInInterviews | null;
+}
+
+export type RoleLevel = 1 | 2 | 3 | 4 | 5;
+
+export interface AskedInInterviews {
+  frequency: 'very-common' | 'common' | 'occasional';
+  /** up to five public sources (interview-experience posts, curated lists) */
+  evidence: string[];
+  /** companies the sources name, if any */
+  companies?: string[];
 }
 
 export interface Domain { id: number; name: string; weight: number }
