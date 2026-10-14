@@ -33,24 +33,25 @@ export function UsersTable({ selfId }: { selfId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
+      <div className="relative sm:max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or email" className="h-9 pl-9" aria-label="Search users" />
       </div>
+      {/* Below md each row is a card: name and email on the left, the role picker on the right. */}
       <div className="overflow-x-auto glass rounded-3xl">
-        <table className="w-full min-w-[36rem] text-left text-sm">
-          <thead className="border-b bg-wash text-xs text-muted-foreground">
+        <table className="w-full text-left text-sm max-md:block md:min-w-[36rem]">
+          <thead className="border-b bg-wash text-xs text-muted-foreground max-md:hidden">
             <tr><th className="px-4 py-2.5 font-medium">Name</th><th className="px-4 py-2.5 font-medium">Email</th><th className="px-4 py-2.5 font-medium">Joined</th><th className="px-4 py-2.5 font-medium">Role</th></tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y max-md:block">
             {isPending && !data
-              ? Array.from({ length: 5 }, (_, i) => <tr key={i}><td colSpan={4} className="px-4 py-3"><Skeleton className="h-5" /></td></tr>)
+              ? Array.from({ length: 5 }, (_, i) => <tr key={i} className="max-md:block"><td colSpan={4} className="px-4 py-3 max-md:block"><Skeleton className="h-5" /></td></tr>)
               : data?.map((u) => (
-                <tr key={u.id}>
-                  <td className="px-4 py-2.5 font-medium">{u.name}{u.id === selfId && <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{u.email}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{new Date(u.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}</td>
-                  <td className="px-4 py-2.5">
+                <tr key={u.id} className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-3 max-md:px-4 max-md:py-3">
+                  <td className="px-4 py-2.5 font-medium max-md:truncate max-md:p-0">{u.name}{u.id === selfId && <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground max-md:col-start-1 max-md:truncate max-md:p-0 max-md:text-xs">{u.email}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground max-md:hidden">{new Date(u.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}</td>
+                  <td className="px-4 py-2.5 max-md:col-start-2 max-md:row-span-2 max-md:row-start-1 max-md:p-0">
                     <Select value={u.role} disabled={u.id === selfId} onValueChange={(role) => setRole.mutate({ id: u.id, role: role as Row['role'] })}>
                       <SelectTrigger className="h-8 w-32" aria-label={`Role for ${u.name}`}><SelectValue /></SelectTrigger>
                       <SelectContent>

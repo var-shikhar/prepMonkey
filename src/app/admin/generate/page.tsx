@@ -23,7 +23,7 @@ export default async function AdminGeneratePage({ searchParams }: { searchParams
       {aiEnabled() ? (
         <GeneratorPanel exam={exam.config} />
       ) : (
-        <div className="rounded-2xl border border-dashed p-10 text-center">
+        <div className="rounded-2xl border border-dashed p-6 text-center sm:p-10">
           <KeyRound className="mx-auto size-9 text-primary" />
           <h2 className="mt-3 font-semibold">Connect an AI provider</h2>
           <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">

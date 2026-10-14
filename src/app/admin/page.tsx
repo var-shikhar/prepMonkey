@@ -35,7 +35,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <section className="glass rounded-3xl p-5">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-semibold"><AlertTriangle className="size-4 text-primary" /> Needs attention</h2>
             <Button asChild variant="ghost" size="sm"><Link href={q('flagged=1&sort=p')}>Review all <ArrowRight data-icon="inline-end" /></Link></Button>
           </div>
@@ -47,7 +47,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
             <ul className="divide-y">
               {flagged.map(([flag, n]) => (
                 <li key={flag} className="flex items-center justify-between gap-3 py-2.5">
-                  <span>
+                  <span className="min-w-0">
                     <span className="block text-sm font-medium">{FLAG_INFO[flag].label} · {n}</span>
                     <span className="text-xs text-muted-foreground">{FLAG_INFO[flag].hint}</span>
                   </span>

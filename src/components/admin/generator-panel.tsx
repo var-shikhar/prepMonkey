@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ExternalLink, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,6 +28,13 @@ export function GeneratorPanel({ exam }: { exam: ExamConfig }) {
   const [source, setSource] = useState('');
   const [instructions, setInstructions] = useState('');
   const [results, setResults] = useState<Result[]>([]);
+  const resultsRef = useRef<HTMLElement>(null);
+
+  // Below lg the results sit under the long form, out of sight; take the author to them.
+  const run = () => {
+    generate.mutate();
+    if (!window.matchMedia('(min-width: 1024px)').matches) resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const generate = useMutation({
     mutationFn: () => api.post<Result>('/api/admin/generate', {
@@ -59,14 +66,15 @@ export function GeneratorPanel({ exam }: { exam: ExamConfig }) {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Difficulty</Label>
-          <ToggleGroup type="single" variant="outline" value={difficulty} onValueChange={(v) => v && setDifficulty(v)} className="w-full">
-            {['1', '2', '3', '4'].map((l) => <ToggleGroupItem key={l} value={l} className="flex-1 text-xs">{exam.difficultyLevels[l]?.label ?? l}</ToggleGroupItem>)}
+          {/* Two by two: four labels like "Intermediate" don't fit one row of this narrow panel or a phone. */}
+          <ToggleGroup type="single" variant="outline" value={difficulty} onValueChange={(v) => v && setDifficulty(v)} className="grid w-full grid-cols-2">
+            {['1', '2', '3', '4'].map((l) => <ToggleGroupItem key={l} value={l} className="text-xs">{exam.difficultyLevels[l]?.label ?? l}</ToggleGroupItem>)}
           </ToggleGroup>
         </div>
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Question types</Label>
           {TYPES.map((t) => (
-            <label key={t.id} className="flex items-center gap-2 text-sm">
+            <label key={t.id} className="flex items-center gap-2 text-sm max-md:min-h-10">
               <Checkbox checked={types.includes(t.id)} onCheckedChange={(v) => setTypes((cur) => (v ? [...new Set([...cur, t.id])] : cur.filter((x) => x !== t.id)))} />
               {t.label}
             </label>
@@ -80,13 +88,13 @@ export function GeneratorPanel({ exam }: { exam: ExamConfig }) {
           <Label className="text-xs text-muted-foreground">Extra guidance (optional)</Label>
           <Textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g. focus on rate limits and retries" className="min-h-16 text-xs" maxLength={1000} />
         </div>
-        <Button variant="premium" className="w-full" disabled={!types.length || generate.isPending} onClick={() => generate.mutate()}>
+        <Button variant="premium" className="w-full" disabled={!types.length || generate.isPending} onClick={run}>
           {generate.isPending ? <Spinner /> : <Sparkles />} Generate drafts
         </Button>
         <p className="text-xs text-muted-foreground">Drafts never reach learners until someone reviews and publishes them.</p>
       </section>
 
-      <section className="space-y-4">
+      <section ref={resultsRef} className="scroll-mt-20 space-y-4">
         {generate.isPending && (
           <div className="space-y-3">{Array.from({ length: Number(count) > 3 ? 3 : Number(count) }, (_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}</div>
         )}
@@ -99,14 +107,15 @@ export function GeneratorPanel({ exam }: { exam: ExamConfig }) {
         {results.map((r, i) => (
           <div key={i} className="space-y-2">
             {r.created.map((c) => (
-              <div key={c.id} className="flex items-start gap-3 glass rounded-3xl p-4">
+              // On a phone the Review button drops below the stem instead of squeezing it.
+              <div key={c.id} className="flex flex-wrap items-start gap-3 glass rounded-3xl p-4">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[0.65rem] font-semibold">Draft</span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-mono text-[0.7rem] text-muted-foreground">{c.id} · {c.type}</p>
+                <div className="min-w-0 flex-1 basis-48">
+                  <p className="font-mono text-[0.7rem] break-all text-muted-foreground">{c.id} · {c.type}</p>
                   <p className="line-clamp-3 text-sm">{c.stem}</p>
-                  {c.warnings.map((w) => <p key={w} className="mt-1 flex items-center gap-1 text-xs text-cocoa dark:text-banana"><AlertTriangle className="size-3" />{w}</p>)}
+                  {c.warnings.map((w) => <p key={w} className="mt-1 flex items-start gap-1 text-xs text-cocoa dark:text-banana"><AlertTriangle className="mt-0.5 size-3 shrink-0" />{w}</p>)}
                 </div>
-                <Button asChild variant="outline" size="sm"><Link href={`/admin/questions/${encodeURIComponent(c.id)}?exam=${exam.id}`}><ExternalLink /> Review</Link></Button>
+                <Button asChild variant="outline" size="sm" className="max-sm:w-full"><Link href={`/admin/questions/${encodeURIComponent(c.id)}?exam=${exam.id}`}><ExternalLink /> Review</Link></Button>
               </div>
             ))}
             {r.rejected.map((x, j) => (
