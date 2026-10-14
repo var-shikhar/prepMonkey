@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Images run as root unless the Dockerfile sets `USER` or you pass `--user`. Without user namespace remapping, that root is UID 0 on the host kernel too, so a container escape lands as host root. Set a non-root `USER` in the image by default.",
-    "reference": "Docker docs: Dockerfile reference (USER)"
+    "reference": "Docker docs: Dockerfile reference (USER)",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "The Docker daemon runs as root and does whatever its API callers ask. A process that can reach the socket can run `docker run --privileged -v /:/host ...` and own the host. Treat socket access like root access, and use a narrowly scoped proxy or a different design (for example, a CI service with its own builder) if a container really needs to drive Docker.",
-    "reference": "Docker docs: Docker Engine security (daemon attack surface)"
+    "reference": "Docker docs: Docker Engine security (daemon attack surface)",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "A tag is a mutable pointer: the publisher, or an attacker with push access, can repoint `node:22` at different content. A digest is the SHA-256 of the manifest, so it always identifies the same bytes. Pin digests for reproducibility and supply-chain safety, and let a bot such as Renovate or Dependabot propose digest updates so you still receive patches.",
-    "reference": "Docker docs: Image digests"
+    "reference": "Docker docs: Image digests",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-004",
@@ -111,7 +114,8 @@
       "USER"
     ],
     "explanation": "`USER <name|uid>[:<group|gid>]` sets the user for the rest of the build and for the running container. Put it after creating the account and after steps that genuinely need root, such as package installs. `docker run --user` can still override it at runtime.",
-    "reference": "Docker docs: Dockerfile reference (USER)"
+    "reference": "Docker docs: Dockerfile reference (USER)",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-005",
@@ -148,7 +152,8 @@
       }
     ],
     "explanation": "`ENV` values are baked into the image configuration and shown by `docker image inspect` and `docker history`. Anyone who can pull the image can read them, and every container also exposes them to all its processes. Pass secrets at runtime as files (Compose or Swarm secrets, orchestrator secrets) and use BuildKit secret mounts during builds.",
-    "reference": "Docker docs: Build secrets"
+    "reference": "Docker docs: Build secrets",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-006",
@@ -199,7 +204,8 @@
       }
     ],
     "explanation": "Scanners such as Docker Scout and Trivy compare the image's packages with vulnerability databases. Seccomp filters system calls at the kernel boundary. cosign signs image digests so consumers can verify the publisher. `--pids-limit` caps the process count, which stops fork bombs from exhausting the host.",
-    "reference": "Docker docs: Docker Scout; Seccomp security profiles"
+    "reference": "Docker docs: Docker Scout; Seccomp security profiles",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-007",
@@ -236,7 +242,8 @@
       }
     ],
     "explanation": "`--read-only` mounts the container's root filesystem read-only. An attacker who gets code execution can't drop tools into `/usr/bin` or tamper with app files. Paths that genuinely need writes get explicit mounts, such as `--tmpfs /tmp` or a named volume for data.",
-    "reference": "Docker docs: docker container run (--read-only)"
+    "reference": "Docker docs: docker container run (--read-only)",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-008",
@@ -279,7 +286,8 @@
       }
     ],
     "explanation": "Shrinking what ships is one of the most effective hardening steps. A minimal or distroless base removes shells and package managers. A multi-stage build leaves compilers and build-only dependencies behind. Patch by rebuilding on an updated base image, not by changing containers at runtime.",
-    "reference": "Docker docs: Multi-stage builds; Building best practices"
+    "reference": "Docker docs: Multi-stage builds; Building best practices",
+    "roleLevel": 1
   },
   {
     "id": "DKR-SEC-009",
@@ -316,7 +324,8 @@
       }
     ],
     "explanation": "Linux splits root's powers into capabilities. `CAP_NET_BIND_SERVICE` grants only the right to bind privileged ports. Docker's security docs use it as the classic example: a web server can get this one capability instead of running as root.",
-    "reference": "Docker docs: Docker Engine security (Linux kernel capabilities)"
+    "reference": "Docker docs: Docker Engine security (Linux kernel capabilities)",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-010",
@@ -365,7 +374,8 @@
       }
     ],
     "explanation": "`--privileged` removes most of the isolation that makes a container a container. It grants all capabilities, exposes host devices and relaxes the default seccomp and AppArmor or SELinux restrictions. A root process inside can usually take over the host. Grant the specific capability or device a workload needs instead.",
-    "reference": "Docker docs: docker container run (--privileged)"
+    "reference": "Docker docs: docker container run (--privileged)",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-011",
@@ -402,7 +412,8 @@
       }
     ],
     "explanation": "Image layers are additive. The `rm` produces a new layer with a whiteout entry, but the `COPY` layer still holds the key, and anyone who pulls the image can unpack it. Use a BuildKit SSH mount (`RUN --mount=type=ssh`) or a secret mount, which expose credentials to one `RUN` step without writing them into any layer.",
-    "reference": "Docker docs: Build secrets"
+    "reference": "Docker docs: Build secrets",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-012",
@@ -439,7 +450,8 @@
       }
     ],
     "explanation": "BuildKit secret mounts make a secret available as a file (or an environment variable) during a single `RUN` instruction only. The secret is never stored in the image or in the build cache. Docker's docs call build arguments and environment variables inappropriate for secrets because they persist in the final image.",
-    "reference": "Docker docs: Build secrets (secret mounts)"
+    "reference": "Docker docs: Build secrets (secret mounts)",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-013",
@@ -464,7 +476,8 @@
       }
     ],
     "explanation": "The `USER` instruction is a default, not an enforcement mechanism. `docker run --user` (or `user:` in Compose) overrides it. Enforcing non-root therefore has to happen at the platform level too, for example with an admission policy in Kubernetes or by controlling who may run containers.",
-    "reference": "Docker docs: docker container run (--user)"
+    "reference": "Docker docs: docker container run (--user)",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-014",
@@ -501,7 +514,8 @@
       }
     ],
     "explanation": "Compose bind-mounts each secret as a single file at `/run/secrets/<secret_name>`. Applications read the file, often through a `*_FILE` variable convention such as `POSTGRES_PASSWORD_FILE`. Files avoid the leaks environment variables suffer: `docker inspect` output, crash dumps and child processes.",
-    "reference": "Docker docs: Secrets in Compose"
+    "reference": "Docker docs: Secrets in Compose",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-015",
@@ -536,7 +550,8 @@
       "D"
     ],
     "explanation": "Create the user and group first, because `COPY --chown` needs them to exist. Copy the app with the right ownership, so you don't need a separate `chown -R` layer that duplicates every file. Then switch with `USER`, so the default command runs unprivileged. Anything that needs root, such as installing packages, belongs before `USER`.",
-    "reference": "Docker docs: Dockerfile reference (COPY --chown, USER)"
+    "reference": "Docker docs: Dockerfile reference (COPY --chown, USER)",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-016",
@@ -573,7 +588,8 @@
       }
     ],
     "explanation": "Plain TCP exposes the Docker API without encryption or authentication, and the API can start privileged containers, which means root on the host. Docker documents two safe options: connect over SSH (`docker context create --docker host=ssh://user@host`) or enable TLS with `--tlsverify`. With TLS, the daemon accepts only clients that present a certificate signed by your CA.",
-    "reference": "Docker docs: Protect the Docker daemon socket"
+    "reference": "Docker docs: Protect the Docker daemon socket",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-017",
@@ -592,7 +608,8 @@
       "--security-opt=no-new-privileges"
     ],
     "explanation": "`--security-opt no-new-privileges` (written `no-new-privileges=true` in the reference) sets the kernel's `NO_NEW_PRIVS` flag. After that, executing a setuid binary can't raise the process's privileges. It is a cheap hardening step for almost every container, and especially for ones that run as non-root.",
-    "reference": "Docker docs: docker container run (--security-opt)"
+    "reference": "Docker docs: docker container run (--security-opt)",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-018",
@@ -629,7 +646,8 @@
       }
     ],
     "explanation": "Members of the `docker` group can use the daemon's socket. The daemon runs as root and lets callers bind-mount any host path and run privileged containers, so membership is equivalent to root. Docker's security docs state that only trusted users should control the daemon. Rootless mode avoids this by running the daemon itself without root.",
-    "reference": "Docker docs: Docker Engine security (daemon attack surface)"
+    "reference": "Docker docs: Docker Engine security (daemon attack surface)",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-019",
@@ -672,7 +690,8 @@
       }
     ],
     "explanation": "Integrity comes from cryptography, not reputation. Pinning a digest ensures you run exactly what you reviewed. Signature verification, with cosign or Notation (or Docker Content Trust on older setups), proves who produced that digest. Prefer Docker Official Images or Verified Publisher badges over look-alike repositories, and keep scanning the digests you run.",
-    "reference": "Docker docs: Trusted content; Image digests"
+    "reference": "Docker docs: Trusted content; Image digests",
+    "roleLevel": 2
   },
   {
     "id": "DKR-SEC-020",
@@ -709,7 +728,8 @@
       }
     ],
     "explanation": "Since Docker Engine 20.10, containers on their own network namespace get the sysctl `net.ipv4.ip_unprivileged_port_start=0`. Any user inside the container can bind ports below 1024, so running as non-root no longer forces you to move off port 80. This doesn't apply with `--network host`, where the host's namespace and sysctl rules apply.",
-    "reference": "Moby: Engine 20.10 release notes (unprivileged port start)"
+    "reference": "Moby: Engine 20.10 release notes (unprivileged port start)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-021",
@@ -746,7 +766,8 @@
       }
     ],
     "explanation": "In rootless mode the daemon and RootlessKit run as your normal user. Publishing host port 80 means an unprivileged process binding a privileged port, which the host refuses by default. The docs give three options: `setcap cap_net_bind_service=ep $(which rootlesskit)`, `net.ipv4.ip_unprivileged_port_start=0` in sysctl, or simply publishing on a port of 1024 or above.",
-    "reference": "Docker docs: Rootless mode tips (exposing privileged ports)"
+    "reference": "Docker docs: Rootless mode tips (exposing privileged ports)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-022",
@@ -783,7 +804,8 @@
       }
     ],
     "explanation": "Rootless Docker can delegate cgroup control to your user only through systemd on a cgroup v2 host. Without that, `docker info` reports `Cgroup Driver: none`, and flags like `--cpus`, `--memory` and `--pids-limit` can't be enforced. That matters for security, because limits are your protection against noisy neighbours and fork bombs.",
-    "reference": "Docker docs: Rootless mode tips (limiting resources)"
+    "reference": "Docker docs: Rootless mode tips (limiting resources)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-023",
@@ -820,7 +842,8 @@
       }
     ],
     "explanation": "Publishing a port makes Docker add NAT and forwarding rules. Traffic to the container is redirected before it reaches the input rules that ufw manages, so ufw's deny rule never applies. Publish only on the address you mean (`127.0.0.1:8080:80` for local-only access), or put filtering rules in the `DOCKER-USER` chain, which Docker evaluates before its own rules.",
-    "reference": "Docker docs: Packet filtering and firewalls (Docker and ufw, DOCKER-USER)"
+    "reference": "Docker docs: Packet filtering and firewalls (Docker and ufw, DOCKER-USER)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-024",
@@ -863,7 +886,8 @@
       }
     ],
     "explanation": "Docker's docs call build arguments and environment variables inappropriate for secrets because they persist in the final image. ENV is stored in the image config. ARG values used by RUN appear in the build history, and max-mode provenance records build-argument values. Secret and SSH mounts, including the `env=` form of a secret, expose the value to one step only.",
-    "reference": "Docker docs: Build secrets; SLSA provenance (mode=max)"
+    "reference": "Docker docs: Build secrets; SLSA provenance (mode=max)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-025",
@@ -900,7 +924,8 @@
       }
     ],
     "explanation": "Build checks are lint rules that BuildKit runs on your Dockerfile. `SecretsUsedInArgOrEnv` fires when an ARG or ENV key looks like a secret (password, token, key and so on). Its message: potentially sensitive data should not be used in ARG or ENV, because those values persist in the image. The remedy is a secret mount.",
-    "reference": "Docker docs: Build checks (SecretsUsedInArgOrEnv)"
+    "reference": "Docker docs: Build checks (SecretsUsedInArgOrEnv)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-026",
@@ -937,7 +962,8 @@
       }
     ],
     "explanation": "A read-only bind mount prevents changes to the file node, such as deleting or replacing it. Connecting to a Unix socket and sending requests is not a filesystem write, so the container keeps the full Docker API, including `run --privileged`. To restrict what a tool can do, put a filtering proxy in front of the socket that allows only specific endpoints, or avoid giving it the socket.",
-    "reference": "Docker docs: Docker Engine security (daemon attack surface)"
+    "reference": "Docker docs: Docker Engine security (daemon attack surface)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-027",
@@ -974,7 +1000,8 @@
       }
     ],
     "explanation": "With userns-remap, UID 0 in the container is mapped to the start of the `dockremap` user's subordinate range in `/etc/subuid`, for example 100000 on the host. That's the protection: a container escape lands as an unprivileged host user. It also means host files owned by real root aren't writable. Fix it by chowning the directory to the mapped UID, or by using a named volume.",
-    "reference": "Docker docs: Isolate containers with a user namespace"
+    "reference": "Docker docs: Isolate containers with a user namespace",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-028",
@@ -1011,7 +1038,8 @@
       }
     ],
     "explanation": "`CAP_SYS_ADMIN` is the kernel's catch-all capability. It covers mounting filesystems, namespace operations and much more, and most known container escapes need it. Docker leaves it out of the default set for that reason. If a workload seems to need it (for example to mount FUSE), look for a narrower option first: a specific device, a different storage approach, or a dedicated, isolated host.",
-    "reference": "Docker docs: Docker Engine security (Linux kernel capabilities)"
+    "reference": "Docker docs: Docker Engine security (Linux kernel capabilities)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-029",
@@ -1062,7 +1090,8 @@
       }
     ],
     "explanation": "Each option is cheap and targets one class of threat. PID limits stop process exhaustion. A read-only root filesystem, with tmpfs for scratch space, blocks tampering with the image's files. A memory limit keeps one container from triggering host-wide out-of-memory kills. `no-new-privileges` stops setuid escalation.",
-    "reference": "Docker docs: docker container run"
+    "reference": "Docker docs: docker container run",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-030",
@@ -1102,7 +1131,8 @@
       "E"
     ],
     "explanation": "Attestations are produced during the build (`--sbom=true --provenance=true` with BuildKit). Scanning gates the release before anything is published. The registry assigns the digest at push time, and signing that digest binds your identity to those exact bytes. Deployment then verifies the signature and pins the digest, so nothing unsigned or swapped can run.",
-    "reference": "Docker docs: Build attestations; Image digests"
+    "reference": "Docker docs: Build attestations; Image digests",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-031",
@@ -1127,7 +1157,8 @@
       }
     ],
     "explanation": "Docker's default seccomp profile is an allowlist that denies around 44 risky system calls out of 300+ for every process in the container. Many kernel exploits need nothing but an unusual syscall, so non-root processes benefit too. Turning seccomp off removes a whole layer of defence; write a custom profile if an application needs one extra syscall.",
-    "reference": "Docker docs: Seccomp security profiles for Docker"
+    "reference": "Docker docs: Seccomp security profiles for Docker",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-032",
@@ -1164,7 +1195,8 @@
       }
     ],
     "explanation": "`--read-only` protects the image filesystem, while apps usually need only a few writable paths. Mount a tmpfs for scratch space (`--tmpfs /tmp`, optionally with size and `noexec` options) and named volumes for real data. The root filesystem stays immutable and the app still works.",
-    "reference": "Docker docs: tmpfs mounts; docker container run (--read-only)"
+    "reference": "Docker docs: tmpfs mounts; docker container run (--read-only)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-033",
@@ -1181,7 +1213,8 @@
       "--checksum=sha256"
     ],
     "explanation": "`ADD --checksum=sha256:<hash> https://example.com/tool.tar.gz /tmp/` checks the download against a known digest and fails the build on mismatch. Pinning remote downloads this way protects against a compromised download host or a silently replaced release, a common supply-chain gap in Dockerfiles.",
-    "reference": "Docker docs: Dockerfile reference (ADD --checksum)"
+    "reference": "Docker docs: Dockerfile reference (ADD --checksum)",
+    "roleLevel": 3
   },
   {
     "id": "DKR-SEC-034",
@@ -1218,7 +1251,8 @@
       }
     ],
     "explanation": "Scanning at build time only proves an image was clean on that day. Mature pipelines continuously rescan the digests that are running (Docker Scout, Trivy and registry scanners can do this). When a base image is patched, they rebuild dependent images, often triggered by a bot updating the pinned base digest, and roll the new digests out through the normal release process.",
-    "reference": "Docker docs: Docker Scout (image analysis and policies)"
+    "reference": "Docker docs: Docker Scout (image analysis and policies)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-035",
@@ -1267,7 +1301,8 @@
       }
     ],
     "explanation": "Rootless mode runs both the daemon and the containers inside a user namespace owned by an ordinary user. It relies on the setuid helpers `newuidmap` and `newgidmap` and the subordinate ID ranges. The trade-offs: cgroup limits need cgroup v2 with systemd, low ports need `CAP_NET_BIND_SERVICE` on rootlesskit or a sysctl, and container IPs live in RootlessKit's namespace. Even privileged mode can't escape to real root.",
-    "reference": "Docker docs: Rootless mode; Rootless mode tips and troubleshooting"
+    "reference": "Docker docs: Rootless mode; Rootless mode tips and troubleshooting",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-036",
@@ -1304,7 +1339,8 @@
       }
     ],
     "explanation": "Multi-stage builds keep the key out of the final image, which is why the pattern feels safe. But `mode=max` cache export pushes the layers of every stage, including the `COPY id_rsa` layer, to a registry anyone with pull access can read. Use `RUN --mount=type=ssh` or a secret mount, and the key never becomes part of any layer or cache entry.",
-    "reference": "Docker docs: Cache storage backends (mode=max); Build secrets"
+    "reference": "Docker docs: Cache storage backends (mode=max); Build secrets",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-037",
@@ -1341,7 +1377,8 @@
       }
     ],
     "explanation": "Provenance attestations are attached to the image index and pulled along with it. `mode=min` deliberately leaves out build-argument values and secret identities. `mode=max` includes them, so a secret passed as a build argument is published in the attestation, and also appears in the image history when a RUN step uses it. Pass secrets with `--secret` instead.",
-    "reference": "Docker docs: SLSA provenance attestations (mode)"
+    "reference": "Docker docs: SLSA provenance attestations (mode)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-038",
@@ -1378,7 +1415,8 @@
       }
     ],
     "explanation": "Linux checks capabilities, not just UID 0. `CAP_CHOWN` is in Docker's default set, which is why chown normally works for container root. With `--cap-drop ALL` it is gone, so the call returns EPERM. Add back only what the entrypoint needs (`--cap-add CHOWN`), or better, set ownership at build time with `COPY --chown`, so the runtime needs no capabilities.",
-    "reference": "Docker docs: Docker Engine security (Linux kernel capabilities)"
+    "reference": "Docker docs: Docker Engine security (Linux kernel capabilities)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-039",
@@ -1415,7 +1453,8 @@
       }
     ],
     "explanation": "User namespace remapping has documented restrictions, and privileged mode is one of them: it can't run in a remapped namespace. You opt a single container out with `--userns=host`, which disables remapping for it. Its root is then the host's root, with privileged mode on top. Isolate such workloads on dedicated hosts or replace them.",
-    "reference": "Docker docs: Isolate containers with a user namespace (disable for a container)"
+    "reference": "Docker docs: Isolate containers with a user namespace (disable for a container)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-040",
@@ -1464,7 +1503,8 @@
       }
     ],
     "explanation": "Several settings here look hardened, but two of them undo the rest. `privileged: true` grants the full capability set, which overrides the effect of `cap_drop: [ALL]`, and exposes host devices. The Docker socket gives the agent the full Docker API, so it can start a new container with `/` mounted. Either one alone is a likely host takeover; non-root UIDs and a read-only filesystem don't contain them.",
-    "reference": "Docker docs: Docker Engine security"
+    "reference": "Docker docs: Docker Engine security",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-041",
@@ -1501,7 +1541,8 @@
       }
     ],
     "explanation": "Distroless images leave out shells to shrink the attack surface, so `docker exec sh` has nothing to run. Debug from outside instead: a throwaway container with tools, sharing the target's PID and network namespaces through `--pid=container:` and `--network=container:`. Docker Desktop's `docker debug` automates the same idea. The production image stays untouched.",
-    "reference": "Docker docs: docker container run (--pid, --network)"
+    "reference": "Docker docs: docker container run (--pid, --network)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-042",
@@ -1538,7 +1579,8 @@
       }
     ],
     "explanation": "Image scanners identify components from package-manager databases, language lockfiles or embedded build metadata, then match them against advisories. A statically linked C++ binary in a `scratch` image carries none of that, so vulnerable code compiled into it (an old OpenSSL, say) goes unseen. Generate an SBOM at build time (`--sbom=true`) and track dependencies in the build, so scanners have something to match.",
-    "reference": "Docker docs: Build attestations (SBOM)"
+    "reference": "Docker docs: Build attestations (SBOM)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-043",
@@ -1575,7 +1617,8 @@
       }
     ],
     "explanation": "`no-new-privileges` sets the kernel's `NO_NEW_PRIVS` flag. Afterwards, `execve` never grants extra privileges, so setuid and setgid bits and file capabilities are ignored. `sudo` runs as the calling user and fails to elevate. That closes the classic escalation path from a compromised unprivileged process to root inside the container.",
-    "reference": "Docker docs: docker container run (--security-opt no-new-privileges)"
+    "reference": "Docker docs: docker container run (--security-opt no-new-privileges)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-044",
@@ -1612,7 +1655,8 @@
       }
     ],
     "explanation": "Docker's daemon TLS modes differ: `--tls` with a server certificate and key encrypts traffic but does not authenticate clients. Only `--tlsverify` with `--tlscacert` makes the daemon accept just the clients whose certificate was signed by your CA. An encrypted but unauthenticated API is still remote root for anyone who can reach it.",
-    "reference": "Docker docs: Protect the Docker daemon socket (TLS modes)"
+    "reference": "Docker docs: Protect the Docker daemon socket (TLS modes)",
+    "roleLevel": 4
   },
   {
     "id": "DKR-SEC-045",
@@ -1655,6 +1699,7 @@
       }
     ],
     "explanation": "`curl | sh` runs whatever the server returns at build time, unpinned and unreviewed. If the host or the URL is compromised, the image is too. Pin the exact artifact and verify its hash (`ADD --checksum`), or install from a signed, version-pinned source. Then a change upstream fails the build instead of shipping silently.",
-    "reference": "Docker docs: Dockerfile reference (ADD --checksum); Building best practices"
+    "reference": "Docker docs: Dockerfile reference (ADD --checksum); Building best practices",
+    "roleLevel": 4
   }
 ]

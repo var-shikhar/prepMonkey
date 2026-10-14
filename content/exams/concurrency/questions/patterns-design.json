@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "With an unbounded queue a sustained rate mismatch turns into ever-growing memory and latency until the process dies. A bounded queue makes the mismatch visible: `put` blocks (or times out / rejects) when full, so the producer is throttled to the consumer's pace. That is backpressure, and it is the main reason producer-consumer designs use a capacity limit.",
-    "reference": "Python docs: queue.Queue (maxsize)"
+    "reference": "Python docs: queue.Queue (maxsize)",
+    "roleLevel": 2
   },
   {
     "id": "CON-PAT-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "An actor owns its state and handles one message at a time, so its handler never runs concurrently with itself. Other components interact only by sending messages. The guarantee breaks if you leak a mutable reference to the state (for example, by sending it in a message) and someone else mutates it.",
-    "reference": "Akka docs: Actor model / How the actor model meets modern systems"
+    "reference": "Akka docs: Actor model / How the actor model meets modern systems",
+    "roleLevel": 2
   },
   {
     "id": "CON-PAT-003",
@@ -96,7 +98,8 @@
       }
     ],
     "explanation": "Go's channels come from Hoare's Communicating Sequential Processes. Instead of several goroutines touching one structure under a lock, the data is sent over a channel and only the receiver uses it afterwards, so ownership moves with the message. Mutexes remain available and are sometimes simpler, but channels are the idiom the slogan promotes.",
-    "reference": "Go blog: Share Memory By Communicating"
+    "reference": "Go blog: Share Memory By Communicating",
+    "roleLevel": 2
   },
   {
     "id": "CON-PAT-004",
@@ -155,7 +158,8 @@
       }
     ],
     "explanation": "Producer-consumer separates rates with a buffer and pushes back when it fills. Scatter-gather sends work to many workers concurrently and merges the replies. A circuit breaker fails fast while a dependency is unhealthy, freeing threads. Pools (connections, threads, buffers) amortise expensive creation across many short uses.",
-    "reference": "Microsoft Azure Architecture Center: Cloud design patterns"
+    "reference": "Microsoft Azure Architecture Center: Cloud design patterns",
+    "roleLevel": 2
   },
   {
     "id": "CON-PAT-005",
@@ -172,7 +176,8 @@
       "200 items per second"
     ],
     "explanation": "In a pipeline, items flow at the rate of the slowest stage, the bottleneck. The 5 ms stage can finish at most 1000 / 5 = 200 items per second; faster stages simply wait or their queues stay short. To go faster you must parallelise or speed up the bottleneck stage, for example by running it with several workers.",
-    "reference": "Pipeline throughput: bottleneck stage (Little's law / queueing basics)"
+    "reference": "Pipeline throughput: bottleneck stage (Little's law / queueing basics)",
+    "roleLevel": 2
   },
   {
     "id": "CON-PAT-006",
@@ -209,7 +214,8 @@
       }
     ],
     "explanation": "A queue delivers each item to one taker, so one poison pill stops one consumer. With N consumers you must put N pills (or have each consumer put the pill back before exiting, or use a shared stop event plus timeouts). Verified with Python 3.13: after one pill, 3 of 4 threads were still alive.",
-    "reference": "Python docs: queue — producer/consumer shutdown with sentinels"
+    "reference": "Python docs: queue — producer/consumer shutdown with sentinels",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-007",
@@ -246,7 +252,8 @@
       }
     ],
     "explanation": "`Executor.map` preserves input order: even if later tasks finish first, it holds them until earlier ones are done, which adds latency for the first results. `concurrent.futures.as_completed` yields futures in completion order, which is what you want for streaming or partial results. Verified: `map` gave [0.3, 0.1, 0.2]; `as_completed` gave [0.1, 0.2, 0.3].",
-    "reference": "Python docs: concurrent.futures.as_completed"
+    "reference": "Python docs: concurrent.futures.as_completed",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-008",
@@ -289,7 +296,8 @@
       }
     ],
     "explanation": "Locks protect shared mutable state. Remove either word and the lock goes away: thread confinement removes \"shared\" (each thread or actor owns its data), and immutability removes \"mutable\" (values are built once and published safely). Read-write locks, striping and volatile fields are still synchronisation mechanisms, just tuned ones.",
-    "reference": "Goetz et al., Java Concurrency in Practice, ch. 3 (sharing objects)"
+    "reference": "Goetz et al., Java Concurrency in Practice, ch. 3 (sharing objects)",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-009",
@@ -326,7 +334,8 @@
       }
     ],
     "explanation": "Futures carry either a result or an exception. The error resurfaces only when someone calls `future.result()` (re-raised) or `future.exception()`. Fire-and-forget submission therefore swallows failures, a common production bug. Keep the futures and check them, add done-callbacks that log errors, or use structured concurrency that propagates failures. Verified: `f.exception()` returned the `ValueError`.",
-    "reference": "Python docs: concurrent.futures.Future.result"
+    "reference": "Python docs: concurrent.futures.Future.result",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-010",
@@ -363,7 +372,8 @@
       }
     ],
     "explanation": "A counting semaphore is the standard concurrency limiter: each caller takes a permit and blocks when none are left. Releasing in a `finally` block (or a `with` statement) is essential, because a call that throws without releasing permanently shrinks the limit until the service hangs.",
-    "reference": "Python docs: threading.Semaphore"
+    "reference": "Python docs: threading.Semaphore",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-011",
@@ -388,7 +398,8 @@
       }
     ],
     "explanation": "An unbounded queue hides a rate mismatch until memory or latency explodes. Backpressure needs a signal back to the producer: a bounded queue whose `put` blocks or fails, credit-based flow control, or a reactive `request(n)` protocol. Buffers smooth bursts; they cannot fix a sustained mismatch.",
-    "reference": "Reactive Streams specification: backpressure"
+    "reference": "Reactive Streams specification: backpressure",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-012",
@@ -425,7 +436,8 @@
       }
     ],
     "explanation": "Partitioning by key gives order within a key and parallelism across keys: every event for user 42 lands on the same worker queue, which processes them sequentially, while different users proceed in parallel. Kafka partitions and actor-per-entity designs use the same idea. The cost is skew: a very hot key is limited to one worker's speed.",
-    "reference": "Kafka docs: Partitions and ordering"
+    "reference": "Kafka docs: Partitions and ordering",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-013",
@@ -470,7 +482,8 @@
       "E"
     ],
     "explanation": "Shutdown flows in the same direction as data. First stop new work entering, then signal the first stage, let each stage drain what it already accepted and forward the signal, and only after the last stage has flushed release the resources everything depended on. Closing a connection pool first would make in-flight items fail.",
-    "reference": "Go blog: Pipelines and cancellation"
+    "reference": "Go blog: Pipelines and cancellation",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-014",
@@ -507,7 +520,8 @@
       }
     ],
     "explanation": "Resources borrowed from a pool must be returned on every path, including exceptions. Here an error in `query` skips `release`, so each failure permanently removes a connection; under load the pool empties and all threads block waiting. Use `try/finally` or a context manager (`with pool.connection() as conn:`), and alert on pool wait time and checked-out counts.",
-    "reference": "SQLAlchemy docs: Connection pooling"
+    "reference": "SQLAlchemy docs: Connection pooling",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-015",
@@ -522,7 +536,8 @@
       "203"
     ],
     "explanation": "Count every place an item can sit: two full queues hold 100 + 100 = 200 items, and each of the three workers can hold one item in hand, adding 3. So at most 203 items are in flight. Bounding every buffer bounds the whole pipeline, which is what lets backpressure propagate all the way back to the source.",
-    "reference": "Bounded buffers in pipelines (queueing basics)"
+    "reference": "Bounded buffers in pipelines (queueing basics)",
+    "roleLevel": 3
   },
   {
     "id": "CON-PAT-016",
@@ -559,7 +574,8 @@
       }
     ],
     "explanation": "LRU reads update recency, so they are writes to shared structure. Without the lock, `get` can check `k in self.d`, then lose the CPU while another thread's `put` evicts `k`, and `move_to_end(k)` raises KeyError (or, in other languages, corrupts the list). Guard `get` with the same lock, or use a design such as a striped/segmented LRU if contention matters.",
-    "reference": "Python docs: collections.OrderedDict.move_to_end"
+    "reference": "Python docs: collections.OrderedDict.move_to_end",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-017",
@@ -596,7 +612,8 @@
       }
     ],
     "explanation": "This is a cache stampede made worse by serialisation. Every caller checked before anyone filled the cache, then queued on the lock and recomputed in turn. The fix is double-checked lookup: after acquiring the lock (ideally a per-key lock), check the cache again and only compute if it is still missing. Verified with Python 3.13 and a barrier: 5 computations without the re-check, 1 with it.",
-    "reference": "Double-checked locking for cache fills"
+    "reference": "Double-checked locking for cache fills",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-018",
@@ -639,7 +656,8 @@
       }
     ],
     "explanation": "With at-least-once delivery, the consumer must be idempotent. The dedup record and the side effect have to be atomic together, either in one transaction or by an atomic claim (unique insert or conditional write) that only one consumer can win. A separate read-then-write check races when duplicates are processed in parallel, which is exactly when they arrive.",
-    "reference": "Kleppmann, Designing Data-Intensive Applications, ch. 11 (idempotence)"
+    "reference": "Kleppmann, Designing Data-Intensive Applications, ch. 11 (idempotence)",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-019",
@@ -676,7 +694,8 @@
       }
     ],
     "explanation": "Blocking inside an actor breaks its non-blocking model: A cannot handle B's question while it is stuck waiting for B, and vice versa, so they deadlock until timeouts. Akka and similar runtimes therefore warn against blocking on asks inside actors. Use `tell` with a reply-to address, or pipe the future's result back to yourself as a message, so the actor stays free to process its mailbox.",
-    "reference": "Akka docs: Interaction patterns (ask, pipeToSelf)"
+    "reference": "Akka docs: Interaction patterns (ask, pipeToSelf)",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-020",
@@ -719,7 +738,8 @@
       }
     ],
     "explanation": "A single actor processes messages sequentially, so its throughput has a hard ceiling. If arrivals exceed that ceiling, an unbounded mailbox simply stores the excess until memory runs out. The fixes are flow control (a bounded mailbox, with a drop, reject or backpressure policy) and capacity (sharding the work across more actors). More memory only postpones the failure.",
-    "reference": "Akka docs: Mailboxes (bounded mailboxes)"
+    "reference": "Akka docs: Mailboxes (bounded mailboxes)",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-021",
@@ -756,7 +776,8 @@
       }
     ],
     "explanation": "Fire-and-forget tasks are orphans: their exceptions go unobserved, they can be garbage-collected or outlive the request, and shutdown cannot wait for them. Structured concurrency ties every child task to a lexical scope. The scope does not exit until its children finish, an error in one child cancels its siblings and is raised to the caller, and cancelling the scope cancels everything inside it. Work that really must outlive the request belongs in an explicit, owned background queue.",
-    "reference": "Python docs: asyncio.TaskGroup"
+    "reference": "Python docs: asyncio.TaskGroup",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-022",
@@ -793,7 +814,8 @@
       }
     ],
     "explanation": "Applying a fresh timeout to each future in turn makes the total wait grow with the number of slow calls. A scatter-gather deadline should be global: compute one deadline and wait on all futures together (`concurrent.futures.wait(..., timeout=...)`, `asyncio.wait`, or a context deadline), then take whatever completed. Verified: sequential per-future timeouts took 0.64 s with three hanging calls; one `wait()` took 0.20 s.",
-    "reference": "Python docs: concurrent.futures.wait"
+    "reference": "Python docs: concurrent.futures.wait",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-023",
@@ -830,7 +852,8 @@
       }
     ],
     "explanation": "A coalescer should only merge calls that are in flight. Once the fetch completes, success or failure, the owner must remove the key (Go's `singleflight` deletes it when the call returns). Otherwise a single transient error turns into a permanent negative cache. Verified with Python 3.13: three calls all raised the original error and `fetch` ran only once.",
-    "reference": "pkg.go.dev: golang.org/x/sync/singleflight"
+    "reference": "pkg.go.dev: golang.org/x/sync/singleflight",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-024",
@@ -873,7 +896,8 @@
       }
     ],
     "explanation": "Races depend on timing, so plain repetition finds them only by luck. Dynamic race detectors instrument memory accesses and report conflicting unsynchronised accesses whether or not the bad ordering occurred in that run. Deterministic schedulers (Java's Lincheck, Rust's loom, or hooks that pause threads at chosen points) let you explore or force specific interleavings. Sleeps and retries only paper over the problem.",
-    "reference": "Go docs: Data Race Detector"
+    "reference": "Go docs: Data Race Detector",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-025",
@@ -898,7 +922,8 @@
       }
     ],
     "explanation": "Copy-on-write collections copy the whole backing array on every mutation and publish the new array atomically. An iterator holds a reference to the array that existed when it was created, so it sees a stable snapshot and never throws ConcurrentModificationException. The trade-off is expensive writes (a full copy each time), so it fits read-mostly data such as listener lists or configuration.",
-    "reference": "Java docs: java.util.concurrent.CopyOnWriteArrayList"
+    "reference": "Java docs: java.util.concurrent.CopyOnWriteArrayList",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-026",
@@ -935,7 +960,8 @@
       }
     ],
     "explanation": "Double buffering lets writers proceed without waiting for readers, but the swap has a gap: a writer may have read the \"current buffer\" pointer just before the swap and still be writing into what is now the reader's buffer. Correct designs swap the pointer atomically and then wait for a quiescent point, using reference counts, a reader-writer handshake, epochs, or a brief lock, before exporting.",
-    "reference": "Double buffering and quiescence (RCU-style grace periods)"
+    "reference": "Double buffering and quiescence (RCU-style grace periods)",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-027",
@@ -972,7 +998,8 @@
       }
     ],
     "explanation": "Breaker state is shared mutable state read and written by many threads. \"If half-open, then call\" is check-then-act: every concurrent caller can see HALF_OPEN before any of them changes it. Claim the probe slot atomically, for example with a compare-and-set from HALF_OPEN to PROBING, a lock, or a semaphore with one permit, and reject or fail fast for everyone else until the probe settles.",
-    "reference": "Microsoft docs: Circuit Breaker pattern (half-open state)"
+    "reference": "Microsoft docs: Circuit Breaker pattern (half-open state)",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-028",
@@ -1031,7 +1058,8 @@
       }
     ],
     "explanation": "Pick the model from the workload: crawlers are I/O-bound and need both global and per-host limits; log aggregation is a throughput pipeline where batching dominates cost; chat servers hold many idle connections, which suits cheap per-connection tasks or actors; and thumbnailing in Python is CPU-bound, so it needs processes (the GIL limits threads), while the download stage is I/O-bound and fine on threads or async.",
-    "reference": "Concurrency design trade-offs (I/O-bound vs CPU-bound workloads)"
+    "reference": "Concurrency design trade-offs (I/O-bound vs CPU-bound workloads)",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-029",
@@ -1074,7 +1102,8 @@
       }
     ],
     "explanation": "Pools pay off when creation is expensive (connections, threads, large buffers) or when the number of instances must be capped. For cheap objects, modern allocators and garbage collectors are faster than a pool's synchronised checkout. Pools also add risk: state leaking between users when objects aren't reset, leaks when objects aren't returned, and lock contention that turns the pool into a hotspot.",
-    "reference": "Goetz, Java theory and practice: Urban performance legends (object pooling)"
+    "reference": "Goetz, Java theory and practice: Urban performance legends (object pooling)",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-030",
@@ -1090,7 +1119,8 @@
       "two"
     ],
     "explanation": "Three pills reach stage A, one per A worker, and each forwards exactly one pill, so only 3 pills reach Q2. Stage B has 5 workers, so 3 exit and 2 block forever in `get()`. Each stage must emit as many pills as the next stage has workers (here, the last A worker to exit could send 5), or the pipeline should use a shared stop event or counted completion instead. Verified in Python 3.13: all A workers exited and 2 B workers stayed alive.",
-    "reference": "Poison-pill shutdown in multi-stage pipelines"
+    "reference": "Poison-pill shutdown in multi-stage pipelines",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-031",
@@ -1135,7 +1165,8 @@
       "E"
     ],
     "explanation": "The first lookup keeps the fast path lock-free. A per-key lock means only callers for the same key wait, and the second lookup inside the lock is what stops waiters from recomputing a value someone just stored. Release the lock in a `finally` block so an exception during computation does not leave the key locked forever.",
-    "reference": "Cache stampede protection with per-key locks"
+    "reference": "Cache stampede protection with per-key locks",
+    "roleLevel": 4
   },
   {
     "id": "CON-PAT-032",
@@ -1172,7 +1203,8 @@
       }
     ],
     "explanation": "Per-key ordering relies on each key having exactly one owner at a time. Changing the modulus moves most keys to new workers, while their earlier events may still sit in the old worker's queue, so two workers process the same user concurrently and order breaks. Safe resizing drains or pauses affected keys first, or uses a hand-off protocol. Consistent hashing reduces how many keys move but does not remove the need to drain the ones that do.",
-    "reference": "Kafka docs: consumer group rebalancing and partition ownership"
+    "reference": "Kafka docs: consumer group rebalancing and partition ownership",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-033",
@@ -1209,7 +1241,8 @@
       }
     ],
     "explanation": "Racing requests (\"any\" composition) needs cancellation of the losers, or the extra load is permanent. Threads already running cannot be stopped by `Future.cancel`, so real hedging sends a delayed second request only if the first is slow, propagates a cancellation signal (context, AbortController, cancel token) to the losers, and limits the share of hedged requests. It should also keep waiting if the first completed future failed.",
-    "reference": "Dean & Barroso, The Tail at Scale (hedged requests)"
+    "reference": "Dean & Barroso, The Tail at Scale (hedged requests)",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-034",
@@ -1246,7 +1279,8 @@
       }
     ],
     "explanation": "Restoring order after parallel processing means the output can be no faster than the slowest in-flight item. Everything after it waits in the reorder buffer, so latency and memory both grow with the stall. Mitigations include bounding the buffer (which then backpressures the workers), per-item timeouts that emit an error placeholder, or relaxing to per-key order so unrelated keys keep flowing.",
-    "reference": "Ordered fan-in and head-of-line blocking"
+    "reference": "Ordered fan-in and head-of-line blocking",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-035",
@@ -1289,7 +1323,8 @@
       }
     ],
     "explanation": "Check-then-act across two separate operations always has a window. The dedup decision must be atomic and visible to every consumer, which a unique constraint provides: either claim first (insert, then act only if you won) or make the claim and the side effect one transaction. If the charge is an external call that can't join the transaction, use the claim plus the payment provider's own idempotency key.",
-    "reference": "Kleppmann, Designing Data-Intensive Applications, ch. 7 (write skew and unique constraints)"
+    "reference": "Kleppmann, Designing Data-Intensive Applications, ch. 7 (write skew and unique constraints)",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-036",
@@ -1326,7 +1361,8 @@
       }
     ],
     "explanation": "Copy-on-write publication is safe for readers, but writers still race: each copies version N, adds its change, and publishes, so the last writer silently discards the other's key. Retry with `compareAndSet(old, next)` or `updateAndGet(m -> withChange(m))`, or serialise writers with a lock (writes are rare, readers stay lock-free). The pattern is snapshot reads plus coordinated writes.",
-    "reference": "Java docs: AtomicReference.updateAndGet"
+    "reference": "Java docs: AtomicReference.updateAndGet",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-037",
@@ -1363,7 +1399,8 @@
       }
     ],
     "explanation": "The refill reads `tokens` and `last`, then writes both. Done outside the lock, two threads can both compute a refill from the same old `last` and credit the same elapsed interval twice, or overwrite each other's decrement, so the limiter drifts above its rate. The refill, the check and the consume must form one critical section (or one atomic CAS loop over a combined state).",
-    "reference": "Token bucket algorithm: atomic refill and consume"
+    "reference": "Token bucket algorithm: atomic refill and consume",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-038",
@@ -1400,7 +1437,8 @@
       }
     ],
     "explanation": "OTP supervisors encode dependencies through start order. `rest_for_one` restarts the failing child plus every child started after it, which matches \"B depends on A\": a crash of A restarts A then B, and a crash of B restarts only B. `one_for_one` suits independent children; `one_for_all` suits tightly coupled groups where any failure invalidates the rest.",
-    "reference": "Erlang docs: Supervisor Behaviour (restart strategies)"
+    "reference": "Erlang docs: Supervisor Behaviour (restart strategies)",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-039",
@@ -1437,7 +1475,8 @@
       }
     ],
     "explanation": "A single actor is a sequential bottleneck: 50,000 sends per message, one after another, add latency to every message in that room. Keep one actor responsible for ordering the room's messages, but delegate delivery to a set of fan-out actors (for example, sharded by member, or one per gateway or server), each pushing to its slice in parallel. This is the actor version of hot-key sharding.",
-    "reference": "Actor model: hot actors and sharded fan-out"
+    "reference": "Actor model: hot actors and sharded fan-out",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-040",
@@ -1462,7 +1501,8 @@
       }
     ],
     "explanation": "Adding consumers helps only when the consumers themselves are the bottleneck. If the downstream resource is saturated, extra threads increase contention (locks, connections, disk I/O) and can lower throughput, while the queue keeps growing. Fix the real bottleneck (batching, indexes, more database capacity) or shed load and push back upstream.",
-    "reference": "Universal Scalability Law: contention and coherency"
+    "reference": "Universal Scalability Law: contention and coherency",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-041",
@@ -1499,7 +1539,8 @@
       }
     ],
     "explanation": "Low CPU, a growing backlog and most threads BLOCKED on one monitor means the work has been serialised by a lock, in this case an incidental one in instrumentation code. Fix it by making the hot path lock-free or sharded (striped counters such as LongAdder, per-thread buffers merged later). Thread dumps, lock-contention profiles and queue-depth metrics together are how you find this kind of saturation.",
-    "reference": "Oracle docs: Troubleshooting with thread dumps (jstack)"
+    "reference": "Oracle docs: Troubleshooting with thread dumps (jstack)",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-042",
@@ -1548,7 +1589,8 @@
       }
     ],
     "explanation": "Flaky concurrent tests usually come from timing assumptions (sleeps), hidden coupling between tests (shared globals, fixed ports, leftover threads), or assertions about orderings the code doesn't promise. Replace sleeps with explicit synchronisation (latches, futures, awaiting conditions with timeouts), isolate state per test, and assert only on guaranteed outcomes. Determinism tools such as injected clocks and seeds help rather than hurt.",
-    "reference": "Google Testing Blog: Flaky Tests at Google"
+    "reference": "Google Testing Blog: Flaky Tests at Google",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-043",
@@ -1585,7 +1627,8 @@
       }
     ],
     "explanation": "When several callers share one computation, the computation must not inherit any single caller's cancellation. Run it on a context detached from the caller (for example `context.WithoutCancel` plus its own timeout), and let each waiter select on its own context so it can return early (singleflight's `DoChan` supports this). Otherwise one impatient client fails everyone who was coalesced with it.",
-    "reference": "pkg.go.dev: golang.org/x/sync/singleflight (DoChan); context.WithoutCancel"
+    "reference": "pkg.go.dev: golang.org/x/sync/singleflight (DoChan); context.WithoutCancel",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-044",
@@ -1622,7 +1665,8 @@
       }
     ],
     "explanation": "Match the concurrency model to each stage: many cheap waits for I/O (threads or asyncio) and true parallelism for CPU work (processes, one per core, which avoids the GIL). A bounded queue between the stages lets downloads run ahead only as far as memory allows, applying backpressure when resizing falls behind. Sending image bytes to processes costs serialisation time, which is small next to an 80 ms resize.",
-    "reference": "Python docs: concurrent.futures (ThreadPoolExecutor vs ProcessPoolExecutor)"
+    "reference": "Python docs: concurrent.futures (ThreadPoolExecutor vs ProcessPoolExecutor)",
+    "roleLevel": 5
   },
   {
     "id": "CON-PAT-045",
@@ -1659,6 +1703,7 @@
       }
     ],
     "explanation": "Backpressure works through blocking, so a cycle of bounded queues can deadlock: once both fill, each stage blocks putting into the other's queue and neither ever takes again. Keep pipelines acyclic. Send retries to a separate retry queue with its own consumer or scheduler (often with a delay), use a non-blocking put and park or drop the item when full, or let the retry path bypass the bounded queue that it depends on.",
-    "reference": "Bounded queues and cycles: backpressure deadlock in feedback loops"
+    "reference": "Bounded queues and cycles: backpressure deadlock in feedback loops",
+    "roleLevel": 5
   }
 ]

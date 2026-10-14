@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "`count += 1` (or `count++`) is a read-modify-write: load the value, add one, store the result. If two threads interleave as load, load, store, store, both store the same value and one increment disappears. Making the whole sequence atomic (a lock, an atomic increment) fixes it.",
-    "reference": "Java Concurrency in Practice: Atomicity"
+    "reference": "Java Concurrency in Practice: Atomicity",
+    "roleLevel": 2
   },
   {
     "id": "CON-RMM-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "A data race is a low-level property: two threads access the same location, at least one writes, and nothing orders the accesses. A race condition is a correctness bug whose outcome depends on timing. Synchronizing each method separately removes the data race but can leave a race condition between calls, and a \"benign\" racy flag write is a data race without a logical race condition.",
-    "reference": "Java Concurrency in Practice: Race conditions"
+    "reference": "Java Concurrency in Practice: Race conditions",
+    "roleLevel": 2
   },
   {
     "id": "CON-RMM-003",
@@ -118,7 +120,8 @@
       }
     ],
     "explanation": "These four ideas are distinct. Data races are defined by the memory model, race conditions by program logic, atomicity by whether an operation can be interrupted or observed midway, and visibility by when writes propagate between threads. Fixing one does not automatically fix the others: volatile gives visibility without atomicity, and per-method locks give atomicity without preventing race conditions across calls.",
-    "reference": "Java Concurrency in Practice, chapters 2–3"
+    "reference": "Java Concurrency in Practice, chapters 2–3",
+    "roleLevel": 2
   },
   {
     "id": "CON-RMM-004",
@@ -155,7 +158,8 @@
       }
     ],
     "explanation": "This is a check-then-act race: the membership test and the assignment are separate operations, so concurrent callers can all miss and all compute. Whether that is a bug depends on cost and side effects. Fix it with a lock around the check and insert (double-checked under the lock), or with an atomic primitive such as a per-key future.",
-    "reference": "Python docs: threading"
+    "reference": "Python docs: threading",
+    "roleLevel": 2
   },
   {
     "id": "CON-RMM-005",
@@ -172,7 +176,8 @@
       "--race"
     ],
     "explanation": "Passing `-race` builds the program with ThreadSanitizer instrumentation. When it observes two unsynchronized conflicting accesses during the run, it prints both stack traces and, by default, exits non-zero. It only finds races that actually happen in the executions you run, so it needs realistic concurrent tests.",
-    "reference": "Go docs: Data Race Detector"
+    "reference": "Go docs: Data Race Detector",
+    "roleLevel": 2
   },
   {
     "id": "CON-RMM-006",
@@ -209,7 +214,8 @@
       }
     ],
     "explanation": "`volatile` guarantees visibility and ordering, not atomicity of compound actions. `count++` loads the field and then stores the incremented value, and another thread can write in between. Use `AtomicInteger.incrementAndGet()`, `LongAdder`, or a lock for a correct counter.",
-    "reference": "Java Concurrency in Practice: Volatile variables"
+    "reference": "Java Concurrency in Practice: Volatile variables",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-007",
@@ -252,7 +258,8 @@
       "D"
     ],
     "explanation": "A racing plain access is a data race and undefined behaviour, so it guarantees nothing. Relaxed atomics are atomic and coherent per variable but order nothing else. A release store read by an acquire load creates a synchronizes-with edge, making earlier writes visible. Sequential consistency adds a single total order of all seq_cst operations that every thread agrees on.",
-    "reference": "cppreference: std::memory_order"
+    "reference": "cppreference: std::memory_order",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-008",
@@ -289,7 +296,8 @@
       }
     ],
     "explanation": "JavaScript has no data races in single-threaded code, because each callback runs to completion. But every `await` is a point where other tasks run, so a read before an `await` and a write after it form a check-then-act race. Both withdrawals read 100, both succeed, and the balance ends at 20 instead of rejecting the second. Re-read after the await, or serialize the critical section. (Verified on Node.js 24.)",
-    "reference": "MDN: Event loop"
+    "reference": "MDN: Event loop",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-009",
@@ -326,7 +334,8 @@
       }
     ],
     "explanation": "`dis` shows `LOAD_GLOBAL counter`, `LOAD_CONST 1`, `BINARY_OP (+=)`, `STORE_GLOBAL counter`. The interpreter may switch threads between any two bytecodes, so two threads can load the same value. The Python FAQ lists `i = i + 1` as not atomic. Use a `threading.Lock`, or avoid shared counters.",
-    "reference": "Python FAQ: What kinds of global value mutation are thread-safe?"
+    "reference": "Python FAQ: What kinds of global value mutation are thread-safe?",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-010",
@@ -351,7 +360,8 @@
       }
     ],
     "explanation": "Each bytecode, and the C code it calls, is atomic from the point of view of Python code under the GIL. The FAQ lists `L.append(x)`, `x = L.pop()`, `D[x] = y` and `D1.update(D2)` as atomic, while `L.append(L[-1])` and `D[x] = D[x] + 1` are not. The free-threaded build keeps similar guarantees using per-object locks. Compound logic still needs a lock.",
-    "reference": "Python FAQ: What kinds of global value mutation are thread-safe?"
+    "reference": "Python FAQ: What kinds of global value mutation are thread-safe?",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-011",
@@ -388,7 +398,8 @@
       }
     ],
     "explanation": "Mutating a dict while iterating it raises `RuntimeError: dictionary changed size during iteration` (verified in Python 3.13), whether the mutation comes from the same thread or another. With threads it appears intermittently, which makes it a classic race. Iterate over a snapshot (`list(config.items())`) taken under a lock, or confine the dict to one thread.",
-    "reference": "Python docs: dict views"
+    "reference": "Python docs: dict views",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-012",
@@ -425,7 +436,8 @@
       }
     ],
     "explanation": "`HashMap` documents that it is not synchronized and must be externally synchronized if structurally modified concurrently. Unsynchronized puts can lose entries and corrupt the table; older JDKs could even form a cycle during resize and spin forever in `get`. `ConcurrentHashMap` provides thread-safe updates plus atomic compound methods such as `putIfAbsent` and `computeIfAbsent`.",
-    "reference": "Java docs: HashMap"
+    "reference": "Java docs: HashMap",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-013",
@@ -440,7 +452,8 @@
       "volatile"
     ],
     "explanation": "A write to a `volatile` field happens-before every subsequent read of that field, so readers see the value and every write made before it. It does not make compound actions like `count++` atomic; for that use `java.util.concurrent.atomic` or a lock.",
-    "reference": "JLS §17.4.4: Synchronization Order"
+    "reference": "JLS §17.4.4: Synchronization Order",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-014",
@@ -483,7 +496,8 @@
       }
     ],
     "explanation": "A time-of-check-to-time-of-use (TOCTOU) race happens when a decision is based on a check whose result can change before the action. The fix is to make check and action one atomic operation: exclusive creation (`open(path, \"x\")` or `O_CREAT | O_EXCL`) lets the kernel decide, and the loser gets `FileExistsError`. The same idea applies to databases (conditional updates, unique constraints).",
-    "reference": "Python docs: open() mode \"x\""
+    "reference": "Python docs: open() mode \"x\"",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-015",
@@ -520,7 +534,8 @@
       }
     ],
     "explanation": "This program has no data race, but it has a race condition: the check and the act are separately atomic, and another thread can act in between. Both threads see 100, both withdraw, and the balance ends at -60. Make the compound operation atomic, for example `synchronized boolean withdrawIfAvailable(int amt)`.",
-    "reference": "Java Concurrency in Practice: Compound actions"
+    "reference": "Java Concurrency in Practice: Compound actions",
+    "roleLevel": 3
   },
   {
     "id": "CON-RMM-016",
@@ -557,7 +572,8 @@
       }
     ],
     "explanation": "To reach 2: T1 loads 0 and pauses. T2 runs 999 complete increments (count = 999). T1 stores 1. T2 loads 1 and pauses. T1 runs its remaining 999 increments. T2 stores 2. An exhaustive enumeration of interleavings for 2 and 3 iterations per thread confirms the minimum is 2. This is why \"it's usually close to 2,000\" is no comfort.",
-    "reference": "Herlihy & Shavit, The Art of Multiprocessor Programming"
+    "reference": "Herlihy & Shavit, The Art of Multiprocessor Programming",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-017",
@@ -594,7 +610,8 @@
       }
     ],
     "explanation": "This is the message-passing litmus test. With relaxed ordering the model allows thread 2 to see `ready == true` and still read `data == 0`, and compilers or weakly ordered hardware (ARM, POWER) can produce it. Using `memory_order_release` for the `ready` store and `memory_order_acquire` for its load makes the store of 42 visible to thread 2.",
-    "reference": "cppreference: std::memory_order (Relaxed ordering)"
+    "reference": "cppreference: std::memory_order (Relaxed ordering)",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-018",
@@ -631,7 +648,8 @@
       }
     ],
     "explanation": "When an acquire load reads the value written by a release store, the store synchronizes with the load, and every write that happened before the release in thread 1 happens before everything after the acquire in thread 2. That covers `data` even though its own accesses are relaxed. This is the standard way to publish data through a flag.",
-    "reference": "cppreference: std::memory_order (Release-Acquire ordering)"
+    "reference": "cppreference: std::memory_order (Release-Acquire ordering)",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-019",
@@ -680,7 +698,8 @@
       }
     ],
     "explanation": "JLS §17.4.5 lists the edges: program order within a thread, monitor unlock → subsequent lock of the same monitor, volatile write → subsequent read of the same variable, `Thread.start()` → actions in the new thread, actions in a thread → a successful `join()` on it, plus transitivity. Timing tricks like `sleep` are not on the list.",
-    "reference": "JLS §17.4.5: Happens-before Order"
+    "reference": "JLS §17.4.5: Happens-before Order",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-020",
@@ -717,7 +736,8 @@
       }
     ],
     "explanation": "Double-checked locking without `volatile` is broken under the JMM: the fast path reads `instance` without synchronization, so nothing orders the constructor's writes before that read. The JIT or CPU may make the reference visible before the field writes. Declare `instance` volatile, or use the initialization-on-demand holder idiom.",
-    "reference": "JSR-133 FAQ: Double-checked locking"
+    "reference": "JSR-133 FAQ: Double-checked locking",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-021",
@@ -766,7 +786,8 @@
       }
     ],
     "explanation": "Since Java 5, `volatile` fixes double-checked locking because the write of the fully constructed object happens-before any read that sees it. The holder idiom (`static class Holder { static final Config I = new Config(); }`) and eager `static final` initialization rely on the JVM's class-initialization lock, which also publishes safely and is usually simpler.",
-    "reference": "JSR-133 FAQ: Double-checked locking"
+    "reference": "JSR-133 FAQ: Double-checked locking",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-022",
@@ -803,7 +824,8 @@
       }
     ],
     "explanation": "JLS §17.5: a thread that sees a reference to an object only after its constructor finishes is guaranteed to see the correctly initialized values of its final fields, even if the reference was passed through a data race. Non-final fields get no such guarantee, so `y` may read as 0. This is why immutable objects with all-final fields are safe to share without synchronization.",
-    "reference": "JLS §17.5: final Field Semantics"
+    "reference": "JLS §17.5: final Field Semantics",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-023",
@@ -828,7 +850,8 @@
       }
     ],
     "explanation": "JLS §17.7 says a single write to a non-volatile `long` or `double` may be split into two 32-bit writes, so a racing reader can see half of each. Most 64-bit JVMs write them atomically in practice, but the guarantee only exists for `volatile` longs and doubles. References are always written atomically.",
-    "reference": "JLS §17.7: Non-Atomic Treatment of double and long"
+    "reference": "JLS §17.7: Non-Atomic Treatment of double and long",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-024",
@@ -865,7 +888,8 @@
       }
     ],
     "explanation": "Go's memory model requires synchronization (channels, `sync` primitives, `sync/atomic`) for one goroutine to be guaranteed to see another's write. Here the compiler may load `done` once and loop forever. `go run -race` reports the race. Use a channel, a `sync.WaitGroup`, or `atomic.Bool`.",
-    "reference": "The Go Memory Model"
+    "reference": "The Go Memory Model",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-025",
@@ -914,7 +938,8 @@
       }
     ],
     "explanation": "The Go memory model defines happens-before edges for channel sends and receives, channel closes, and the `sync` package (Mutex, WaitGroup, Once). Any of those makes the write to `msg` visible. Sleeps and yields only change timing, so the program still has a data race that the race detector will flag.",
-    "reference": "The Go Memory Model"
+    "reference": "The Go Memory Model",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-026",
@@ -951,7 +976,8 @@
       }
     ],
     "explanation": "In the ECMAScript memory model, `Atomics` operations are SeqCst. When the main thread's `Atomics.load` reads the value written by the worker's `Atomics.store`, they synchronize, and the worker's earlier plain write to `data[0]` happens before the main thread's later plain read. Without the atomic flag (a plain write and a plain spin), the program would have a data race.",
-    "reference": "ECMAScript spec: Memory Model"
+    "reference": "ECMAScript spec: Memory Model",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-027",
@@ -988,7 +1014,8 @@
       }
     ],
     "explanation": "SharedArrayBuffer brings real data races into JavaScript: `view[0]++` loads, adds and stores, and two workers interleave those steps. One run on Node.js 24 gave `view[0] = 1,693,422` while `view[1]` was exactly 2,000,000. Use `Atomics.add`, `Atomics.compareExchange`, or a lock built on `Atomics.wait`/`notify` for shared counters.",
-    "reference": "MDN: Atomics"
+    "reference": "MDN: Atomics",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-028",
@@ -1045,7 +1072,8 @@
       "F"
     ],
     "explanation": "Program order puts the `config` write before `start()`, and `start()` happens-before everything in the worker, so the worker sees `config`. In the worker, program order puts `result` before the volatile write; the volatile write happens-before main's read that sees `true`; and program order puts that read before main's read of `result`. By transitivity, main sees `result`.",
-    "reference": "JLS §17.4.5: Happens-before Order"
+    "reference": "JLS §17.4.5: Happens-before Order",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-029",
@@ -1104,7 +1132,8 @@
       }
     ],
     "explanation": "Races need shared, mutable, unsynchronized state. Each technique removes one ingredient: immutability removes mutation, confinement removes sharing, message passing transfers ownership so only one side holds the data at a time, and mutual exclusion adds synchronization. Designs that rely on the first three need far fewer locks.",
-    "reference": "Java Concurrency in Practice, chapter 3"
+    "reference": "Java Concurrency in Practice, chapter 3",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-030",
@@ -1153,7 +1182,8 @@
       }
     ],
     "explanation": "The Python FAQ explains that each bytecode, and the C code it reaches, is atomic from Python's point of view under the GIL. It lists `L.append(x)`, `L1.extend(L2)`, `x = L[i]`, `x = L.pop()`, `D[x] = y` and `D1.update(D2)` as atomic, and `i = i + 1`, `L.append(L[-1])`, `L[i] = L[j]` and `D[x] = D[x] + 1` as not. When in doubt, use a lock.",
-    "reference": "Python FAQ: What kinds of global value mutation are thread-safe?"
+    "reference": "Python FAQ: What kinds of global value mutation are thread-safe?",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-031",
@@ -1190,7 +1220,8 @@
       }
     ],
     "explanation": "Memory orders control how other memory accesses are ordered around an atomic operation, never whether the operation itself is atomic. Relaxed `fetch_add` is the standard choice for statistics counters: every increment counts, and `std::thread::join` synchronizes, so the final load sees 4000.",
-    "reference": "cppreference: std::atomic::fetch_add"
+    "reference": "cppreference: std::atomic::fetch_add",
+    "roleLevel": 4
   },
   {
     "id": "CON-RMM-032",
@@ -1227,7 +1258,8 @@
       }
     ],
     "explanation": "Each thread's store can sit in a store buffer while its load reads the other variable from memory, giving `r1 == r2 == 0`. x86-TSO allows exactly this, and release/acquire does not forbid it. Only making all four operations `memory_order_seq_cst` (or adding seq_cst fences) imposes a single total order that rules it out. This is why Dekker and Peterson style algorithms need full fences.",
-    "reference": "cppreference: std::memory_order (Sequentially-consistent ordering)"
+    "reference": "cppreference: std::memory_order (Sequentially-consistent ordering)",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-033",
@@ -1264,7 +1296,8 @@
       }
     ],
     "explanation": "IRIW shows that release/acquire is not enough for all observers to agree on the order of writes by different threads to different locations. C++ allows the disagreeing outcome, and POWER hardware can produce it. With all operations `memory_order_seq_cst`, there is one total order S consistent with every thread's view, so the readers cannot disagree.",
-    "reference": "cppreference: std::memory_order"
+    "reference": "cppreference: std::memory_order",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-034",
@@ -1301,7 +1334,8 @@
       }
     ],
     "explanation": "With relaxed operations, each thread's load may be reordered after its store, so both loads can see 1. With acquire loads and release stores: if T2's acquire load reads T1's release store of `y`, then T1's load of `x` happens-before T2's store to `x`, so T1 cannot read that store. Symmetrically for T2, so the outcome is forbidden.",
-    "reference": "cppreference: std::memory_order"
+    "reference": "cppreference: std::memory_order",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-035",
@@ -1338,7 +1372,8 @@
       }
     ],
     "explanation": "JLS §17.5 promises correctly initialized final fields only to threads that see the reference after the constructor finishes. Registering `this` with another thread inside the constructor leaks a partially constructed object, so the other thread can read the default 0. Register from a static factory method after construction instead.",
-    "reference": "JLS §17.5: final Field Semantics"
+    "reference": "JLS §17.5: final Field Semantics",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-036",
@@ -1375,7 +1410,8 @@
       }
     ],
     "explanation": "A plain shared variable written by one thread and read by another without synchronization is a data race, which is undefined behaviour in C11 and C++11. The compiler may assume no other thread changes `ready` and hoist the load. An atomic load (even relaxed) must eventually see the store; use acquire/release if the flag also publishes other data. `volatile` is for memory-mapped I/O, not threads.",
-    "reference": "cppreference: std::atomic"
+    "reference": "cppreference: std::atomic",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-037",
@@ -1424,7 +1460,8 @@
       }
     ],
     "explanation": "Volatile reads and writes are synchronization actions: a volatile write happens-before every subsequent read of the same field, which publishes earlier plain writes. Volatile 64-bit values are never torn. Volatile does not make compound actions atomic, and it applies only to the field itself, not to the elements of an array it refers to.",
-    "reference": "JLS §17.4–17.7"
+    "reference": "JLS §17.4–17.7",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-038",
@@ -1467,7 +1504,8 @@
       }
     ],
     "explanation": "This is a time-of-check-to-time-of-use race across database sessions. Either make the check part of the write (a conditional UPDATE whose WHERE clause is re-evaluated against the latest row version, then check that one row changed), or lock the row while deciding (`SELECT … FOR UPDATE`). A stricter isolation level such as SERIALIZABLE also works but forces retries.",
-    "reference": "PostgreSQL docs: Explicit Locking"
+    "reference": "PostgreSQL docs: Explicit Locking",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-039",
@@ -1504,7 +1542,8 @@
       }
     ],
     "explanation": "The Go FAQ explains that map operations are not atomic because most uses don't need it, and that \"uncontrolled map access can crash the program\". The runtime has a cheap check that detects concurrent writes and kills the process with a fatal error. Protect the map with a `sync.Mutex`/`RWMutex`, or use `sync.Map` for read-heavy, disjoint-key workloads.",
-    "reference": "Go FAQ: Why are map operations not defined to be atomic?"
+    "reference": "Go FAQ: Why are map operations not defined to be atomic?",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-040",
@@ -1541,7 +1580,8 @@
       }
     ],
     "explanation": "The Go memory model says reads and writes of values larger than a machine word may be performed as several word-sized operations in unspecified order, so races on multi-word structures such as slices, strings and interfaces can produce inconsistent values that don't correspond to any single write, and that can lead to arbitrary memory corruption. Word-sized racy reads, by contrast, must return some value actually written.",
-    "reference": "The Go Memory Model: Implementation Restrictions"
+    "reference": "The Go Memory Model: Implementation Restrictions",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-041",
@@ -1560,7 +1600,8 @@
       "sequential consistency"
     ],
     "explanation": "Release and acquire do not order a store before a later load to a different location, so both loads can miss the other thread's store. Only `memory_order_seq_cst` (or seq_cst fences between each store and load) places all four operations in one total order, in which at least one load must see a store.",
-    "reference": "cppreference: std::memory_order (Sequentially-consistent ordering)"
+    "reference": "cppreference: std::memory_order (Sequentially-consistent ordering)",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-042",
@@ -1597,7 +1638,8 @@
       }
     ],
     "explanation": "Peterson's algorithm assumes sequential consistency: each thread's write to `flag[i]` must be visible before it reads `flag[j]`. Under x86-TSO a store can stay in the core's store buffer while the later load reads memory, so both threads see the other's flag as 0 and enter. A full fence (`mfence`) between the stores and the loads, or seq_cst atomics, restores correctness.",
-    "reference": "Sewell et al., x86-TSO"
+    "reference": "Sewell et al., x86-TSO",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-043",
@@ -1656,7 +1698,8 @@
       }
     ],
     "explanation": "Sequential consistency (Lamport) requires one interleaving consistent with every program order. Linearizability (Herlihy and Wing) adds real-time order and is the standard correctness condition for concurrent objects. TSO is x86's model: FIFO store buffers allow only store→load reordering. Release consistency is the basis of C++ and Java acquire/release semantics.",
-    "reference": "Herlihy & Shavit, The Art of Multiprocessor Programming"
+    "reference": "Herlihy & Shavit, The Art of Multiprocessor Programming",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-044",
@@ -1693,7 +1736,8 @@
       }
     ],
     "explanation": "In C++ any data race is undefined behaviour, and compilers optimize on the assumption that none exist, for example by keeping `initialized` in a register or inventing extra reads. The fix is `std::atomic<bool>` (acquire load, release store) or `std::call_once`. This program has a data race but no logical race condition, the mirror image of a race condition without a data race.",
-    "reference": "cppreference: Memory model (Threads and data races)"
+    "reference": "cppreference: Memory model (Threads and data races)",
+    "roleLevel": 5
   },
   {
     "id": "CON-RMM-045",
@@ -1736,6 +1780,7 @@
       }
     ],
     "explanation": "The free-threaded CPython build (PEP 703, available since 3.13) removes the GIL so threads run Python code in parallel. The docs say built-in types like dict, list and set use internal locks to behave similarly to the GIL build, but recommend explicit `threading.Lock`s rather than relying on them. Compound operations were never atomic, and real parallelism makes those latent races show up more often.",
-    "reference": "Python docs: Python support for free threading"
+    "reference": "Python docs: Python support for free threading",
+    "roleLevel": 5
   }
 ]

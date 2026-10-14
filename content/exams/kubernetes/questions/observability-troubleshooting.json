@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Kubernetes' logging architecture relies on the container runtime capturing each container's stdout and stderr and writing them to a log file on the node (under `/var/log/pods`). `kubectl logs` asks the kubelet to read that file. Anything the application writes to other files stays inside the container unless you add a streaming sidecar or a logging agent.",
-    "reference": "Kubernetes docs: Logging Architecture"
+    "reference": "Kubernetes docs: Logging Architecture",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "`kubectl top` and the HorizontalPodAutoscaler use the `metrics.k8s.io` API. The API server doesn't serve it on its own; metrics-server, a cluster add-on, collects resource usage from each kubelet and registers that API. Many managed clusters install it by default, but a bare cluster does not.",
-    "reference": "Kubernetes docs: Resource metrics pipeline"
+    "reference": "Kubernetes docs: Resource metrics pipeline",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-003",
@@ -76,7 +78,8 @@
       "--previous=true"
     ],
     "explanation": "`kubectl logs <pod> --previous` (short form `-p`) returns the logs of the prior instance of the container, which is usually where the crash reason is. Without it you only see the fresh instance that has just started. Only the most recent terminated instance is kept.",
-    "reference": "kubectl reference: kubectl logs"
+    "reference": "kubectl reference: kubectl logs",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-004",
@@ -135,7 +138,8 @@
       }
     ],
     "explanation": "Each component answers a different question. metrics-server provides short-lived resource usage for autoscaling and `kubectl top`. kube-state-metrics turns API object state (replicas, pod phases, restarts) into Prometheus metrics. node-exporter reports the host's CPU, memory, disk and network. A node-level log agent such as Fluent Bit ships container log files to a backend.",
-    "reference": "Kubernetes docs: Tools for Monitoring Resources"
+    "reference": "Kubernetes docs: Tools for Monitoring Resources",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-005",
@@ -172,7 +176,8 @@
       }
     ],
     "explanation": "ImagePullBackOff means image pulls keep failing (first shown as ErrImagePull) and the kubelet is waiting before retrying. `kubectl describe pod` shows the exact error in Events, such as \"not found\", \"manifest unknown\" or \"unauthorized\". Check the image reference and, for private registries, the `imagePullSecrets` in the pod's namespace.",
-    "reference": "Kubernetes docs: Images"
+    "reference": "Kubernetes docs: Images",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-006",
@@ -209,7 +214,8 @@
       }
     ],
     "explanation": "`kubectl describe pod` is usually the first stop when debugging. It shows scheduling and pull events, probe failures, each container's current and last state (with reason and exit code) and restart counts. Logs come next, once you know the container actually ran.",
-    "reference": "Kubernetes docs: Debug Pods"
+    "reference": "Kubernetes docs: Debug Pods",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-007",
@@ -252,7 +258,8 @@
       }
     ],
     "explanation": "RED (Rate, Errors, Duration) describes services from the caller's point of view and maps directly to user experience. USE (Utilization, Saturation, Errors) describes resources such as CPUs, disks and nodes. In Kubernetes you typically apply RED to Services and ingress traffic, and USE to nodes and containers.",
-    "reference": "Grafana docs: The RED method"
+    "reference": "Grafana docs: The RED method",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-008",
@@ -289,7 +296,8 @@
       }
     ],
     "explanation": "Exit codes above 128 mean \"killed by signal (code − 128)\". 137 is SIGKILL, which a process can't catch. In Kubernetes the usual sources are the kernel OOM killer (Reason: OOMKilled) or a kill after the termination grace period expired. Check the `Reason` field to tell them apart.",
-    "reference": "Kubernetes docs: Pod Lifecycle"
+    "reference": "Kubernetes docs: Pod Lifecycle",
+    "roleLevel": 1
   },
   {
     "id": "K8S-OBS-009",
@@ -326,7 +334,8 @@
       }
     ],
     "explanation": "Pods managed by a Deployment must use `restartPolicy: Always`, because a Deployment keeps long-running processes alive. A container that exits, even with code 0, is restarted, and repeated restarts trigger the exponential back-off shown as CrashLoopBackOff. Run-to-completion work belongs in a Job (or CronJob), whose pods use `OnFailure` or `Never`.",
-    "reference": "Kubernetes docs: Jobs"
+    "reference": "Kubernetes docs: Jobs",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-010",
@@ -363,7 +372,8 @@
       }
     ],
     "explanation": "CreateContainerConfigError means the kubelet couldn't assemble the container's configuration, so the container is never created. Common causes are a ConfigMap or Secret (or a key inside it) referenced by `env`/`envFrom` that doesn't exist. Add the key, fix the name, or set `optional: true` on the reference if the value isn't required.",
-    "reference": "Kubernetes docs: Configure a Pod to Use a ConfigMap"
+    "reference": "Kubernetes docs: Configure a Pod to Use a ConfigMap",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-011",
@@ -406,7 +416,8 @@
       }
     ],
     "explanation": "Events are short-lived records such as Scheduled, Pulled, BackOff and FailedScheduling, created by the kubelet and controllers. They live in the API with a default TTL of one hour, so by the time someone looks at an overnight incident they may be gone. Sort them explicitly when listing, and export them to your logging stack if you need history.",
-    "reference": "kube-apiserver reference: --event-ttl"
+    "reference": "kube-apiserver reference: --event-ttl",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-012",
@@ -443,7 +454,8 @@
       }
     ],
     "explanation": "The kubectl reference for `--tail` says it \"defaults to -1 with no selector, showing all log lines otherwise 10, if a selector is provided\". Pass `--tail=-1` (or a number) to see more. When following with `-f`, `--max-log-requests` (default 5) also limits how many pods are streamed at once.",
-    "reference": "kubectl reference: kubectl logs"
+    "reference": "kubectl reference: kubectl logs",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-013",
@@ -480,7 +492,8 @@
       }
     ],
     "explanation": "The logging architecture guide describes a streaming sidecar: mount a shared volume (usually emptyDir) at the log path and add a small container that runs `tail -F` on the file and writes it to its own stdout. Then `kubectl logs <pod> -c <sidecar>` works and node log agents pick it up. Writing to stdout in the first place is still the better long-term fix.",
-    "reference": "Kubernetes docs: Logging Architecture (sidecar)"
+    "reference": "Kubernetes docs: Logging Architecture (sidecar)",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-014",
@@ -523,7 +536,8 @@
       "D"
     ],
     "explanation": "Work from cheap and broad to targeted and invasive. `get pods` tells you which pods are unhealthy and how. `describe` explains what Kubernetes saw (scheduling, pulls, OOM kills, probe failures). Logs from the previous instance show what the application saw before it died. An ephemeral debug container lets you inspect the live pod when the image has no shell or tools.",
-    "reference": "Kubernetes docs: Debug Running Pods"
+    "reference": "Kubernetes docs: Debug Running Pods",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-015",
@@ -560,7 +574,8 @@
       }
     ],
     "explanation": "\"Insufficient memory\" means that on every node the sum of existing pods' memory requests plus this pod's request exceeds allocatable memory. Compare the request with `kubectl describe node` (Allocated resources). Either lower an oversized request or add capacity, for example with the cluster autoscaler.",
-    "reference": "Kubernetes docs: Resource Management for Pods and Containers"
+    "reference": "Kubernetes docs: Resource Management for Pods and Containers",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-016",
@@ -585,7 +600,8 @@
       }
     ],
     "explanation": "The kubelet keeps a container's logs only while the pod exists (plus one previous instance per container). When a pod is deleted, evicted and replaced, or its node fails, those logs are gone. Kubernetes has no built-in cluster-level log storage, so production clusters run a node agent or sidecar that ships logs to a backend such as Loki or Elasticsearch.",
-    "reference": "Kubernetes docs: Logging Architecture"
+    "reference": "Kubernetes docs: Logging Architecture",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-017",
@@ -622,7 +638,8 @@
       }
     ],
     "explanation": "kube-state-metrics listens to the API server and turns object state into metrics: desired and available replicas, pod phases, container restarts, waiting reasons and more. An alert such as `kube_deployment_spec_replicas != kube_deployment_status_replicas_available for 10m` is a standard rule in kube-prometheus.",
-    "reference": "kube-state-metrics documentation"
+    "reference": "kube-state-metrics documentation",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-018",
@@ -638,7 +655,8 @@
       "kubectl explain"
     ],
     "explanation": "`kubectl explain pod.spec.containers.resources` prints the field's description and its sub-fields, straight from the API server's schema, so it matches your cluster's version. Add `--recursive` to see the whole tree. It's handy when writing manifests or decoding a validation error.",
-    "reference": "kubectl reference: kubectl explain"
+    "reference": "kubectl reference: kubectl explain",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-019",
@@ -675,7 +693,8 @@
       }
     ],
     "explanation": "Ephemeral containers (GA in Kubernetes 1.25) let you add a debugging container to a running pod. With `--target=<container>`, the debug container joins that container's process namespace, so you can see its processes and reach its filesystem through `/proc/<pid>/root`, using tools from your own image. The pod isn't restarted.",
-    "reference": "Kubernetes docs: Debug Running Pods (ephemeral containers)"
+    "reference": "Kubernetes docs: Debug Running Pods (ephemeral containers)",
+    "roleLevel": 2
   },
   {
     "id": "K8S-OBS-020",
@@ -712,7 +731,8 @@
       }
     ],
     "explanation": "metrics-server collects usage from each kubelet periodically (every 15 seconds by default) and keeps only the latest values, so `kubectl top` is a coarse snapshot. A container that briefly allocates past its limit, such as loading a large file or processing a burst, is OOM-killed between samples. Look at peak usage in Prometheus (`container_memory_working_set_bytes` with max over time) and size the limit from that.",
-    "reference": "Kubernetes docs: Resource metrics pipeline"
+    "reference": "Kubernetes docs: Resource metrics pipeline",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-021",
@@ -755,7 +775,8 @@
       }
     ],
     "explanation": "EndpointSlices list the pods a Service selects, marked ready or not. An empty slice usually means the selector matches no pods (a label typo or wrong key). If pods match but aren't Ready, they appear as not ready and aren't sent traffic. Compare `kubectl get pods --show-labels` with the Service selector, and check the READY column and readiness probe events.",
-    "reference": "Kubernetes docs: Debug Services"
+    "reference": "Kubernetes docs: Debug Services",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-022",
@@ -792,7 +813,8 @@
       }
     ],
     "explanation": "For restarting containers, the kubelet uses an exponential back-off of 10 s, 20 s, 40 s and so on, capped at 300 s (5 minutes). This waiting is what CrashLoopBackOff shows. Once a container has run for 10 minutes without problems, the timer resets. So a container that crashes after 11 minutes restarts quickly again, while one crashing every few seconds ends up waiting 5 minutes per attempt.",
-    "reference": "Kubernetes docs: Pod Lifecycle (container restarts)"
+    "reference": "Kubernetes docs: Pod Lifecycle (container restarts)",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-023",
@@ -829,7 +851,8 @@
       }
     ],
     "explanation": "Deletion sets `deletionTimestamp`, but the API server only removes an object once its `finalizers` list is empty. A finalizer whose controller no longer exists will never be cleared, so the object stays Terminating. Restore the controller so it can finish its cleanup, or, if you understand the consequences, remove the finalizer with `kubectl patch`.",
-    "reference": "Kubernetes docs: Finalizers"
+    "reference": "Kubernetes docs: Finalizers",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-024",
@@ -888,7 +911,8 @@
       }
     ],
     "explanation": "Node conditions are set by the kubelet (pressure conditions) and the node controller (Ready Unknown when heartbeats stop). Pressure conditions are tied to eviction signals: `memory.available`, `nodefs`/`imagefs` space and inodes, and `pid.available`. The control plane also turns them into taints, so new pods avoid the node.",
-    "reference": "Kubernetes docs: Node-pressure Eviction"
+    "reference": "Kubernetes docs: Node-pressure Eviction",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-025",
@@ -925,7 +949,8 @@
       }
     ],
     "explanation": "A node goes NotReady when its kubelet stops posting healthy status, or reports a problem such as a runtime or network plugin that isn't ready. On systemd hosts, check `systemctl status kubelet` and `journalctl -u kubelet`, then the container runtime (`crictl info`, `journalctl -u containerd`), certificates, disk space and time sync. `kubectl describe node` also shows the condition messages.",
-    "reference": "Kubernetes docs: Troubleshooting Clusters"
+    "reference": "Kubernetes docs: Troubleshooting Clusters",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-026",
@@ -962,7 +987,8 @@
       }
     ],
     "explanation": "`prometheus.io/*` annotations aren't a Kubernetes or Prometheus built-in. They work only when Prometheus's `kubernetes_sd_configs` scrape config includes relabel rules that read them, as many community Helm charts do. The Prometheus Operator instead selects targets through ServiceMonitor and PodMonitor custom resources, so the team should create one matching their Service or pods.",
-    "reference": "Prometheus Operator docs: ServiceMonitor"
+    "reference": "Prometheus Operator docs: ServiceMonitor",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-027",
@@ -1005,7 +1031,8 @@
       }
     ],
     "explanation": "metrics-server scrapes each kubelet's resource metrics endpoint and serves the latest CPU and memory values through `metrics.k8s.io`. The docs describe its primary role as feeding autoscalers. For historical dashboards and alerting, run a full pipeline such as Prometheus with cAdvisor, kube-state-metrics and node-exporter.",
-    "reference": "Kubernetes docs: Resource metrics pipeline"
+    "reference": "Kubernetes docs: Resource metrics pipeline",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-028",
@@ -1042,7 +1069,8 @@
       }
     ],
     "explanation": "The OpenTelemetry docs describe the agent pattern: a collector per node (a DaemonSet). Applications send OTLP to the node's IP (often injected via the downward API), and the collector enriches data with the `k8sattributes` processor before forwarding. It is often paired with a horizontally scaled gateway Deployment for tail sampling and export. Sidecars are the alternative when per-pod isolation is needed.",
-    "reference": "OpenTelemetry docs: Collector deployment patterns"
+    "reference": "OpenTelemetry docs: Collector deployment patterns",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-029",
@@ -1057,7 +1085,8 @@
       "container_cpu_cfs_periods_total"
     ],
     "explanation": "cAdvisor exports `container_cpu_cfs_periods_total` (enforcement periods that elapsed) and `container_cpu_cfs_throttled_periods_total` (periods in which the container hit its quota). The ratio of their rates, such as `rate(throttled[5m]) / rate(periods[5m])`, shows how often a CPU limit is throttling the container. It is a key signal for latency problems caused by CPU limits.",
-    "reference": "cAdvisor docs: Prometheus metrics"
+    "reference": "cAdvisor docs: Prometheus metrics",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-030",
@@ -1094,7 +1123,8 @@
       }
     ],
     "explanation": "The kubectl reference says that when a resource matches multiple pods, \"a pod will be selected automatically\", and \"the forwarding session ends when the selected pod terminates\". The tunnel goes through the API server and kubelet to that single pod, not through the Service's virtual IP. Use port-forward for debugging, not for load or failover testing.",
-    "reference": "kubectl reference: kubectl port-forward"
+    "reference": "kubectl reference: kubectl port-forward",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-031",
@@ -1137,7 +1167,8 @@
       "D"
     ],
     "explanation": "The official guide starts by reproducing the problem from a dnsutils pod with `nslookup kubernetes.default`. If that fails, it checks the pod's local configuration (`/etc/resolv.conf` should point at the cluster DNS Service IP with the right search domains). It then checks that the DNS pods are running and reads their logs. After that come the kube-dns Service and its endpoints.",
-    "reference": "Kubernetes docs: Debugging DNS Resolution"
+    "reference": "Kubernetes docs: Debugging DNS Resolution",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-032",
@@ -1174,7 +1205,8 @@
       }
     ],
     "explanation": "When `nodefs` or `imagefs` space crosses the kubelet's eviction threshold, the node gets DiskPressure and the kubelet evicts pods, ranking them by local storage use. Container writable layers, logs and emptyDir volumes all count. Set `resources.requests/limits.ephemeral-storage` so heavy users are bounded and scheduled accordingly, reduce excessive logging, and size node disks properly.",
-    "reference": "Kubernetes docs: Node-pressure Eviction"
+    "reference": "Kubernetes docs: Node-pressure Eviction",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-033",
@@ -1199,7 +1231,8 @@
       }
     ],
     "explanation": "The ComponentStatus API is deprecated because it assumes components live next to the API server. Use `kubectl get --raw='/readyz?verbose'` and `/livez` to see individual API server checks. Monitor the scheduler, controller manager and etcd through their own health and metrics endpoints. `/healthz` itself has been deprecated since 1.16 in favour of livez and readyz.",
-    "reference": "Kubernetes docs: Kubernetes API health endpoints"
+    "reference": "Kubernetes docs: Kubernetes API health endpoints",
+    "roleLevel": 3
   },
   {
     "id": "K8S-OBS-034",
@@ -1236,7 +1269,8 @@
       }
     ],
     "explanation": "A CPU limit becomes a CFS quota, by default 100 ms of CPU time per 100 ms period for `1` CPU. A process with several threads can burn the whole quota in the first part of a period, such as 4 threads running 25 ms each, and is then frozen until the next period. Averages over seconds or minutes hide these stalls, but tail latency doesn't. Raise or remove the CPU limit, keep a sensible request, and watch the throttled ratio.",
-    "reference": "Kubernetes docs: Resource Management for Pods and Containers"
+    "reference": "Kubernetes docs: Resource Management for Pods and Containers",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-035",
@@ -1285,7 +1319,8 @@
       }
     ],
     "explanation": "ECONNREFUSED means a TCP RST came back, so something answered, but nothing listened on that port. The usual causes are a targetPort mismatch, a database listening only on 127.0.0.1, or endpoints pointing at the wrong pods. Checking the EndpointSlices, the port mapping, and a test from the app's own network namespace with an ephemeral container narrows it down without changing anything.",
-    "reference": "Kubernetes docs: Debug Services"
+    "reference": "Kubernetes docs: Debug Services",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-036",
@@ -1322,7 +1357,8 @@
       }
     ],
     "explanation": "`--previous` asks the kubelet for the last terminated instance of a container in that pod. A ReplicaSet replacement is a brand-new pod with a new name and UID and no history, so there is nothing to show. The failed pod's log files were on the dead node. Diagnosing failures like this is exactly why logs need to be shipped to central storage as they are written.",
-    "reference": "Kubernetes docs: Logging Architecture"
+    "reference": "Kubernetes docs: Logging Architecture",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-037",
@@ -1359,7 +1395,8 @@
       }
     ],
     "explanation": "The logging guide says: \"Only the contents of the latest log file are available through kubectl logs\", with the example that if a pod writes 40 MiB and the kubelet rotates after 10 MiB, `kubectl logs` returns at most 10 MiB. At 40 MiB per minute that is about 15 seconds of history. Ship logs off-node, or reduce the log volume.",
-    "reference": "Kubernetes docs: Logging Architecture (log rotation)"
+    "reference": "Kubernetes docs: Logging Architecture (log rotation)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-038",
@@ -1396,7 +1433,8 @@
       }
     ],
     "explanation": "Node debugging creates a pod on that node running in the host's IPC, network and PID namespaces, with the node's root filesystem mounted at `/host`. The pod isn't privileged by default, so some operations, such as `chroot /host`, may fail. Use a debugging profile such as `--profile=sysadmin` when you need more privileges, and delete the debug pod afterwards.",
-    "reference": "Kubernetes docs: Debugging Kubernetes Nodes With Kubectl"
+    "reference": "Kubernetes docs: Debugging Kubernetes Nodes With Kubectl",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-039",
@@ -1433,7 +1471,8 @@
       }
     ],
     "explanation": "The memory limit applies to the container's total working set. A JVM uses memory outside the heap: metaspace, code cache, thread stacks, direct and NIO buffers, and GC structures. `-Xmx` equal to the limit leaves no room for these. Size the heap to a fraction of the limit (for example `-XX:MaxRAMPercentage=75`), and watch `container_memory_working_set_bytes`, not just heap metrics.",
-    "reference": "Kubernetes docs: Assign Memory Resources to Containers"
+    "reference": "Kubernetes docs: Assign Memory Resources to Containers",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-040",
@@ -1476,7 +1515,8 @@
       }
     ],
     "explanation": "Capacity and autoscaling decisions follow requests, not usage, so a large gap between them means paying for idle reservations. Right-size requests from observed peaks (for example p95 or p99 over a representative period). VPA in `updateMode: \"Off\"` provides recommendations without evicting pods. Change requests gradually and keep watching throttling and OOM signals.",
-    "reference": "Kubernetes docs: Vertical Pod Autoscaling"
+    "reference": "Kubernetes docs: Vertical Pod Autoscaling",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-041",
@@ -1513,7 +1553,8 @@
       }
     ],
     "explanation": "HTTP probes connect from the kubelet to the pod's IP. If the application binds only to `127.0.0.1`, connections to the pod IP are refused, yet requests from inside the container to localhost succeed. Configure the server to listen on `0.0.0.0` (or the pod IP). The same mistake makes the pod unreachable through its Service.",
-    "reference": "Kubernetes docs: Configure Liveness, Readiness and Startup Probes"
+    "reference": "Kubernetes docs: Configure Liveness, Readiness and Startup Probes",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-042",
@@ -1550,7 +1591,8 @@
       }
     ],
     "explanation": "Once the back-off has reached its 300-second cap, a crash-looping container restarts roughly every 5 minutes, about 3 times per 15 minutes, which never exceeds \"more than 3\". Rate-based restart alerts miss long-running crash loops. Also alert on state, for example `kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\"} == 1` for 10 minutes.",
-    "reference": "kube-state-metrics documentation (pod metrics)"
+    "reference": "kube-state-metrics documentation (pod metrics)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-043",
@@ -1609,7 +1651,8 @@
       }
     ],
     "explanation": "Good troubleshooting ties a symptom to the signal that proves its cause, rather than guessing from dashboards. Throttling counters explain latency at low average CPU. OOMKilled explains exit 137 restarts. FailedScheduling events explain Pending pods. Node pressure conditions combined with Evicted pods explain mass failures on one node.",
-    "reference": "Kubernetes docs: Troubleshooting Applications"
+    "reference": "Kubernetes docs: Troubleshooting Applications",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-044",
@@ -1652,7 +1695,8 @@
       "D"
     ],
     "explanation": "Start from the user-facing signal (errors around rollout times), then check the mechanism. Errors during deploys usually come from pods receiving traffic before they are ready, or after they begin shutting down while still listed as endpoints. Then inspect readiness probes, `preStop` delays and `terminationGracePeriodSeconds`, and verify the fix against the same RED metrics.",
-    "reference": "Kubernetes docs: Pod Lifecycle (termination of Pods)"
+    "reference": "Kubernetes docs: Pod Lifecycle (termination of Pods)",
+    "roleLevel": 4
   },
   {
     "id": "K8S-OBS-045",
@@ -1689,6 +1733,7 @@
       }
     ],
     "explanation": "The container runtime writes each stdout line as a separate entry in the CRI log format, so a stack trace becomes many lines. Log agents rebuild events with multiline rules, for example \"a line starting with whitespace or `at ` continues the previous record\". Even better, have the application log structured JSON with the stack trace in a single field.",
-    "reference": "Fluent Bit docs: Multiline parsing"
+    "reference": "Fluent Bit docs: Multiline parsing",
+    "roleLevel": 4
   }
 ]

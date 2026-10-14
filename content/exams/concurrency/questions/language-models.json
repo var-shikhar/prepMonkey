@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Program execution in Go ends when `main` returns, and it does not wait for other goroutines. The spawned goroutine may or may not run before exit, so \"hi\" is not guaranteed. Wait for goroutines explicitly with a `sync.WaitGroup`, a channel or `errgroup`.",
-    "reference": "The Go Programming Language Specification: Program execution"
+    "reference": "The Go Programming Language Specification: Program execution",
+    "roleLevel": 2
   },
   {
     "id": "CON-LNG-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "`thread::spawn` requires its closure to be `Send + 'static`. `Rc<T>` updates its reference count non-atomically, so two threads cloning or dropping it could corrupt the count; the standard library marks it `!Send`. `Arc<T>` uses atomic reference counting and is `Send` when `T: Send + Sync`.",
-    "reference": "The Rust Book: Shared-State Concurrency (Arc<T>)"
+    "reference": "The Rust Book: Shared-State Concurrency (Arc<T>)",
+    "roleLevel": 2
   },
   {
     "id": "CON-LNG-003",
@@ -118,7 +120,8 @@
       }
     ],
     "explanation": "All four give you cheap concurrency, but the unit differs: Go runs goroutines on an M:N scheduler, the BEAM runs isolated processes that share nothing, Java 21 adds virtual threads mounted on carrier threads, and Node.js runs JavaScript on one event loop with `worker_threads` for parallelism.",
-    "reference": "Go, Erlang, JEP 444 and Node.js documentation"
+    "reference": "Go, Erlang, JEP 444 and Node.js documentation",
+    "roleLevel": 2
   },
   {
     "id": "CON-LNG-004",
@@ -155,7 +158,8 @@
       }
     ],
     "explanation": "A receive on a closed channel proceeds immediately and yields the zero value after any buffered values are drained. The two-value form `v, ok := <-ch` reports `ok == false` to tell you the channel is closed. This is what lets `for v := range ch` loops end cleanly.",
-    "reference": "The Go Programming Language Specification: Receive operator"
+    "reference": "The Go Programming Language Specification: Receive operator",
+    "roleLevel": 2
   },
   {
     "id": "CON-LNG-005",
@@ -171,7 +175,8 @@
       "java.util.concurrent.CompletableFuture"
     ],
     "explanation": "`CompletableFuture` implements both `Future` and `CompletionStage`, so it can be completed explicitly and composed with callbacks such as `thenApply`, `thenCompose`, `thenCombine` and `exceptionally`, unlike the plain `Future` returned by `ExecutorService.submit`.",
-    "reference": "Java SE API: CompletableFuture"
+    "reference": "Java SE API: CompletableFuture",
+    "roleLevel": 2
   },
   {
     "id": "CON-LNG-006",
@@ -208,7 +213,8 @@
       }
     ],
     "explanation": "Contexts form a tree. Calling a cancel function cancels that context and every context derived from it, so `cancelChild()` sets `child.Err()` to `context.Canceled` while `parent.Err()` stays `nil`. Cancelling the parent closes the parent's `Done` channel and cancels all of its children, which is how a request's cancellation reaches every goroutine working on it. Always call the cancel function, usually with `defer cancel()`, or the context's resources stay attached to the parent until it is cancelled; `go vet`'s lostcancel check flags this.",
-    "reference": "Go docs: package context"
+    "reference": "Go docs: package context",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-007",
@@ -251,7 +257,8 @@
       }
     ],
     "explanation": "The Java Memory Model guarantees that a volatile write happens-before every later read of that variable, so threads never see a stale value. It does not make `count++` atomic: the read-modify-write can interleave and lose updates. Use `AtomicInteger`, `LongAdder` or a lock for counters.",
-    "reference": "Java Language Specification §17.4; java.util.concurrent.atomic"
+    "reference": "Java Language Specification §17.4; java.util.concurrent.atomic",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-008",
@@ -288,7 +295,8 @@
       }
     ],
     "explanation": "`submit` wraps the task in a `FutureTask`, which catches any exception and stores it. It surfaces only when someone calls `get()`, wrapped in an `ExecutionException`. `execute()` behaves differently: the exception reaches the thread's uncaught-exception handler and is printed. Always observe futures, or handle errors inside the task.",
-    "reference": "Java SE API: ExecutorService.submit, FutureTask"
+    "reference": "Java SE API: ExecutorService.submit, FutureTask",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-009",
@@ -325,7 +333,8 @@
       }
     ],
     "explanation": "`thread::spawn` requires a `'static` closure because the compiler can't prove the thread finishes before `main`'s locals are dropped, even though `join` is called. The error suggests `move` to transfer ownership of `v`. Alternatively, `std::thread::scope` guarantees all scoped threads are joined before it returns, so they may borrow locals.",
-    "reference": "The Rust Book: Using move Closures with Threads"
+    "reference": "The Rust Book: Using move Closures with Threads",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-010",
@@ -350,7 +359,8 @@
       }
     ],
     "explanation": "Each `worker_threads` worker runs in its own OS thread with its own V8 isolate and event loop, so CPU-bound work in different workers runs in parallel. Workers don't share ordinary JS objects; they communicate with `postMessage` (structured clone or transfer) or share raw memory through `SharedArrayBuffer`.",
-    "reference": "Node.js docs: Worker threads"
+    "reference": "Node.js docs: Worker threads",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-011",
@@ -393,7 +403,8 @@
       "D"
     ],
     "explanation": "This is the pattern from the `ExecutorService` Javadoc. `shutdown()` rejects new work but lets queued tasks run; `awaitTermination` waits up to a deadline; `shutdownNow()` interrupts running tasks and returns the ones still queued; a second wait catches tasks that respond to interruption. Interruption is cooperative, so tasks that ignore it may still keep running.",
-    "reference": "Java SE API: ExecutorService (usage example)"
+    "reference": "Java SE API: ExecutorService (usage example)",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-012",
@@ -430,7 +441,8 @@
       }
     ],
     "explanation": "The Go spec says that if more than one communication can proceed, a single one is chosen via uniform pseudo-random selection. This prevents starvation. If you need priority, use nested selects or check the high-priority channel first in a separate non-blocking select.",
-    "reference": "The Go Programming Language Specification: Select statements"
+    "reference": "The Go Programming Language Specification: Select statements",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-013",
@@ -489,7 +501,8 @@
       }
     ],
     "explanation": "All four mechanisms are cooperative: they signal, and the running code must notice and stop. A tight CPU loop that never checks `ctx.Done()`, `Thread.interrupted()`, never awaits, or never reads `signal.aborted` cannot be cancelled by any of them.",
-    "reference": "Go context package; Java Thread.interrupt; asyncio Task.cancel; AbortController"
+    "reference": "Go context package; Java Thread.interrupt; asyncio Task.cancel; AbortController",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-014",
@@ -506,7 +519,8 @@
       "marker::Send"
     ],
     "explanation": "`Send` means a value can be moved to another thread; `Sync` means `&T` can be shared between threads (equivalently, `&T` is `Send`). Both are auto traits: the compiler implements them for types whose fields are all `Send`/`Sync`, and types like `Rc` and `RefCell` opt out.",
-    "reference": "The Rust Book: Extensible Concurrency with Send and Sync"
+    "reference": "The Rust Book: Extensible Concurrency with Send and Sync",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-015",
@@ -549,7 +563,8 @@
       }
     ],
     "explanation": "Go, the JVM and Rust map their threads onto OS threads that execute in parallel. Standard CPython serialises bytecode execution with the GIL (use processes, or the experimental free-threaded build), and async functions on one Node.js event loop take turns on a single thread; parallel JavaScript needs `worker_threads`.",
-    "reference": "Go runtime docs; JEP 444; The Rust Book ch. 16; CPython GIL"
+    "reference": "Go runtime docs; JEP 444; The Rust Book ch. 16; CPython GIL",
+    "roleLevel": 3
   },
   {
     "id": "CON-LNG-016",
@@ -586,7 +601,8 @@
       }
     ],
     "explanation": "The `sync` docs require that calls to `Add` with a positive delta happen before `Wait`. When `Add` runs inside the goroutine, `Wait` may run first, see a zero counter and return immediately; worse, a `Done` racing a counter reset can drive it negative and panic. Call `wg.Add(1)` (or `wg.Add(n)`) before starting each goroutine.",
-    "reference": "Go package sync: WaitGroup"
+    "reference": "Go package sync: WaitGroup",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-017",
@@ -623,7 +639,8 @@
       }
     ],
     "explanation": "With a value receiver, every call works on a copy of `Counter`, including a copy of the mutex and of `n`. Callers never share a lock, and the increment is lost when the copy is discarded. A `sync.Mutex` must not be copied after first use; `go vet`'s copylocks check reports it. Use `func (c *Counter) Inc()`.",
-    "reference": "Go package sync: Mutex (\"must not be copied after first use\")"
+    "reference": "Go package sync: Mutex (\"must not be copied after first use\")",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-018",
@@ -660,7 +677,8 @@
       }
     ],
     "explanation": "When the context wins, `fetch` returns and nothing will ever receive from `ch`. The worker goroutine then blocks forever on `ch <- slowCall()`, holding its stack and everything it references. Goroutines are never garbage-collected while blocked. A buffer of one (`make(chan string, 1)`) lets the late send complete and the goroutine exit; passing `ctx` into `slowCall` also lets it stop early.",
-    "reference": "Go blog: Go Concurrency Patterns: Context; Go memory leaks via blocked goroutines"
+    "reference": "Go blog: Go Concurrency Patterns: Context; Go memory leaks via blocked goroutines",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-019",
@@ -697,7 +715,8 @@
       }
     ],
     "explanation": "Go 1.22 changed `for` loops so that each iteration has its own copy of the loop variable, which applies to modules whose `go.mod` says `go 1.22` or later. Each closure therefore captures a distinct `i` (0, 1 and 2), and the program prints each digit once in an order chosen by the scheduler. Before Go 1.22, the closures shared one variable and often printed `333`.",
-    "reference": "Go 1.22 release notes: loop variables"
+    "reference": "Go 1.22 release notes: loop variables",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-020",
@@ -746,7 +765,8 @@
       }
     ],
     "explanation": "Channel operations fall into three groups. Panics: send on closed, close nil, close closed. Block forever: send or receive on nil. Succeed immediately: receive on closed (zero value, `ok == false`). The rule \"only the sender closes, and only once\" follows from these panics, and setting a channel to nil is a deliberate way to disable a select case.",
-    "reference": "The Go Programming Language Specification: Send statements, Close"
+    "reference": "The Go Programming Language Specification: Send statements, Close",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-021",
@@ -783,7 +803,8 @@
       }
     ],
     "explanation": "`thenApply` is like `map`: it wraps the function's return value in a new stage, so a function returning a future gives a future of a future. `thenCompose` is like `flatMap`: it expects the function to return a `CompletionStage` and flattens it, giving `CompletableFuture<User>`.",
-    "reference": "Java SE API: CompletionStage.thenCompose"
+    "reference": "Java SE API: CompletionStage.thenCompose",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-022",
@@ -820,7 +841,8 @@
       }
     ],
     "explanation": "When a stage completes exceptionally, `join()` throws an unchecked `CompletionException` whose cause is the original exception, while `get()` throws a checked `ExecutionException`. A catch for `IllegalStateException` does not match, so the exception propagates. Handle failures in the pipeline with `exceptionally` or `handle`, or unwrap `getCause()`.",
-    "reference": "Java SE API: CompletableFuture.join"
+    "reference": "Java SE API: CompletableFuture.join",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-023",
@@ -857,7 +879,8 @@
       }
     ],
     "explanation": "A virtual thread normally unmounts from its carrier when it blocks, freeing the carrier for other virtual threads. In JDK 21, blocking while holding a monitor (`synchronized`) pins the virtual thread, so each blocked request occupies a carrier, and the carrier pool is about the size of the CPU count. Fixes on JDK 21 are `ReentrantLock` or an updated driver; JEP 491 in JDK 24 lets virtual threads block in `synchronized` without pinning (calls through native code can still pin).",
-    "reference": "JEP 444: Virtual Threads; JEP 491: Synchronize Virtual Threads without Pinning"
+    "reference": "JEP 444: Virtual Threads; JEP 491: Synchronize Virtual Threads without Pinning",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-024",
@@ -900,7 +923,8 @@
       }
     ],
     "explanation": "JEP 444 recommends creating a virtual thread per task and never pooling them, because they are cheap. When the real constraint is a limited resource, such as database connections or a rate-limited API, limit concurrency at that resource with a `Semaphore` (or the connection pool), not by capping the number of threads.",
-    "reference": "JEP 444: Virtual Threads (\"Do not pool virtual threads\")"
+    "reference": "JEP 444: Virtual Threads (\"Do not pool virtual threads\")",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-025",
@@ -937,7 +961,8 @@
       }
     ],
     "explanation": "Each `ConcurrentHashMap` method is thread-safe, but a sequence of calls is not atomic: two threads can both see the key missing and both build a client. `computeIfAbsent` performs the check and the insert atomically for that key and calls the function at most once. Keep the function short, and don't update other keys of the same map inside it.",
-    "reference": "Java SE API: ConcurrentHashMap.computeIfAbsent"
+    "reference": "Java SE API: ConcurrentHashMap.computeIfAbsent",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-026",
@@ -974,7 +999,8 @@
       }
     ],
     "explanation": "`Arc<T>` is `Send` and `Sync` only when `T: Send + Sync`. `Mutex<T>` is `Sync` whenever `T: Send`, so `Arc<Mutex<i32>>` can be shared, and each thread locks to mutate. `RefCell` tracks borrows non-atomically and is `!Sync`, and `Rc` is `!Send`, so every alternative fails to compile. The compiler, not testing, rules out the data race.",
-    "reference": "The Rust Book: Shared-State Concurrency"
+    "reference": "The Rust Book: Shared-State Concurrency",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-027",
@@ -1011,7 +1037,8 @@
       }
     ],
     "explanation": "When a thread panics while holding a `std::sync::Mutex`, unwinding drops the guard but marks the mutex poisoned. Later `lock()` calls return `Err(PoisonError)`, a signal that the protected data may be inconsistent. Calling `unwrap()` propagates the failure; to continue anyway, take the guard with `err.into_inner()` (or use `clear_poison`).",
-    "reference": "Rust std::sync::Mutex: Poisoning"
+    "reference": "Rust std::sync::Mutex: Poisoning",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-028",
@@ -1048,7 +1075,8 @@
       }
     ],
     "explanation": "A future's state includes every value alive across an `.await`. `std::sync::MutexGuard` is `!Send`, so the whole future becomes `!Send`, and `tokio::spawn` requires `Send` futures because tasks can move between worker threads. Release the guard before the await (copy the needed data out), or use `tokio::sync::Mutex`, whose guard may be held across awaits.",
-    "reference": "Tokio tutorial: Shared state (holding a MutexGuard across an .await)"
+    "reference": "Tokio tutorial: Shared state (holding a MutexGuard across an .await)",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-029",
@@ -1098,7 +1126,8 @@
       "E"
     ],
     "explanation": "Only the sender closes a channel, and only after its last send. Closing `jobs` lets each worker's `range` finish after draining the remaining jobs. Workers signal through the WaitGroup, and only after `Wait` returns is it safe to close `results`; closing it earlier would make a still-running worker panic with \"send on closed channel\".",
-    "reference": "Go blog: Go Concurrency Patterns: Pipelines and cancellation"
+    "reference": "Go blog: Go Concurrency Patterns: Pipelines and cancellation",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-030",
@@ -1135,7 +1164,8 @@
       }
     ],
     "explanation": "With `rest_for_one`, when a child terminates the supervisor restarts it and all children started after it. Listing `db_conn` first means its crash restarts the workers that depend on it, while a worker crash restarts only that worker and those after it. This is the \"let it crash\" idea: recover by restarting known-good state rather than defensive error handling.",
-    "reference": "Erlang/OTP: Supervisor Behaviour (restart strategies)"
+    "reference": "Erlang/OTP: Supervisor Behaviour (restart strategies)",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-031",
@@ -1178,7 +1208,8 @@
       }
     ],
     "explanation": "The `await` in `GetDataAsync` captures the UI `SynchronizationContext`, so its continuation must run on the UI thread. But `.Result` blocks that thread waiting for the task, and each side waits for the other. Awaiting all the way up removes the block; `ConfigureAwait(false)` in library code lets the continuation run on a pool thread. Event handlers are the one place `async void` is acceptable.",
-    "reference": "Microsoft Learn: Async/Await best practices; ConfigureAwait FAQ"
+    "reference": "Microsoft Learn: Async/Await best practices; ConfigureAwait FAQ",
+    "roleLevel": 4
   },
   {
     "id": "CON-LNG-032",
@@ -1215,7 +1246,8 @@
       }
     ],
     "explanation": "A closed channel is always ready to receive, returning zero values, so once `a` closes, select keeps picking it and spins. The loop condition never becomes false because nothing sets the variables to nil. Checking `ok` and setting the drained channel to `nil` disables that case permanently (a nil channel never becomes ready), and the loop ends once both are nil.",
-    "reference": "The Go Programming Language Specification: Select statements, Receive operator"
+    "reference": "The Go Programming Language Specification: Select statements, Receive operator",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-033",
@@ -1240,7 +1272,8 @@
       }
     ],
     "explanation": "The Go memory model states that the kth receive on a channel with capacity C is synchronized before the completion of the (k+C)th send. With C = 1, the receive ending one critical section happens before the send starting the next, so the channel works as a mutex with full visibility. The same rule makes a capacity-N channel a counting semaphore.",
-    "reference": "The Go Memory Model: Channel communication"
+    "reference": "The Go Memory Model: Channel communication",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-034",
@@ -1277,7 +1310,8 @@
       }
     ],
     "explanation": "The fatal deadlock error only fires when all goroutines are blocked and nothing can make progress. A server always has goroutines waiting on the network, so leaked goroutines blocked on channel receives are never reported. They pile up silently. Detect them with goroutine profiles (`pprof`, `runtime.NumGoroutine`) or tests using `goleak`, and fix them with explicit close or context cancellation.",
-    "reference": "Go runtime: deadlock detection; net/http/pprof goroutine profile"
+    "reference": "Go runtime: deadlock detection; net/http/pprof goroutine profile",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-035",
@@ -1314,7 +1348,8 @@
       }
     ],
     "explanation": "`supplyAsync(supplier)` uses `ForkJoinPool.commonPool()`, which by default has about one thread fewer than the CPU count and is shared with parallel streams. Blocking I/O in that pool occupies its threads, so CPU-bound parallel work queues behind it. Supply a separate executor sized for I/O, or a virtual-thread-per-task executor, for blocking calls.",
-    "reference": "Java SE API: CompletableFuture (default async executor); ForkJoinPool.commonPool"
+    "reference": "Java SE API: CompletableFuture (default async executor); ForkJoinPool.commonPool",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-036",
@@ -1351,7 +1386,8 @@
       }
     ],
     "explanation": "Virtual threads fully support `ThreadLocal`, but each virtual thread has its own copy. Caching a heavy object per thread was cheap with 200 pooled threads; with a million short-lived virtual threads it creates up to a million parsers. JEP 444 warns against this pattern. Share an immutable or thread-safe instance, or use an explicit object pool.",
-    "reference": "JEP 444: Virtual Threads (thread-local variables)"
+    "reference": "JEP 444: Virtual Threads (thread-local variables)",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-037",
@@ -1388,7 +1424,8 @@
       }
     ],
     "explanation": "`Arc<T>` implements `Send` (and `Sync`) only when `T: Send + Sync`, because cloning an `Arc` lets several threads obtain `&T` at once. `Cell<T>` allows mutation through a shared reference without synchronization, so it is `!Sync`. `Arc<Cell<i32>>` is therefore `!Send`. Use `Arc<AtomicI32>` or `Arc<Mutex<i32>>`.",
-    "reference": "Rust std::sync::Arc (Send/Sync impls); std::cell::Cell"
+    "reference": "Rust std::sync::Arc (Send/Sync impls); std::cell::Cell",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-038",
@@ -1431,7 +1468,8 @@
       }
     ],
     "explanation": "Rust's guarantee is \"no data races and no memory unsafety\" in safe code. It does not prevent deadlocks, higher-level race conditions (for example, reading a balance under one lock and writing it under another), or memory leaks. Those still need design discipline, such as lock ordering, holding one lock across the whole invariant, and weak references.",
-    "reference": "The Rustonomicon: Data Races and Race Conditions"
+    "reference": "The Rustonomicon: Data Races and Race Conditions",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-039",
@@ -1468,7 +1506,8 @@
       }
     ],
     "explanation": "Without a `SynchronizationContext`, continuations run on any thread-pool thread, so the classic UI deadlock doesn't occur. But `.Result` still blocks a pool thread for the full I/O duration, and the continuations that would complete those tasks also need pool threads. Under load the pool starves; it injects threads only slowly, and latency spikes. Use `await` all the way.",
-    "reference": "Microsoft Learn: ASP.NET Core performance best practices (avoid blocking calls)"
+    "reference": "Microsoft Learn: ASP.NET Core performance best practices (avoid blocking calls)",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-040",
@@ -1505,7 +1544,8 @@
       }
     ],
     "explanation": "A selective `receive` walks the mailbox from the oldest message, skipping those that don't match. If unmatched messages accumulate, every receive does work proportional to the mailbox size, and the process slows while memory grows. Always include a catch-all clause that handles or discards unexpected messages; OTP behaviours do this with `handle_info`.",
-    "reference": "Erlang Efficiency Guide: Processes (receiving messages)"
+    "reference": "Erlang Efficiency Guide: Processes (receiving messages)",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-041",
@@ -1564,7 +1604,8 @@
       }
     ],
     "explanation": "Every language needs a happens-before edge to make one thread's writes visible to another. Go provides it through channel operations (and sync primitives), Java through volatile and monitors, Rust through atomic orderings and its sync types, and JavaScript through `Atomics` operations on shared memory. Plain writes to shared memory give no such guarantee in any of them.",
-    "reference": "The Go Memory Model; JLS §17.4; Rust std::sync::atomic::Ordering; ECMAScript memory model"
+    "reference": "The Go Memory Model; JLS §17.4; Rust std::sync::atomic::Ordering; ECMAScript memory model",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-042",
@@ -1601,7 +1642,8 @@
       }
     ],
     "explanation": "`allOf` returns a future that completes when all inputs have completed, exceptionally if any of them failed. It does not short-circuit or cancel the others, so the failure surfaces only after the slowest call finishes and the work keeps consuming resources. For fail-fast behaviour, attach a handler that cancels the siblings, or use structured concurrency, which cancels sibling subtasks when one fails.",
-    "reference": "Java SE API: CompletableFuture.allOf"
+    "reference": "Java SE API: CompletableFuture.allOf",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-043",
@@ -1638,7 +1680,8 @@
       }
     ],
     "explanation": "`errgroup.WithContext` cancels the derived `ctx` when the first goroutine returns an error, and `Wait` returns that first error only after every goroutine has returned. Cancellation is cooperative: goroutines must pass `ctx` down to the I/O calls. Using `context.Background()` detaches them, so they run to completion and `Wait` blocks for the full 30 s.",
-    "reference": "golang.org/x/sync/errgroup: WithContext, Group.Wait"
+    "reference": "golang.org/x/sync/errgroup: WithContext, Group.Wait",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-044",
@@ -1675,7 +1718,8 @@
       }
     ],
     "explanation": "The `sync` docs say that if `f` panics, `Do` considers it to have returned, and later calls of `Do` return without calling `f`. Because `cfg` was never assigned, it stays `nil` and later callers hit nil-pointer bugs. Go 1.21 added `sync.OnceFunc`, `OnceValue` and `OnceValues`, whose returned functions re-panic with the same value on every call, making the failure visible.",
-    "reference": "Go package sync: Once.Do, OnceValue"
+    "reference": "Go package sync: Once.Do, OnceValue",
+    "roleLevel": 5
   },
   {
     "id": "CON-LNG-045",
@@ -1712,6 +1756,7 @@
       }
     ],
     "explanation": "The BEAM schedulers preempt Erlang processes after they use a budget of reductions, so one busy process can't starve others on the same scheduler. Node.js and asyncio are cooperative: a callback or coroutine that never yields blocks every other request on that loop. The BEAM exception is native code (NIFs) that runs for long without yielding, which is why \"dirty schedulers\" exist. Go also preempts goroutines asynchronously since Go 1.14.",
-    "reference": "Erlang docs: Scheduling (reductions); erl_nif dirty schedulers"
+    "reference": "Erlang docs: Scheduling (reductions); erl_nif dirty schedulers",
+    "roleLevel": 5
   }
 ]

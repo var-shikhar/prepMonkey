@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Processes are the unit of fault isolation the OS gives you: each has its own address space, so a segfault, memory corruption or abort in one cannot corrupt or kill another. Threads, coroutines and tasks all live inside one process and die with it. The price is higher creation cost and the need for IPC to move data in and out.",
-    "reference": "Operating system concepts: process isolation"
+    "reference": "Operating system concepts: process isolation",
+    "roleLevel": 2
   },
   {
     "id": "CON-MPP-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "fork() creates a duplicate address space. Pages are shared physically only until one side writes; then the kernel copies the page (copy-on-write) for the writer. Communicating after fork therefore needs explicit IPC: pipes, sockets or shared memory mapped as shared.",
-    "reference": "man7.org: fork(2)"
+    "reference": "man7.org: fork(2)",
+    "roleLevel": 2
   },
   {
     "id": "CON-MPP-003",
@@ -110,7 +112,8 @@
       }
     ],
     "explanation": "Pipes are one-way byte streams between related processes. Shared memory avoids copying but needs explicit synchronisation. Signals carry only a number, which suits notifications like SIGHUP for reload. Unix domain sockets give a full-duplex, connection-oriented channel between any local processes and can even pass file descriptors.",
-    "reference": "man7.org: pipe(7), shm_overview(7), signal(7), unix(7)"
+    "reference": "man7.org: pipe(7), shm_overview(7), signal(7), unix(7)",
+    "roleLevel": 2
   },
   {
     "id": "CON-MPP-004",
@@ -147,7 +150,8 @@
       }
     ],
     "explanation": "When a process exits, the kernel keeps a small entry with its exit status until the parent calls wait()/waitpid(). Until then it is a zombie. A parent that never reaps leaks process-table slots; if the parent itself dies, init (or a subreaper) adopts and reaps its children.",
-    "reference": "man7.org: wait(2)"
+    "reference": "man7.org: wait(2)",
+    "roleLevel": 2
   },
   {
     "id": "CON-MPP-005",
@@ -163,7 +167,8 @@
       "eight"
     ],
     "explanation": "For CPU-bound work, one worker per core keeps every core busy without the overhead of extra context switches and cache thrashing. More workers than cores adds switching cost; fewer leaves cores idle. I/O-bound pools are sized differently because workers spend time waiting.",
-    "reference": "Goetz, Java Concurrency in Practice §8.2 (sizing thread pools)"
+    "reference": "Goetz, Java Concurrency in Practice §8.2 (sizing thread pools)",
+    "roleLevel": 2
   },
   {
     "id": "CON-MPP-006",
@@ -200,7 +205,8 @@
       }
     ],
     "explanation": "Everything passed to a pool task crosses a process boundary: it is serialised, written through a pipe and deserialised in the worker. A 300 MB argument per task means 300 MB of pickling per call. An `initializer` (or a module-level load in a fork-based pool) puts the data into each worker once, and tasks then reference it as a global. Memory use is still one copy per worker unless you use shared memory.",
-    "reference": "Python docs: multiprocessing.Pool initializer"
+    "reference": "Python docs: multiprocessing.Pool initializer",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-007",
@@ -243,7 +249,8 @@
       }
     ],
     "explanation": "Processes trade higher startup and communication costs for isolation and, in CPython, freedom from the GIL. That is why process pools pay off for coarse-grained CPU-bound tasks and lose to threads or async for tiny or I/O-bound tasks.",
-    "reference": "Python docs: multiprocessing — Programming guidelines"
+    "reference": "Python docs: multiprocessing — Programming guidelines",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-008",
@@ -280,7 +287,8 @@
       }
     ],
     "explanation": "`shutdown()` starts an orderly shutdown: no new tasks, but already-submitted ones run to completion. `shutdownNow()` additionally drains the queue (returning those tasks) and interrupts running workers. Interruption is cooperative, so a task that never checks it or blocks uninterruptibly keeps running. Pair either call with `awaitTermination` and a timeout.",
-    "reference": "Java SE docs: ExecutorService"
+    "reference": "Java SE docs: ExecutorService",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-009",
@@ -317,7 +325,8 @@
       }
     ],
     "explanation": "Orphaned processes are reparented to PID 1 or to a process marked as a child subreaper (`PR_SET_CHILD_SUBREAPER`), which reaps them on exit. They keep consuming resources, so robust pools make workers notice the parent's death (a closed pipe, `PR_SET_PDEATHSIG`, or a heartbeat) and exit.",
-    "reference": "man7.org: prctl(2) PR_SET_CHILD_SUBREAPER"
+    "reference": "man7.org: prctl(2) PR_SET_CHILD_SUBREAPER",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-010",
@@ -342,7 +351,8 @@
       }
     ],
     "explanation": "A daemonic multiprocessing worker is killed when its parent exits. To avoid leaving orphaned grandchildren behind, CPython forbids daemonic processes from creating children and raises `AssertionError: daemonic processes are not allowed to have children` (verified on Python 3.13). This is why you can't nest a `Pool` inside a pool worker by default.",
-    "reference": "Python docs: multiprocessing.Process.daemon"
+    "reference": "Python docs: multiprocessing.Process.daemon",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-011",
@@ -379,7 +389,8 @@
       }
     ],
     "explanation": "`imap` returns results in input order, so a slow early task delays every result behind it even if later ones are done. `imap_unordered` yields results as they complete. Running this on Python 3.13 gave task 0 first after about 0.6–0.8 s.",
-    "reference": "Python docs: multiprocessing.Pool.imap"
+    "reference": "Python docs: multiprocessing.Pool.imap",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-012",
@@ -419,7 +430,8 @@
       "E"
     ],
     "explanation": "First stop the intake so no new work starts. Give in-flight tasks a bounded grace period, then record their results so they aren't redone or lost. Anything still running past the deadline is killed (and should be safe to retry). Only then release resources and exit. Orchestrators like Kubernetes enforce their own grace period, so the deadline must fit inside it.",
-    "reference": "Java SE docs: ExecutorService (orderly shutdown)"
+    "reference": "Java SE docs: ExecutorService (orderly shutdown)",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-013",
@@ -456,7 +468,8 @@
       }
     ],
     "explanation": "A pipe has a fixed kernel buffer. Once it is full, the child's write() blocks until the reader drains it, but the parent is stuck in wait() for the child to exit: a deadlock. Use `communicate()`, which reads the pipes while waiting. On Python 3.13 the code above timed out in `wait()`, while `communicate()` returned all 5,000,000 bytes.",
-    "reference": "Python docs: subprocess.Popen.wait (warning)"
+    "reference": "Python docs: subprocess.Popen.wait (warning)",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-014",
@@ -476,7 +489,8 @@
       "64KB"
     ],
     "explanation": "Since Linux 2.6.11 the default pipe capacity is 65,536 bytes (16 pages). It can be changed per pipe with `fcntl(F_SETPIPE_SZ)`. Writes up to PIPE_BUF (4,096 bytes on Linux) are atomic. Any producer that writes more than the reader drains will block once the buffer is full.",
-    "reference": "man7.org: pipe(7)"
+    "reference": "man7.org: pipe(7)",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-015",
@@ -519,7 +533,8 @@
       }
     ],
     "explanation": "Worker threads share one process: they are cheaper and can share memory, but a native crash or out-of-memory abort takes the whole process down. Child processes give real isolation and independent heaps at the cost of startup time and serialised messaging.",
-    "reference": "Node.js docs: worker_threads and child_process"
+    "reference": "Node.js docs: worker_threads and child_process",
+    "roleLevel": 3
   },
   {
     "id": "CON-MPP-016",
@@ -556,7 +571,8 @@
       }
     ],
     "explanation": "ThreadPoolExecutor adds threads in this order: below the core size, start a new thread; otherwise queue the task; only if the queue refuses it, start a thread up to the maximum; otherwise reject. An unbounded queue never refuses, so `maximumPoolSize` is effectively ignored. That is exactly how `Executors.newFixedThreadPool` behaves, and why its queue can grow until the JVM runs out of memory.",
-    "reference": "Java SE docs: ThreadPoolExecutor (Queuing)"
+    "reference": "Java SE docs: ThreadPoolExecutor (Queuing)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-017",
@@ -593,7 +609,8 @@
       }
     ],
     "explanation": "A SynchronousQueue accepts an offer only if a thread is waiting to take it. With all 4 threads busy, each new offer fails; the pool can't grow past 4, so the rejection handler runs. The default `AbortPolicy` throws `RejectedExecutionException`. `Executors.newCachedThreadPool` uses the same queue with an unbounded maximum instead.",
-    "reference": "Java SE docs: ThreadPoolExecutor"
+    "reference": "Java SE docs: ThreadPoolExecutor",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-018",
@@ -630,7 +647,8 @@
       }
     ],
     "explanation": "Goetz's sizing formula is N = cores × target utilisation × (1 + W/C). With W/C = 90/10 = 9 and full utilisation, N = 8 × 10 = 80. In practice you also cap the pool by downstream limits such as database connections, and asynchronous I/O can achieve the same overlap without so many threads.",
-    "reference": "Goetz, Java Concurrency in Practice §8.2"
+    "reference": "Goetz, Java Concurrency in Practice §8.2",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-019",
@@ -645,7 +663,8 @@
       "63"
     ],
     "explanation": "When `chunksize` is omitted, `Pool.map` computes `chunksize, extra = divmod(len(items), len(pool) * 4)` and adds 1 if there is a remainder. Here divmod(1000, 16) = (62, 8), so the chunk size is 63 and the work is cut into 16 chunks. `ProcessPoolExecutor.map` instead defaults to `chunksize=1`.",
-    "reference": "CPython source: multiprocessing/pool.py (_map_async)"
+    "reference": "CPython source: multiprocessing/pool.py (_map_async)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-020",
@@ -682,7 +701,8 @@
       }
     ],
     "explanation": "Chunking trades IPC overhead against load balance. Big chunks mean few messages but coarse scheduling: if costs vary, one worker can end up with all the slow tasks. For uneven tasks use smaller chunks (even 1) with `imap_unordered`, or shuffle the input. Work-stealing schedulers such as ForkJoinPool rebalance automatically.",
-    "reference": "Python docs: multiprocessing.Pool.map (chunksize)"
+    "reference": "Python docs: multiprocessing.Pool.map (chunksize)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-021",
@@ -719,7 +739,8 @@
       }
     ],
     "explanation": "Copy-on-write shares pages until someone writes to them. In CPython, touching an object updates its reference count, and garbage collection passes write to object headers. Those writes dirty the pages, so each worker slowly gets private copies. Mitigations include calling `gc.freeze()` before forking (Python 3.7+) to keep the collector off pre-fork objects, keeping big data in non-object buffers like NumPy arrays or memory-mapped files, and recycling workers.",
-    "reference": "Python docs: gc.freeze"
+    "reference": "Python docs: gc.freeze",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-022",
@@ -762,7 +783,8 @@
       }
     ],
     "explanation": "The goal is one physical copy of the data. Fork plus large contiguous buffers works because the buffer pages aren't written. Explicit shared memory or memory-mapped files make the sharing deliberate and also work with spawn. Starting fresh interpreters or shipping the data per task multiplies memory.",
-    "reference": "Python docs: multiprocessing.shared_memory"
+    "reference": "Python docs: multiprocessing.shared_memory",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-023",
@@ -799,7 +821,8 @@
       }
     ],
     "explanation": "After fork(), only the calling thread exists in the child, but memory, including lock state, is copied as it was. A lock held by any other thread stays locked forever. `pthread_atfork` lets a library acquire its locks in a prepare handler and release (or reinitialise) them in the parent and child handlers. Python exposes the same hook as `os.register_at_fork`, which the `random` module uses to reseed in children.",
-    "reference": "man7.org: pthread_atfork(3)"
+    "reference": "man7.org: pthread_atfork(3)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-024",
@@ -836,7 +859,8 @@
       }
     ],
     "explanation": "Even with copy-on-write, fork() has to copy the parent's page tables (gigabytes of mappings mean real time), and under strict overcommit the kernel must be able to commit a full copy, which can fail. `posix_spawn` or `vfork` create the child without duplicating the address space before exec. Modern JDKs launch processes this way, and Python's subprocess uses vfork/posix_spawn where it can.",
-    "reference": "man7.org: posix_spawn(3), fork(2)"
+    "reference": "man7.org: posix_spawn(3), fork(2)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-025",
@@ -879,7 +903,8 @@
       }
     ],
     "explanation": "Zombies hold process-table slots until reaped, so the leak eventually hits the process limit. Reap all finished children whenever SIGCHLD arrives, looping with WNOHANG because several exits can coalesce into one signal. Alternatively, ignore SIGCHLD (POSIX permits auto-reaping then), or double-fork so init adopts the worker.",
-    "reference": "man7.org: waitpid(2), sigaction(2)"
+    "reference": "man7.org: waitpid(2), sigaction(2)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-026",
@@ -916,7 +941,8 @@
       }
     ],
     "explanation": "multiprocessing.Queue sends data through a pipe using a background feeder thread. A process that has put items won't terminate until they are flushed, and a full pipe can't flush until someone reads. Joining before reading is the documented deadlock. Consume the queue before joining. On Python 3.13 the worker was still alive after a 3 s join timeout and exited as soon as the parent called get().",
-    "reference": "Python docs: multiprocessing Programming guidelines (Joining processes that use queues)"
+    "reference": "Python docs: multiprocessing Programming guidelines (Joining processes that use queues)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-027",
@@ -941,7 +967,8 @@
       }
     ],
     "explanation": "A synchronised Value wraps each access to `.value` in its lock, but `counter.value += 1` is a get followed by a set, and another process can update in between. The Python docs show the fix: `with counter.get_lock(): counter.value += 1`. The lock it returns is an RLock by default.",
-    "reference": "Python docs: multiprocessing.Value"
+    "reference": "Python docs: multiprocessing.Value",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-028",
@@ -992,7 +1019,8 @@
       }
     ],
     "explanation": "AbortPolicy is the default. CallerRunsPolicy is a simple form of backpressure: the producer is busy running work and can't submit more until it finishes. The two discard policies lose work silently, so use them only when dropping tasks is acceptable.",
-    "reference": "Java SE docs: ThreadPoolExecutor (Rejected tasks)"
+    "reference": "Java SE docs: ThreadPoolExecutor (Rejected tasks)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-029",
@@ -1035,7 +1063,8 @@
       }
     ],
     "explanation": "Work stealing suits recursive divide-and-conquer: a worker forks subtasks onto its own deque and processes them newest first, which is cache-friendly. Idle workers steal from the opposite end, taking large, old tasks that are worth the stealing cost. Contention arises only when stealing happens.",
-    "reference": "Java SE docs: ForkJoinPool"
+    "reference": "Java SE docs: ForkJoinPool",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-030",
@@ -1072,7 +1101,8 @@
       }
     ],
     "explanation": "A deterministic crash makes the task a poison message. Unlimited retries create a crash loop that wastes capacity and can starve healthy work. Track attempts per task (not per worker), back off between attempts, and after N failures park the task in a dead-letter queue for inspection.",
-    "reference": "AWS Builders' Library: Avoiding insurmountable queue backlogs"
+    "reference": "AWS Builders' Library: Avoiding insurmountable queue backlogs",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-031",
@@ -1109,7 +1139,8 @@
       }
     ],
     "explanation": "`multiprocessing.Pool(maxtasksperchild=N)` retires a worker after N tasks and starts a replacement, which bounds leaked memory at the cost of periodic restarts. The same idea appears as Gunicorn's `max_requests` (with jitter so workers don't all restart together) and PHP-FPM's `pm.max_requests`.",
-    "reference": "Python docs: multiprocessing.Pool (maxtasksperchild)"
+    "reference": "Python docs: multiprocessing.Pool (maxtasksperchild)",
+    "roleLevel": 4
   },
   {
     "id": "CON-MPP-032",
@@ -1146,7 +1177,8 @@
       }
     ],
     "explanation": "Trace the rules: tasks 1–2 start core threads; tasks 3–102 go into the queue; tasks 103–110 find the queue full and start new threads up to the maximum of 10; tasks 111–115 find both full and the default AbortPolicy rejects them. Note the surprising order: the queue fills before the pool grows past its core size.",
-    "reference": "Java SE docs: ThreadPoolExecutor (Queuing)"
+    "reference": "Java SE docs: ThreadPoolExecutor (Queuing)",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-033",
@@ -1183,7 +1215,8 @@
       }
     ],
     "explanation": "fork() duplicates file descriptors, so every worker ends up with the same TCP connection to the database. Their queries and replies interleave on one stream and corrupt the protocol state. With preloading, create connections (and connection pools, gRPC channels and similar) lazily in each worker, for example in a `post_fork` hook, or close inherited ones and reconnect.",
-    "reference": "Gunicorn docs: Settings (preload_app, post_fork)"
+    "reference": "Gunicorn docs: Settings (preload_app, post_fork)",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-034",
@@ -1220,7 +1253,8 @@
       }
     ],
     "explanation": "Ordered iteration has a hidden buffer: results that finish early are kept until every earlier result has been yielded. One slow item at the front lets the buffer grow by the full throughput of the other workers. Use `imap_unordered` when order doesn't matter (attach the index to restore it later), and put timeouts on external calls so a stuck task can't block the line.",
-    "reference": "Python docs: multiprocessing.Pool.imap"
+    "reference": "Python docs: multiprocessing.Pool.imap",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-035",
@@ -1257,7 +1291,8 @@
       }
     ],
     "explanation": "In Python 3.13, ProcessPoolExecutor defaults to `os.process_cpu_count()`, which honours CPU affinity but not cgroup CPU quotas, so it sees 64 CPUs. Sixty-four CPU-bound workers sharing 2 CPUs of quota thrash and get throttled. Size the pool explicitly, or set `PYTHON_CPU_COUNT=2` (or `-X cpu_count=2`), new in 3.13, to override what Python reports.",
-    "reference": "Python docs: os.process_cpu_count, PYTHON_CPU_COUNT"
+    "reference": "Python docs: os.process_cpu_count, PYTHON_CPU_COUNT",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-036",
@@ -1300,7 +1335,8 @@
       }
     ],
     "explanation": "Shared memory gives you shared bytes and no synchronisation. To publish multi-field data safely you need either mutual exclusion (a lock, or a seqlock-style version counter) or a clear ownership hand-off: the writer finishes, then signals through a channel, and the reader reads only after the signal. Timing tricks only make the bug rarer.",
-    "reference": "Python docs: multiprocessing.shared_memory"
+    "reference": "Python docs: multiprocessing.shared_memory",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-037",
@@ -1337,7 +1373,8 @@
       }
     ],
     "explanation": "A POSIX shared memory object is a named kernel object, like a file in /dev/shm, that outlives the processes that use it. Each process should `close()` its mapping, and exactly one should `unlink()` it when the data is no longer needed. Python's resource tracker may warn about leaked segments. On Windows the block disappears when the last handle closes, so code that \"works on Windows\" can leak on Linux.",
-    "reference": "Python docs: multiprocessing.shared_memory.SharedMemory.unlink"
+    "reference": "Python docs: multiprocessing.shared_memory.SharedMemory.unlink",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-038",
@@ -1374,7 +1411,8 @@
       }
     ],
     "explanation": "The CPU-based estimate is 16 × (1 + 80/20) = 80 threads, but every request also needs a scarce connection, and only 20 exist. Throughput is capped by the tightest resource, so extra threads just wait in the connection pool while adding memory and context switches. Size the pool to the binding constraint, about 20 here, or raise that limit first.",
-    "reference": "Goetz, Java Concurrency in Practice §8.2"
+    "reference": "Goetz, Java Concurrency in Practice §8.2",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-039",
@@ -1414,7 +1452,8 @@
       "E"
     ],
     "explanation": "Load shared data before forking so it lands in shared pages. `gc.freeze()` moves existing objects into a permanent generation the collector ignores, so GC passes in the workers don't write to (and copy) those pages. Connections must be opened after the fork, per worker, to avoid sharing sockets. The Python docs suggest disabling gc early in the parent and then calling `gc.freeze()` right before `fork()`.",
-    "reference": "Python docs: gc.freeze"
+    "reference": "Python docs: gc.freeze",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-040",
@@ -1451,7 +1490,8 @@
       }
     ],
     "explanation": "A signal is delivered to the PID you name. Children are separate processes, so killing the parent orphans them unless the parent handles SIGTERM by stopping its workers. Alternatives: put the pool in its own process group and send `kill(-pgid, SIGTERM)`, set `PR_SET_PDEATHSIG` in the workers, or run under a supervisor or init that kills the whole cgroup (as systemd and container runtimes do).",
-    "reference": "man7.org: kill(2)"
+    "reference": "man7.org: kill(2)",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-041",
@@ -1488,7 +1528,8 @@
       }
     ],
     "explanation": "Accelerators pay off when the work per launch is large enough to amortise fixed costs: kernel launch latency, data transfer over PCIe and synchronisation. For microsecond-sized tasks, batch many requests together (dynamic batching in inference servers), keep data resident on the device, or stay on the CPU.",
-    "reference": "NVIDIA CUDA C++ Best Practices Guide"
+    "reference": "NVIDIA CUDA C++ Best Practices Guide",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-042",
@@ -1531,7 +1572,8 @@
       }
     ],
     "explanation": "Use processes when CPU-heavy work runs as Python bytecode under the GIL. When work is I/O-bound, or done in C code that releases the GIL, threads or asyncio give the same concurrency without serialisation and process-startup costs. Free-threaded CPython builds change this calculation for pure-Python CPU work.",
-    "reference": "Python docs: concurrent.futures"
+    "reference": "Python docs: concurrent.futures",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-043",
@@ -1574,7 +1616,8 @@
       }
     ],
     "explanation": "Gunicorn is a pre-fork server: a master manages N worker processes. Sync workers serve one request each, so slow I/O exhausts them, which is why async (gevent) or threaded workers exist for I/O-heavy apps. Preloading saves memory through copy-on-write but gives no shared mutable state.",
-    "reference": "Gunicorn docs: Design (How many workers?)"
+    "reference": "Gunicorn docs: Design (How many workers?)",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-044",
@@ -1611,7 +1654,8 @@
       }
     ],
     "explanation": "Immediate, synchronised restarts turn a dependency outage into a retry storm: when the database recovers, every worker reconnects at once and knocks it over again. Supervisors should use exponential backoff with jitter and rate-limit restarts (systemd's `RestartSec` with `StartLimitBurst`, Kubernetes' CrashLoopBackOff). Workers should also back off their own connection attempts.",
-    "reference": "systemd.service docs: RestartSec; AWS Builders' Library: Timeouts, retries and backoff with jitter"
+    "reference": "systemd.service docs: RestartSec; AWS Builders' Library: Timeouts, retries and backoff with jitter",
+    "roleLevel": 5
   },
   {
     "id": "CON-MPP-045",
@@ -1648,6 +1692,7 @@
       }
     ],
     "explanation": "fork duplicates memory, including PRNG state, so every child starts from the same seed. CPython's `random` module calls `os.register_at_fork(after_in_child=_inst.seed)` to reseed automatically; NumPy's legacy global generator has no such hook. Seed each worker explicitly, ideally with independent streams from `numpy.random.SeedSequence(...).spawn(n)` passed through the pool initializer. Duplicated state after fork also affects UUID and token generators that keep internal state.",
-    "reference": "NumPy docs: Parallel random number generation"
+    "reference": "NumPy docs: Parallel random number generation",
+    "roleLevel": 5
   }
 ]

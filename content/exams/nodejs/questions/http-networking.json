@@ -34,7 +34,8 @@
       }
     ],
     "explanation": "Node sends the status line and headers once: on `res.writeHead()`, on the first `res.write()`, or at `res.end()`. Any later `setHeader`, `writeHead` or Express `res.status().send()` throws `ERR_HTTP_HEADERS_SENT`. In Express the same error usually means a handler sent two responses, for example `res.send()` and then `next()`, or a missing `return`.",
-    "reference": "Node.js docs: http.ServerResponse"
+    "reference": "Node.js docs: http.ServerResponse",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-002",
@@ -59,7 +60,8 @@
       }
     ],
     "explanation": "The WHATWG fetch that Node ships (built on undici) resolves for every HTTP response, including 4xx and 5xx. `response.ok` is true only for statuses 200 to 299. Code that does `const data = await (await fetch(url)).json()` without checking `ok` will happily try to parse an error page.",
-    "reference": "MDN: Response.ok; Node.js docs: fetch"
+    "reference": "MDN: Response.ok; Node.js docs: fetch",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-003",
@@ -78,7 +80,8 @@
       "100kib"
     ],
     "explanation": "The JSON, urlencoded and text parsers default to `limit: '100kb'`. Bigger bodies fail with an error whose `status` is 413 and `type` is `entity.too.large`. Raise the limit per route, for example `express.json({ limit: '5mb' })` on the import endpoint only, instead of globally, so other routes keep a small attack surface.",
-    "reference": "Express docs: express.json()"
+    "reference": "Express docs: express.json()",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-004",
@@ -133,7 +136,8 @@
       }
     ],
     "explanation": "These are separate knobs. `keepAliveTimeout` (5000 ms) closes idle persistent connections. `headersTimeout` (60000 ms) and `requestTimeout` (300000 ms) protect against slow clients such as Slowloris and answer `408 Request Timeout`. `server.timeout` is the per-socket inactivity timeout and is `0` (off) by default. None of them limits how long your handler may take to respond.",
-    "reference": "Node.js docs: http.Server timeouts"
+    "reference": "Node.js docs: http.Server timeouts",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-005",
@@ -170,7 +174,8 @@
       }
     ],
     "explanation": "`res.write()` sends a chunk; only `res.end()` marks the response complete. Because no `Content-Length` is known, Node uses `Transfer-Encoding: chunked`, and the client waits for the final zero-length chunk that `end()` would send. Every code path, including errors, must end the response.",
-    "reference": "Node.js docs: response.end()"
+    "reference": "Node.js docs: response.end()",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-006",
@@ -219,7 +224,8 @@
       }
     ],
     "explanation": "Node's fetch follows the WHATWG spec where it can: global, promise-based, redirect-following, and resolving for HTTP errors. Server-side differences matter: there is no cookie jar and no CORS enforcement, and connections come from undici's own pool, which you tune with an undici `Agent` passed as `dispatcher`, not with `http.Agent`.",
-    "reference": "Node.js docs: Fetch; undici docs"
+    "reference": "Node.js docs: Fetch; undici docs",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-007",
@@ -256,7 +262,8 @@
       }
     ],
     "explanation": "Express builds one stack in the order of `app.use` and `app.get/post` calls and walks it per request. A route that sends a response ends the walk, so later middleware never runs for it. Register parsers, logging, auth and CORS before the routes that need them, and error handlers last.",
-    "reference": "Express docs: Using middleware"
+    "reference": "Express docs: Using middleware",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-008",
@@ -293,7 +300,8 @@
       }
     ],
     "explanation": "SSE (`Content-Type: text/event-stream`) is a single streaming HTTP response the server keeps writing to. The browser's `EventSource` handles reconnection and `Last-Event-ID` resumption, and it passes through ordinary HTTP proxies and load balancers. Pick WebSockets when you need low-latency messages in both directions.",
-    "reference": "MDN: Using server-sent events"
+    "reference": "MDN: Using server-sent events",
+    "roleLevel": 1
   },
   {
     "id": "NJS-HTP-009",
@@ -336,7 +344,8 @@
       }
     ],
     "explanation": "Express 5 wraps handlers so that a synchronous throw, a thrown error in an `async` function, or a returned rejected promise all end up in `next(err)`. Anything that fails on a different call stack, such as timers, callbacks or event emitters, is invisible to Express. Convert it to a promise (`await setTimeout()` from `timers/promises`, `fs.promises`, `stream/promises`) or pass the error to `next` yourself.",
-    "reference": "Express docs: Error handling (Express 5)"
+    "reference": "Express docs: Error handling (Express 5)",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-010",
@@ -373,7 +382,8 @@
       }
     ],
     "explanation": "Express checks the function's `length`. A function declared `(err, req, res, next)` is an error handler; `(err, req, res)` looks like `(req, res, next)` with odd names and is skipped when `next(err)` is called. Keep the fourth parameter even if you never use it, and register error handlers after all routes.",
-    "reference": "Express docs: Writing error handlers"
+    "reference": "Express docs: Writing error handlers",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-011",
@@ -410,7 +420,8 @@
       }
     ],
     "explanation": "With the default `trust proxy` of `false`, `req.ip` is the TCP peer, which is the proxy. Set `app.set('trust proxy', 1)` (one hop) or the proxy's address range, so that Express takes the client address from `X-Forwarded-For` and the scheme from `X-Forwarded-Proto`. Don't set it to `true` when clients can reach the app directly, because then anyone can forge the header.",
-    "reference": "Express docs: Express behind proxies"
+    "reference": "Express docs: Express behind proxies",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-012",
@@ -425,7 +436,8 @@
       "5.6.7.8"
     ],
     "explanation": "Each proxy appends the address it received the request from, so the right-most entry was added by the hop nearest your server. Trusting 1 hop means Express trusts the load balancer and takes the entry it appended: `5.6.7.8`. The left-most value, `1.2.3.4`, was supplied by an earlier party and could be forged. Set the hop count to match your real topology.",
-    "reference": "Express docs: trust proxy setting"
+    "reference": "Express docs: trust proxy setting",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-013",
@@ -468,7 +480,8 @@
       }
     ],
     "explanation": "An `IncomingMessage` is a readable stream. Until it is fully read, the socket can't carry another request, so the agent doesn't put it back in its free pool. Always consume the body (`res.resume()` to discard it, or read it). The same applies to fetch: read or cancel `response.body` when you don't need it.",
-    "reference": "Node.js docs: http.ClientRequest (response handling)"
+    "reference": "Node.js docs: http.ClientRequest (response handling)",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-014",
@@ -505,7 +518,8 @@
       }
     ],
     "explanation": "TCP guarantees order and delivery, not boundaries. The OS can merge small writes (Nagle's algorithm) or split large ones, so your protocol must add framing: newline-delimited JSON with a line buffer, or a length prefix (for example a 4-byte size before each message), and a parser that buffers partial frames. HTTP, WebSockets and gRPC all do this for you.",
-    "reference": "Node.js docs: net.Socket"
+    "reference": "Node.js docs: net.Socket",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-015",
@@ -550,7 +564,8 @@
       "E"
     ],
     "explanation": "Express runs middleware in registration order. Parse bodies first so later code can read `req.body`, then authenticate, then the routes. A catch-all 404 handler goes after every route, because it only runs when nothing matched. The 4-argument error handler goes last, so errors from anything above reach it.",
-    "reference": "Express docs: Using middleware; Error handling"
+    "reference": "Express docs: Using middleware; Error handling",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-016",
@@ -587,7 +602,8 @@
       }
     ],
     "explanation": "`node:http` is low-level. You must serialize yourself: `res.end(JSON.stringify(data))`. Express adds `res.json()`, which serializes, sets `Content-Type` and handles `ETag`. Mixing the two mental models is a common source of crashes when code moves from Express to a raw handler or vice versa.",
-    "reference": "Node.js docs: response.end(data)"
+    "reference": "Node.js docs: response.end(data)",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-017",
@@ -612,7 +628,8 @@
       }
     ],
     "explanation": "Node 19 changed `http.globalAgent` and `https.globalAgent` to keep connections alive, with `maxFreeSockets` of 256 and no `maxSockets` limit. This speeds up service-to-service calls, but it also exposes the keep-alive race: the server may close an idle socket just as the client reuses it, which shows up as occasional `ECONNRESET`.",
-    "reference": "Node.js docs: http.globalAgent; Node 19 release notes"
+    "reference": "Node.js docs: http.globalAgent; Node 19 release notes",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-018",
@@ -649,7 +666,8 @@
       }
     ],
     "explanation": "Express 5 uses path-to-regexp 8, which dropped unnamed wildcards and regex-like syntax. `*` becomes `/*splat` (one or more segments, returned as an array) or `/{*splat}` to also match the root. Optional segments use braces, as in `/:file{.:ext}`. Run the official codemods or search for `'*'` and `?` in route strings when upgrading.",
-    "reference": "Express docs: Migrating to Express 5"
+    "reference": "Express docs: Migrating to Express 5",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-019",
@@ -686,7 +704,8 @@
       }
     ],
     "explanation": "Errors from Express middleware usually carry an HTTP status: body-parser uses 413 for oversized bodies and 400 (`entity.parse.failed`) for malformed JSON. A generic handler should respect it: `res.status(err.status ?? err.statusCode ?? 500)`. Otherwise client mistakes look like server crashes in your monitoring.",
-    "reference": "Express docs: body-parser errors"
+    "reference": "Express docs: body-parser errors",
+    "roleLevel": 2
   },
   {
     "id": "NJS-HTP-020",
@@ -723,7 +742,8 @@
       }
     ],
     "explanation": "The ALB keeps connections to targets open for up to its idle timeout (60 s) and reuses them. Node's `keepAliveTimeout` defaults to 5 s, so Node closes idle sockets first. When a request races with that close, the ALB sees a TCP reset and returns 502 without the request reaching your code. Set `server.keepAliveTimeout` longer than the load balancer's idle timeout (for example 65 s), and keep `headersTimeout` above it as well.",
-    "reference": "AWS docs: ALB connection idle timeout; Node.js docs: server.keepAliveTimeout"
+    "reference": "AWS docs: ALB connection idle timeout; Node.js docs: server.keepAliveTimeout",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-021",
@@ -772,7 +792,8 @@
       }
     ],
     "explanation": "A solid sequence: fail readiness checks so no new traffic is routed, call `server.close()` (in Node 19+ this also closes idle keep-alive sockets), wait for in-flight requests, close pools and queues, then exit. Always add a hard deadline that force-closes remaining connections, because a slow client or a hung request would otherwise keep the process alive until SIGKILL.",
-    "reference": "Node.js docs: server.close(), server.closeAllConnections()"
+    "reference": "Node.js docs: server.close(), server.closeAllConnections()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-022",
@@ -809,7 +830,8 @@
       }
     ],
     "explanation": "`res.send` adds a weak ETag and checks `req.fresh`, which uses the `fresh` package. A fresh request gets a bodyless 304, so the plain `http.get` behaves as expected. The Fetch standard says that when a request in the default cache mode carries a conditional header such as `If-None-Match`, its cache mode becomes \"no-store\", and that mode appends `Cache-Control: no-cache`. `fresh` treats a `no-cache` request as one that must get a full response, so Express returns 200 and runs the handler again. Verified with Node 24 and Express 5.2: `http.get` got 304, while `fetch` sent `cache-control: no-cache` and got 200. When you test caching with `fetch`, rely on its HTTP cache, or use `http.request` or undici's `request()` to send raw conditional headers.",
-    "reference": "Fetch Standard (HTTP-network-or-cache fetch); Express res.send / req.fresh"
+    "reference": "Fetch Standard (HTTP-network-or-cache fetch); Express res.send / req.fresh",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-023",
@@ -846,7 +868,8 @@
       }
     ],
     "explanation": "fetch has no overall deadline by default; undici only has long header and body timeouts (300 s each). `AbortSignal.timeout(ms)` cancels the request and frees the connection, and the rejection's `name` is `'TimeoutError'` (a user abort gives `'AbortError'`). Combine it with your own cancel signal using `AbortSignal.any([...])`. A bare `Promise.race` hides the problem while the request keeps running.",
-    "reference": "Node.js docs: AbortSignal.timeout(); undici docs"
+    "reference": "Node.js docs: AbortSignal.timeout(); undici docs",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-024",
@@ -883,7 +906,8 @@
       }
     ],
     "explanation": "Before Node 17, `dns.lookup` reordered results to put IPv4 first. Since Node 17 the default `verbatim` order keeps the OS order, which often lists `::1` first. With a server bound only to IPv4, the client's first and only attempt fails. Node 20 enabled `autoSelectFamily` (Happy Eyeballs) by default, which tries both. Other fixes: listen on `::` (dual-stack), connect to `127.0.0.1`, or use `--dns-result-order=ipv4first`.",
-    "reference": "Node.js docs: dns.setDefaultResultOrder(); net.setDefaultAutoSelectFamily()"
+    "reference": "Node.js docs: dns.setDefaultResultOrder(); net.setDefaultAutoSelectFamily()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-025",
@@ -920,7 +944,8 @@
       }
     ],
     "explanation": "Since Node 18, `headersTimeout` and `requestTimeout` are enforced by a sweep that runs every `connectionsCheckingInterval` milliseconds (30000 by default). A client can therefore last up to the timeout plus one interval. For tight limits, pass a smaller interval when creating the server, for example `http.createServer({ connectionsCheckingInterval: 1000, headersTimeout: 2000 })`. A reverse proxy in front is the more common defence.",
-    "reference": "Node.js docs: http.createServer() options"
+    "reference": "Node.js docs: http.createServer() options",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-026",
@@ -975,7 +1000,8 @@
       }
     ],
     "explanation": "HTTP/1.1 keep-alive reuses a connection but can't interleave requests (pipelining is effectively unused). HTTP/2 multiplexes streams over one TCP connection, but a lost TCP packet still stalls all of them (TCP head-of-line blocking). HTTP/3 moves to QUIC, where loss affects only the stream it belongs to. WebSockets upgrade an HTTP/1.1 connection into a long-lived, two-way message channel.",
-    "reference": "MDN: Evolution of HTTP; RFC 9113; RFC 9114; RFC 6455"
+    "reference": "MDN: Evolution of HTTP; RFC 9113; RFC 9114; RFC 6455",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-027",
@@ -1012,7 +1038,8 @@
       }
     ],
     "explanation": "Socket.IO starts with HTTP long-polling, which is a series of separate HTTP requests for one session ID. With round-robin balancing those requests land on instances that don't know the session, so they return 400. Use sticky sessions (cookie or IP based), or force `transports: ['websocket']`. Then use an adapter such as `@socket.io/redis-adapter` so a message emitted on one instance reaches sockets connected to the others.",
-    "reference": "Socket.IO docs: Using multiple nodes"
+    "reference": "Socket.IO docs: Using multiple nodes",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-028",
@@ -1049,7 +1076,8 @@
       }
     ],
     "explanation": "When a network path disappears, neither side is told, so the server keeps a half-open connection with its memory and subscriptions. The `ws` docs recommend a heartbeat: mark each socket alive on `pong`, and every N seconds `terminate()` the ones that didn't answer, then `ping()` the rest. Heartbeats also keep NAT and proxy idle timers from silently dropping quiet but healthy connections.",
-    "reference": "ws docs: How to detect and close broken connections"
+    "reference": "ws docs: How to detect and close broken connections",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-029",
@@ -1086,7 +1114,8 @@
       }
     ],
     "explanation": "The first `res.write` commits the headers with the default `statusCode` of 200 and `Transfer-Encoding: chunked`. From then on the status can't change. That is why streaming responses can't report a late failure through the status code. They either decide the status before the first byte, or abort the connection with `res.destroy(err)` so the client sees an incomplete response.",
-    "reference": "Node.js docs: response.writeHead()"
+    "reference": "Node.js docs: response.writeHead()",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-030",
@@ -1123,7 +1152,8 @@
       }
     ],
     "explanation": "Compressors work on blocks. For a stream of tiny messages, gzip waits for more input, so events are delayed. With the `compression` middleware, call `res.flush()` after each event, or skip compression for `text/event-stream` with its `filter` option. Proxies cause the same symptom; Nginx needs `X-Accel-Buffering: no` or `proxy_buffering off` for SSE.",
-    "reference": "expressjs/compression docs: res.flush(); MDN: Server-sent events"
+    "reference": "expressjs/compression docs: res.flush(); MDN: Server-sent events",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-031",
@@ -1160,7 +1190,8 @@
       }
     ],
     "explanation": "Fastify compiles each response schema into a serializer (fast-json-stringify). It is fast because it knows the shape in advance, and it only outputs declared properties. Fastify presents this as a safety feature against accidentally leaking fields such as `passwordHash`. Add new fields to the schema, or remove the schema if you really want to send arbitrary objects.",
-    "reference": "Fastify docs: Validation and Serialization"
+    "reference": "Fastify docs: Validation and Serialization",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-032",
@@ -1175,7 +1206,8 @@
       "filter[status]"
     ],
     "explanation": "Express 5 changed the default `query parser` setting from `extended` (the `qs` library) to `simple` (Node's `querystring`). Bracket syntax is no longer expanded into nested objects, so the key is the literal string `filter[status]`. Apps that relied on nested queries must set `app.set('query parser', 'extended')`, ideally with input validation, since nested parsing has been a source of prototype-pollution bugs.",
-    "reference": "Express docs: Migrating to Express 5 (req.query)"
+    "reference": "Express docs: Migrating to Express 5 (req.query)",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-033",
@@ -1218,7 +1250,8 @@
       }
     ],
     "explanation": "Memory storage is fine for avatars, not for videos. Stream large files straight to their destination with busboy, multer disk storage or a direct-to-S3 stream. Even better for big media, have the client upload to a presigned URL so your servers never handle the bytes. Always set limits on file size, number of files and fields, because a bounded parser is the first defence against memory exhaustion.",
-    "reference": "multer docs: limits and storage; busboy docs"
+    "reference": "multer docs: limits and storage; busboy docs",
+    "roleLevel": 3
   },
   {
     "id": "NJS-HTP-034",
@@ -1255,7 +1288,8 @@
       }
     ],
     "explanation": "An unread response body keeps its connection busy. undici's documentation warns that relying on garbage collection to clean up such bodies leads to excessive connection usage and can stall the pool. If you only need the status, cancel the body (`res.body?.cancel()`), or use a `HEAD` request when the target supports it. Otherwise read it with `res.arrayBuffer()` or `res.text()`.",
-    "reference": "undici docs: Garbage Collection (consuming response bodies)"
+    "reference": "undici docs: Garbage Collection (consuming response bodies)",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-035",
@@ -1292,7 +1326,8 @@
       }
     ],
     "explanation": "This is the keep-alive race: B closes an idle socket just as A writes a new request on it. Node's docs suggest checking `request.reusedSocket` and retrying on `ECONNRESET`, since a reset on a reused socket usually means the server never saw the request. That reasoning is only sound for idempotent requests, or POSTs protected by an idempotency key that B checks. Also give A's idle timeout a value shorter than B's `keepAliveTimeout`.",
-    "reference": "Node.js docs: request.reusedSocket; http.Agent"
+    "reference": "Node.js docs: request.reusedSocket; http.Agent",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-036",
@@ -1329,7 +1364,8 @@
       }
     ],
     "explanation": "Express's docs say: if you call `next()` with an error after you have started writing the response, the default error handler closes the connection and fails the request. Custom handlers should start with `if (res.headersSent) return next(err);`. For streams, prefer `stream.pipeline(source, transform, res, cb)` so a source error destroys the response instead of leaving it half-written.",
-    "reference": "Express docs: Error handling (The default error handler)"
+    "reference": "Express docs: Error handling (The default error handler)",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-037",
@@ -1378,7 +1414,8 @@
       }
     ],
     "explanation": "Before Node 19, one idle keep-alive connection could keep `server.close()` from finishing until its timeout. Now `close()` drops idle connections at once and lets active requests complete; the callback runs once all connections are gone. `closeAllConnections()` is the hard stop for when your shutdown deadline expires. Remember that active keep-alive clients may still send one more request before their socket closes.",
-    "reference": "Node.js docs: server.close(); server.closeIdleConnections()"
+    "reference": "Node.js docs: server.close(); server.closeIdleConnections()",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-038",
@@ -1415,7 +1452,8 @@
       }
     ],
     "explanation": "`res` emits `close` both after a normal response and when the connection is lost; `res.writableEnded` (or `!res.writableFinished`) separates the two cases. Wire it to an `AbortController` and pass the signal to cancellable work, such as a `pg` query cancel or a downstream fetch. In current Node, `req`'s `close` fires as soon as the request body is consumed, so it is a poor disconnect signal for GETs.",
-    "reference": "Node.js docs: http.ServerResponse 'close' event; response.writableEnded"
+    "reference": "Node.js docs: http.ServerResponse 'close' event; response.writableEnded",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-039",
@@ -1470,7 +1508,8 @@
       }
     ],
     "explanation": "SNI is why a shared load balancer can present the right certificate for each domain. ALPN is how HTTP/2 is agreed over TLS. Disabling verification is the classic \"fix\" for self-signed or corporate certificates, and it lets anyone on the path impersonate the server. The right fix is to trust the extra CA with `NODE_EXTRA_CA_CERTS` (read at process start) or a `ca` option.",
-    "reference": "Node.js docs: tls.connect(); NODE_EXTRA_CA_CERTS"
+    "reference": "Node.js docs: tls.connect(); NODE_EXTRA_CA_CERTS",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-040",
@@ -1507,7 +1546,8 @@
       }
     ],
     "explanation": "Each layer has its own timer, and the shortest one decides what the user sees. Nothing propagates cancellation unless you build it, so the server wastes 90 seconds of capacity on an abandoned request. Align the timeouts so that the inner ones are shorter, add a server-side deadline (or a timeout middleware), watch `res.on('close')` to abort early, and turn long work into a 202-accepted job with polling.",
-    "reference": "AWS docs: ALB idle timeout; Node.js docs: server timeouts"
+    "reference": "AWS docs: ALB idle timeout; Node.js docs: server timeouts",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-041",
@@ -1544,7 +1584,8 @@
       }
     ],
     "explanation": "Fastify's plugin system is a tree of encapsulated contexts. Decorators, hooks and plugins registered inside one are visible to its children, but not to its parent or siblings. Wrap shared infrastructure (database, auth, config) with `fastify-plugin` (`fp(dbPlugin)`) to skip encapsulation and expose it to the parent. Keep feature plugins encapsulated, so their hooks don't leak into other routes.",
-    "reference": "Fastify docs: Encapsulation; fastify-plugin"
+    "reference": "Fastify docs: Encapsulation; fastify-plugin",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-042",
@@ -1593,7 +1634,8 @@
       }
     ],
     "explanation": "An SSE response is a long-lived `text/event-stream` body made of `field: value` lines, with each event terminated by a blank line. Intermediaries kill connections that look idle (the ALB after 60 s by default), so send comment heartbeats. Also disable proxy buffering (`X-Accel-Buffering: no` for Nginx), avoid compression or flush after each event, and send `id:` fields so reconnecting clients can resume with `Last-Event-ID`.",
-    "reference": "HTML spec: Server-sent events; MDN: Using server-sent events"
+    "reference": "HTML spec: Server-sent events; MDN: Using server-sent events",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-043",
@@ -1630,7 +1672,8 @@
       }
     ],
     "explanation": "Every major browser implements HTTP/2 only over TLS, using ALPN to agree on `h2`. A cleartext h2 server (`h2c`) works with tools that assume HTTP/2 from the first byte, but a browser sends HTTP/1.1, which a plain `http2.createServer()` can't understand. Use `http2.createSecureServer({ key, cert, allowHTTP1: true })`. In production, TLS and HTTP/2 often end at the load balancer or CDN, and Node speaks HTTP/1.1 behind it.",
-    "reference": "Node.js docs: http2.createSecureServer(); RFC 9113"
+    "reference": "Node.js docs: http2.createSecureServer(); RFC 9113",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-044",
@@ -1675,7 +1718,8 @@
       "E"
     ],
     "explanation": "The handler starts as soon as the headers are parsed, often before the body has arrived, so body-reading code must wait for `end` (or use `for await`). `finish` means Node has flushed the response to the operating system, not that the client received it. `close` follows, and it is also the event you get when a connection drops early, which is why you check `writableEnded` in a `close` listener.",
-    "reference": "Node.js docs: http.IncomingMessage and http.ServerResponse events"
+    "reference": "Node.js docs: http.IncomingMessage and http.ServerResponse events",
+    "roleLevel": 4
   },
   {
     "id": "NJS-HTP-045",
@@ -1700,6 +1744,7 @@
       }
     ],
     "explanation": "`server.timeout` (default 0) is a socket inactivity timeout. `requestTimeout` (default 300000 ms) and `headersTimeout` (default 60000 ms) are independent limits on receiving the request, added to protect against slow-client attacks. To allow very long uploads you must raise `requestTimeout` itself, and setting it to 0 removes that protection, so do it only behind a proxy that enforces its own limits.",
-    "reference": "Node.js docs: server.timeout; server.requestTimeout"
+    "reference": "Node.js docs: server.timeout; server.requestTimeout",
+    "roleLevel": 4
   }
 ]

@@ -16,7 +16,8 @@
     ],
     "explanation": "1,000,000 drivers ÷ one update every 4 seconds = 250,000 updates per second. Each one is an indexed UPDATE on a single primary, which also has to maintain two B-tree indexes per write. That alone explains the saturation. The data is also ephemeral: a position is useless a few seconds later, so it doesn't need a durable relational write.",
     "reference": "Back-of-the-envelope estimation",
-    "caseId": "S5"
+    "caseId": "S5",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-012",
@@ -54,7 +55,8 @@
     ],
     "explanation": "In double-entry bookkeeping every transfer writes at least two entries, a debit and a credit, that sum to zero. Entries are append-only, a balance is the sum of an account's entries (often cached), and the sum over all accounts must always be zero. That one invariant is what lets finance prove that no money was created or destroyed.",
     "reference": "Fowler, Accounting Patterns",
-    "caseId": "S6"
+    "caseId": "S6",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-013",
@@ -91,7 +93,8 @@
       }
     ],
     "explanation": "Separating large immutable blobs from small, queryable metadata is the standard pattern for Pastebin, image hosting and file sharing. The blob goes to object storage (such as S3) and can be served through a CDN. The metadata row holds the key, owner, size, content type and expiry, so listing, expiring and access checks stay cheap.",
-    "reference": "System Design Interview (Xu): Pastebin and blob storage"
+    "reference": "System Design Interview (Xu): Pastebin and blob storage",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-014",
@@ -137,7 +140,8 @@
       }
     ],
     "explanation": "Pushing makes reads cheap but costs one write per follower, which is fine at 300 and ruinous at 80 million. Pulling makes writes free but makes every feed open do work. Large social networks use a hybrid: precompute feeds for ordinary authors and merge in celebrity posts at read time. A digest is a notification feature, not a feed design.",
-    "reference": "System Design Interview, news feed"
+    "reference": "System Design Interview, news feed",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-015",
@@ -174,7 +178,8 @@
       }
     ],
     "explanation": "The classic typeahead design caches the top-k at every trie node. Reads are trivial; the cost moves to building the trie offline from aggregated query logs. The trie is then sharded by prefix and replicated, and clients debounce keystrokes and cache recent results.",
-    "reference": "System Design Interview, search autocomplete"
+    "reference": "System Design Interview, search autocomplete",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-016",
@@ -219,7 +224,8 @@
       "F"
     ],
     "explanation": "Politeness lives in the frontier: one queue per host, and a host is only eligible again once its delay (and robots.txt rules) allow. Content fingerprints catch mirrors and duplicate pages under different URLs. URL normalization plus a seen set stops the same page from being queued again and again.",
-    "reference": "Manning et al., Introduction to Information Retrieval, ch. 20"
+    "reference": "Manning et al., Introduction to Information Retrieval, ch. 20",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-017",
@@ -256,7 +262,8 @@
       }
     ],
     "explanation": "Sorted sets are the textbook leaderboard structure. `ZADD` updates a score, `ZREVRANGE 0 9` returns the top 10, and `ZREVRANK` returns a player's 0-based rank, each in O(log n). Ten million members fit comfortably in memory on one node. Persistence and replicas handle durability.",
-    "reference": "Redis docs: Sorted sets"
+    "reference": "Redis docs: Sorted sets",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-018",
@@ -311,7 +318,8 @@
       }
     ],
     "explanation": "Blobs go to durable, cheap object storage, and the CDN serves them close to viewers. Structured, queryable metadata goes in a database sharded by user or photo ID. Hot, recomputable data such as feeds sits in memory. Local disks on stateless app servers are the classic wrong answer: they vanish on scale-in and can't be shared.",
-    "reference": "Instagram Engineering: sharding and IDs"
+    "reference": "Instagram Engineering: sharding and IDs",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-019",
@@ -348,7 +356,8 @@
       }
     ],
     "explanation": "This is a real trade-off. A 301 lets browsers cache the redirect, cutting load and latency but losing per-click analytics. A 302 or 307 sends every click through the service. Under RFC 9110, 301 and 308 responses are cacheable by default; 302 and 307 are cached only if explicit freshness headers say so.",
-    "reference": "RFC 9110, §15.4"
+    "reference": "RFC 9110, §15.4",
+    "roleLevel": 2
   },
   {
     "id": "SD-CAS-020",
@@ -386,7 +395,8 @@
     ],
     "explanation": "Buffering happens when the video's bitrate exceeds the available bandwidth. HLS and DASH cut each rendition into segments of a few seconds and publish a manifest, so the player can move up or down a bitrate ladder at every segment boundary. Segments are also ordinary cacheable HTTP objects, which matters for the CDN.",
     "reference": "Apple HLS / MPEG-DASH specifications",
-    "caseId": "S4"
+    "caseId": "S4",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-021",
@@ -424,7 +434,8 @@
     ],
     "explanation": "`lat BETWEEN` selects a band around the whole globe, and `lng BETWEEN` another band. The database uses one index (or intersects two large sets) and filters the rest. Spatial indexing turns 2-D proximity into a small number of 1-D key lookups: geohash prefixes, S2 or H3 cell IDs, or R-tree/GiST indexes (PostGIS) when you stay in the database.",
     "reference": "Uber Engineering: H3 hexagonal index",
-    "caseId": "S5"
+    "caseId": "S5",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-022",
@@ -450,7 +461,8 @@
     ],
     "explanation": "Accounting ledgers are append-only. A correction is itself a transaction, linked to the original, so anyone can see what happened, when and why. The same principle (immutable events plus compensating events) underlies event sourcing.",
     "reference": "Fowler, Accounting Patterns: Reversal Adjustment",
-    "caseId": "S6"
+    "caseId": "S6",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-023",
@@ -487,7 +499,8 @@
       }
     ],
     "explanation": "Local limiters multiply the limit by the number of servers. Centralizing the state (Redis with INCR plus EXPIRE, or a Lua token-bucket script) makes the limit global, at the cost of a network hop. At very large scale, systems combine local buckets with periodic synchronization and accept some approximation.",
-    "reference": "Stripe Engineering: Scaling your API with rate limiters"
+    "reference": "Stripe Engineering: Scaling your API with rate limiters",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-024",
@@ -512,7 +525,8 @@
       }
     ],
     "explanation": "The trade-off is coverage, not duplication: at a 1% false-positive rate, about 1 in 100 genuinely new URLs is wrongly skipped. In exchange, billions of URLs fit in a few gigabytes. Size the filter (bits per element and number of hash functions) for the miss rate you can accept.",
-    "reference": "Bloom, Space/Time Trade-offs in Hash Coding (1970)"
+    "reference": "Bloom, Space/Time Trade-offs in Hash Coding (1970)",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-025",
@@ -529,7 +543,8 @@
       "400 seconds"
     ],
     "explanation": "Total throughput = 50 × 100 = 5,000 notifications per second. 2,000,000 ÷ 5,000 = 400 seconds, about 6.7 minutes. If the product needs delivery within a minute, you need about 7× the senders (or a provider batch API), and you should queue sends by priority so that breaking news is not stuck behind marketing pushes.",
-    "reference": "System Design Interview (Xu): Notification system"
+    "reference": "System Design Interview (Xu): Notification system",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-026",
@@ -572,7 +587,8 @@
       }
     ],
     "explanation": "A notification platform is a fan-in of producers and a fan-out to providers. The core pieces are an async API, preference and rate-limit checks, templating, per-channel queues and workers, retries with backoff, deduplication by notification ID, and delivery tracking from provider callbacks.",
-    "reference": "System Design Interview, notification system"
+    "reference": "System Design Interview, notification system",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-027",
@@ -612,7 +628,8 @@
       "E"
     ],
     "explanation": "Each tick is an acknowledgement from a different hop. The server acknowledges only after it persists the message, so a crash can't lose it. It keeps undelivered messages until the device acknowledges them, and then can delete them. Client-generated message IDs let both sides deduplicate retries on flaky mobile networks.",
-    "reference": "System Design Interview, chat system"
+    "reference": "System Design Interview, chat system",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-028",
@@ -649,7 +666,8 @@
       }
     ],
     "explanation": "Cardinality is the product of each label's distinct values. Unbounded labels (user IDs, request IDs, full URLs) are the most common way to take down a metrics system. Keep labels low-cardinality and put high-cardinality context in logs, traces or exemplars.",
-    "reference": "Prometheus docs: Instrumentation, use labels"
+    "reference": "Prometheus docs: Instrumentation, use labels",
+    "roleLevel": 3
   },
   {
     "id": "SD-CAS-029",
@@ -687,7 +705,8 @@
     ],
     "explanation": "Splitting at keyframes (closed GOPs) makes each chunk independently encodable, which turns a 3-hour serial job into a parallel DAG: split, transcode chunks, then assemble manifests. The total CPU work is unchanged (360 × 30 s = 10,800 s = 3 h), but wall-clock time drops to about 90 s. Platforms often publish the low renditions first so a video becomes playable even sooner.",
     "reference": "Netflix Tech Blog: video encoding at scale",
-    "caseId": "S4"
+    "caseId": "S4",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-030",
@@ -731,7 +750,8 @@
     ],
     "explanation": "Long-tail content has low per-edge hit rates, because each edge sees each object rarely. Tiered caching pools demand from many edges into a few shield caches, which raises the effective hit rate. Immutable, content-addressed URLs remove revalidation traffic entirely. Popular content is the easy case; the tail is where origin cost lives.",
     "reference": "RFC 9111; CDN tiered caching docs",
-    "caseId": "S4"
+    "caseId": "S4",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-031",
@@ -769,7 +789,8 @@
     ],
     "explanation": "Any grid has edges. Proximity search computes the set of cells that covers the query circle, here the rider's cell plus enough surrounding rings for 2 km, fetches their candidates and ranks them by real distance. Geohash has an extra trap: adjacent cells can have completely different prefixes (for example across the equator or the prime meridian), so prefix matching alone is not a neighbourhood search.",
     "reference": "Geohash; Uber H3 k-ring docs",
-    "caseId": "S5"
+    "caseId": "S5",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-032",
@@ -807,7 +828,8 @@
     ],
     "explanation": "Webhooks are at-least-once at best and can be lost entirely. Reconciliation compares the internal ledger with the external source of truth (settlement files or the provider's API) and sorts mismatches into missing internally, missing externally, and amount mismatches. A pending-state timeout that asks the provider by idempotency key resolves most cases before the daily run.",
     "reference": "Payments engineering: reconciliation",
-    "caseId": "S6"
+    "caseId": "S6",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-033",
@@ -844,7 +866,8 @@
       }
     ],
     "explanation": "In a follow graph the average follower count equals the average following count (here 200), because every edge has one end of each kind. Pushing costs posts × followers = 20 billion writes; pulling costs opens × followees = 200 billion reads, and on the latency-critical path. Pushing wins for ordinary users, but a 50-million-follower account breaks it, which is why real systems are hybrid. Pushing also wastes work on feeds of inactive users.",
-    "reference": "System Design Interview, news feed"
+    "reference": "System Design Interview, news feed",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-034",
@@ -881,7 +904,8 @@
       }
     ],
     "explanation": "Twitter's original Snowflake throws an error when the clock moves backwards and refuses to generate IDs until it catches up. Clock-based IDs need a monotonic timestamp source: remember the last value and block or fail on regression. Running NTP in slew mode rather than step mode also avoids most backward jumps.",
-    "reference": "twitter-archive/snowflake source"
+    "reference": "twitter-archive/snowflake source",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-035",
@@ -918,7 +942,8 @@
       }
     ],
     "explanation": "Fixed-size chunking is fragile to insertions and deletions. Content-defined chunking (Rabin fingerprints, or gear hashes as in FastCDC) cuts wherever the rolling hash of a small window matches a pattern, so boundaries move with the content. Most chunks keep their hashes and deduplicate. LBFS introduced the technique for low-bandwidth file systems.",
-    "reference": "Muthitacharoen et al., LBFS (SOSP 2001)"
+    "reference": "Muthitacharoen et al., LBFS (SOSP 2001)",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-036",
@@ -955,7 +980,8 @@
       }
     ],
     "explanation": "Reading pending work without claiming it is check-then-act across processes. Make the claim atomic in the store: `SELECT ... FOR UPDATE SKIP LOCKED`, or `UPDATE ... SET status = 'running', lease_until = now() + 30s WHERE id = ? AND status = 'pending'` and check that one row changed. A worker can crash after claiming, so leases expire and jobs are retried. That is at-least-once execution, so jobs must be idempotent.",
-    "reference": "PostgreSQL docs: SELECT ... SKIP LOCKED"
+    "reference": "PostgreSQL docs: SELECT ... SKIP LOCKED",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-037",
@@ -998,7 +1024,8 @@
       }
     ],
     "explanation": "Large web search engines and Elasticsearch-style systems mostly use document partitioning. Scatter-gather to all shards is predictable, parallel and easy to replicate, and tail latency is handled with replicas and hedging. Term partitioning reduces fan-out but suffers from skew and expensive cross-shard intersections.",
-    "reference": "Barroso, Dean & Hölzle, Web Search for a Planet (2003)"
+    "reference": "Barroso, Dean & Hölzle, Web Search for a Planet (2003)",
+    "roleLevel": 4
   },
   {
     "id": "SD-CAS-038",
@@ -1042,7 +1069,8 @@
     ],
     "explanation": "Split the problem by data type. Live location is ephemeral, high-rate and fine to lose, so an in-memory geo-index sharded by city or cell fits (Uber has used H3 cells with in-memory dispatch services). Assignment is a small, strongly consistent decision: one atomic state transition per driver with a timeout so that declined or unanswered offers release the driver. Durable trip records stay in the database.",
     "reference": "Uber Engineering: dispatch system and H3",
-    "caseId": "S5"
+    "caseId": "S5",
+    "roleLevel": 5
   },
   {
     "id": "SD-CAS-039",
@@ -1080,7 +1108,8 @@
     ],
     "explanation": "The trick is that every single-shard transaction must itself balance. Step 1 on the sender's shard debits the sender and credits that shard's clearing (in-transit) account, and writes an outbox event in the same transaction. Step 2 on the receiver's shard credits the receiver and debits its clearing account, deduplicated by transfer ID. The clearing accounts hold offsetting amounts that are netted and settled periodically. Money is always somewhere identifiable, so the zero-sum invariant holds at every instant.",
     "reference": "Double-entry bookkeeping; transactional outbox pattern",
-    "caseId": "S6"
+    "caseId": "S6",
+    "roleLevel": 5
   },
   {
     "id": "SD-CAS-040",
@@ -1123,7 +1152,8 @@
       }
     ],
     "explanation": "OT (the Jupiter approach used by Google Docs and Wave) transforms concurrent operations against a server-ordered history. CRDTs such as RGA, Yjs and Automerge give each element a unique, ordered ID, so merges commute and need no coordinator, which suits offline and peer-to-peer editing. The costs are metadata, tombstones and occasional odd interleavings. Both converge; neither guarantees intent.",
-    "reference": "Kleppmann et al., Interleaving anomalies in collaborative text editors (2019)"
+    "reference": "Kleppmann et al., Interleaving anomalies in collaborative text editors (2019)",
+    "roleLevel": 5
   },
   {
     "id": "SD-CAS-041",
@@ -1160,7 +1190,8 @@
       }
     ],
     "explanation": "A count-min sketch takes the minimum over d hashed counters. Collisions only add, so estimates never undercount. Here the sketch is just 2,718 × 5 = 13,590 counters (about 54 KB with 4-byte counters) for a billion events. A 1-million error is irrelevant for heavy hitters with tens of millions of hits but swamps rare queries, so pair the sketch with a heap of the current top K, and use exact counts offline if precision matters.",
-    "reference": "Cormode & Muthukrishnan, Count-Min Sketch (2005)"
+    "reference": "Cormode & Muthukrishnan, Count-Min Sketch (2005)",
+    "roleLevel": 5
   },
   {
     "id": "SD-CAS-042",
@@ -1197,7 +1228,8 @@
       }
     ],
     "explanation": "Fairness means orders at the same price fill in arrival order, so each order book needs a single total order. A deterministic, single-threaded engine over an in-memory book has no locks, gives microsecond latency, and makes state a pure function of the input log. Replicas apply the same log (state machine replication) and can take over without losing state. The LMAX architecture is the well-known write-up.",
-    "reference": "Fowler, The LMAX Architecture (2011)"
+    "reference": "Fowler, The LMAX Architecture (2011)",
+    "roleLevel": 5
   },
   {
     "id": "SD-CAS-043",
@@ -1240,7 +1272,8 @@
       }
     ],
     "explanation": "Watermarks trade completeness for latency; no setting is right for every click. Billing-grade pipelines either emit corrections (Beam and Flink allowed lateness plus side outputs, with idempotent sinks) or reconcile with batch processing over the immutable raw log, as in Lambda or Kappa architectures. The dangerous answers are the ones that look like configuration tweaks but quietly change billing.",
-    "reference": "Akidau et al., The Dataflow Model (VLDB 2015)"
+    "reference": "Akidau et al., The Dataflow Model (VLDB 2015)",
+    "roleLevel": 5
   },
   {
     "id": "SD-CAS-044",
@@ -1277,7 +1310,8 @@
       }
     ],
     "explanation": "Full fan-out is 20,000 × 1,000,000 = 2 × 10^10 messages per second, and a human reads perhaps 5 to 10 comments a second. Systems like Facebook Live therefore fan out once per edge server: each edge subscribes to the stream's channel, not each viewer. They then down-sample: show a rate-limited, ranked subset, and always include comments from the viewer's friends and the viewer's own (so posting feels instant). The design target is a readable experience, not complete delivery.",
-    "reference": "Facebook Engineering: Scaling Facebook Live"
+    "reference": "Facebook Engineering: Scaling Facebook Live",
+    "roleLevel": 5
   },
   {
     "id": "SD-CAS-045",
@@ -1314,6 +1348,7 @@
       }
     ],
     "explanation": "Two requests for the same nights in a different order (Fri then Sat, against Sat then Fri) each lock one row and wait for the other, which is a classic deadlock. Acquiring locks in a canonical order removes the cycle. The conditional UPDATE is correct, but when it matches zero rows that night is sold out, and code that ignores the row count goes on to charge the card. Reserve every night, verify, then charge.",
-    "reference": "PostgreSQL docs: Explicit locking, deadlocks"
+    "reference": "PostgreSQL docs: Explicit locking, deadlocks",
+    "roleLevel": 5
   }
 ]
