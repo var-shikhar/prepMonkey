@@ -147,9 +147,10 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <Button asChild variant="ghost" size="sm"><Link href={`/admin/questions?exam=${exam.id}`}><ArrowLeft /> Questions</Link></Button>
-        <h1 className="text-xl font-bold">{questionId ? <span className="font-mono">{questionId}</span> : 'New question'}</h1>
+        {/* Ids are long and unbroken; let them wrap rather than widen the page on a phone. */}
+        <h1 className="min-w-0 text-xl font-bold">{questionId ? <span className="font-mono break-all max-sm:text-base">{questionId}</span> : 'New question'}</h1>
         {meta?.version && <span className="text-xs text-muted-foreground">v{meta.version} · {meta.source}{meta.provenance ? ` · ${meta.provenance}` : ''}</span>}
         {dirty && <span className="rounded-full bg-banana/25 px-2 py-0.5 text-xs font-medium text-cocoa dark:text-banana">Unsaved changes</span>}
       </div>
@@ -158,11 +159,12 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
         {/* ---------------- form */}
         <div className="space-y-5">
           <Card title="Classification">
+            {/* Skill names and the four difficulty labels need a full row; type and pool share one. */}
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Skill">
+              <Field label="Skill" className="sm:col-span-2">
                 <Select value={draft.skill} onValueChange={(v) => set('skill', v)}>
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-w-[calc(100vw-2rem)]">
                     {exam.domains.map((d) => exam.skills.filter((s) => s.domain === d.id).map((s) => <SelectItem key={s.id} value={s.id}>D{d.id} · {s.name}</SelectItem>))}
                   </SelectContent>
                 </Select>
@@ -173,15 +175,15 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
                   <SelectContent>{TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Difficulty">
-                <ToggleGroup type="single" variant="outline" value={String(draft.difficulty)} onValueChange={(v) => v && set('difficulty', Number(v) as Draft['difficulty'])} className="w-full">
-                  {[1, 2, 3, 4].map((l) => <ToggleGroupItem key={l} value={String(l)} className="flex-1 text-xs">{exam.difficultyLevels[String(l)]?.label ?? l}</ToggleGroupItem>)}
-                </ToggleGroup>
-              </Field>
               <Field label="Pool">
                 <ToggleGroup type="single" variant="outline" value={draft.pool} onValueChange={(v) => v && set('pool', v as Draft['pool'])} className="w-full">
                   <ToggleGroupItem value="bank" className="flex-1 text-xs">Reviewed bank</ToggleGroupItem>
                   <ToggleGroupItem value="imported" className="flex-1 text-xs">Practice only</ToggleGroupItem>
+                </ToggleGroup>
+              </Field>
+              <Field label="Difficulty" className="sm:col-span-2">
+                <ToggleGroup type="single" variant="outline" value={String(draft.difficulty)} onValueChange={(v) => v && set('difficulty', Number(v) as Draft['difficulty'])} className="w-full max-sm:grid max-sm:grid-cols-2">
+                  {[1, 2, 3, 4].map((l) => <ToggleGroupItem key={l} value={String(l)} className="flex-1 text-xs">{exam.difficultyLevels[String(l)]?.label ?? l}</ToggleGroupItem>)}
                 </ToggleGroup>
               </Field>
             </div>
@@ -241,7 +243,7 @@ export function QuestionEditor({ exam, initial, meta, questionId }: { exam: Exam
               <h2 className="text-sm font-semibold">Learner preview</h2>
               <Button variant="ghost" size="xs" onClick={() => setShowAnswers((v) => !v)}>{showAnswers ? <><EyeOff /> Hide answers</> : <><Eye /> Show answers</>}</Button>
             </div>
-            <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
+            <div className="max-h-[min(32rem,70dvh)] space-y-3 overflow-y-auto pr-1">
               <RichText text={draft.stem || 'Your question stem appears here.'} className="text-sm font-medium" />
               <QuestionView item={preview} response={previewResponse} onChange={setPreviewResponse} revealed={showAnswers ? preview : null} />
               {showAnswers && draft.explanation && <RichText text={draft.explanation} className="rounded-xl bg-wash p-3 text-xs" />}
@@ -298,16 +300,17 @@ function ChoiceEditor({ draft, setDraft }: { draft: Draft; setDraft: SetDraft })
     <div className="space-y-3">
       {draft.options.map((o, i) => (
         <div key={o.id} className={cn('space-y-2 rounded-xl border p-3', o.correct && 'border-success/50 bg-success/[0.04]')}>
-          <div className="flex items-start gap-3">
+          {/* On phones the text gets the whole first line; "Correct" and remove wrap under it. */}
+          <div className="flex items-start gap-3 max-sm:flex-wrap max-sm:gap-y-1">
             <span className="mt-1.5 grid size-7 shrink-0 place-items-center rounded-lg border text-xs font-bold">{LETTERS[i]}</span>
             {tf ? <span className="mt-2 flex-1 text-sm font-medium">{o.text}</span> : (
-              <Textarea value={o.text} onChange={(e) => update(o.id, { text: e.target.value })} placeholder="Option text" className="min-h-10 flex-1" rows={1} />
+              <Textarea value={o.text} onChange={(e) => update(o.id, { text: e.target.value })} placeholder="Option text" className="min-h-10 min-w-0 flex-1 max-sm:basis-[calc(100%-2.5rem)]" rows={1} />
             )}
-            <label className="mt-2 flex shrink-0 items-center gap-1.5 text-xs font-medium">
+            <label className="mt-2 flex shrink-0 items-center gap-1.5 text-xs font-medium max-sm:mt-0 max-sm:ml-10 max-sm:min-h-10 max-sm:pr-2">
               <Checkbox checked={Boolean(o.correct)} onCheckedChange={(v) => markCorrect(o.id, v === true)} /> Correct
             </label>
             {!tf && draft.options.length > min && (
-              <Button variant="ghost" size="icon-sm" onClick={() => setDraft((d) => ({ ...d, options: d.options.filter((x) => x.id !== o.id) }))} aria-label={`Remove option ${LETTERS[i]}`}><Trash2 /></Button>
+              <Button variant="ghost" size="icon-sm" className="max-sm:ml-auto" onClick={() => setDraft((d) => ({ ...d, options: d.options.filter((x) => x.id !== o.id) }))} aria-label={`Remove option ${LETTERS[i]}`}><Trash2 /></Button>
             )}
           </div>
           <Input value={o.why ?? ''} onChange={(e) => update(o.id, { why: e.target.value })} placeholder={o.correct ? 'Why this is right' : 'Why this is wrong'} className="h-9 text-sm" />
@@ -332,12 +335,15 @@ function OrderEditor({ draft, setDraft }: { draft: Draft; setDraft: SetDraft }) 
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">List the items in the correct order. Learners see them shuffled.</p>
       {draft.options.map((o, i) => (
-        <div key={o.id} className="flex items-center gap-2">
+        // On phones three 40px buttons would leave the step text a sliver, so they wrap under it.
+        <div key={o.id} className="flex items-center gap-2 max-sm:flex-wrap max-sm:rounded-xl max-sm:border max-sm:p-2">
           <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold">{i + 1}</span>
-          <Input value={o.text} onChange={(e) => setDraft((d) => ({ ...d, options: d.options.map((x) => (x.id === o.id ? { ...x, text: e.target.value } : x)) }))} placeholder={`Step ${i + 1}`} />
-          <Button variant="ghost" size="icon-sm" disabled={i === 0} onClick={() => move(i, i - 1)} aria-label="Move up"><ArrowUp /></Button>
-          <Button variant="ghost" size="icon-sm" disabled={i === draft.options.length - 1} onClick={() => move(i, i + 1)} aria-label="Move down"><ArrowDown /></Button>
-          {draft.options.length > 3 && <Button variant="ghost" size="icon-sm" onClick={() => setDraft((d) => ({ ...d, options: d.options.filter((x) => x.id !== o.id) }))} aria-label="Remove"><Trash2 /></Button>}
+          <Input value={o.text} onChange={(e) => setDraft((d) => ({ ...d, options: d.options.map((x) => (x.id === o.id ? { ...x, text: e.target.value } : x)) }))} placeholder={`Step ${i + 1}`} className="min-w-0 flex-1 max-sm:basis-[calc(100%-2.25rem)]" />
+          <div className="flex shrink-0 gap-2 max-sm:w-full max-sm:justify-end max-sm:gap-1">
+            <Button variant="ghost" size="icon-sm" disabled={i === 0} onClick={() => move(i, i - 1)} aria-label="Move up"><ArrowUp /></Button>
+            <Button variant="ghost" size="icon-sm" disabled={i === draft.options.length - 1} onClick={() => move(i, i + 1)} aria-label="Move down"><ArrowDown /></Button>
+            {draft.options.length > 3 && <Button variant="ghost" size="icon-sm" onClick={() => setDraft((d) => ({ ...d, options: d.options.filter((x) => x.id !== o.id) }))} aria-label="Remove"><Trash2 /></Button>}
+          </div>
         </div>
       ))}
       {draft.options.length < 6 && <Button variant="outline" size="sm" onClick={() => setDraft((d) => ({ ...d, options: [...d.options, { id: nextLetter(d.options), text: '' }] }))}><Plus /> Add item</Button>}
@@ -360,7 +366,7 @@ function MatchEditor({ draft, setDraft }: { draft: Draft; setDraft: SetDraft }) 
             </div>
             <Select value={p.answer} onValueChange={(v) => setPrompts((ps) => ps.map((x) => (x.id === p.id ? { ...x, answer: v } : x)))}>
               <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Matches…" /></SelectTrigger>
-              <SelectContent>{draft.options.map((o, j) => <SelectItem key={o.id} value={o.id}>{LETTERS[j]}. {o.text || '(empty option)'}</SelectItem>)}</SelectContent>
+              <SelectContent className="max-w-[calc(100vw-2rem)]">{draft.options.map((o, j) => <SelectItem key={o.id} value={o.id}>{LETTERS[j]}. {o.text || '(empty option)'}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         ))}
@@ -453,6 +459,6 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">{label}</Label>{children}</div>;
+function Field({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
+  return <div className={cn('min-w-0 space-y-1.5', className)}><Label className="text-xs text-muted-foreground">{label}</Label>{children}</div>;
 }
