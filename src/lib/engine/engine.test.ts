@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  assembleForm, formFromItems, isCorrect, mulberry32, pickByDifficulty, pickNextAdaptive, scoreAttempt, skillAllocation, toPublicQuestion, toScaled, updateAbility,
+  assembleForm, formFromItems, freshFirst, isCorrect, mulberry32, pickByDifficulty, pickNextAdaptive, scoreAttempt, skillAllocation, toPublicQuestion, toScaled, updateAbility,
   type Question,
 } from '@/lib/engine';
 import { loadAllExams, loadExamBundle } from '@/lib/content/load';
@@ -118,6 +118,31 @@ describe('form assembly', () => {
     expect(kept.itemIds).toEqual(items.map((q) => q.id));
     const shuffled = formFromItems(items, 9);
     expect([...shuffled.itemIds].sort()).toEqual(items.map((q) => q.id).sort());
+  });
+
+  test('freshFirst puts unseen items first, then the ones seen longest ago', () => {
+    const items = QUESTIONS.slice(0, 6);
+    const seen = new Map([[items[0].id, 0], [items[1].id, 3], [items[2].id, 1]]);
+    const out = freshFirst(items, mulberry32(5), seen).map((q) => q.id);
+    expect(out.slice(0, 3).sort()).toEqual(items.slice(3).map((q) => q.id).sort());
+    expect(out.slice(3)).toEqual([items[1].id, items[2].id, items[0].id]);
+  });
+
+  test('a repeat mock avoids questions from the last attempt while the bank allows', () => {
+    const first = assembleForm(EXAM, QUESTIONS, { seed: 11 });
+    const seen = new Map(first.itemIds.map((id) => [id, 0]));
+    const second = assembleForm(EXAM, QUESTIONS, { seed: 12, seen });
+    const repeats = second.itemIds.filter((id) => seen.has(id)).length;
+    const unseenRepeats = assembleForm(EXAM, QUESTIONS, { seed: 12 }).itemIds.filter((id) => seen.has(id)).length;
+    expect(repeats).toBeLessThan(unseenRepeats);
+    expect(repeats).toBeLessThanOrEqual(Math.ceil(EXAM.itemCount * 0.1));
+  });
+
+  test('adaptive picks an unseen item when one fits as well', () => {
+    const pool = QUESTIONS.filter((q) => q.skill === SKILLS[0].id && q.difficulty === 2);
+    const seen = new Map(pool.slice(0, -1).map((q) => [q.id, 0]));
+    const next = pickNextAdaptive(EXAM, pool, new Set(), [], -0.4, 20, mulberry32(3), seen);
+    expect(next?.id).toBe(pool[pool.length - 1].id);
   });
 });
 
