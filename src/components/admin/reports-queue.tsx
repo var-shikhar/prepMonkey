@@ -42,10 +42,10 @@ export function ReportsQueue() {
 
   return (
     <div className="space-y-4">
-      <ToggleGroup type="single" variant="outline" value={status} onValueChange={(v) => v && setStatus(v as typeof status)}>
-        <ToggleGroupItem value="open" className="px-4">Open</ToggleGroupItem>
-        <ToggleGroupItem value="resolved" className="px-4">Resolved</ToggleGroupItem>
-        <ToggleGroupItem value="dismissed" className="px-4">Dismissed</ToggleGroupItem>
+      <ToggleGroup type="single" variant="outline" value={status} onValueChange={(v) => v && setStatus(v as typeof status)} className="max-sm:w-full">
+        <ToggleGroupItem value="open" className="px-4 max-sm:flex-1">Open</ToggleGroupItem>
+        <ToggleGroupItem value="resolved" className="px-4 max-sm:flex-1">Resolved</ToggleGroupItem>
+        <ToggleGroupItem value="dismissed" className="px-4 max-sm:flex-1">Dismissed</ToggleGroupItem>
       </ToggleGroup>
 
       {isPending ? (
@@ -56,25 +56,28 @@ export function ReportsQueue() {
           <p className="mt-3 font-medium">{status === 'open' ? 'Inbox zero. Nothing to triage.' : `No ${status} reports.`}</p>
         </div>
       ) : (
-        <ul className="space-y-3">
+        // Clipped sideways so a card sliding out on dismiss never makes the page scroll horizontally;
+        // the bleed into the page gutter leaves room for the cards' soft shadows.
+        <ul className="-mx-4 space-y-3 overflow-x-clip px-4">
           <AnimatePresence initial={false}>
             {data.map((r) => (
               <motion.li key={r.id} layout exit={{ opacity: 0, x: 40 }} className="space-y-3 glass rounded-3xl p-4">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">{REASON[r.reason] ?? r.reason}</span>
-                  <span className="font-mono text-muted-foreground">{r.examCode} · {r.questionId}</span>
+                  <span className="min-w-0 font-mono break-all text-muted-foreground">{r.examCode} · {r.questionId}</span>
                   <span className="ml-auto text-muted-foreground">{r.reporter} · {new Date(r.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                 </div>
                 <p className="line-clamp-2 text-sm">{r.stem.replace(/```[\s\S]*?```/g, '[code]')}</p>
-                {r.message && <blockquote className="rounded-xl border-l-2 border-primary/50 bg-wash px-3 py-2 text-sm">{r.message}</blockquote>}
+                {r.message && <blockquote className="rounded-xl border-l-2 border-primary/50 bg-wash px-3 py-2 text-sm break-words">{r.message}</blockquote>}
                 {r.resolution && <p className="text-xs text-muted-foreground">Resolution: {r.resolution}</p>}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button asChild variant="outline" size="sm"><Link href={`/admin/questions/${encodeURIComponent(r.questionId)}`}><ExternalLink /> Open in editor</Link></Button>
+                {/* Phones: the note on its own row, Resolve and Dismiss side by side, then the editor link. */}
+                <div className="flex flex-wrap items-center gap-2 max-md:grid max-md:grid-cols-2">
+                  <Button asChild variant="outline" size="sm" className="max-md:order-last max-md:col-span-2"><Link href={`/admin/questions/${encodeURIComponent(r.questionId)}`}><ExternalLink /> Open in editor</Link></Button>
                   {status === 'open' && (
                     <>
-                      <Input value={notes[r.id] ?? ''} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} placeholder="Resolution note (optional)" className="h-8 min-w-48 flex-1" />
+                      <Input value={notes[r.id] ?? ''} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} placeholder="Resolution note (optional)" aria-label="Resolution note" className="h-8 min-w-48 flex-1 max-md:order-first max-md:col-span-2 max-md:min-w-0" />
                       <Button size="sm" onClick={() => act.mutate({ ids: [r.id], to: 'resolved' })}><Check /> Resolve</Button>
-                      <Button size="sm" variant="ghost" onClick={() => act.mutate({ ids: [r.id], to: 'dismissed' })}><X /> Dismiss</Button>
+                      <Button size="sm" variant="ghost" className="max-md:border-border" onClick={() => act.mutate({ ids: [r.id], to: 'dismissed' })}><X /> Dismiss</Button>
                     </>
                   )}
                 </div>

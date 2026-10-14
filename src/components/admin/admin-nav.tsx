@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { FileQuestion, Flag, LayoutDashboard, Sparkles, Upload, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,12 +15,32 @@ const ITEMS = [
   { href: '/admin/users', label: 'Users', icon: Users, adminOnly: true },
 ];
 
+/** A sidebar from lg up; below that a tab strip that scrolls sideways inside itself. */
 export function AdminNav({ openReports, isAdmin }: { openReports: number; isAdmin: boolean }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const exam = params.get('exam');
+  const navRef = useRef<HTMLElement>(null);
+
+  // On the narrow strip the current tab can sit off-screen (Users, Import), so bring it into view.
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return;
+    const offset = active.getBoundingClientRect().left - nav.getBoundingClientRect().left;
+    nav.scrollTo({ left: nav.scrollLeft + offset - (nav.clientWidth - active.offsetWidth) / 2 });
+  }, [pathname]);
+
   return (
-    <nav aria-label="Admin" className="scrollbar-none -mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:px-0">
+    <nav
+      ref={navRef}
+      aria-label="Admin"
+      className={cn(
+        'scrollbar-none -mx-4 flex gap-1 overflow-x-auto px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-col lg:px-0',
+        // Soft edges hint that the strip scrolls; the sidebar needs none.
+        'max-lg:[mask-image:linear-gradient(to_right,transparent,black_1rem,black_calc(100%-1rem),transparent)]',
+      )}
+    >
       {ITEMS.filter((i) => !i.adminOnly || isAdmin).map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (
@@ -28,7 +49,7 @@ export function AdminNav({ openReports, isAdmin }: { openReports: number; isAdmi
             href={exam ? `${item.href}?exam=${exam}` : item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+              'flex min-h-10 shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors lg:min-h-0',
               active ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-wash hover:text-foreground',
             )}
           >
