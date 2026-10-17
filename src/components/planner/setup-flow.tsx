@@ -15,7 +15,7 @@ import { addDays, FAMILIARITY, formatDay, WEEKDAYS, weeklyMinutes, type Familiar
 import { ROLE_LEVELS } from '@/lib/role-levels';
 import { cn } from '@/lib/utils';
 import type { ExamCard } from '@/server/exams';
-import type { PlanPreview } from '@/server/goal-plan';
+import type { PlannerLimits, PlanPreview } from '@/server/goal-plan';
 
 type Focus = 'certification' | 'interview' | 'both';
 interface SubjectChoice { familiarity: Familiarity; targetLevel: 1 | 2 | 3 | 4 | 5 | null }
@@ -52,12 +52,19 @@ function useDebounced<T>(value: T, ms = 350) {
   return v;
 }
 
-export function SetupFlow({ exams, suggested, today }: { exams: ExamCard[]; suggested: Record<string, Familiarity>; today: string }) {
+export function SetupFlow({ exams, suggested, today, limits, initialExam }: {
+  exams: ExamCard[]; suggested: Record<string, Familiarity>; today: string; limits: PlannerLimits; initialExam?: string;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [focus, setFocus] = useState<Focus | null>(null);
-  const [targetDate, setTargetDate] = useState(addDays(today, 56));
-  const [picked, setPicked] = useState<Record<string, SubjectChoice>>({});
+  const first = exams.find((e) => e.id === initialExam);
+  // Arriving from an exam's page: that exam is already picked, and the goal type follows it.
+  const [focus, setFocus] = useState<Focus | null>(first ? (first.category === 'interview' ? 'interview' : 'certification') : null);
+  const [targetDate, setTargetDate] = useState(addDays(today, Math.min(56, limits.maxDays)));
+  const [picked, setPicked] = useState<Record<string, SubjectChoice>>(
+    first ? { [first.id]: { familiarity: suggested[first.id] ?? 'new', targetLevel: first.category === 'interview' ? 3 : null } } : {},
+  );
+  const maxDate = addDays(today, limits.maxDays);
   const [availability, setAvailability] = useState<number[]>(WEEK_PRESETS[0].minutes);
   const [startDate, setStartDate] = useState(today);
   const [name, setName] = useState('');
@@ -74,7 +81,12 @@ export function SetupFlow({ exams, suggested, today }: { exams: ExamCard[]; sugg
 
   const toggle = (id: string) => setPicked((p) => {
     if (p[id]) { const { [id]: _, ...rest } = p; return rest; }
-    if (Object.keys(p).length >= 8) { toast.info('Up to 8 subjects per plan.'); return p; }
+    if (Object.keys(p).length >= limits.maxSubjects) {
+      toast.info(limits.pro ? `Up to ${limits.maxSubjects} subjects per plan.` : `Free plans cover up to ${limits.maxSubjects} subjects. Pro plans up to 8.`, {
+        action: limits.pro ? undefined : { label: 'See Pro', onClick: () => router.push('/pricing') },
+      });
+      return p;
+    }
     const ex = byId.get(id);
     return { ...p, [id]: { familiarity: suggested[id] ?? 'new', targetLevel: ex?.category === 'interview' ? 3 : null } };
   });
@@ -109,7 +121,7 @@ export function SetupFlow({ exams, suggested, today }: { exams: ExamCard[]; sugg
   });
 
   const canContinue = [
-    Boolean(focus) && targetDate > addDays(today, 6),
+    Boolean(focus) && targetDate > addDays(today, 6) && targetDate <= maxDate,
     ids.length > 0,
     true,
     availability.some((m) => m >= 15),
@@ -151,19 +163,25 @@ export function SetupFlow({ exams, suggested, today }: { exams: ExamCard[]; sugg
               <div className="space-y-2">
                 <Label htmlFor="target-date">Target date <span className="font-normal text-muted-foreground">(exam or interview day)</span></Label>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Input id="target-date" type="date" value={targetDate} min={addDays(today, 7)} max={addDays(today, 365)} onChange={(e) => setTargetDate(e.target.value)} className="h-11 w-auto" />
-                  {[4, 8, 12].map((w) => (
+                  <Input id="target-date" type="date" value={targetDate} min={addDays(today, 7)} max={maxDate} onChange={(e) => setTargetDate(e.target.value)} className="h-11 w-auto" />
+                  {[2, 4, 8, 12].filter((w) => w * 7 <= limits.maxDays).map((w) => (
                     <Button key={w} type="button" variant="outline" size="sm" onClick={() => setTargetDate(addDays(today, w * 7))} aria-pressed={targetDate === addDays(today, w * 7)}>{w} weeks</Button>
                   ))}
                 </div>
                 {targetDate <= addDays(today, 6) && <p className="text-xs text-destructive">Give yourself at least a week.</p>}
+                {targetDate > maxDate && <p className="text-xs text-destructive">Free plans run for up to {limits.maxDays / 7} weeks. Pick an earlier date, or upgrade to Pro.</p>}
+                {!limits.pro && (
+                  <p className="text-xs text-muted-foreground">
+                    Free plan: up to {limits.maxSubjects} subjects over {limits.maxDays / 7} weeks. <a href="/pricing" className="font-medium text-primary hover:underline">Pro</a> plans up to 8 subjects over a year.
+                  </p>
+                )}
               </div>
             </>
           )}
 
           {step === 1 && (
             <>
-              <Heading title="Which subjects?" body="Pick everything this goal needs. One plan keeps them all moving together." />
+              <Heading title="Which subjects?" body={`Pick everything this goal needs, up to ${limits.maxSubjects}. One plan keeps them all moving together.`} />
               {focus !== 'certification' && (
                 <div className="flex flex-wrap gap-2">
                   {TRACKS.map((t) => {

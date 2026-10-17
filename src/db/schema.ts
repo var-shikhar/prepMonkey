@@ -333,6 +333,9 @@ export const studyPlan = pgTable('study_plan', {
 export interface GoalSubject { examId: string; familiarity: Familiarity; targetLevel: RoleLevel | null }
 export type GoalPlanStatus = 'active' | 'paused' | 'completed' | 'dropped';
 export interface GoalPlanNotice { kind: 'rebalanced' | 'resumed' | 'recovered'; day: string; message: string }
+export interface GoalCoachReview { headline: string; wentWell: string[]; focus: string[]; tip: string }
+/** AI coach's review of the sprint that a mini mock just closed; written when the learner next opens the plan. */
+export interface GoalCoach { sprint: number; day: string; attemptId: string; status: 'pending' | 'ready' | 'failed'; review?: GoalCoachReview }
 
 export const goalPlan = pgTable('goal_plan', {
   id: text().primaryKey().default(sql`gen_random_uuid()`),
@@ -351,6 +354,7 @@ export const goalPlan = pgTable('goal_plan', {
   autoPaused: boolean().notNull().default(false),
   /** the last change we made on the learner's behalf, shown once on the plan */
   notice: jsonb().$type<GoalPlanNotice>(),
+  coach: jsonb().$type<GoalCoach>(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [index().on(t.userId, t.status)]);

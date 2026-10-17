@@ -19,9 +19,8 @@ import { getStudyPlan, type PlanView } from '@/server/plan';
 import { requireUser } from '@/server/session';
 import { TodayPlan } from '@/components/plan/study-plan';
 import { PlanTaskButton } from '@/components/plan/plan-task-button';
-import { GoalPlannerPromo, GoalToday } from '@/components/planner/goal-today';
-import { GoalTaskButton } from '@/components/planner/goal-task-button';
-import { getPlanView, plannerAccess, type PlanView as GoalPlanView } from '@/server/goal-plan';
+import { GoalHero, GoalPlannerPromo } from '@/components/planner/goal-today';
+import { getPlanView, plannerLimits } from '@/server/goal-plan';
 
 export const metadata: Metadata = { title: 'Home' };
 
@@ -32,7 +31,7 @@ function greeting(timeZone: string) {
 
 export default async function DashboardPage() {
   const user = await requireUser('/dashboard');
-  const [profile, myExams, active, streak, heat, recent, goal, goalAccess] = await Promise.all([
+  const [profile, myExams, active, streak, heat, recent, goal, goalLimits] = await Promise.all([
     getOrCreateProfile(user.id),
     getMyExams(user.id),
     getActiveAttempts(user.id),
@@ -40,7 +39,7 @@ export default async function DashboardPage() {
     getActivityHeatmap(user.id),
     listAttempts(user.id, { limit: 4 }),
     getPlanView(user.id),
-    plannerAccess(user.id),
+    plannerLimits(user.id),
   ]);
   if (!profile.onboardedAt && myExams.length === 0 && recent.length === 0) redirect('/onboarding');
 
@@ -82,7 +81,11 @@ export default async function DashboardPage() {
       */}
       <div className="mt-7 flex flex-col gap-5 sm:mt-9 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
         <div className="contents lg:flex lg:flex-col lg:gap-6">
-          <Reveal delay={0.05} className="order-1"><UpNext active={active} exams={myExams} primary={primary} plan={plan} goal={goal} /></Reveal>
+          {/* The goal plan leads Home; a running attempt still comes first so it can be resumed. */}
+          {(active.length > 0 || !goal) && <Reveal delay={0.05} className="order-1"><UpNext active={active} exams={myExams} primary={primary} plan={plan} /></Reveal>}
+          {goal
+            ? <Reveal delay={0.07} className="order-1"><GoalHero plan={goal} /></Reveal>
+            : <Reveal delay={0.07} className="order-1"><GoalPlannerPromo limits={goalLimits} /></Reveal>}
 
           <Reveal delay={0.1} className="order-4">
             <section className="space-y-3">
@@ -147,9 +150,7 @@ export default async function DashboardPage() {
               </div>
             </section>
           </Reveal>
-          {goal && <Reveal delay={0.12} className="order-3"><GoalToday plan={goal} /></Reveal>}
           {plan && <Reveal delay={0.12} className="order-3"><TodayPlan plan={plan} /></Reveal>}
-          {!goal && <Reveal delay={0.13} className="order-3"><GoalPlannerPromo access={goalAccess} /></Reveal>}
           <Reveal delay={0.15} className="order-6">
             <section className="glass rounded-3xl p-5">
               <h2 className="mb-4 text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">Activity</h2>
@@ -182,12 +183,11 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: number; la
   );
 }
 
-function UpNext({ active, exams, primary, plan, goal }: {
+function UpNext({ active, exams, primary, plan }: {
   active: Awaited<ReturnType<typeof getActiveAttempts>>;
   exams: DashboardExam[];
   primary: DashboardExam | null;
   plan: PlanView | null;
-  goal: GoalPlanView | null;
 }) {
   let eyebrow = 'Up next';
   let title: string;
@@ -196,7 +196,6 @@ function UpNext({ active, exams, primary, plan, goal }: {
   let progress: number | null = null;
   const mostDue = [...exams].sort((a, b) => b.due - a.due)[0];
   const nextTask = plan?.days[0]?.tasks.find((t) => !t.done && t.kind !== 'rest');
-  const goalNext = goal?.status === 'active' ? goal.todayTasks.find((t) => t.status === 'pending') ?? goal.missedTasks[0] : undefined;
 
   if (active[0]) {
     const a = active[0];
@@ -205,16 +204,6 @@ function UpNext({ active, exams, primary, plan, goal }: {
     body = `Question ${a.position} of ${a.itemCount}, ${a.answered} answered${a.deadline ? '. The timer is still running.' : '.'}`;
     progress = a.itemCount ? Math.round((a.answered / a.itemCount) * 100) : 0;
     action = <Button asChild variant="premium" size="xl"><Link href={`/attempt/${a.id}`}><Play data-icon="inline-start" />Resume</Link></Button>;
-  } else if (goal?.status === 'paused') {
-    eyebrow = goal.name;
-    title = 'Your plan is paused';
-    body = 'Resume when you are ready. It picks up from today, and the finish date moves only if it has to.';
-    action = <Button asChild variant="premium" size="xl"><Link href="/planner">Open plan <ArrowRight data-icon="inline-end" /></Link></Button>;
-  } else if (goal && goalNext) {
-    eyebrow = `Today's plan · ${goal.name}`;
-    title = goalNext.label;
-    body = `${goalNext.detail} About ${goalNext.minutes} minutes.`;
-    action = <GoalTaskButton task={goalNext} due={goal.due[goalNext.examId] ?? 0} size="xl" variant="premium" label="Start now" />;
   } else if (plan && nextTask) {
     eyebrow = `Today's plan · ${plan.examCode}`;
     title = nextTask.label;
