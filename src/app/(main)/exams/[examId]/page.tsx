@@ -27,6 +27,8 @@ import type { RoleCounts } from '@/lib/role-levels';
 import { getStudyPlan } from '@/server/plan';
 import { getUser } from '@/server/session';
 import { WeekPlan } from '@/components/plan/study-plan';
+import { ExamPlanCard } from '@/components/planner/exam-plan-card';
+import { getExamPlanStatus } from '@/server/goal-plan';
 
 async function publishedExam(examId: string) {
   const ex = await getExam(examId);
@@ -46,8 +48,8 @@ export async function generateMetadata({ params }: { params: Promise<{ examId: s
 const learnerHub = cache(async (examId: string) => {
   const user = await getUser();
   if (!user) return null;
-  const [hub, plan] = await Promise.all([getExamHubData(user.id, examId), getStudyPlan(user.id, examId)]);
-  return { user, hub, plan };
+  const [hub, plan, goal] = await Promise.all([getExamHubData(user.id, examId), getStudyPlan(user.id, examId), getExamPlanStatus(user.id, examId)]);
+  return { user, hub, plan, goal };
 });
 
 export default async function ExamHubPage({ params, searchParams }: { params: Promise<{ examId: string }>; searchParams: Promise<{ start?: string }> }) {
@@ -118,7 +120,7 @@ export default async function ExamHubPage({ params, searchParams }: { params: Pr
 
       {/* ---------------- the learner's own sections stream in behind the public page */}
       <Suspense fallback={<LearnerSectionsSkeleton />}>
-        <LearnerSections examId={ex.id} exam={cfg} counts={counts} roles={roles} hasImported={pools.imported > 0} start={start} />
+        <LearnerSections examId={ex.id} exam={cfg} plannable={ex.category !== 'quiz'} counts={counts} roles={roles} hasImported={pools.imported > 0} start={start} />
       </Suspense>
 
       <Reveal delay={0.1}>
@@ -152,8 +154,8 @@ export default async function ExamHubPage({ params, searchParams }: { params: Pr
   );
 }
 
-async function LearnerSections({ examId, exam, counts, roles, hasImported, start }: {
-  examId: string; exam: ExamConfig; counts: Record<string, number>; roles: RoleCounts; hasImported: boolean; start?: string;
+async function LearnerSections({ examId, exam, plannable, counts, roles, hasImported, start }: {
+  examId: string; exam: ExamConfig; plannable: boolean; counts: Record<string, number>; roles: RoleCounts; hasImported: boolean; start?: string;
 }) {
   const learner = await learnerHub(examId);
   const user = learner?.user ?? null;
@@ -163,6 +165,12 @@ async function LearnerSections({ examId, exam, counts, roles, hasImported, start
       <Reveal delay={0.05}>
         {user && hub ? <ProgressCard examId={examId} hub={hub} passing={exam.scale.passing} /> : <VisitorCard examId={examId} />}
       </Reveal>
+
+      {plannable && (
+        <Reveal delay={0.08}>
+          <ExamPlanCard examId={examId} examCode={exam.code} status={learner?.goal ?? null} />
+        </Reveal>
+      )}
 
       <Reveal delay={0.1}>
         <PracticeOptions
@@ -178,7 +186,8 @@ async function LearnerSections({ examId, exam, counts, roles, hasImported, start
         />
       </Reveal>
 
-      {learner?.plan && <Reveal delay={0.1}><WeekPlan plan={learner.plan} /></Reveal>}
+      {/* The goal plan already covers this exam's days; the free weekly plan would only repeat it. */}
+      {learner?.plan && learner.goal.kind !== 'in_plan' && <Reveal delay={0.1}><WeekPlan plan={learner.plan} /></Reveal>}
     </>
   );
 }

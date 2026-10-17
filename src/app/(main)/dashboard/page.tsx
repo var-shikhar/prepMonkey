@@ -19,6 +19,8 @@ import { getStudyPlan, type PlanView } from '@/server/plan';
 import { requireUser } from '@/server/session';
 import { TodayPlan } from '@/components/plan/study-plan';
 import { PlanTaskButton } from '@/components/plan/plan-task-button';
+import { GoalHero, GoalPlannerPromo } from '@/components/planner/goal-today';
+import { getPlanView, plannerLimits } from '@/server/goal-plan';
 
 export const metadata: Metadata = { title: 'Home' };
 
@@ -29,19 +31,22 @@ function greeting(timeZone: string) {
 
 export default async function DashboardPage() {
   const user = await requireUser('/dashboard');
-  const [profile, myExams, active, streak, heat, recent] = await Promise.all([
+  const [profile, myExams, active, streak, heat, recent, goal, goalLimits] = await Promise.all([
     getOrCreateProfile(user.id),
     getMyExams(user.id),
     getActiveAttempts(user.id),
     getStreak(user.id),
     getActivityHeatmap(user.id),
     listAttempts(user.id, { limit: 4 }),
+    getPlanView(user.id),
+    plannerLimits(user.id),
   ]);
   if (!profile.onboardedAt && myExams.length === 0 && recent.length === 0) redirect('/onboarding');
 
   const firstName = user.isAnonymous ? '' : user.name.split(' ')[0];
   const primary = myExams.find((e) => e.id === profile.primaryExamId) ?? myExams[0] ?? null;
-  const plan = primary ? await getStudyPlan(user.id, primary.id) : null;
+  // A goal plan takes over from the free 7-day plan.
+  const plan = primary && !goal ? await getStudyPlan(user.id, primary.id) : null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 pb-10 sm:px-6 sm:pt-10">
@@ -76,7 +81,11 @@ export default async function DashboardPage() {
       */}
       <div className="mt-7 flex flex-col gap-5 sm:mt-9 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-6">
         <div className="contents lg:flex lg:flex-col lg:gap-6">
-          <Reveal delay={0.05} className="order-1"><UpNext active={active} exams={myExams} primary={primary} plan={plan} /></Reveal>
+          {/* The goal plan leads Home; a running attempt still comes first so it can be resumed. */}
+          {(active.length > 0 || !goal) && <Reveal delay={0.05} className="order-1"><UpNext active={active} exams={myExams} primary={primary} plan={plan} /></Reveal>}
+          {goal
+            ? <Reveal delay={0.07} className="order-1"><GoalHero plan={goal} /></Reveal>
+            : <Reveal delay={0.07} className="order-1"><GoalPlannerPromo limits={goalLimits} /></Reveal>}
 
           <Reveal delay={0.1} className="order-4">
             <section className="space-y-3">

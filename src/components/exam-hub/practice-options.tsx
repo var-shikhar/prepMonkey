@@ -275,9 +275,10 @@ function SetupSheet({ exam, setup, onClose, defaultName, hasImported, skillCount
               )}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Difficulty</Label>
-                <ToggleGroup type="single" value={difficulty} onValueChange={(v) => v && setDifficulty(v)} variant="outline" className="grid w-full grid-cols-3 gap-1.5 sm:grid-cols-5">
+                <ToggleGroup type="single" value={difficulty} onValueChange={(v) => v && setDifficulty(v)} variant="outline" className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3">
+                  {/* Labels wrap rather than spill out of the sheet ("Exam-realistic", "Production containers"). */}
                   {Object.entries(exam.difficultyModes).map(([key, m]) => (
-                    <ToggleGroupItem key={key} value={key} className="h-auto rounded-lg px-2 py-1.5 text-xs">{m.label}</ToggleGroupItem>
+                    <ToggleGroupItem key={key} value={key} className="h-auto min-h-8 min-w-0 rounded-lg px-2 py-1.5 text-center text-xs leading-tight whitespace-normal">{m.label}</ToggleGroupItem>
                   ))}
                 </ToggleGroup>
                 <p className="text-xs text-muted-foreground">{exam.difficultyModes[difficulty]?.blurb}</p>
