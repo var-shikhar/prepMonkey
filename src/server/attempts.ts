@@ -61,6 +61,8 @@ export interface StartInput {
   candidateName?: string;
   challengeId?: string;
   assignmentId?: string;
+  /** goal-planner task this attempt was started from */
+  planTaskId?: string;
 }
 
 const secondsPerItem = (cfg: ExamConfig) => (cfg.timeLimitMinutes * 60) / cfg.itemCount;
@@ -186,6 +188,7 @@ export async function startAttempt(userId: string, userName: string, input: Star
   if (!form.itemIds.length) throw new AppError('No questions match those settings yet.', 400, 'EMPTY');
   const instant = KINDS[input.kind].feedback === 'instant' && input.instant !== false;
   settings.instant = instant;
+  if (input.planTaskId) settings.planTaskId = input.planTaskId;
 
   const now = new Date();
   const [row] = await db.insert(attempt).values({
@@ -446,6 +449,11 @@ async function finalize(a: AttemptRow, { timedOut }: { timedOut: boolean }) {
     }
   });
   await evaluateBadges(a.userId, profile.timezone).catch((err) => console.error('[badges]', err));
+  if (a.settings.planTaskId) {
+    // Loaded lazily: the planner reads analytics, which imports this module.
+    const { onPlanAttemptFinished } = await import('./goal-plan');
+    await onPlanAttemptFinished(a).catch((err) => console.error('[planner]', err));
+  }
 }
 
 // ---------------------------------------------------------------- results & history

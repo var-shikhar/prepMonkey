@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { exam, studyNote } from '@/db/schema';
 import { siteUrl } from '@/lib/site';
@@ -18,7 +18,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [exams, notes] = await Promise.all([
       db.select({ id: exam.id, updatedAt: exam.updatedAt }).from(exam).where(eq(exam.isPublished, true)),
       db.select({ examId: studyNote.examId, skillId: studyNote.skillId, updatedAt: studyNote.updatedAt })
-        .from(studyNote).innerJoin(exam, and(eq(exam.id, studyNote.examId), eq(exam.isPublished, true))),
+        .from(studyNote).innerJoin(exam, and(eq(exam.id, studyNote.examId), eq(exam.isPublished, true)))
+        // AI-written notes stay out of search until an admin has reviewed them.
+        .where(sql`${studyNote.content}->>'source' is distinct from 'ai'`),
     ]);
     const samples = await Promise.all(exams.map(async (e) => ({ ...e, count: (await getSampleQuestions(e.id)).length })));
     pages.push(
