@@ -2,7 +2,7 @@ import 'server-only';
 import { and, asc, desc, eq, gte, inArray, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
-import { attempt, goalPlan, goalTask, studyNote, type AttemptSettings, type GoalPlanNotice, type GoalSubject, type StudyNote } from '@/db/schema';
+import { attempt, goalPlan, goalTask, studyNote, type AttemptSettings, type GoalCoach, type GoalCoachReview, type GoalPlanNotice, type GoalSubject, type StudyNote } from '@/db/schema';
 import {
   addDays, buildPlanTasks, daysBetween, finishDate, pack, planHealth, recover, sprintTheme, weekday, weeklyMinutes,
   type DraftTask, type GoalTaskKind, type PlanHealth, type PlannerSubject, type RecoveryOption,
@@ -17,7 +17,7 @@ import { AppError, notFound } from './errors';
 import { getExam, getStudyNotes } from './exams';
 import { ensureEnrollment, getOrCreateProfile } from './profile';
 
-// The goal planner (Pro). Plans live in goal_plan with one row per task in
+// The goal planner (everyone; Pro lifts the size limits). Plans live in goal_plan with one row per task in
 // goal_task; src/lib/goal-plan.ts does the arithmetic. Nothing here moves a
 // learner's dates without asking, except two things they agreed to: a sprint
 // check re-balances the remaining practice, and a vacation ends on its date.
@@ -35,16 +35,23 @@ export interface PlanSetup {
 
 const AUTO_PAUSE_DAYS = 3;
 
-// ---------------------------------------------------------------- access
+// ---------------------------------------------------------------- limits
 
-/** Pro only; while billing is off everyone has Pro features, as elsewhere. */
-export async function plannerAccess(userId: string) {
-  return !billingEnabled() || (await getPlan(userId)) === 'pro';
+export interface PlannerLimits { pro: boolean; maxSubjects: number; maxDays: number }
+
+/** Free plans cover up to 2 subjects over 4 weeks; Pro up to 8 over a year. While billing is off everyone has Pro. */
+export async function plannerLimits(userId: string): Promise<PlannerLimits> {
+  const pro = !billingEnabled() || (await getPlan(userId)) === 'pro';
+  return pro ? { pro, maxSubjects: 8, maxDays: 366 } : { pro, maxSubjects: 2, maxDays: 28 };
 }
 
-async function assertPlannerAccess(userId: string) {
-  if (!(await plannerAccess(userId))) {
-    throw new AppError('The goal planner is part of Pro. Upgrade to get a plan that adapts to you.', 402, 'UPGRADE');
+async function assertWithinLimits(userId: string, setup: Pick<PlanSetup, 'subjects' | 'startDate' | 'targetDate'>) {
+  const limits = await plannerLimits(userId);
+  if (setup.subjects.length > limits.maxSubjects) {
+    throw new AppError(`Free plans cover up to ${limits.maxSubjects} subjects. Upgrade to Pro to plan up to 8 together.`, 402, 'UPGRADE');
+  }
+  if (daysBetween(setup.startDate, setup.targetDate) > limits.maxDays) {
+    throw new AppError(`Free plans run for up to ${limits.maxDays / 7} weeks. Pick an earlier target date, or upgrade to Pro for plans up to a year.`, 402, 'UPGRADE');
   }
 }
 
@@ -105,7 +112,7 @@ export interface PlanPreview {
 }
 
 export async function previewPlan(userId: string, setup: PlanSetup): Promise<PlanPreview> {
-  await assertPlannerAccess(userId);
+  await assertWithinLimits(userId, setup);
   const { today: todayKey } = await today(userId);
   validateDates(setup, todayKey);
   const subjects = await loadSubjects(userId, setup.subjects);
@@ -156,7 +163,7 @@ async function insertTasks(planId: string, tasks: (DraftTask & { day: string; po
 }
 
 export async function createPlan(userId: string, setup: PlanSetup) {
-  await assertPlannerAccess(userId);
+  await assertWithinLimits(userId, setup);
   if (await getCurrentPlan(userId)) throw new AppError('You already have a plan. Finish or drop it before starting another.', 409, 'PLAN_EXISTS');
   const { today: todayKey } = await today(userId);
   validateDates(setup, todayKey);
@@ -234,6 +241,7 @@ export interface PlanView {
   missedTasks: GoalTaskView[];
   sprints: { index: number; from: string; to: string; theme: string; minutes: number; doneMinutes: number; days: { day: string; tasks: GoalTaskView[] }[] }[];
   notice: GoalPlanNotice | null;
+  coach: GoalCoach | null;
   /** spaced-review cards due now, per exam (a review with nothing due can be ticked off) */
   due: Record<string, number>;
 }
@@ -329,6 +337,7 @@ export async function getPlanView(userId: string): Promise<PlanView | null> {
     missedTasks: missed.map(view),
     sprints: sprints.filter(Boolean),
     notice: plan.notice,
+    coach: plan.coach,
     due: Object.fromEntries(plan.subjects.map((s, i) => [s.examId, dueCounts[i]])),
   };
 }
@@ -383,7 +392,13 @@ export async function onPlanAttemptFinished(a: { id: string; userId: string; exa
   const found = a.settings.planTaskId ? await ownedTask(a.userId, a.settings.planTaskId) : null;
   if (!found || found.task.status !== 'pending' || found.task.examId !== a.examId) return;
   await db.update(goalTask).set({ status: 'done', doneAt: new Date(), attemptId: a.id }).where(and(eq(goalTask.id, found.task.id), eq(goalTask.status, 'pending')));
-  if (found.task.kind === 'mini_mock' && found.plan.status === 'active') await rebalance(found.plan);
+  if (found.task.kind === 'mini_mock' && found.plan.status === 'active') {
+    await rebalance(found.plan);
+    // The coach writes its review when the learner next opens the plan, so submitting stays fast.
+    const { today: todayKey } = await today(a.userId);
+    const coach: GoalCoach = { sprint: Math.floor(daysBetween(found.plan.startDate, todayKey) / 7) + 1, day: todayKey, attemptId: a.id, status: 'pending' };
+    await db.update(goalPlan).set({ coach }).where(eq(goalPlan.id, found.plan.id));
+  }
 }
 
 /** Reading is ticked off by hand, and so is a review when nothing is due. */
@@ -458,7 +473,6 @@ export async function getRecoveryOptions(userId: string, planId: string): Promis
 }
 
 export async function applyRecovery(userId: string, planId: string, option: RecoveryOption) {
-  await assertPlannerAccess(userId);
   const plan = await ownedPlan(userId, planId);
   if (plan.status !== 'active') throw new AppError('Resume the plan first.', 400);
   const { today: todayKey } = await today(userId);
@@ -541,7 +555,6 @@ const noteShape = z.object({
  * them). No links: a model can invent URLs.
  */
 export async function ensureReadingNote(user: SessionUser, taskId: string): Promise<StudyNote> {
-  await assertPlannerAccess(user.id);
   const found = await getReadingTask(user.id, taskId);
   if (!found) throw notFound('That reading task');
   if (found.note) return found.note;
@@ -580,4 +593,101 @@ export async function ensureReadingNote(user: SessionUser, taskId: string): Prom
   await db.insert(studyNote).values({ examId: ex.id, skillId: skill.id, content }).onConflictDoNothing();
   invalidateCatalog(`catalog:notes:${ex.id}`);
   return (await getStudyNotes(ex.id))[skill.id] ?? content;
+}
+
+// ---------------------------------------------------------------- AI coach
+
+const reviewShape = z.object({
+  headline: z.string().min(1).max(160),
+  wentWell: z.array(z.string().min(1).max(300)).max(3),
+  focus: z.array(z.string().min(1).max(300)).min(1).max(3),
+  tip: z.string().min(1).max(300),
+});
+
+/**
+ * The coach's review of the sprint a mini mock just closed: what went well,
+ * what to focus on next. Written once (AI, counted against the daily
+ * allowance); if AI is off or the allowance is spent, the review is skipped
+ * rather than retried on every visit.
+ */
+export async function writeCoachReview(user: SessionUser, planId: string): Promise<GoalCoach | null> {
+  const plan = await ownedPlan(user.id, planId);
+  const coach = plan.coach;
+  if (!coach || coach.status !== 'pending') return coach;
+  const settle = async (next: GoalCoach) => {
+    await db.update(goalPlan).set({ coach: next }).where(and(eq(goalPlan.id, plan.id), sql`${goalPlan.coach}->>'attemptId' = ${coach.attemptId}`));
+    return next;
+  };
+  if (!aiEnabled()) return settle({ ...coach, status: 'failed' });
+
+  try {
+    const [mock] = await db.select({ examId: attempt.examId, summary: attempt.summary }).from(attempt).where(eq(attempt.id, coach.attemptId)).limit(1);
+    const ex = mock ? await getExam(mock.examId) : null;
+    const tasks = await loadTasks(plan.id);
+    const from = addDays(coach.day, -6);
+    const week = tasks.filter((t) => t.day >= from && t.day <= coach.day && t.status !== 'skipped');
+    const done = week.filter((t) => t.status === 'done');
+    const upcoming = tasks.filter((t) => isOpen(t) && t.day > coach.day).slice(0, 25);
+    const readiness = ex ? await getReadiness(user.id, ex.id) : null;
+    const practised = (readiness?.skills ?? []).filter((k) => k.answered > 0).sort((a, b) => a.mastery - b.mastery);
+    const pct = (n: number) => `${Math.round(n * 100)}%`;
+    const facts = [
+      `Plan: "${plan.name}", target date ${plan.targetDate}, sprint ${coach.sprint}.`,
+      `This sprint: ${done.length} of ${week.length} planned tasks done (${done.reduce((a, t) => a + t.minutes, 0)} of ${week.reduce((a, t) => a + t.minutes, 0)} minutes).`,
+      mock?.summary && ex ? `Sprint check (${ex.code} mini mock): ${mock.summary.correctCount}/${mock.summary.itemCount} correct. By skill: ${mock.summary.bySkill.filter((k) => k.total > 0).map((k) => `${k.name} ${k.correct}/${k.total}`).join('; ')}.` : '',
+      practised.length ? `Weakest practised skills: ${practised.slice(0, 3).map((k) => `${k.name} (${pct(k.mastery)})`).join(', ')}.` : '',
+      practised.length > 3 ? `Strongest: ${practised.slice(-3).reverse().map((k) => `${k.name} (${pct(k.mastery)})`).join(', ')}.` : '',
+      upcoming.length ? `Next up in the plan: ${[...new Set(upcoming.map((t) => t.label))].slice(0, 8).join('; ')}.` : '',
+    ].filter(Boolean).join('\n');
+
+    await consumeAiQuota(user.id, user.role ?? 'learner');
+    const review: GoalCoachReview = await jsonCompletion({
+      name: 'sprint_review',
+      maxTokens: 900,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a calm, specific study coach. Use only the facts given; never invent scores or topics. Be brief and encouraging without hype. Address the learner as "you". No emoji.',
+        },
+        {
+          role: 'user',
+          content: `${facts}
+
+Write a short review of this sprint: a one-line headline; up to 3 things that went well (skip if nothing did); 1 to 3 things to focus on next sprint, naming skills; and one practical tip for the coming week.`,
+        },
+      ],
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['headline', 'wentWell', 'focus', 'tip'],
+        properties: {
+          headline: { type: 'string' },
+          wentWell: { type: 'array', items: { type: 'string' } },
+          focus: { type: 'array', items: { type: 'string' } },
+          tip: { type: 'string' },
+        },
+      },
+      parse: reviewShape,
+    });
+    return settle({ ...coach, status: 'ready', review });
+  } catch (err) {
+    console.error('[planner coach]', err);
+    return settle({ ...coach, status: 'failed' });
+  }
+}
+
+// ---------------------------------------------------------------- exam pages
+
+export type ExamPlanStatus =
+  | { kind: 'none' }
+  | { kind: 'in_plan'; plan: PlanView }
+  | { kind: 'other_plan'; planName: string };
+
+/** How an exam page should talk about planning: no plan yet, part of the learner's plan, or blocked by another plan. */
+export async function getExamPlanStatus(userId: string, examId: string): Promise<ExamPlanStatus> {
+  const current = await getCurrentPlan(userId);
+  if (!current) return { kind: 'none' };
+  if (!current.subjects.some((s) => s.examId === examId)) return { kind: 'other_plan', planName: current.name };
+  const plan = await getPlanView(userId);
+  return plan ? { kind: 'in_plan', plan } : { kind: 'none' };
 }
