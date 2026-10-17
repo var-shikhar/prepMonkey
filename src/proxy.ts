@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getSessionCookie } from 'better-auth/cookies';
 import { contentSecurityPolicy, cspHeaderName, CSP_REPORT_PATH } from '@/lib/csp';
 
-const PROTECTED = ['/dashboard', '/progress', '/saved', '/settings', '/onboarding', '/attempt', '/admin', '/teams', '/interviews/'];
+const PROTECTED = ['/dashboard', '/planner', '/progress', '/saved', '/settings', '/onboarding', '/attempt', '/admin', '/teams', '/interviews/'];
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
