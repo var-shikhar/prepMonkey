@@ -1,0 +1,1 @@
+ALTER TABLE "goal_plan" ADD COLUMN "coach" jsonb;
