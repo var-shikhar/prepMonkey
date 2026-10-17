@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { APP_NAV, isActive } from '@/lib/nav';
 import { cn } from '@/lib/utils';
 
-/** Desktop top navigation: four destinations with a sliding active pill. */
+/** Desktop top navigation: the main destinations with a sliding active pill. */
 export function AppNav() {
   const pathname = usePathname();
   return (
@@ -44,7 +44,7 @@ export function AppNav() {
 }
 
 /**
- * Phone navigation: the same four destinations in a floating glass dock that
+ * Phone navigation: the same destinations in a floating glass dock that
  * sits clear of the screen edge (and the home indicator). A soft pill slides
  * behind whichever tab is active.
  */
@@ -52,7 +52,7 @@ export function MobileTabBar() {
   const pathname = usePathname();
   return (
     <nav aria-label="Main" className="pb-safe fixed inset-x-3 bottom-3 z-40 print:hidden md:hidden">
-      <ul className="glass mx-auto grid max-w-md grid-cols-4 rounded-[1.6rem] p-1.5 backdrop-blur-2xl">
+      <ul className="glass mx-auto grid max-w-md grid-cols-5 rounded-[1.6rem] p-1.5 backdrop-blur-2xl">
         {APP_NAV.map((item) => {
           const active = isActive(item, pathname);
           const Icon = item.icon;

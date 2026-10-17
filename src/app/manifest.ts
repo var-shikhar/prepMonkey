@@ -13,7 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     display: 'standalone',
     display_override: ['window-controls-overlay', 'standalone'],
-    orientation: 'any',
+    // No `orientation`: Android maps 'any' to full-sensor rotation, which ignores
+    // the phone's rotation lock. Leaving it unset lets the OS setting decide.
     background_color: '#1d1611',
     theme_color: '#1d1611',
     categories: ['education', 'productivity'],
