@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Award, Bookmark, LogOut, Settings, Shield, Sparkles, Users } from 'lucide-react';
+import { Award, Bookmark, LogOut, Route, Settings, Shield, Sparkles, Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -57,6 +57,7 @@ export function UserMenu({ user }: { user: MenuUser }) {
         )}
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          <DropdownMenuItem asChild><Link href="/planner"><Route /> Goal planner</Link></DropdownMenuItem>
           <DropdownMenuItem asChild><Link href="/saved"><Bookmark /> Saved questions</Link></DropdownMenuItem>
           <DropdownMenuItem asChild><Link href="/progress?tab=certificates"><Award /> Certificates</Link></DropdownMenuItem>
           <DropdownMenuItem asChild><Link href="/teams"><Users /> Teams</Link></DropdownMenuItem>

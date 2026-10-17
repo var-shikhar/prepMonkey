@@ -20,6 +20,7 @@ export const startAttemptSchema = z.object({
   candidateName: z.string().max(80).optional(),
   challengeId: z.string().max(20).optional(),
   assignmentId: z.string().max(40).optional(),
+  planTaskId: z.string().max(40).optional(),
 });
 
 export const progressPatchSchema = z.object({
@@ -149,3 +150,29 @@ export const assignmentSchema = z.object({
   dueAt: z.string().max(40).nullish(),
 });
 export const memberRoleSchema = z.object({ role: z.enum(['instructor', 'member']) });
+
+// ---------------------------------------------------------------- goal planner
+
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const planSetupSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  subjects: z.array(z.object({
+    examId: id,
+    familiarity: z.enum(['new', 'basic', 'intermediate', 'strong']),
+    targetLevel: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).nullable(),
+  })).min(1).max(8),
+  /** minutes per weekday, Sunday first */
+  availability: z.array(z.number().int().min(0).max(600)).length(7).refine((a) => a.some((m) => m >= 15), 'Pick at least one day with 15 minutes or more.'),
+  startDate: day,
+  targetDate: day,
+}).refine((p) => p.targetDate > p.startDate, { message: 'The target date must be after the start date.', path: ['targetDate'] });
+
+export const planRecoverySchema = z.object({ option: z.enum(['push', 'catch_up', 'trim']) });
+
+export const planStateSchema = z.object({
+  action: z.enum(['pause', 'resume', 'drop']),
+  /** pause only: a vacation that ends by itself on this day */
+  until: day.nullish(),
+});
+
