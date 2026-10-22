@@ -1,0 +1,35 @@
+{
+  "query-and-options": {
+    "summary": "`query()` starts Claude Code's agent loop in a subprocess and streams messages back to you; the options object decides which model runs it, how far it may go, what it sees and what it may touch. Know the two input modes, the Python `query()` vs `ClaudeSDKClient` split, and the handful of option defaults that trip people up: the minimal system prompt, setting sources, `env` semantics, and the turn and budget caps.",
+    "points": [
+      "Packages: `claude-agent-sdk` (Python 3.10+, `from claude_agent_sdk import query, ClaudeAgentOptions`) and `@anthropic-ai/claude-agent-sdk` (Node 18+). Both bundle a native Claude Code binary. Without it (`npm ci --omit=optional`, or a Python sdist with no platform wheel), install Claude Code natively and set `pathToClaudeCodeExecutable` / `cli_path`.",
+      "The Agent SDK embeds Claude Code's loop, built-in tools, permissions, hooks and sessions in a process you operate. The client SDK calls the Messages API, and you write the loop (or use the beta tool runner). Managed Agents is an Anthropic-hosted harness and sandbox. The CLI is for terminal work.",
+      "Input modes: a string prompt is single message input. An `AsyncIterable` of user messages is streaming input (the recommended mode), which adds image attachments, queued messages, interrupts and natural multi-turn context. In TypeScript, `interrupt()`, `setModel()`, `setPermissionMode()` and `applyFlagSettings()` work only in streaming input mode.",
+      "In Python, `query()` returns a plain iterator: it supports streaming input, hooks and custom tools, but not interrupts. `ClaudeSDKClient` reuses one session and adds `interrupt()`, `set_model()` and `set_permission_mode()`. After `interrupt()`, drain the old task's messages with `receive_response()` before reading a new answer.",
+      "System prompt: leaving it unset gives a minimal tool-calling prompt (unlike `claude -p`). `{ type: \"preset\", preset: \"claude_code\" }` is Claude Code's prompt, and adding `append` is the lowest-risk customization. A string replaces everything. Python has a `{\"type\": \"file\"}` form for large prompts; TypeScript accepts a `string[]` split by `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` for caching.",
+      "The system prompt is recorded on a session's first request and reused on resume until compaction, so a new `append` on resume is ignored. Change instructions mid-session through the conversation or hook `additionalContext`; keep `snapshot: false` for iterating on wording. `excludeDynamicSections: true` on the preset makes the prompt identical across users so they share a cache entry.",
+      "`settingSources` omitted means `[\"user\", \"project\", \"local\"]`, the same as the CLI. An explicit list loads only the sources it names (`\"project\"` is needed for repo CLAUDE.md, rules, settings, hooks and skills), and `[]` loads none. Managed policy, `~/.claude.json` and auto memory are read regardless.",
+      "Tool options: `tools` sets the base set of built-in tools (`[]` removes them all). `allowedTools` only auto-approves and never restricts. A bare name in `disallowedTools` removes the tool from context, while a scoped rule such as `Bash(rm *)` denies matching calls in every mode, including `bypassPermissions`.",
+      "Caps: `maxTurns` counts tool-use round trips (`0` means no limit). `maxBudgetUsd` is checked after each response, can overshoot by about one response plus running subagents, counts subagent spend, and `0` is rejected. Hitting a cap gives `error_max_turns` / `error_max_budget_usd`; a single-shot `query()` then raises, while a streaming session stays alive.",
+      "`env`: in TypeScript it replaces the subprocess environment (spread `process.env`); in Python it merges over the inherited one. `cwd` is fixed for the session (there is no setter) and decides where project settings, hooks and skills load from. `additionalDirectories` grants file access, not configuration.",
+      "Model controls: `model` accepts an alias or a full name, and `fallbackModel` takes a backup or a comma-separated chain. `effort` is `low | medium | high | xhigh | max` and is independent of `thinking` (`adaptive`, `enabled` with `budgetTokens`, or `disabled`). There are no `temperature`, `top_p` or `max_tokens` options. `setModel()` with no argument goes to Claude Code's default model.",
+      "Cancelling: in TypeScript, use `abortController` or `Query.close()`, which works in any mode and ends the subprocess; `interrupt()` stops the current turn of a streaming session you want to keep alive. Use `verbatimPrompts: true` when prompt text comes from third parties, so `@path` mentions and slash commands are not expanded."
+    ],
+    "traps": [
+      "Saying `allowedTools: [\"Read\"]` makes an agent read-only. Unlisted tools remain available, and with `bypassPermissions` every one of them is approved.",
+      "Migrating from `claude-code-sdk` by renaming imports only. The default system prompt changed to minimal, so add the `claude_code` preset to keep the old behaviour.",
+      "Passing `settingSources: [\"user\"]` and wondering why the repo's CLAUDE.md is ignored, or assuming `[]` also disables managed policy and auto memory.",
+      "Porting Python `env={...}` to TypeScript verbatim. TypeScript replaces the environment, so `PATH` and `ANTHROPIC_API_KEY` disappear.",
+      "Calling `interrupt()` or `setModel()` on a TypeScript query started with a string prompt, or looking for `interrupt()` on the Python `query()` iterator.",
+      "Treating `maxBudgetUsd` as a hard ceiling. It can overshoot, so leave headroom. Also beware a config loader that maps empty fields to `0`: that removes the turn cap and makes the budget cap fail at startup.",
+      "Expecting a changed `append` or custom prompt to take effect when you resume a session. The recorded prompt is reused until compaction."
+    ],
+    "docs": [
+      { "title": "Agent SDK overview", "url": "https://code.claude.com/docs/en/agent-sdk/overview" },
+      { "title": "Configure your agent", "url": "https://code.claude.com/docs/en/agent-sdk/configuration" },
+      { "title": "Streaming input vs single message mode", "url": "https://code.claude.com/docs/en/agent-sdk/streaming-vs-single-mode" },
+      { "title": "Modifying system prompts", "url": "https://code.claude.com/docs/en/agent-sdk/modifying-system-prompts" },
+      { "title": "Migrate to Claude Agent SDK", "url": "https://code.claude.com/docs/en/agent-sdk/migration-guide" }
+    ]
+  }
+}
