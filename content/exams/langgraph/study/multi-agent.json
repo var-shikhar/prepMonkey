@@ -1,0 +1,51 @@
+{
+  "multi-agent": {
+    "summary": "Multi-agent design in LangGraph is mostly context engineering: deciding which agent sees what, who owns control flow, and what crosses each boundary. Know the five documented patterns (subagents, handoffs, skills, router, custom workflow) and their cost profiles, why the docs now prefer a tool-calling supervisor over `langgraph-supervisor`, how swarm-style handoffs use `Command.PARENT` and `active_agent`, and how Deep Agents (`deepagents` 0.7.30) packages subagents, a virtual filesystem with pluggable backends, and context compression on top of `create_agent`.",
+    "points": [
+      "Start with one agent. The docs reach for multi-agent only for context management (too many tools or too much specialised knowledge), distributed development by separate teams, parallel subtasks, or sequential constraints that unlock capabilities step by step.",
+      "Patterns: **subagents**, where a main agent (supervisor) calls agents as tools and all routing goes through it; **handoffs**, where a state variable such as `active_agent` or `current_step` switches the agent or configuration and agents talk to the user directly; **skills**, where one agent loads prompts on demand; **router**, a classification step that dispatches (often in parallel with `Send`) and synthesises; and **custom workflow**, a bespoke `StateGraph` that mixes deterministic and agentic nodes.",
+      "Cost profile from the docs: on a one-shot request subagents take 4 model calls and the others 3, because results flow back through the supervisor. On repeat requests the stateful patterns (handoffs, skills) save 40–50% of calls. On multi-domain fan-out, subagents and router win through parallelism and isolation, while handoffs are sequential and skills accumulate tokens.",
+      "Tool-calling supervisor: wrap each worker `create_agent` in a `@tool` that invokes it and returns `result[\"messages\"][-1].content`. Subagents are stateless by default. Prompt them to put their results in the final message, or return a `Command` with extra state keys plus a matching `ToolMessage`.",
+      "`langgraph-supervisor` is no longer actively maintained. Map `create_supervisor` to a `create_agent` with tool-wrapped workers, `output_mode` (`last_message` by default, or `full_history`) to what the wrapper returns, and nested supervisors to tools that call middle-tier agents. For interrupts, compile only the outermost graph with a checkpointer and pass a `thread_id`.",
+      "Handoffs between agent subgraphs: a tool returns `Command(goto=agent, graph=Command.PARENT, update={...})`. The update must carry the `AIMessage` with the tool call and a `ToolMessage` with the same `tool_call_id`. Every key in the update must exist in the parent schema, or it is silently dropped. For most handoffs the docs prefer a single agent whose middleware swaps the prompt and tools by `current_step`.",
+      "`langgraph-swarm`: `create_handoff_tool` makes `transfer_to_<agent>` tools that forward the full history and set `active_agent`. `create_swarm` adds a `START` router that returns `active_agent` (or `default_active_agent`), so with a checkpointer the next turn resumes with the last active agent.",
+      "Loop and routing control: give the supervisor or handoff graph a hop or attempt counter in state with an explicit terminal route (clarify, escalate or `END`). `recursion_limit` is only the safety net. Fix misrouting with sharper names and descriptions and a routing eval set built from traces.",
+      "Deep Agents: `create_deep_agent` returns a compiled LangGraph graph with filesystem tools (`ls`, `read_file`, `write_file`, `edit_file`, `delete`, `glob`, `grep`; `execute` only on sandbox backends), a `task` tool with an auto-added `general-purpose` subagent, summarisation and tool-call patching. Your `tools=` are additive. Since v0.7, `write_todos` planning is opt-in through `TodoListMiddleware()`.",
+      "Deep Agents subagents: `task(description, subagent_type)`. Isolated mode (the default) starts the subagent with a single human message; it returns one final report as a `ToolMessage`. State keys other than `messages`, `todos` and similar (for example `files`) merge back into the parent. `mode: \"fork\"` (beta) continues the parent's conversation. Omitted `tools`, `model` and `interrupt_on` are inherited, `permissions` replaces the parent's list, and `CompiledSubAgent` does not inherit `interrupt_on`.",
+      "Backends: `StateBackend` (the default) keeps files in thread state and shares them with subagents. `FilesystemBackend` uses real disk and suits CLIs and CI, not web servers. `StoreBackend(namespace=...)` gives cross-thread storage scoped by a namespace factory, which is required in 0.7.30. `CompositeBackend(default=StateBackend(), routes={\"/memories/\": StoreBackend(...)})` routes by longest prefix.",
+      "Context compression in Deep Agents: tool results over 20,000 tokens are offloaded to the backend and replaced by a path plus a 10-line preview. Around 85% of `max_input_tokens`, older large tool inputs are truncated, and once nothing more can be offloaded the history is summarised while a text copy of the original messages is kept on the filesystem."
+    ],
+    "traps": [
+      "Recommending `create_supervisor` for new work: the docs now say `langgraph-supervisor` is unmaintained and recommend a tool-calling supervisor built with `create_agent`.",
+      "Wiring workers to `END` in a custom supervisor graph: the supervisor never sees their results and cannot decide the next step.",
+      "A handoff that sends only a `ToolMessage`, or no messages: the receiving agent sees a broken tool-call history. Send the AIMessage/ToolMessage pair.",
+      "Adding a payload key such as `task_description` to a `Command.PARENT` update when the parent schema lacks it: it disappears silently instead of raising.",
+      "Assuming a Deep Agents subagent sees the whole conversation: isolated mode passes only the `description`, so the description must be self-contained.",
+      "Assuming `write_todos` is built in: in `deepagents` 0.7+ you must add `TodoListMiddleware()` yourself.",
+      "Setting `interrupt_on` at the top level and expecting a `CompiledSubAgent` to pause: compiled runnables do not inherit it.",
+      "Scoping `StoreBackend` per assistant on a multi-user deployment: every user of that assistant shares the files. Derive the namespace from the authenticated user (and tenant)."
+    ],
+    "docs": [
+      {
+        "title": "Multi-agent (LangChain)",
+        "url": "https://docs.langchain.com/oss/python/langchain/multi-agent"
+      },
+      {
+        "title": "Subagents pattern",
+        "url": "https://docs.langchain.com/oss/python/langchain/multi-agent/subagents"
+      },
+      {
+        "title": "Handoffs pattern",
+        "url": "https://docs.langchain.com/oss/python/langchain/multi-agent/handoffs"
+      },
+      {
+        "title": "Deep Agents subagents",
+        "url": "https://docs.langchain.com/oss/python/deepagents/subagents"
+      },
+      {
+        "title": "Deep Agents backends",
+        "url": "https://docs.langchain.com/oss/python/deepagents/backends"
+      }
+    ]
+  }
+}
