@@ -1,0 +1,36 @@
+{
+  "chat-models-messages": {
+    "summary": "Every provider integration is a `BaseChatModel` that takes messages and returns an `AIMessage`, so swapping providers is mostly configuration. Know how `init_chat_model` picks a provider and makes models configurable, what each message class is for, how `content` differs from the standard `content_blocks` view, where token usage lives, and how streamed chunks merge.",
+    "points": [
+      "Chat models take a string, a list of messages (message objects, `(role, text)` tuples or role/content dicts) or a `PromptValue`, and return an `AIMessage`. A bare dict is rejected. Legacy text-completion LLMs take and return strings.",
+      "`init_chat_model` (from `langchain.chat_models`) accepts `\"provider:model\"`, a bare name plus `model_provider=`, or a bare name whose prefix it can infer (`claude...` to `anthropic`, `gpt-...` to `openai`). Precedence: explicit `model_provider` (the string is then not split), then a known `provider:` prefix, then name inference, then `ValueError`.",
+      "Each provider class lives in its own partner package (`langchain-anthropic`, `langchain-openai`, `langchain-aws`, `langchain-google-genai`, `langchain-ollama` and so on). A missing package raises `ImportError` naming the package.",
+      "Configurable models: with no `model`, `model` and `model_provider` are configurable by default. `configurable_fields=(...)` is an allowlist, and `config_prefix=\"writer\"` makes the keys `writer_model`, `writer_temperature` and so on. The real model is built on each call, so errors such as a missing package surface on the first `invoke`.",
+      "Message classes: `SystemMessage` (instructions), `HumanMessage` (user input, text or multimodal blocks), `AIMessage` (model output, also built by hand to replay history) and `ToolMessage` (a tool result, with a required `tool_call_id` and an optional `artifact` that is not sent to the model). In dicts, `user` maps to human and `assistant` to AI.",
+      "`content` is the provider's raw payload: a string or a list of provider-shaped blocks. `content_blocks` is a lazily computed standard view with types such as `text`, `reasoning`, `image`, `file`, `tool_call`, `invalid_tool_call`, server-tool blocks and `non_standard`. `.text` is a property in 1.x (calling `.text()` still works but warns) and joins only the text parts.",
+      "Standard blocks are not written into `content` unless the model has `output_version=\"v1\"` or `LC_OUTPUT_VERSION=v1` is set, which matters when non-LangChain consumers read stored messages.",
+      "Multimodal input uses standard blocks: `{\"type\": \"image\", \"url\": ...}`, `{\"type\": \"image\", \"base64\": ..., \"mime_type\": \"image/png\"}`, `{\"type\": \"file\", ...}` for PDFs, or a provider `file_id`. Supported file types and sizes still vary by model.",
+      "`AIMessage.usage_metadata` is the provider-neutral token record: `input_tokens`, `output_tokens` and `total_tokens` (all required), plus optional `input_token_details` (`cache_read`, `cache_creation`, `audio`) and `output_token_details` (`reasoning`, `audio`). Totals include the detail counts; `response_metadata` holds provider-specific extras.",
+      "Adding `AIMessageChunk`s concatenates content, sums `usage_metadata`, merges `response_metadata` and joins `tool_call_chunks` by `index` into parsed `tool_calls`. The result is still a chunk (use `message_chunk_to_message` for an `AIMessage`); adding a plain `AIMessage` raises `TypeError`.",
+      "Common params: `temperature` (randomness; use about 0 for extraction), `max_tokens` (caps reply length), `timeout` (seconds per request), `max_retries` (default 6, exponential backoff with jitter, retries network errors, 429 and 5xx, not 401 or 404), plus `base_url` and `rate_limiter`.",
+      "Model profiles (`model.profile`, beta) describe capabilities and limits such as `max_input_tokens`, `image_inputs`, `pdf_inputs`, `tool_calling` and `reasoning_output`, mostly from models.dev. Override with `profile=` at creation or `model_copy(update={\"profile\": ...})`. A custom chat model must implement `_generate` and `_llm_type`; `_stream` and `_agenerate` are optional."
+    ],
+    "traps": [
+      "Chat models are stateless: a second `invoke` knows nothing about the first unless you resend the earlier turns, including the returned `AIMessage`.",
+      "`resp.content[0][\"text\"]` breaks when a provider returns a plain string or puts reasoning or tool-use blocks first; use `.text` or filter `content_blocks`.",
+      "Adding `input_token_details[\"cache_read\"]` on top of `input_tokens` double-counts: cache reads are already inside the input total.",
+      "An adapter that puts running totals on every stream chunk inflates usage, because merging sums each chunk's `usage_metadata`.",
+      "`init_chat_model(\"anthropic:x\", model_provider=\"anthropic\")` sends the literal id `anthropic:x`, since an explicit provider turns off prefix splitting.",
+      "`configurable_fields=\"any\"` lets runtime config change `api_key` and `base_url`; with untrusted config, list the allowed fields explicitly.",
+      "Bare `gemini...` names infer `google_vertexai` with a deprecation warning; pass the provider explicitly instead of relying on inference.",
+      "Without `_stream`, `stream()` yields the whole reply as one item, so time to first token equals total latency."
+    ],
+    "docs": [
+      { "title": "Models", "url": "https://docs.langchain.com/oss/python/langchain/models" },
+      { "title": "Messages", "url": "https://docs.langchain.com/oss/python/langchain/messages" },
+      { "title": "init_chat_model reference", "url": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model" },
+      { "title": "LangChain v1 migration guide", "url": "https://docs.langchain.com/oss/python/migrate/langchain-v1" },
+      { "title": "BaseChatModel reference", "url": "https://reference.langchain.com/python/langchain-core/language_models/chat_models/BaseChatModel" }
+    ]
+  }
+}

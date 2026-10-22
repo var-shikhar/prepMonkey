@@ -1,0 +1,2000 @@
+[
+  {
+    "id": "LCH-CHM-001",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What type does each call return?\n\n```python\nfrom langchain_core.language_models import FakeListLLM, FakeListChatModel\n\nllm = FakeListLLM(responses=[\"Paris\"])\nchat = FakeListChatModel(responses=[\"Paris\"])\n\na = llm.invoke(\"Capital of France?\")\nb = chat.invoke(\"Capital of France?\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`a` is a `str`; `b` is an `AIMessage`",
+        "why": "A legacy text-completion LLM maps text to text, while a chat model always answers with an `AIMessage`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both are `str`, because the input was a plain string",
+        "why": "The input type does not decide the output type. A chat model wraps a string input in a `HumanMessage` and still returns an `AIMessage`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Both are `AIMessage` objects in LangChain 1.x",
+        "why": "Only chat models return messages. The legacy LLM interface still returns a plain string."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`a` is a `str`; `b` raises because a chat model needs a list of messages",
+        "why": "Chat models accept a plain string and treat it as one human message."
+      }
+    ],
+    "explanation": "Text-completion LLMs (the older `BaseLLM` interface) take and return strings. Chat models (`BaseChatModel`) take messages (or a string, which becomes a `HumanMessage`) and return an `AIMessage`, which can carry tool calls, token usage and content blocks. Modern provider integrations are chat models, so that is what you normally use. Interviewers want to hear that the return type differs, not just the input.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-llm-vs-chat-model"
+  },
+  {
+    "id": "LCH-CHM-002",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "You can create `ToolMessage(\"42\")` without passing a `tool_call_id`, and LangChain fills one in for you.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "No id is generated. Constructing a `ToolMessage` without `tool_call_id` raises an error."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `tool_call_id` is required, because it ties the result to the specific tool call in the preceding `AIMessage`."
+      }
+    ],
+    "explanation": "A `ToolMessage` reports the result of one tool call, so it must say which call it answers. In `langchain-core` 1.7, `ToolMessage(\"42\")` fails, while `ToolMessage(\"42\", tool_call_id=\"call_1\")` works. The id must match an id from `AIMessage.tool_calls`; that is how the provider pairs results with requests.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "source": "interview:lc-message-types"
+  },
+  {
+    "id": "LCH-CHM-003",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each message class with what it represents in a conversation.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`SystemMessage`",
+        "why": "Instructions that set the model's role and behaviour."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`HumanMessage`",
+        "why": "Input from the user."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`AIMessage`",
+        "why": "A reply produced by the model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ToolMessage`",
+        "why": "The result of running a tool the model asked for."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "\"You are a polite support agent. Answer in two sentences.\"",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "\"Where is my order #1234?\" typed by a customer",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The model's earlier answer that you replay as conversation history",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`{\"status\": \"shipped\"}` returned by `get_order_status`, linked to a call id",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The four core roles are system, human (user), AI (assistant) and tool. In dict or tuple form, `\"user\"` maps to `HumanMessage` and `\"assistant\"` to `AIMessage`. Keeping the roles distinct lets the provider know which text is an instruction, which is user input, which is its own past output and which is a tool result.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "source": "interview:lc-message-types"
+  },
+  {
+    "id": "LCH-CHM-004",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A pipeline extracts invoice fields as JSON from thousands of PDFs, and the same input should give the same output as far as possible. Which `temperature` fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`temperature=0` (or very close to it)",
+        "why": "Low temperature makes the output as deterministic as the model allows, which suits extraction."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`temperature=1.0`, the usual default, so the model is not constrained",
+        "why": "Higher temperature adds randomness, which you do not want for repeatable field extraction."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`temperature=1.5`, so the model explores alternative readings of the document",
+        "why": "More randomness raises the chance of different answers for the same invoice."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Temperature does not matter; set `max_tokens` instead",
+        "why": "`max_tokens` only caps output length. Temperature controls how random the sampling is."
+      }
+    ],
+    "explanation": "Temperature controls randomness: lower values make responses more deterministic, higher values more varied and creative. For extraction, classification or anything you compare against expected values, use 0 or close to it. Low temperature reduces variation but is not a promise of byte-identical output from every provider, so still validate the result.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/"
+      ]
+    },
+    "source": "interview:lc-model-params"
+  },
+  {
+    "id": "LCH-CHM-005",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Your code calls `init_chat_model(\"anthropic:claude-sonnet-5-5\")` and fails with an `ImportError`. Which pip package do you need to install? Type the package name.",
+    "options": [],
+    "accepted": [
+      "langchain-anthropic",
+      "langchain_anthropic"
+    ],
+    "explanation": "`init_chat_model` only maps the `anthropic` provider to the `ChatAnthropic` class; the class itself lives in the `langchain-anthropic` partner package. Each provider has its own `langchain-<provider>` package (`langchain-openai`, `langchain-aws`, `langchain-google-genai` and so on), so you install only the providers you use.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/ai-engineer-gen-ai-interview-questions-SRCH_KO0,18.htm",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "TCS"
+      ]
+    },
+    "source": "interview:lc-init-chat-model"
+  },
+  {
+    "id": "LCH-CHM-006",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "After `response = model.invoke(\"Summarise this ticket\")`, where do you read the input and output token counts for that one call in a provider-neutral way?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`response.response_metadata[\"token_usage\"]`",
+        "why": "`response_metadata` holds provider-specific details whose keys differ between providers."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`response.usage_metadata`",
+        "why": "This standard dict has `input_tokens`, `output_tokens` and `total_tokens` on every integration that reports usage."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`response.content_blocks[-1]`",
+        "why": "Content blocks hold the reply's content (text, reasoning, tool calls), not token counts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`model.last_usage`, which the model stores after each call",
+        "why": "Chat models do not keep per-call state like this; usage travels on the returned message."
+      }
+    ],
+    "explanation": "`AIMessage.usage_metadata` is LangChain's standard token-usage dict: `input_tokens`, `output_tokens`, `total_tokens`, plus optional `input_token_details` (such as `cache_read`) and `output_token_details` (such as `reasoning`). Raw provider data may also appear in `response_metadata`, but its shape varies. To total usage across many calls, use a callback such as `get_usage_metadata_callback()`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-usage-metadata-cost"
+  },
+  {
+    "id": "LCH-CHM-007",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which of these can you pass directly to a chat model's `invoke`? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A plain string such as `\"Hello\"`",
+        "why": "A string is treated as a single `HumanMessage`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A list of message objects such as `[SystemMessage(...), HumanMessage(...)]`",
+        "why": "This is the standard way to send a conversation."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A list of dicts such as `[{\"role\": \"user\", \"content\": \"Hi\"}]`",
+        "why": "OpenAI-style role/content dicts are converted into message objects."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A single dict such as `{\"role\": \"user\", \"content\": \"Hi\"}`",
+        "why": "A bare dict is rejected with a `ValueError`; wrap it in a list."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A dict of template variables such as `{\"question\": \"Hi\"}`",
+        "why": "Template variables go to a prompt template. A chat model rejects a dict input."
+      }
+    ],
+    "explanation": "Chat models accept a `PromptValue`, a string, or a sequence of messages, where each item may be a message object, a `(role, text)` tuple or a role/content dict. A lone dict raises `ValueError: Invalid input type <class 'dict'>`. A dict of variables belongs to a `ChatPromptTemplate`, which you put in front of the model (`prompt | model`).",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ]
+    },
+    "source": "interview:lc-chat-history"
+  },
+  {
+    "id": "LCH-CHM-008",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In LangChain 1.x, what is the recommended way to get the plain reply text from an `AIMessage` whose `content` might be a string or a list of blocks?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`msg.text()`, calling it as a method",
+        "why": "This still works but now emits a deprecation warning: `text` became a property in 1.0."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`msg.text`, read as a property",
+        "why": "It returns the text, joining the text blocks when `content` is a list."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`msg.content`, which is always a string in 1.x",
+        "why": "`content` can be a list of provider-native blocks, for example when the model returns reasoning or tool-use blocks."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`str(msg)`",
+        "why": "That gives a printable representation of the message, not reliably just the reply text."
+      }
+    ],
+    "explanation": "The 1.0 migration made `.text` a property; the old `.text()` call keeps working with a warning. `.text` concatenates the text parts and skips non-text blocks such as reasoning or tool use, so it is safer than assuming `content` is a string.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-content-blocks"
+  },
+  {
+    "id": "LCH-CHM-009",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "No provider is given here. Which provider does `init_chat_model` use, assuming the package is installed?\n\n```python\nfrom langchain.chat_models import init_chat_model\n\nmodel = init_chat_model(\"claude-sonnet-5-5\", temperature=0)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`anthropic`, inferred from the `claude` name prefix",
+        "why": "Without a prefix or `model_provider`, `init_chat_model` infers the provider from known model-name prefixes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "None: it raises because the string has no `provider:` prefix",
+        "why": "The prefix is optional for well-known names. It raises only when it cannot infer a provider."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`openai`, which is the default provider",
+        "why": "There is no default provider; inference is by name prefix."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Whichever provider has an API key set in the environment",
+        "why": "Environment variables supply credentials, not the provider choice."
+      }
+    ],
+    "explanation": "`init_chat_model` accepts `\"provider:model\"`, an explicit `model_provider=`, or a bare name whose prefix it recognises (`claude...` to `anthropic`, `gpt-...` to `openai`, `mistral...` to `mistralai`, and so on). The docs call inference best-effort and recommend the explicit prefixed form.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/ai-engineer-gen-ai-interview-questions-SRCH_KO0,18.htm",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "TCS"
+      ]
+    },
+    "source": "interview:lc-init-chat-model"
+  },
+  {
+    "id": "LCH-CHM-010",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`init_chat_model(\"acme-support-ft-v3\")` raises `ValueError: Unable to infer model provider`. The model is a fine-tune served through an Ollama server. What is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `OLLAMA_HOST` so LangChain can detect the provider",
+        "why": "The provider is not detected from environment variables; it comes from the string or `model_provider`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Rename the model so it starts with `gpt-`",
+        "why": "That makes inference pick `openai`, which is the wrong backend."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Prefix it as `ollama:...` or pass `model_provider`",
+        "why": "An explicit provider skips inference, which only knows standard name prefixes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `configurable_fields=\"any\"` so the provider is chosen later",
+        "why": "That delays the problem and widens what callers may change; it does not tell LangChain which provider this is."
+      }
+    ],
+    "explanation": "Inference only covers known name prefixes. For custom names, put the provider in the string (`ollama:...`) or pass `model_provider`. The error message lists the supported providers. The matching partner package (`langchain-ollama` here) must also be installed.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/ai-engineer-gen-ai-interview-questions-SRCH_KO0,18.htm",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "TCS"
+      ]
+    },
+    "source": "interview:lc-init-chat-model"
+  },
+  {
+    "id": "LCH-CHM-011",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about LangChain message types are correct? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "An `AIMessage` can be created by hand to replay the model's earlier turns as history",
+        "why": "Chat models are stateless, so past replies are sent back as `AIMessage` objects."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "In dict or tuple form, the role `\"user\"` becomes a `HumanMessage` and `\"assistant\"` becomes an `AIMessage`",
+        "why": "LangChain converts these roles into the matching message classes."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `ToolMessage` can carry an `artifact` that your code can read but that is not sent to the model",
+        "why": "`artifact` holds extra data, such as raw rows, for downstream use."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `HumanMessage` can only hold text; images need a separate `ImageMessage` class",
+        "why": "There is no `ImageMessage`. Images go into a `HumanMessage` as content blocks."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A `SystemMessage` is optional, so models ignore it unless it is the only message",
+        "why": "When present, a system message sets behaviour for the whole call."
+      }
+    ],
+    "explanation": "Messages carry a role, content and metadata. `SystemMessage` sets behaviour, `HumanMessage` carries user input (text or multimodal blocks), `AIMessage` holds model output (and can be built manually for history) and `ToolMessage` returns tool results, with an optional `artifact` that stays on your side.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "source": "interview:lc-message-types"
+  },
+  {
+    "id": "LCH-CHM-012",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Answers from your summariser often stop mid-sentence, even for short documents. There are no errors and the cost per call is low. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`max_tokens` is too low and cuts the reply off",
+        "why": "`max_tokens` caps the length of the response, so a small value truncates answers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`temperature` is too low, so the model stops early",
+        "why": "Temperature affects randomness, not length."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`timeout` is too short",
+        "why": "A timeout cancels the request and raises an error; it does not return a shortened answer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`max_retries` is 0, so the model only gets one attempt to finish",
+        "why": "Retries repeat failed requests; they do not extend a successful response."
+      }
+    ],
+    "explanation": "`max_tokens` limits the number of tokens in the reply, so answers that end abruptly with no error point to it. `timeout` is in seconds and raises when exceeded.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/"
+      ]
+    },
+    "source": "interview:lc-model-params"
+  },
+  {
+    "id": "LCH-CHM-013",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "With the default `max_retries` on a LangChain chat model, a request that fails with `401 Unauthorized` is retried with exponential backoff before the error is raised.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Only transient failures are retried. Retrying a bad API key cannot succeed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: client errors such as 401 and 404 are raised at once; network errors, 429 and 5xx responses are retried."
+      }
+    ],
+    "explanation": "The docs describe `max_retries` (6 by default) as retrying network errors, rate limits (429) and server errors (5xx) with exponential backoff and jitter, but not client errors such as 401 or 404. A wrong key or model id should fail fast so you can fix it. For long-running agent jobs on unreliable networks, the docs suggest raising `max_retries` to 10 to 15.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "source": "interview:lc-timeouts-retry-policy"
+  },
+  {
+    "id": "LCH-CHM-014",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "What is `merged.usage_metadata[\"output_tokens\"]`? Type a number.\n\n```python\nfrom langchain_core.messages import AIMessageChunk\n\na = AIMessageChunk(content=\"Hel\", usage_metadata={\"input_tokens\": 10, \"output_tokens\": 1, \"total_tokens\": 11})\nb = AIMessageChunk(content=\"lo\", usage_metadata={\"input_tokens\": 0, \"output_tokens\": 2, \"total_tokens\": 2})\nmerged = a + b\n```",
+    "options": [],
+    "accepted": [
+      "3"
+    ],
+    "explanation": "Adding `AIMessageChunk` objects concatenates the content (`\"Hello\"`) and sums the `usage_metadata` fields, so `output_tokens` is 1 + 2 = 3 (and `input_tokens` 10, `total_tokens` 13). Summing is right when each chunk reports only its own increment, which is how integrations emit streamed usage.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/ai/AIMessageChunk",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-CHM-015",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A chatbot calls the model twice. On the second turn it does not know the user's name. What is the correct fix?\n\n```python\nmodel.invoke([HumanMessage(\"Hi, I am Asha.\")])\nreply = model.invoke([HumanMessage(\"What is my name?\")])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `temperature=0` so the model remembers earlier turns",
+        "why": "Temperature has nothing to do with memory; the model never saw the first message on this call."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Resend the earlier turns, including the returned `AIMessage`",
+        "why": "Chat models are stateless, so context comes only from the messages in each call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Reuse the same model object; it keeps the conversation in its cache",
+        "why": "A chat model object holds configuration, not conversation state."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put the name into a `SystemMessage` on the first call only",
+        "why": "Anything sent only on the first call is gone by the second call, whatever its role."
+      }
+    ],
+    "explanation": "Every model call is independent. To hold a conversation you pass the prior turns as a list: `[HumanMessage(...), first_reply, HumanMessage(\"What is my name?\")]`, where `first_reply` is the `AIMessage` returned earlier. Managing and trimming that list over time (message history stores, checkpointers, `trim_messages`) is the job of memory tooling.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ]
+    },
+    "source": "interview:lc-chat-history"
+  },
+  {
+    "id": "LCH-CHM-016",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "A model answered a question by calling one tool. Put the messages in the order they must appear when you send the full history back to the model.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`SystemMessage` with the assistant's instructions",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`HumanMessage` with the user's question",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`AIMessage` whose `tool_calls` requests `get_weather`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ToolMessage` with the weather result and the matching `tool_call_id`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`AIMessage` with the final answer",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Instructions come first, then the user's turn. The model's `AIMessage` with `tool_calls` must come before the `ToolMessage` that answers it, because the tool result refers to that call's id. The final `AIMessage` is the model's reply after seeing the tool result. Providers reject histories where a tool result has no preceding tool call.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-CHM-017",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A custom chat model implements only `_generate` and `_llm_type`. What does `list(model.stream(\"hi\"))` return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It raises `NotImplementedError` because `_stream` is missing",
+        "why": "Streaming has a fallback; `_stream` is optional."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A list with one message holding the whole reply",
+        "why": "Without `_stream`, `stream` falls back to the `invoke` result and yields it in one piece."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "One chunk per token, split by LangChain from the full text",
+        "why": "LangChain does not invent tokens; it yields the complete output once."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An empty list, because nothing was streamed",
+        "why": "The full response is still produced, just not incrementally."
+      }
+    ],
+    "explanation": "`BaseChatModel.stream` defaults to yielding the output of `invoke` when the integration has no `_stream`. Callers still get a working iterator, but with a single item, so time to first token equals total latency. Implement `_stream` (and `_astream`) to stream real chunks.",
+    "reference": "https://reference.langchain.com/python/langchain-core/language_models/chat_models/BaseChatModel",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-CHM-018",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team moves a feature from one provider to another. Thanks to LangChain's standard chat model interface, which change is usually enough?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rewrite the parsing code, because each provider returns its own response object",
+        "why": "The integration converts each provider's response into the same `AIMessage` type."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Change the model string and install the new partner package",
+        "why": "Calls, message types, `usage_metadata` and `content_blocks` stay the same across providers."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Swap every `HumanMessage` for the new provider's own message class",
+        "why": "LangChain message classes work with every provider; there are no per-provider message classes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing at all; LangChain picks the cheapest available provider at runtime",
+        "why": "LangChain does not choose providers for you; you choose the model."
+      }
+    ],
+    "explanation": "Every chat model implements the same interface (`invoke`, `stream`, `batch`, `bind_tools`, `with_structured_output`) and returns `AIMessage` objects with standard fields. Switching providers is mostly a configuration change. Still re-test prompts and check provider-specific features, because model behaviour and capabilities differ.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/providers/overview",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com.hk/Interview/AIONOS-Interview-E10535851-RVW104218243.htm",
+        "https://www.glassdoor.co.in/Interview/ai-engineer-gen-ai-interview-questions-SRCH_KO0,18.htm",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ],
+      "companies": [
+        "AIONOS",
+        "TCS"
+      ]
+    },
+    "source": "interview:lc-why-langchain"
+  },
+  {
+    "id": "LCH-CHM-019",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which content block sends a base64-encoded PNG to a chat model using LangChain's standard content block format?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{\"type\": \"image\", \"base64\": data}`",
+        "why": "The standard format needs a `mime_type` with base64 data so the provider knows how to decode it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{\"type\": \"image\", \"base64\": data, \"mime_type\": \"image/png\"}`",
+        "why": "Type `image`, the base64 payload and its MIME type: the documented standard shape."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{\"type\": \"png\", \"data\": data}`",
+        "why": "`png` is not a block type, and the payload key is `base64`, not `data`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{\"type\": \"file\", \"url\": data}`",
+        "why": "`url` expects a URL, and an image belongs in an `image` block."
+      }
+    ],
+    "explanation": "Standard multimodal blocks (`image`, `audio`, `video`, `file`) take the data in one of three ways: `url`, `base64` with a required `mime_type`, or a provider-managed `file_id`. Put the blocks in a `HumanMessage` next to a text block. Which file types and sizes a model accepts still depends on the provider.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-multimodal-input"
+  },
+  {
+    "id": "LCH-CHM-020",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What do the two prints show?\n\n```python\nfrom langchain_core.messages import AIMessage\n\nmsg = AIMessage(\n    content=[\n        {\"type\": \"thinking\", \"thinking\": \"User wants a short answer.\", \"signature\": \"abc\"},\n        {\"type\": \"text\", \"text\": \"42\"},\n    ],\n    response_metadata={\"model_provider\": \"anthropic\"},\n)\nprint([b[\"type\"] for b in msg.content_blocks])\nprint(msg.text)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['thinking', 'text']` then `User wants a short answer.42`",
+        "why": "`content_blocks` translates provider types into standard ones, and `.text` skips reasoning."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`['reasoning', 'text']` then `42`",
+        "why": "The Anthropic `thinking` block becomes a standard `reasoning` block, and `.text` returns only the text parts."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`['non_standard', 'text']` then `42`",
+        "why": "With the provider known, the thinking block maps to `reasoning`. It becomes `non_standard` only when no translator applies."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`['text']` then `42`, because reasoning is dropped",
+        "why": "The reasoning is kept as its own block; it is not thrown away."
+      }
+    ],
+    "explanation": "`content` keeps the provider's raw blocks. `content_blocks` is a lazily computed, typed view that converts them to standard types (`text`, `reasoning`, `tool_call`, `image` and so on), using `response_metadata[\"model_provider\"]` to pick the translator; the signature ends up in the block's `extras`. Without a known provider, the same thinking dict comes back as a `non_standard` block.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-content-blocks"
+  },
+  {
+    "id": "LCH-CHM-021",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks how `content` and `content_blocks` differ on a LangChain message. Which answer is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`content` is the provider's raw payload; `content_blocks` is a standard typed view of it",
+        "why": "This is the 1.x design: the raw payload is kept and a provider-neutral view is computed from it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`content_blocks` replaced `content`, which is now always an empty string",
+        "why": "`content` is still populated; `content_blocks` is computed from it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "They are aliases that always return the same list",
+        "why": "For a string reply, `content` is a string while `content_blocks` is a list with one `text` block, and provider types are renamed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`content` holds the user's input and `content_blocks` holds the model's output",
+        "why": "Both describe the same message; every message type has both."
+      }
+    ],
+    "explanation": "`content_blocks` gives the same message as standard block types across providers, so code can look for `reasoning`, `text` or `tool_call` without knowing the provider. By default the standard blocks are not written into `content`; set `output_version=\"v1\"` on the model (or `LC_OUTPUT_VERSION=v1`) to store them there. Setting `content_blocks` when you build a message also fills `content`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-content-blocks"
+  },
+  {
+    "id": "LCH-CHM-022",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A response has this `usage_metadata`. Which statements follow from LangChain's `UsageMetadata` conventions? (Choose three.)\n\n```python\n{\"input_tokens\": 1200, \"output_tokens\": 300, \"total_tokens\": 1500,\n \"input_token_details\": {\"cache_read\": 1000},\n \"output_token_details\": {\"reasoning\": 220}}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The 1,000 cache-read tokens are part of the 1,200 input tokens",
+        "why": "`input_tokens` is defined as the sum of all input token types, cached ones included."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The 220 reasoning tokens are counted inside the 300 output tokens",
+        "why": "`output_tokens` sums all output token types, so reasoning is already included."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`total_tokens` is `input_tokens + output_tokens`",
+        "why": "That is how the total is defined: 1,200 + 300."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Adding 1,000 and 220 to the total gives the real number of billed tokens",
+        "why": "That double-counts: the detail fields are breakdowns of the totals, not extra tokens."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The detail dicts must always add up to the totals and include every key",
+        "why": "The details are optional breakdowns that need not sum to the totals or list every key."
+      }
+    ],
+    "explanation": "`input_tokens` and `output_tokens` are totals; `input_token_details` (`audio`, `cache_creation`, `cache_read`) and `output_token_details` (`audio`, `reasoning`) break them down and may be partial. For cost, price the cached and uncached parts of the input at their own rates instead of adding the details on top.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/ai/UsageMetadata",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-usage-metadata-cost"
+  },
+  {
+    "id": "LCH-CHM-023",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The provider sends usage only on the final chunk. What does `full.usage_metadata` hold after the loop?\n\n```python\nchunks = [\n    AIMessageChunk(\"Hi\"),\n    AIMessageChunk(\" there\"),\n    AIMessageChunk(\"\", usage_metadata={\"input_tokens\": 12, \"output_tokens\": 2, \"total_tokens\": 14}),\n]\nfull = None\nfor c in chunks:\n    full = c if full is None else full + c\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`None`, because the first chunk had no usage",
+        "why": "Merging keeps usage from whichever chunks carry it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Usage of zero, because chunks without usage count as zero",
+        "why": "Chunks without usage add nothing; the last chunk's counts survive."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{'input_tokens': 12, 'output_tokens': 2, 'total_tokens': 14}`",
+        "why": "Missing usage is skipped and the final chunk's counts are kept."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises, because you cannot add a chunk with usage to one without",
+        "why": "Chunks with and without usage merge fine."
+      }
+    ],
+    "explanation": "Accumulating chunks with `+` (the pattern in the docs) concatenates content and merges `usage_metadata`, so the merged message reports the counts from the final chunk. Some providers, notably OpenAI and Azure OpenAI chat completions, only send streamed usage after you opt in, so `usage_metadata` can be missing when streaming even though `invoke` reports it.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-token-cost-tracking"
+  },
+  {
+    "id": "LCH-CHM-024",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Two models in one chain are built like this. Which config key changes the writer's model for a single call?\n\n```python\nwriter = init_chat_model(configurable_fields=(\"model\", \"temperature\"), config_prefix=\"writer\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{\"configurable\": {\"model\": \"...\"}}`",
+        "why": "With a prefix set, unprefixed keys are ignored by this model; that is what keeps two models apart."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{\"configurable\": {\"writer_model\": \"...\"}}`",
+        "why": "The prefix and an underscore go in front of each configurable field name."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{\"configurable\": {\"writer\": {\"model\": \"...\"}}}`",
+        "why": "Config keys are flat strings, not nested dicts per prefix."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{\"configurable\": {\"writer.model\": \"...\"}}`",
+        "why": "The separator is an underscore, not a dot."
+      }
+    ],
+    "explanation": "With `config_prefix=\"writer\"`, the model reads `writer_model`, `writer_temperature` and so on from `config[\"configurable\"]`, strips the prefix and keeps only fields listed in `configurable_fields`. Prefixes let several configurable models share one config without clashing.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-CHM-025",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens on this call?\n\n```python\nmodel = init_chat_model(\"claude-sonnet-5-5\", temperature=0.7,\n                        configurable_fields=(\"temperature\",))\nmodel.invoke(\"hi\", config={\"configurable\": {\"model\": \"openai:gpt-5.5\", \"temperature\": 0}})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It calls `openai:gpt-5.5` with temperature 0",
+        "why": "`model` is not in `configurable_fields`, so the model cannot be swapped at runtime."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It calls `claude-sonnet-5-5` with temperature 0; the `model` key is ignored",
+        "why": "Only listed fields are taken from config, so temperature changes and the model stays the same."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises because `model` is not a configurable field",
+        "why": "Unlisted keys are filtered out silently rather than raising."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It calls `claude-sonnet-5-5` with temperature 0.7, because constructor values win",
+        "why": "Runtime config overrides defaults for the fields you made configurable."
+      }
+    ],
+    "explanation": "When you pass `model`, `configurable_fields` defaults to none. Listing `(\"temperature\",)` makes only temperature overridable; other keys in `configurable` are dropped for this model. That allowlist is useful when the config comes from callers you do not fully control.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-CHM-026",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`init_chat_model()` called with no arguments raises an error immediately, because `model` is required.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It returns a configurable model instead of raising."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: without a model, `model` and `model_provider` become configurable at runtime, and the error comes only if you invoke without supplying them."
+      }
+    ],
+    "explanation": "If you omit `model`, `init_chat_model` returns a configurable model whose `model` and `model_provider` are read from `config[\"configurable\"]` on each call, for example `{\"model\": \"claude-sonnet-5-5\"}`. Invoking it without any model in the config fails at that point, not at construction.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-CHM-027",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A service builds `init_chat_model(\"anthropic:claude-sonnet-5-5\", configurable_fields=(\"temperature\",))` at import time. The container is missing `langchain-anthropic`, yet the service starts cleanly. When does the `ImportError` appear?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Never; LangChain falls back to another installed provider",
+        "why": "There is no automatic fallback to a different provider."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "At import time, but it is logged as a warning instead of raised",
+        "why": "Nothing is raised or logged at construction for a configurable model."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "On the first `invoke`, when the real model is built",
+        "why": "A configurable model defers building the provider class until it knows the full config."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only when a caller overrides `temperature`",
+        "why": "The provider class is built on every call, with or without overrides."
+      }
+    ],
+    "explanation": "Making any field configurable returns a wrapper that builds the real chat model per call from defaults plus runtime config. A missing partner package is therefore found late, on the first request, not at startup. A fixed model (no `configurable_fields`) fails at construction instead. Startup health checks that make one cheap call catch this.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-CHM-028",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each standard content block type with the content it represents in `msg.content_blocks`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`reasoning`",
+        "why": "The model's thinking or reasoning trace."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`tool_call`",
+        "why": "A request from the model to run a function with arguments."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`image`",
+        "why": "Picture data given by URL, base64 with MIME type, or file id."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`non_standard`",
+        "why": "A provider-specific payload with no standard mapping, kept under `value`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "An Anthropic `thinking` block, translated",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`{\"name\": \"get_weather\", \"args\": {\"city\": \"Pune\"}, \"id\": \"c1\"}`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A chart the user uploaded with the question",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A provider block type LangChain has no translator for",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Standard blocks give one vocabulary across providers: `text`, `reasoning`, `image`/`audio`/`video`/`file`, `tool_call` (and `tool_call_chunk`, `invalid_tool_call`), server-side tool blocks, and `non_standard` as an escape hatch that keeps the original dict.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-CHM-029",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A nightly batch job calls a chat model over a flaky corporate network and must not hang forever or give up on the first blip. Which settings fit? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Set `timeout` (in seconds) so a stuck request is cancelled",
+        "why": "Without a timeout a hung connection can block the job."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Raise `max_retries` above the default, for example to 10",
+        "why": "The docs suggest 10 to 15 retries for long jobs on unreliable networks; transient errors are retried with backoff."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `max_retries=0` so failures surface faster",
+        "why": "That turns every network blip or 429 into a failed item."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower `temperature` so calls finish faster",
+        "why": "Temperature changes randomness, not latency or reliability."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Raise `max_retries` to handle `401` errors from an expired key",
+        "why": "Client errors such as 401 are not retried; fix the credentials."
+      }
+    ],
+    "explanation": "`timeout` bounds each attempt and `max_retries` (default 6, exponential backoff with jitter) covers network errors, 429s and 5xx responses. Together they keep a long job moving without hanging. Neither helps with client errors like 401 or 404.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/"
+      ]
+    },
+    "source": "interview:lc-model-params"
+  },
+  {
+    "id": "LCH-CHM-030",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of a correct loop that streams a reply and then reads the token usage in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Call `model.stream(messages)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Receive each `AIMessageChunk` and show `chunk.text` to the user",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Merge it into the running message: `full = chunk if full is None else full + chunk`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "After the loop ends, read `full.usage_metadata`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Streaming yields `AIMessageChunk` objects. Merge them with `+` as they arrive, and read usage only after the loop, because providers usually attach token counts to the final chunk. Reading usage from an early chunk gives `None` or a partial value.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-CHM-031",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Sending a scanned contract as a base64 `file` block works with one model and is rejected by another. Both calls use the same LangChain code. What is the best first check?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Whether the second model supports PDF input, for example its `profile[\"pdf_inputs\"]` and the provider's size limits",
+        "why": "Content blocks are standard, but which file types and sizes a model accepts varies by provider."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Whether you used `HumanMessage` instead of `SystemMessage`",
+        "why": "Both calls used the same message code, so the role is not the difference."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Whether LangChain needs a `pdf` block type for the second provider",
+        "why": "There is no `pdf` block type; PDFs use a `file` block with `mime_type` `application/pdf`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Whether `temperature` is low enough for documents",
+        "why": "Temperature has no effect on whether an input type is accepted."
+      }
+    ],
+    "explanation": "The standard `file` block (URL, base64 plus `mime_type`, or `file_id`) is translated for each provider, but support for file types and sizes differs by model. Model profiles expose flags such as `image_inputs` and `pdf_inputs`, so you can check support before sending, or route to a model that has it.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-multimodal-input"
+  },
+  {
+    "id": "LCH-CHM-032",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A downstream service written without LangChain reads the stored `AIMessage.content` and expects standard blocks such as `{\"type\": \"reasoning\", ...}`. Today it gets the provider's raw block shapes. What fixes this at the source?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Serialise `msg.text` instead of `content`",
+        "why": "That keeps only the text and drops reasoning and other blocks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Set `output_version=\"v1\"` on the model",
+        "why": "With v1 output, the standard blocks are written into `content` itself."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Nothing; `content` already holds standard blocks in 1.x",
+        "why": "By default `content` keeps the provider format; standard blocks are only computed in `content_blocks`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `msg.content_blocks = msg.content` before saving",
+        "why": "That assigns raw blocks to the view; it does not translate anything."
+      }
+    ],
+    "explanation": "Standard content blocks are not written into `content` by default. `output_version=\"v1\"` on the chat model, or the `LC_OUTPUT_VERSION=v1` environment variable, makes `content` hold the standard list, for example `[{'type': 'text', 'text': 'hello'}]`, which consumers outside LangChain can rely on.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-CHM-033",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are writing a custom chat model by subclassing `BaseChatModel`. Which members must you implement for the class to work? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`_generate`",
+        "why": "It produces a `ChatResult` from the messages; every other call path builds on it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`_llm_type`",
+        "why": "It is an abstract property identifying the model type; without it the class cannot be instantiated."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`_stream`",
+        "why": "Optional: without it, `stream` yields the `invoke` result in one piece."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`_agenerate`",
+        "why": "Optional: the default async path runs the sync code in an executor."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`invoke`",
+        "why": "`invoke` is provided by the base class and calls `_generate` for you."
+      }
+    ],
+    "explanation": "`BaseChatModel` requires `_generate` and the `_llm_type` property. `_stream`, `_agenerate`, `_astream` and `_identifying_params` are optional improvements for native streaming, native async and tracing. You get `invoke`, `batch`, `stream` and their async forms from the base class.",
+    "reference": "https://reference.langchain.com/python/langchain-core/language_models/chat_models/BaseChatModel",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-CHM-034",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A call returns `input_tokens=10000` (of which `cache_read=8000`) and `output_tokens=500`. Prices: uncached input $3 per million tokens, cache reads $0.30 per million, output $15 per million. What did the call cost?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "$0.0399",
+        "why": "This prices all 10,000 input tokens as uncached and then adds the cache reads again: double counting."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "$0.0159",
+        "why": "2,000 uncached x $3/M + 8,000 cached x $0.30/M + 500 x $15/M = $0.006 + $0.0024 + $0.0075."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "$0.0375",
+        "why": "This ignores the cache discount and prices all input at the full rate."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "$0.0099",
+        "why": "This leaves out the 2,000 uncached input tokens and prices only the cache reads and output."
+      }
+    ],
+    "explanation": "In LangChain's `UsageMetadata`, `input_tokens` is the sum of all input token types, so cache reads are a subset of it. Uncached input is `input_tokens - cache_read`. Price each part at its own rate, then add output. Dashboards that add `cache_read` on top of `input_tokens` overstate spend.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/ai/UsageMetadata",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-usage-metadata-cost"
+  },
+  {
+    "id": "LCH-CHM-035",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A hand-written adapter for an in-house model streams `AIMessageChunk`s and attaches the running totals so far to every chunk. The dashboard, which merges chunks with `+`, shows roughly double the real token use for two-chunk replies and worse for longer ones. What is wrong?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`+` keeps only the last chunk's usage, so the counts should be correct",
+        "why": "Merging adds the usage fields; it does not keep only the last value."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Merging sums `usage_metadata` across chunks, so cumulative totals on each chunk are counted again and again",
+        "why": "Chunks should carry increments (or usage only on the final chunk), not running totals."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The dashboard should read `response_metadata` instead",
+        "why": "That moves the problem; the adapter still reports usage in a shape that does not fit how chunks merge."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`AIMessageChunk` cannot carry usage; only `AIMessage` can",
+        "why": "Chunks can carry `usage_metadata`; that is how streamed usage is reported."
+      }
+    ],
+    "explanation": "When chunks are added, their `usage_metadata` fields are summed. Two chunks each reporting cumulative totals (12/1/13 and then 12/2/14) merge to 24/3/27 instead of 12/2/14. An integration should emit per-chunk increments or put the full usage on the last chunk only, as built-in integrations do.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/ai/AIMessageChunk",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-token-cost-tracking"
+  },
+  {
+    "id": "LCH-CHM-036",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A helper reads `resp.content[0][\"text\"]`. It worked for months, then started failing for a model that returns reasoning blocks before the answer and for a model that returns a plain string. Which fix is most robust across providers?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Wrap the lookup in `try/except` and return an empty string on failure",
+        "why": "This hides the bug and returns empty answers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use `resp.content[-1][\"text\"]` instead, since the answer usually comes last",
+        "why": "This still breaks on string content and assumes a block order that providers do not guarantee."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Read `resp.text` or the `text` items in `content_blocks`",
+        "why": "Both work whether `content` is a string or a list, whatever the provider's block layout."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `temperature=0` so the model stops emitting reasoning blocks",
+        "why": "Temperature does not control whether reasoning blocks appear."
+      }
+    ],
+    "explanation": "`content` mirrors the provider: sometimes a string, sometimes a list whose first item is reasoning or tool use. `.text` joins the text parts, and `content_blocks` gives typed standard blocks you can filter (`[b for b in resp.content_blocks if b[\"type\"] == \"text\"]`). Interviewers use this to test whether you know why 1.0 added standard content blocks.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-content-blocks"
+  },
+  {
+    "id": "LCH-CHM-037",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your platform routes requests across several providers. Some requests contain images and some carry very long documents. Which model profile fields should the router check before choosing a model? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`image_inputs`",
+        "why": "It says whether the model accepts image content blocks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`max_input_tokens`",
+        "why": "It gives the context window, so long documents go only to models that fit them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`tool_calling`",
+        "why": "Useful for agent routing, but these requests are about images and length."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`reasoning_output`",
+        "why": "It says whether the model returns reasoning, which does not decide whether the request fits."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`context_window_tokens`",
+        "why": "No such profile key exists; the context limit is `max_input_tokens`."
+      }
+    ],
+    "explanation": "Chat models expose a `profile` dict (a beta feature) with capability flags and limits such as `max_input_tokens`, `max_output_tokens`, `image_inputs`, `pdf_inputs`, `tool_calling` and `reasoning_output`, mostly sourced from models.dev. The docs list gating inputs by modality and context size as a use case, alongside triggering summarisation and choosing structured-output strategies.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    },
+    "source": "interview:lc-multi-provider-design"
+  },
+  {
+    "id": "LCH-CHM-038",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A multi-tenant API lets each tenant's request config pick a model through `init_chat_model(configurable_fields=\"any\")`. Why is this a security problem, and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`\"any\"` disables retries; list fields so retries stay on",
+        "why": "Retries are unrelated to which fields are configurable."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is not a problem as long as the server's API keys are in environment variables",
+        "why": "With `\"any\"`, the caller's config can override `api_key` and `base_url` despite the environment."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Callers can change fields such as `api_key` or `base_url` and redirect requests; list allowed fields explicitly, for example `(\"model\", \"temperature\")`",
+        "why": "The docs warn about exactly this and recommend explicit fields for untrusted config."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`\"any\"` sends the tenant's data to every provider; use one model per tenant instead",
+        "why": "It does not fan out requests, and one model per tenant does not fix untrusted config."
+      }
+    ],
+    "explanation": "`configurable_fields=\"any\"` lets runtime config set every constructor argument, including credentials and endpoints, so untrusted input could send traffic and data to a different service. Enumerate the fields, validate model names against an allowlist, and keep credentials server-side.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    },
+    "source": "interview:lc-multi-provider-design"
+  },
+  {
+    "id": "LCH-CHM-039",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many items does `merged.content` have? Type a number.\n\n```python\nfrom langchain_core.messages import AIMessageChunk\n\nmerged = AIMessageChunk(content=\"a\") + AIMessageChunk(\n    content=[{\"type\": \"text\", \"text\": \"b\", \"index\": 0}]\n)\n```",
+    "options": [],
+    "accepted": [
+      "2"
+    ],
+    "explanation": "When one chunk's content is a string and the other's is a list, merging produces a list: the string becomes its own item, followed by the block, giving `['a', {'type': 'text', 'text': 'b', 'index': 0}]`, so 2 items. Two list chunks with the same `index` instead merge into one block (`\"He\"` + `\"llo\"` becomes `\"Hello\"`). Code that assumes streamed `content` is always a string breaks on such mixes; `.text` still returns `ab`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/ai/AIMessageChunk",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-CHM-040",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A team uses Gemini through the AI Studio API key, but `init_chat_model` with a bare model name starting with `gemini-` emits a `DeprecationWarning` and tries the wrong backend. What is the robust fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Silence the warning; the inferred provider is correct for AI Studio",
+        "why": "Bare `gemini...` names currently infer `google_vertexai`, the Vertex AI integration, not AI Studio."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Pass the provider explicitly with a `google_genai:` prefix",
+        "why": "An explicit provider pins the integration and survives future changes to the inference defaults."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `GOOGLE_API_KEY` so inference picks AI Studio",
+        "why": "Inference looks only at the model name, not at environment variables."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rename the model with a `models/` prefix so it is detected as AI Studio",
+        "why": "No such rule exists in the inference mapping."
+      }
+    ],
+    "explanation": "Provider inference is best-effort. In langchain 1.4, `gemini...` maps to `google_vertexai` with a warning that the default will change to `google_genai` in the next major release. Production code should always give an explicit provider, either as a `provider:model` prefix or with `model_provider`.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-CHM-041",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about adding message chunks are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`usage_metadata` values from the chunks are added together",
+        "why": "Merging sums input, output and total tokens across chunks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`tool_call_chunks` with the same `index` are concatenated, and the merged chunk exposes the parsed `tool_calls`",
+        "why": "Partial JSON argument strings are joined and parsed into a complete tool call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`chunk + AIMessage(...)` works and returns an `AIMessage`",
+        "why": "Adding a full `AIMessage` to a chunk raises `TypeError`; only chunks support `+`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The later chunk's `response_metadata` replaces the earlier one",
+        "why": "The dicts are merged, so keys such as the model name and the finish reason both survive."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The merged message is a plain `AIMessage`, not an `AIMessageChunk`",
+        "why": "The result is still an `AIMessageChunk`; convert with `message_chunk_to_message` if you need an `AIMessage`."
+      }
+    ],
+    "explanation": "`AIMessageChunk.__add__` concatenates content, sums `usage_metadata`, merges `response_metadata` dicts and joins `tool_call_chunks` by `index`, so a tool call whose arguments arrived in pieces ends up in `tool_calls`. The result is an `AIMessageChunk` (a subclass of `AIMessage`), and `message_chunk_to_message` turns it into a plain `AIMessage`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/ai/AIMessageChunk",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-CHM-042",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the rules `init_chat_model` applies to decide the provider in order of precedence, highest first.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An explicit `model_provider=` argument",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A known provider prefix in the string, as in `\"anthropic:...\"`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Inference from the model name's prefix, such as `claude...` or `gpt-...`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise `ValueError: Unable to infer model provider`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "An explicit `model_provider` wins outright; in that case the string is not split, so `init_chat_model(\"anthropic:x\", model_provider=\"openai\")` sends the literal name `anthropic:x` to the OpenAI integration. Otherwise a recognised `provider:` prefix is split off. If neither is present, the name prefix is matched against known patterns, and if nothing matches, a `ValueError` lists the supported providers.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-CHM-043",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each error with its most likely cause when using `init_chat_model`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The partner package for the chosen provider is not installed",
+        "why": "A missing `langchain-<provider>` package."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "No `provider:` prefix and an unrecognised model name",
+        "why": "Inference could not find a provider."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An already-built chat model object was passed in",
+        "why": "`init_chat_model` expects a string."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A configurable model was invoked without a model in the config",
+        "why": "No `model` default and none supplied at runtime."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`ImportError: Initializing ChatAnthropic requires the langchain-anthropic package`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`ValueError: Unable to infer model provider for model='acme-ft-v3'`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`TypeError: model must be a string ... use it directly instead of passing it to init_chat_model()`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`TypeError: _init_chat_model_helper() missing 1 required positional argument: 'model'`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "These four failures cover most `init_chat_model` incidents. The `ImportError` names the package to install, and with configurable models it appears on the first call. The `ValueError` lists supported providers. Passing a model instance raises `TypeError` telling you to use the object directly. A configurable model with no `model` anywhere fails with a `TypeError` about the missing `model` argument on invoke.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-CHM-044",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A shared model instance is used by several request handlers. One handler sets `model.profile[\"max_input_tokens\"] = 8000` to test smaller contexts, and other features start summarising conversations much earlier. What is the right way to adjust a profile for one use?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`model.model_copy(update={\"profile\": model.profile | {\"max_input_tokens\": 8000}})` and use the copy",
+        "why": "This gives that handler its own instance and leaves the shared profile untouched."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep mutating it in place but restore the old value in a `finally` block",
+        "why": "Other handlers running at the same time still see the changed value."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Profiles are read-only, so the change cannot be what affected other features",
+        "why": "The profile is a regular dict and can be changed in place, which is the bug here."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `LC_OUTPUT_VERSION` so each handler reads its own profile",
+        "why": "That variable controls content block serialisation, not profiles."
+      }
+    ],
+    "explanation": "`profile` is a plain dict on the model instance, and features such as summarisation can use `max_input_tokens` to decide when to act. Mutating a shared instance changes behaviour everywhere. The docs suggest `model_copy` with an updated profile when the instance is shared, or passing `profile=` when you create the model.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-CHM-045",
+    "domain": 1,
+    "skill": "chat-models-messages",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A settings refactor now stores models as `\"anthropic:claude-sonnet-5-5\"`, but the loader still calls `init_chat_model(settings.model, model_provider=settings.provider)` with `provider=\"anthropic\"`. Every call now fails at the provider with a model-not-found error. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`init_chat_model` rejects a prefix and an explicit provider used together, and raises a `ValueError`",
+        "why": "Nothing is rejected locally; the failure only shows up at the provider."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The prefix makes LangChain call a different provider than the setting says",
+        "why": "The provider is still Anthropic; the problem is the model name that is sent."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "With `model_provider` given, the string is not split, so the literal name `anthropic:claude-sonnet-5-5` is sent as the model id",
+        "why": "Prefix parsing only happens when no explicit provider is passed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Prefixed strings are only allowed with `configurable_fields`",
+        "why": "Prefixed strings work for fixed models too, as long as no explicit provider is passed."
+      }
+    ],
+    "explanation": "`init_chat_model` splits `provider:model` only when `model_provider` is not set. If both are set, the explicit provider wins and the whole string, prefix included, becomes the model id, which the provider does not recognise. Use one convention: either the prefixed string alone, or a bare name plus `model_provider`.",
+    "reference": "https://reference.langchain.com/python/langchain/chat_models/base/init_chat_model",
+    "roleLevel": 4
+  }
+]
