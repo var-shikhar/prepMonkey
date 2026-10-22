@@ -1,0 +1,36 @@
+{
+  "observability-reliability": {
+    "summary": "Production LangChain work is about seeing, measuring and containing what the model does: LangSmith traces and evaluations, caching and rate limiting, retry and fallback strategy, token accounting, offline tests with fake models, and moving 0.x code onto the slimmer 1.x packages. Interviewers probe judgement here: which lever fits which failure, and what each tool does not do.",
+    "points": [
+      "Tracing turns on with `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY`; `LANGSMITH_PROJECT` picks the project (a default project is created otherwise), and non-US accounts set `LANGSMITH_ENDPOINT`. `ls.tracing_context(enabled=..., project_name=...)` scopes tracing in code.",
+      "`@traceable` (from `langsmith`) traces any function, LangChain or not, as a run nested under the active parent; `run_type` defaults to `chain` and can be `tool`, `retriever`, `llm` and others. With tracing off, the function simply runs.",
+      "Tags and metadata from `RunnableConfig` (or `@traceable(tags=..., metadata=...)`, `langsmith_extra`, `tracing_context(metadata=...)`) are recorded on runs and inherited by children, so traces can be filtered by customer, version or environment; a `thread_id` metadata key groups traces into threads.",
+      "`LANGSMITH_TRACING_SAMPLING_RATE` (0 to 1, default all) samples whole traces; `Client(tracing_sampling_rate=...)` with `tracing_context(client=...)` sets per-path rates. In serverless, set `LANGCHAIN_CALLBACKS_BACKGROUND=false` or call `wait_for_all_tracers()` so traces flush before the function freezes.",
+      "Offline evaluation: a dataset of examples (inputs, optional reference outputs, metadata), a target that receives only `inputs`, evaluators that receive `inputs`, `outputs` and `reference_outputs` by name, and `evaluate(target, data=..., evaluators=[...])`, which records an experiment to compare against a baseline.",
+      "Evaluator types: code (deterministic rules), LLM-as-judge (reference-free or reference-based), human annotation, and pairwise comparison. Online evaluators run on sampled, filtered production runs, have no reference outputs, and carry spend limits; user feedback is logged with `client.create_feedback(...)`.",
+      "Agents need more than final-answer checks: `agentevals` trajectory match modes are `strict` (same calls, same order), `unordered`, `subset` (no extra tools) and `superset` (extras allowed), plus an LLM-as-judge trajectory evaluator.",
+      "`set_llm_cache(...)` (from `langchain_core.globals`) installs a global cache; `None` disables it. `InMemoryCache` is per process and lost on restart, `SQLiteCache` (`langchain_community.cache`) persists to a file, and semantic caches such as `RedisSemanticCache` match by embedding similarity with a `score_threshold`. A model's `cache` field overrides: `False` skips caching, an instance uses its own cache.",
+      "The exact-match cache key is the serialized prompt plus a string of the model's parameters and call options, so a different prompt, `stop` or bound kwargs all miss. The cache is checked before the rate limiter, so hits cost no limiter token.",
+      "`InMemoryRateLimiter(requests_per_second, check_every_n_seconds, max_bucket_size)` is a thread-safe token bucket that counts requests, not LLM tokens, starts empty, and is not shared across processes or machines.",
+      "Chat models retry network errors, 429 and 5xx with exponential backoff (`max_retries` default 6) and do not retry 401 or 404. At system level, keep retries at one layer, make side-effecting tools idempotent before retrying them, set timeouts, and treat a provider fallback as a separate path that needs its own monitoring and evals.",
+      "Token tracking: `get_usage_metadata_callback()` (or `UsageMetadataCallbackHandler`) sums `usage_metadata` per model name across calls in scope. Testing: `GenericFakeChatModel` (scripted `AIMessage`s; subclass to add `bind_tools`), `FakeListChatModel` (cycling strings), `DeterministicFakeEmbedding`, `InMemorySaver` for multi-turn tests; integration tests behind a pytest marker with cassettes; `langchain-tests` standard unit and integration suites for integrations. 1.x moved legacy chains, retrievers, indexing, hub and community re-exports to `langchain-classic` and needs Python 3.10+."
+    ],
+    "traps": [
+      "`from langchain.globals import set_llm_cache` fails on 1.x; import it from `langchain_core.globals`.",
+      "A cache hit replays the stored reply's `usage_metadata`, so usage callbacks count tokens that no API call used; bill from real calls or provider reports.",
+      "Eight worker processes each with `InMemoryRateLimiter(requests_per_second=5)` allow about 40 requests per second in total, not 5.",
+      "`create_agent` with tools fails on a plain `GenericFakeChatModel` because it raises `NotImplementedError` from `bind_tools`.",
+      "An evaluator with exactly two unrecognised parameter names (for example `(prediction, answer)`) is treated as the legacy `(run, example)` signature and silently compares the wrong objects.",
+      "A loose semantic-cache threshold returns the answer to a similar but different question (open versus close an account).",
+      "LLM judges show position, verbosity and self-enhancement biases; calibrate them against human labels before gating releases on them.",
+      "Online evaluators have no reference outputs, so a gap between offline and online scores usually means the dataset no longer matches real traffic."
+    ],
+    "docs": [
+      { "title": "LangSmith observability quickstart", "url": "https://docs.langchain.com/langsmith/observability-quickstart" },
+      { "title": "LangSmith evaluation concepts", "url": "https://docs.langchain.com/langsmith/evaluation-concepts" },
+      { "title": "Chat models: rate limiting, retries and token usage", "url": "https://docs.langchain.com/oss/python/langchain/models" },
+      { "title": "Testing LangChain agents", "url": "https://docs.langchain.com/oss/python/langchain/test" },
+      { "title": "LangChain v1 migration guide", "url": "https://docs.langchain.com/oss/python/migrate/langchain-v1" }
+    ]
+  }
+}
