@@ -1,0 +1,2198 @@
+[
+  {
+    "id": "LGR-CKP-001",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph is compiled with a checkpointer and run with default settings. When does LangGraph save a checkpoint for the thread?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "After the input and after every super-step",
+        "why": "The checkpointer saves a snapshot at each super-step, which is what makes resume, replay and forking possible."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only once, when the run finishes without an error",
+        "why": "That is closer to the opt-in `durability=\"exit\"` mode, not the default; by default a checkpoint follows every super-step."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only when a node calls `interrupt()`",
+        "why": "Interrupts rely on checkpoints, but checkpoints are written whether or not anything interrupts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "After every token the model streams",
+        "why": "Token streaming is a streaming concern; checkpoints are per super-step, not per token."
+      }
+    ],
+    "explanation": "A checkpointer saves a `StateSnapshot` at each super-step and groups the snapshots by `thread_id`. The default durability mode is `\"async\"`: each checkpoint is written while the next step starts. Because of this per-step record, a thread can be resumed, inspected, replayed or forked from any step boundary.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpointer-thread",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CKP-002",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph is compiled with `checkpointer=InMemorySaver()`. What happens on this call?\n\n```python\ngraph.invoke({\"order\": \"A1\", \"status\": \"new\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It runs and saves the state under a thread called `\"default\"`",
+        "why": "There is no default thread; LangGraph will not guess where to save."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises `ValueError` asking for `thread_id` in `config[\"configurable\"]`",
+        "why": "With a checkpointer attached, a call without a thread id fails fast with this error."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It runs normally but saves nothing, as if no checkpointer were attached",
+        "why": "LangGraph does not silently skip persistence; it raises instead."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It generates a random `thread_id`, saves under it and returns it in the output",
+        "why": "The output is just the state; no thread id is generated for you."
+      }
+    ],
+    "explanation": "When a graph has a checkpointer, every call must say which thread it belongs to: `graph.invoke(inputs, {\"configurable\": {\"thread_id\": \"...\"}})`. The thread id is the key the checkpointer uses to save and load state, so leaving it out raises `ValueError` instead of persisting to some hidden place.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpointing",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "Future Research",
+        "Cerina Health",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CKP-003",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`graph.get_state_history(config)` yields a thread's checkpoints oldest first, so the first snapshot is the input checkpoint.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The order is the other way round: the newest checkpoint comes first."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: history is newest first. The first item is the latest checkpoint and the input checkpoint (step -1) comes last."
+      }
+    ],
+    "explanation": "History is in reverse chronological order. That is why `next(s for s in history if s.next == (\"node_b\",))` finds the most recent checkpoint before `node_b`, and the first snapshot is the same one `get_state(config)` returns.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:time travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CKP-004",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "A graph `START -> node_a -> node_b -> END` has a checkpointer. After one `invoke` on a new thread, how many snapshots does `get_state_history` return? Type a number.",
+    "options": [],
+    "accepted": [
+      "4",
+      "four"
+    ],
+    "explanation": "One checkpoint for the empty start (source `\"input\"`, step -1, next `__start__`), one with the input applied and `node_a` next (step 0), one after `node_a` (step 1) and one after `node_b` with nothing next (step 2). Each super-step boundary produces one checkpoint.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:superstep-pregel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-005",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "`graph.get_state(config).next` returns `()` for a thread. What does that tell you?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The thread is paused at an interrupt, waiting for human input to resume",
+        "why": "A paused thread lists the interrupted node in `next`, so it is not empty."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The last node raised an exception",
+        "why": "After a failure, `next` still names the failed node so you can resume it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Nothing is scheduled: the latest run on this thread has finished",
+        "why": "An empty `next` means there is nothing left to execute from this checkpoint."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The checkpointer could not save the latest step",
+        "why": "A failed write would raise; it is not reported through `next`."
+      }
+    ],
+    "explanation": "`next` is the tuple of nodes that would run if you resumed from this checkpoint. Empty means complete. A thread id that was never used also returns empty `values` and `()`, so check `values` or the history too when you need to tell a finished thread from a missing one.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:get-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CKP-006",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which of these need the graph to be compiled with a checkpointer? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pausing a run for human approval and resuming it later in another request",
+        "why": "Resuming needs the saved state of the thread, which only a checkpointer keeps."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Streaming LLM tokens with `stream_mode=\"messages\"`",
+        "why": "Streaming works on any compiled graph, with or without persistence."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Continuing a conversation across separate `invoke` calls on the same thread",
+        "why": "Thread-scoped memory is exactly what checkpoints provide."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Running two nodes in parallel in one super-step",
+        "why": "Fan-out is part of the execution model and needs no checkpointer."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Replaying or forking a thread from an earlier step",
+        "why": "Time travel works by resuming from stored checkpoints."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Routing with a conditional edge",
+        "why": "Routing is plain graph structure."
+      }
+    ],
+    "explanation": "The docs list four features that need a checkpointer: human-in-the-loop, memory across interactions, time travel and fault tolerance (including pending writes). Control flow and streaming do not need one.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpointer-thread",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CKP-007",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A team moves a LangGraph chatbot from a notebook to a production API with several worker processes. Which checkpointer fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`InMemorySaver`, because it is the fastest",
+        "why": "It lives in one process's memory: state is lost on restart and the other workers cannot see it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`SqliteSaver` on each worker's local disk",
+        "why": "The docs position SQLite for experiments and local workflows, and a local file is not shared across workers."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`PostgresSaver` from `langgraph-checkpoint-postgres`",
+        "why": "The docs call the Postgres saver ideal for production; it is the backend LangSmith uses."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No checkpointer; the client sends the full history on every call",
+        "why": "That gives up interrupts, time travel and recovery from failures, not just chat memory."
+      }
+    ],
+    "explanation": "`InMemorySaver` is for tests and experiments. `SqliteSaver` suits local development. A shared database saver such as `PostgresSaver` (or another production integration) is what multi-process deployments need, because every worker reads and writes the same threads.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpointer-backends",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CKP-008",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`graph.update_state(config, values)` edits the thread's latest checkpoint in place.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "No: it never edits an existing checkpoint."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `update_state` writes a new checkpoint (source `\"update\"`) and leaves the original in the history."
+      }
+    ],
+    "explanation": "Checkpoints are append-only from the API's point of view. `update_state` applies the values as if a node had written them (reducers included) and saves the result as a new checkpoint. That is why the docs call it a fork, not a rollback.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:update-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-009",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What do the two `print` calls show?\n\n```python\nclass State(TypedDict):\n    msgs: Annotated[list[str], operator.add]\n\ndef echo(state: State):\n    return {\"msgs\": [f\"bot saw {len(state['msgs'])}\"]}\n\ngraph = (StateGraph(State).add_node(echo).add_edge(START, \"echo\")\n         .compile(checkpointer=InMemorySaver()))\n\ngraph.invoke({\"msgs\": [\"hi\"]}, {\"configurable\": {\"thread_id\": \"a\"}})\nprint(graph.invoke({\"msgs\": [\"again\"]}, {\"configurable\": {\"thread_id\": \"a\"}})[\"msgs\"])\nprint(graph.invoke({\"msgs\": [\"again\"]}, {\"configurable\": {\"thread_id\": \"b\"}})[\"msgs\"])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['again', 'bot saw 1']` both times",
+        "why": "Thread `a` already has two messages saved, so its second call starts from them."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['hi', 'bot saw 1', 'again', 'bot saw 2']`, then `['again', 'bot saw 1']`",
+        "why": "The new input is merged before `echo` runs, so `echo` sees three messages, not two."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`['hi', 'bot saw 1', 'again', 'bot saw 3']`, then `['again', 'bot saw 1']`",
+        "why": "Thread `a` continues from its saved state; thread `b` is new and starts empty."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`['hi', 'bot saw 1', 'again', 'bot saw 3']` both times",
+        "why": "Threads are isolated; thread `b` cannot see thread `a`'s messages."
+      }
+    ],
+    "explanation": "The checkpointer loads the latest checkpoint of the thread named in config, merges the new input through the reducers and runs the graph again. A different `thread_id` is a separate conversation with no shared history.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpointer-thread",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-010",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Node `charge` raised a timeout halfway through a run on thread `o-1`. The graph uses `PostgresSaver`. After the gateway recovers, how do you continue from the last good step without running `validate` again?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Call `graph.invoke(None, {\"configurable\": {\"thread_id\": \"o-1\"}})`",
+        "why": "`None` input resumes the thread from its latest checkpoint, where `charge` is still pending."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `graph.invoke(original_input, {\"configurable\": {\"thread_id\": \"o-1\"}})`",
+        "why": "New input starts a new run from `START`, so `validate` runs again."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Call `graph.invoke(original_input, {\"configurable\": {\"thread_id\": \"o-1-retry\"}})`",
+        "why": "A new thread has no checkpoints, so the whole graph runs from scratch."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Read `graph.get_state(config).values` and pass them as the input on the same thread",
+        "why": "That is still new input: the run restarts from `START`, and reducer keys would be applied twice."
+      }
+    ],
+    "explanation": "After a failure the latest checkpoint has `next == ('charge',)` and the failed task carries the error. Invoking with `None` and the same thread resumes there. This only works if the checkpoints outlive the crash: with `InMemorySaver`, a process restart would have lost them.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:resume after failure",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-011",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The first deployment with `PostgresSaver` fails on the first run because the checkpoint tables do not exist. What was missed?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Passing `setup=True` to `graph.compile()`",
+        "why": "`compile()` has no such option; table creation belongs to the checkpointer."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Calling `checkpointer.setup()` once before first use",
+        "why": "The docs say to call `setup()` the first time you use the Postgres checkpointer; it creates the tables it needs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Running with `durability=\"sync\"` so that tables are created before the first step",
+        "why": "Durability controls when checkpoints are written, not schema creation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Using `AsyncPostgresSaver`, which creates its tables lazily on first write",
+        "why": "The async saver has the same requirement (`await checkpointer.setup()`)."
+      }
+    ],
+    "explanation": "`PostgresSaver.from_conn_string(DB_URI)` gives a context manager; inside it, call `checkpointer.setup()` once (for example in a migration step) before the first run. The async version uses `await checkpointer.setup()`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:checkpointer backends",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/persistence",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-012",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `StateSnapshot` field with what it holds.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`values`",
+        "why": "The state channel values."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`next`",
+        "why": "Nodes that would run next."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`tasks`",
+        "why": "Pending tasks with their errors and interrupts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`parent_config`",
+        "why": "Pointer to the previous checkpoint."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The state at this checkpoint, such as `{'foo': 'b', 'bar': ['a', 'b']}`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A tuple of node names, empty when the run is complete",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Entries with `id`, `name`, `error` and `interrupts`, plus a subgraph snapshot when you pass `subgraphs=True`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The config of the earlier checkpoint, or `None` for the first one",
+        "answer": "D"
+      }
+    ],
+    "explanation": "A snapshot also carries `config` (with `thread_id`, `checkpoint_ns` and `checkpoint_id`), `metadata` (with `source` and `step`) and `created_at`. `parent_config` links the snapshots into a chain, and that chain is the thread's history.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:get-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-013",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Compliance requires checkpoints in a SQLite file to be encrypted at rest. What does the documented approach look like?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`graph.compile(checkpointer=SqliteSaver(conn), encrypt=True)`",
+        "why": "`compile()` has no encryption flag; encryption is a serializer concern."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`SqliteSaver(conn, serde=JsonPlusSerializer(pickle_fallback=True))`",
+        "why": "`pickle_fallback` only widens which types can be serialized; it encrypts nothing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `LANGGRAPH_AES_KEY` in the environment and rely on every open-source saver to encrypt automatically from then on",
+        "why": "Automatic encryption from the variable alone is a LangSmith deployment feature; a self-built saver needs the encrypted serializer passed in."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`SqliteSaver(conn, serde=EncryptedSerializer.from_pycryptodome_aes())`, with the key in `LANGGRAPH_AES_KEY`",
+        "why": "Passing an `EncryptedSerializer` as `serde` encrypts everything the saver persists; this helper reads the AES key from the environment."
+      }
+    ],
+    "explanation": "Any `BaseCheckpointSaver` accepts a `serde` argument. `EncryptedSerializer.from_pycryptodome_aes()` wraps the default serializer with AES and needs the `pycryptodome` package installed (without it the helper raises `ImportError`). Other schemes can plug in through `CipherProtocol`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:serialization",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-014",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "In a thread's history, what is the value of `snapshot.metadata[\"source\"]` for a checkpoint created by `graph.update_state(...)`? Type the word.",
+    "options": [],
+    "accepted": [
+      "update",
+      "\"update\"",
+      "'update'"
+    ],
+    "explanation": "Checkpoint metadata records where the checkpoint came from: `\"input\"` for the checkpoint that takes new input, `\"loop\"` for checkpoints written during execution, and `\"update\"` for manual edits. `[s for s in history if s.metadata[\"source\"] == \"update\"]` lists every manual edit or fork on a thread, which is useful when you debug or audit.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:debugging-production",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-015",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `SqliteSaver` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It ships in a separate package, `langgraph-checkpoint-sqlite`",
+        "why": "Only `InMemorySaver` comes with `langgraph-checkpoint`; the SQLite saver is installed separately."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "State written through it survives a process restart when the same database file is opened again",
+        "why": "Checkpoints are rows in the file, so a new process that opens it sees the old threads."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The docs recommend it as the production backend for multi-worker deployments",
+        "why": "The docs describe it as ideal for experimentation and local workflows; Postgres is the production choice."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It keeps checkpoints in memory and writes them to the file only on shutdown",
+        "why": "It writes checkpoints to SQLite as the graph runs."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It stores only the latest checkpoint per thread, so time travel does not work with it",
+        "why": "It keeps the full history, so `get_state_history`, replay and fork all work."
+      }
+    ],
+    "explanation": "`SqliteSaver.from_conn_string(path)` is a context manager; `SqliteSaver(sqlite3.connect(path))` also works. For async graphs use `AsyncSqliteSaver` from `langgraph.checkpoint.sqlite.aio`. It is a good fit for local development and single-process tools.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpointer-backends",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-016",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Inside a node, `config[\"configurable\"][\"checkpoint_ns\"]` is `\"\"` in one node and starts with `\"child:\"` in another. What does this tell you?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The second node belongs to a different user or tenant, so its checkpoints are kept in a separate partition",
+        "why": "Users and conversations are separated by `thread_id`, not by namespace."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The first runs in the root graph; the second runs inside a subgraph added as node `child`",
+        "why": "An empty namespace is the parent graph; a subgraph gets `\"<node_name>:<id>\"`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The first node runs without checkpointing and the second with it",
+        "why": "An empty namespace is normal for the root graph; it does not mean checkpointing is off."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The namespace is a version counter that grows as the thread gets more checkpoints",
+        "why": "Versions and ordering come from `checkpoint_id` and `step`, not the namespace."
+      }
+    ],
+    "explanation": "`checkpoint_ns` says which graph a checkpoint belongs to. Nested subgraphs join namespaces with `|`, for example `\"outer:<id>|inner:<id>\"`. Together, `thread_id`, `checkpoint_ns` and `checkpoint_id` identify one checkpoint exactly.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-017",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `graph.get_state_history(config)` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It returns only the checkpoints of the most recent run on the thread",
+        "why": "It returns every checkpoint on the thread, across all runs and forks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It accepts `filter`, `before` and `limit` keyword arguments",
+        "why": "The installed signature has all three, which helps on long threads."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Each snapshot's `config` can be passed to `invoke` or `update_state` to replay or fork from that point",
+        "why": "A snapshot config carries the `checkpoint_id`, so it targets that exact checkpoint."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Writes from individual tasks appear as extra snapshots between super-steps",
+        "why": "Task writes are stored for fault tolerance, but they are not full snapshots; time travel only works from super-step boundaries."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It works without a checkpointer by rebuilding history from the stream",
+        "why": "History comes from the checkpointer; without one there is nothing to list."
+      }
+    ],
+    "explanation": "History is the checkpointer's `list` output turned into `StateSnapshot` objects, newest first. `limit=2` gives the latest two; `filter={\"source\": \"update\"}` matches metadata; `before=` pages backwards.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:time-travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-018",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "A graph `START -> node_a -> node_b -> END` has run once on a new thread. Order its checkpoints from oldest to newest.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`source='loop'`, `step=1`, `next=('node_b',)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`source='input'`, `step=-1`, `next=('__start__',)`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`source='loop'`, `step=2`, `next=()`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`source='loop'`, `step=0`, `next=('node_a',)`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "The input checkpoint (step -1) records the incoming values with `__start__` next. Step 0 has the input applied and `node_a` scheduled; step 1 follows `node_a`; step 2 follows `node_b` and has nothing next. `get_state_history` lists the same four in reverse order.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:superstep-pregel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-019",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "Which keyword argument of `graph.update_state(...)` makes the update count as if a specific node had produced it, which decides what runs next? Type the argument name.",
+    "options": [],
+    "accepted": [
+      "as_node",
+      "as_node=",
+      "`as_node`"
+    ],
+    "explanation": "`update_state(config, values, as_node=\"generate_topic\")` applies the values through that node's writers (reducers included) and resumes at that node's successors. Without it, LangGraph infers the node from version history. You must set it explicitly for parallel writers, for a fresh thread, or to skip nodes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:update-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CKP-020",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Invoking with `None` and the config of a thread's final checkpoint (whose `next` is `()`) runs the whole graph again.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "No: nothing is scheduled from that checkpoint."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: replaying from the final checkpoint is a no-op. No node runs and the saved final state comes back."
+      }
+    ],
+    "explanation": "Replay resumes from a checkpoint and runs whatever is in its `next`. The final checkpoint has nothing next, so nothing runs. To run again, replay from an earlier checkpoint (nodes after it re-execute) or send new input, which starts a new run on the thread.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:time travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-021",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After the code below, you run `graph.invoke(None, before.config)`. Which nodes execute, and how many snapshots does the thread's history hold afterwards?\n\n```python\nclass State(TypedDict):\n    topic: str\n    jokes: Annotated[list[str], operator.add]\n\ndef pick_topic(state: State):\n    return {\"topic\": \"cats\"}\n\ndef write_joke(state: State):\n    return {\"jokes\": [f\"joke about {state['topic']}\"]}\n\n# START -> pick_topic -> write_joke, compiled with InMemorySaver()\nconfig = {\"configurable\": {\"thread_id\": \"t1\"}}\ngraph.invoke({\"topic\": \"\", \"jokes\": []}, config)\nhistory = list(graph.get_state_history(config))\nbefore = next(s for s in history if s.next == (\"write_joke\",))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Only `write_joke` runs, and the history grows from 4 to 6 snapshots",
+        "why": "Nodes after the checkpoint re-execute and write new checkpoints; earlier results are reused."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`pick_topic` and `write_joke` both run, and the history grows to 8",
+        "why": "`pick_topic` is before the chosen checkpoint, so it does not run again."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Nothing runs; the saved joke is returned from the checkpoint cache, and the history stays at 4",
+        "why": "Replay re-executes nodes; it does not read results from a cache."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only `write_joke` runs, and the old checkpoints after `before` are deleted, so the history stays at 4",
+        "why": "Nothing is deleted; replay adds new checkpoints and the original ones remain."
+      }
+    ],
+    "explanation": "Replay re-runs every node after the chosen checkpoint, including LLM calls, API requests and interrupts, which may give different results this time. Nodes before it are skipped. New checkpoints are appended to the thread, so the history keeps both the original path and the replayed one.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:time-travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-022",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After the code below, you fork and resume like this. What is `result`, and what does `graph.get_state(config).values` return afterwards?\n\n```python\nclass State(TypedDict):\n    topic: str\n    jokes: Annotated[list[str], operator.add]\n\ndef pick_topic(state: State):\n    return {\"topic\": \"cats\"}\n\ndef write_joke(state: State):\n    return {\"jokes\": [f\"joke about {state['topic']}\"]}\n\n# START -> pick_topic -> write_joke, compiled with InMemorySaver()\nconfig = {\"configurable\": {\"thread_id\": \"t1\"}}\ngraph.invoke({\"topic\": \"\", \"jokes\": []}, config)\nhistory = list(graph.get_state_history(config))\nbefore = next(s for s in history if s.next == (\"write_joke\",))\n\nfork_config = graph.update_state(before.config, {\"topic\": \"dogs\"})\nresult = graph.invoke(None, fork_config)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`result` is about dogs, but `get_state(config)` still shows cats because the fork lives on a separate thread",
+        "why": "A fork stays on the same thread; it is a new branch of checkpoints there."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`result` is `{'topic': 'dogs', 'jokes': ['joke about cats', 'joke about dogs']}`",
+        "why": "At the fork point `jokes` was still empty, so only the dogs joke is added."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`result` is `{'topic': 'dogs', 'jokes': ['joke about dogs']}`, and `get_state(config)` returns the same",
+        "why": "The fork resumes at `write_joke` with the new topic, and its checkpoint becomes the thread's latest."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`result` is about cats, because `update_state` changes nothing unless `as_node` is passed",
+        "why": "`as_node` is inferred here; the edit applies and `write_joke` sees `dogs`."
+      }
+    ],
+    "explanation": "`update_state` on an older checkpoint writes a new checkpoint whose parent is that older one. `invoke(None, fork_config)` continues from it, and a plain thread config then resolves to the newest checkpoint, which is the end of the fork. The original cats branch remains in the history.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:time travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-023",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph `START -> node_a -> node_b -> END` has finished on thread `1`. What do `values` and `next` show after this update?\n\n```python\nclass State(TypedDict):\n    foo: str\n    bar: Annotated[list[str], operator.add]\n\n# node_a returns {\"foo\": \"a\", \"bar\": [\"a\"]}; node_b returns {\"foo\": \"b\", \"bar\": [\"b\"]}\ngraph.update_state(cfg, {\"foo\": \"m\", \"bar\": [\"manual\"]})\nsnap = graph.get_state(cfg)\nprint(snap.values, snap.next)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'foo': 'm', 'bar': ['manual']} ()`",
+        "why": "`bar` has an add reducer, so the update is appended, not swapped in."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'foo': 'm', 'bar': ['a', 'b', 'manual']} ()`",
+        "why": "`foo` has no reducer and is overwritten; `bar` is appended; the update is treated as coming from `node_b`, which leads to `END`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'foo': 'm', 'bar': ['a', 'b', 'manual']} ('node_a',)`",
+        "why": "An update does not restart the graph; `next` follows from the node it is attributed to."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'foo': 'b', 'bar': ['a', 'b']} ()`, because a finished thread cannot be updated",
+        "why": "Finished threads accept updates; this is how you correct state after the fact."
+      }
+    ],
+    "explanation": "`update_state` behaves like a node write: values go through the reducers, so an update to a list with `operator.add` accumulates instead of replacing it. Keys without a reducer are simply overwritten. The new checkpoint has `source == \"update\"`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:update-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-024",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "For a unit test, you seed a brand-new thread and then resume. What does the last line print?\n\n```python\n# same graph: START -> node_a -> node_b -> END, bar has operator.add\ncfg = {\"configurable\": {\"thread_id\": \"fresh\"}}\ngraph.update_state(cfg, {\"foo\": \"seed\", \"bar\": [\"seed\"]}, as_node=\"node_a\")\nprint(graph.invoke(None, cfg))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{'foo': 'b', 'bar': ['seed', 'b']}`",
+        "why": "The seed counts as `node_a`'s output, so only `node_b` runs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'foo': 'b', 'bar': ['seed', 'a', 'b']}`",
+        "why": "`node_a` is treated as already done; it does not run."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises `EmptyInputError`, because the thread never received input",
+        "why": "The update created a checkpoint with `node_b` scheduled, so `None` resumes from it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'foo': 'seed', 'bar': ['seed']}`, because nothing is scheduled after an update",
+        "why": "Attributing the update to `node_a` schedules its successor, `node_b`."
+      }
+    ],
+    "explanation": "Pairing `update_state(..., as_node=...)` with `invoke(None, ...)` is the documented way to test part of a graph. Set the state as if an upstream node had produced it, then run only the downstream nodes. On a fresh thread there is no history to infer from, so `as_node` must be given.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:update-state",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-025",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`ok` and `flaky` run in the same super-step, and `flaky` fails on the first attempt. What does the final `print` show?\n\n```python\ncalls = {\"ok\": 0, \"flaky\": 0, \"after\": 0}\nFAIL = True\n\ndef ok(state):\n    calls[\"ok\"] += 1; return {\"out\": [\"ok\"]}\n\ndef flaky(state):\n    calls[\"flaky\"] += 1\n    if FAIL: raise RuntimeError(\"boom\")\n    return {\"out\": [\"flaky\"]}\n\ndef after(state):\n    calls[\"after\"] += 1; return {\"out\": [\"after\"]}\n\n# START -> ok, START -> flaky, [ok, flaky] -> after; InMemorySaver\ntry:\n    graph.invoke({\"out\": []}, config)\nexcept RuntimeError:\n    pass\nFAIL = False\ngraph.invoke(None, config)\nprint(calls)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'ok': 2, 'flaky': 2, 'after': 1}`",
+        "why": "The whole super-step is not re-run; `ok`'s result was already saved."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'ok': 1, 'flaky': 1, 'after': 1}`",
+        "why": "`flaky` ran once and failed, so it must run a second time."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{'ok': 1, 'flaky': 2, 'after': 1}`",
+        "why": "`ok`'s output was saved as a pending write, so only `flaky` re-executes before `after`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'ok': 1, 'flaky': 2, 'after': 2}`",
+        "why": "`after` never ran in the failed attempt, because its super-step was not reached."
+      }
+    ],
+    "explanation": "As each task in a super-step finishes, its writes are saved and linked to the in-progress checkpoint. If a sibling fails, those pending writes survive. Resuming re-runs only the failed task, then commits the step. This saves cost and time when the successful sibling was an expensive LLM call.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:pending-writes",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-026",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A support bot uses `thread_id = user_id`. A user opens a second conversation in another tab about a different order, and the bot answers with details from the first conversation. Which change fixes this and keeps each conversation resumable?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Generate a new random `thread_id` on every request",
+        "why": "Each message would start an empty thread, so no conversation could continue."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep `thread_id = user_id` and trim old messages before each model call",
+        "why": "Trimming shortens the shared history; the two conversations are still mixed in one thread."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Key threads by conversation, for example `f\"{user_id}:{conversation_id}\"`, and keep cross-conversation facts in a store",
+        "why": "One thread per conversation isolates histories; a store namespaced by user holds what should carry over."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Compile a separate graph object for each browser tab",
+        "why": "Compiled graphs are stateless and shared; isolation comes from the thread id in config."
+      }
+    ],
+    "explanation": "A thread is one conversation's checkpoint chain. Use a stable id per conversation (and include the tenant or user in it so ids cannot collide across users). Facts that should follow the user into new conversations belong in long-term memory, not in a shared thread.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:thread-id-isolation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-027",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "State holds an instance of your own class `Invoice` (a plain Python class in `billing/models.py`), and every run fails with `TypeError: Type is not msgpack serializable: Invoice`. Which change lets the checkpointer store it without changing the state type?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use `InMemorySaver(serde=JsonPlusSerializer(pickle_fallback=True))`",
+        "why": "With `pickle_fallback`, types the msgpack encoder cannot handle are pickled instead."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Switch to `SqliteSaver`, which stores rows as pickles and accepts any Python object",
+        "why": "SQLite uses the same default serializer and raises the same `TypeError`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run with `durability=\"exit\"` so state is serialized only once at the end",
+        "why": "Writing less often does not change what can be serialized; the final write still fails."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap the field in `Annotated[Invoice, operator.add]`",
+        "why": "A reducer changes how updates merge, not how values are encoded."
+      }
+    ],
+    "explanation": "The default `JsonPlusSerializer` covers common types (LangChain messages, datetimes, sets, Pydantic models, dataclasses and more), but not arbitrary classes. `pickle_fallback=True` is the documented escape hatch, for example for DataFrames. Usually it is better to keep plain data or Pydantic models in state: pickles tie checkpoints to code versions and are unsafe to load from untrusted storage.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:serialization",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-028",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "With the default serializer and `InMemorySaver`, which values come back from `get_state(...).values` with the same type they were saved with? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A `set` such as `{1, 2}`",
+        "why": "Sets round-trip as sets."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A `datetime.datetime`",
+        "why": "Datetimes are one of the types the serializer handles explicitly."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "An `AIMessage`",
+        "why": "LangChain messages are first-class serializable types."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `tuple` such as `(1, 2)`",
+        "why": "It comes back as a list, `[1, 2]`, after it passes through msgpack."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "An instance of a plain custom class with no special support",
+        "why": "This raises `TypeError: Type is not msgpack serializable` unless pickle fallback is enabled."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "A `threading.Lock`",
+        "why": "Locks and clients cannot be serialized; keep them out of state."
+      }
+    ],
+    "explanation": "Checkpointed values go through `JsonPlusSerializer` (msgpack with extensions). LangChain and LangGraph types, datetimes, enums, sets, Pydantic models and dataclasses are supported. Tuples are a quiet trap: they come back as lists. Pydantic models and dataclasses defined in `__main__` currently log a warning about unregistered types when loaded, because a future version will block them unless they are allow-listed.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:serialization",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-029",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A subgraph is called inside a parent node. With `checkpointer=True` on the subgraph, the second parent run prints `['seen1', 'seen3']`. What does it print if the subgraph is compiled with plain `compile()` instead?\n\n```python\nclass M(TypedDict):\n    log: Annotated[list[str], operator.add]\n\ndef inner(state: M):\n    return {\"log\": [f\"seen{len(state['log'])}\"]}\n\nsub = StateGraph(M).add_node(inner).add_edge(START, \"inner\").compile(checkpointer=True)\n\ndef call(state: M):\n    r = sub.invoke({\"log\": [\"q\"]})\n    return {\"log\": [r[\"log\"][-1]]}\n\ngraph = (StateGraph(M).add_node(call).add_edge(START, \"call\")\n         .compile(checkpointer=InMemorySaver()))\ncfg = {\"configurable\": {\"thread_id\": \"m\"}}\ngraph.invoke({\"log\": []}, cfg)\nprint(graph.invoke({\"log\": []}, cfg)[\"log\"])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['seen1', 'seen3']`, because the subgraph always inherits the parent's thread",
+        "why": "Inheriting the checkpointer does not mean keeping state between calls; the default starts fresh each time."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`['seen1', 'seen1']`, because the default is per-invocation and each call starts fresh",
+        "why": "With `checkpointer=None` the subgraph's state lasts only for one call, so it sees just `['q']` every time."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises, because a subgraph called inside a node must have its own checkpointer",
+        "why": "The default inherits the parent's checkpointer; no separate one is needed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`['seen1']`, because the subgraph's output is discarded without per-thread mode",
+        "why": "The output is returned normally; only memory across calls differs."
+      }
+    ],
+    "explanation": "Subgraph persistence modes: `None` (default) is per-invocation, which supports interrupts and durable execution within one call but has no memory across calls. `True` is per-thread: state accumulates on the parent's thread. `False` is stateless and has no checkpoints at all.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "source": "interview:subgraph-checkpointer",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-030",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A run is paused inside a subgraph added as node `sub`. `graph.get_state(config).values` shows only the parent's keys. How do you read the subgraph's own snapshot?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`graph.get_state_history(config, filter={\"node\": \"sub\"})`",
+        "why": "That filters parent checkpoints by metadata; it does not return the subgraph's state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`graph.get_graph(xray=True)`",
+        "why": "That draws the graph structure, not runtime state."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Resume with `stream_mode=\"values\"`, which prints subgraph state",
+        "why": "Resuming moves the run forward; it is not a way to inspect the paused subgraph."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`graph.get_state(config, subgraphs=True).tasks[0].state`",
+        "why": "With `subgraphs=True`, the pending task for `sub` carries the subgraph's `StateSnapshot`."
+      }
+    ],
+    "explanation": "The parent checkpoint treats the subgraph as one pending task. `subgraphs=True` fills in that task's `state`, with the subgraph's own `values`, `next` and `config` (whose namespace starts with `sub:`). That config can also be passed to `update_state` to fork inside the subgraph when it has `checkpointer=True`. With `checkpointer=False`, no subgraph state is available.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "source": "interview:subgraph-state-inspection",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-031",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An interviewer asks how you would make an agent's decisions auditable. Which statements about what LangGraph checkpoints already give you are accurate? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`get_state_history` returns the state after every super-step, with `step`, `source` and `created_at`",
+        "why": "Each snapshot is a per-step record you can walk and export."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Manual edits through `update_state` show up as their own checkpoints with `source == \"update\"`",
+        "why": "Edits never overwrite history, so they remain visible in the chain."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Each checkpoint automatically records which human operator made an update",
+        "why": "Operator identity is not added for you; record it yourself, for example in your own audit log or state."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Checkpoint history is immutable and cannot be deleted, so it doubles as a compliance archive",
+        "why": "Savers expose `delete_thread`, and retention is up to you; a compliance archive needs its own controls."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Prompts, token counts and model latency for every LLM call are stored in checkpoint metadata",
+        "why": "Those belong to tracing (for example LangSmith), not to checkpoints."
+      }
+    ],
+    "explanation": "Checkpoints give you a replayable, per-step state history for each thread, edits included. A full audit trail usually adds: who acted and why (structured decision logs), traces of model and tool calls, and retention controls in a store you own.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:auditability",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/jkbrooks/context-engineering-takehome/main/00_BASE_PROBLEM.md",
+        "https://github.com/KarthikTools/ai-engineer-coding-challenge",
+        "https://github.com/Jatin29AFK/refundpilot-ai-agent",
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task"
+      ],
+      "companies": [
+        "Cerina Health"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-032",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `BaseCheckpointSaver` method with its job.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`put`",
+        "why": "Writes a checkpoint."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`put_writes`",
+        "why": "Writes task outputs (pending writes)."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`get_tuple`",
+        "why": "Reads one checkpoint."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`list`",
+        "why": "Iterates checkpoints."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Store a full checkpoint with its config and metadata at a super-step boundary",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Store the outputs of one task, linked to the in-progress checkpoint",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Fetch the latest checkpoint for a thread, or a specific one by `checkpoint_id`; backs `get_state`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Return the checkpoints that match a config and filter, newest first; backs `get_state_history`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Async graphs use the `a`-prefixed versions (`aput`, `aput_writes`, `aget_tuple`, `alist`). A custom saver also implements `delete_thread`/`adelete_thread`. Optional extras such as `copy_thread`, `prune` and `delete_for_runs` unlock more Agent Server features.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:persistence-layer-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-033",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps to fork a finished thread from just before `write_joke` with a different topic, and run it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`fork_config = graph.update_state(snapshot.config, {\"topic\": \"dogs\"})`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`history = list(graph.get_state_history(config))`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`graph.invoke(None, fork_config)`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`snapshot = next(s for s in history if s.next == (\"write_joke\",))`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "List the history, pick the checkpoint whose `next` is the node you want to re-run, write the change with `update_state` (which returns the new checkpoint's config), then resume from that config with `None` as input. Passing new input instead of `None` would start a fresh run from `START`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:time travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CKP-034",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Each thread of a document agent puts the full 5 MB extracted text of an uploaded PDF into state and then runs about 12 super-steps. The checkpoint tables grow far faster than the number of users. Which design fixes the root cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to `InMemorySaver` so checkpoints never reach the database and storage stays flat",
+        "why": "That gives up durability and multi-worker access instead of fixing the state design."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Lower `recursion_limit` so that fewer checkpoints are written",
+        "why": "That caps the number of steps and makes legitimate runs fail; the blob is still in every checkpoint."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Base64-encode the text so the serializer compresses it",
+        "why": "Base64 makes the payload about a third larger; it compresses nothing."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Keep the text in object storage with only its key in state, and expire old threads",
+        "why": "Small state means small checkpoints, and a retention job bounds how many threads you keep."
+      }
+    ],
+    "explanation": "The docs note that by default checkpoints write the full value of every state channel at each super-step, so a large value in state multiplies with every step and every thread. Keep large artifacts outside state and pass references. Use `checkpointer.delete_thread(thread_id)` for retention, and consider `DeltaChannel` (beta) for append-heavy channels such as long message lists.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpoint cost",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/langsmith/cli"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-035",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "A self-hosted service's checkpoint storage keeps growing. Which actions actually reduce or bound it? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Keep large blobs out of state and store references to them instead",
+        "why": "This shrinks every checkpoint written from then on."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Run a retention job that calls `checkpointer.delete_thread(thread_id)` for expired threads",
+        "why": "`delete_thread` removes a thread's checkpoints and writes."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Use `DeltaChannel` (beta, `langgraph>=1.2`) for append-heavy channels such as long message histories",
+        "why": "It stores increments instead of the full accumulated value at each step."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `checkpointer.prune(thread_ids)` on the bundled `SqliteSaver` to keep only the latest checkpoint",
+        "why": "On `SqliteSaver` (and `InMemorySaver`) `prune` is the base method and raises `NotImplementedError`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Read history with `get_state_history(config, limit=10)`, which drops older checkpoints",
+        "why": "`limit` only limits what is read; nothing is deleted."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Compile the parent graph with `checkpointer=False`",
+        "why": "`False` is a subgraph option for stateless subgraphs; it is not a retention strategy for the parent."
+      }
+    ],
+    "explanation": "Storage is roughly threads x checkpoints per thread x checkpoint size. Smaller state, fewer kept threads and delta channels each attack one factor. `prune` and `copy_thread` are optional saver capabilities. Check that your backend implements them before relying on them.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:checkpoint-growth",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-036",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An order flow fails in production. What does the `print` show?\n\n```python\nclass State(TypedDict):\n    order: str\n    status: str\n\ndef validate(state): return {\"status\": \"valid\"}\ndef charge(state): raise RuntimeError(\"gateway timeout\")\n\n# START -> validate -> charge, compiled with a checkpointer\ncfg = {\"configurable\": {\"thread_id\": \"o-1\"}}\ntry:\n    graph.invoke({\"order\": \"A1\", \"status\": \"new\"}, cfg)\nexcept RuntimeError:\n    pass\nsnap = graph.get_state(cfg)\nprint(snap.values, snap.next, [(t.name, t.error) for t in snap.tasks])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'order': 'A1', 'status': 'new'} () []`, because a failed run rolls back to the input",
+        "why": "The checkpoint after `validate` was kept; nothing is rolled back."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'order': 'A1', 'status': 'valid'} () []`, with the error stored only in the metadata",
+        "why": "`next` still holds the failed node, and the error is on its task."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{'order': 'A1', 'status': 'valid'} ('charge',)` plus a `charge` task holding the error",
+        "why": "The last good checkpoint is after `validate`; `charge` is still pending and carries its error."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'order': 'A1', 'status': 'charged'} ('charge',)`, because the partial write from `charge` is kept",
+        "why": "`charge` raised before returning, so it wrote nothing."
+      }
+    ],
+    "explanation": "This is the first thing to check when a run dies in production: the thread's latest snapshot tells you which node failed (`next` and `tasks[i].error`) and the exact state it received (`values`). Walking `get_state_history` shows how the state got there. After the fix, `graph.invoke(None, cfg)` resumes at `charge`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:debugging-agents",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-forward-deployed-engineer-interview-8c2ffb",
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://interviewbaba.com/langchain-interview-questions/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-037",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Starting from the code below (one finished run, so the history holds 4 snapshots), you fork and resume. Afterwards, how many snapshots does `get_state_history(config)` return, and is the original final checkpoint still among them?\n\n```python\nclass State(TypedDict):\n    topic: str\n    jokes: Annotated[list[str], operator.add]\n\ndef pick_topic(state: State):\n    return {\"topic\": \"cats\"}\n\ndef write_joke(state: State):\n    return {\"jokes\": [f\"joke about {state['topic']}\"]}\n\n# START -> pick_topic -> write_joke, compiled with InMemorySaver()\nconfig = {\"configurable\": {\"thread_id\": \"t1\"}}\ngraph.invoke({\"topic\": \"\", \"jokes\": []}, config)\nhistory = list(graph.get_state_history(config))\nbefore = next(s for s in history if s.next == (\"write_joke\",))\n\nfork_config = graph.update_state(before.config, {\"topic\": \"dogs\"})\ngraph.invoke(None, fork_config)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "4, and no: the fork replaces the checkpoints after `before`",
+        "why": "Forking never deletes; it adds a branch."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "3, and no: `update_state` rolls the thread back to `before`",
+        "why": "There is no rollback; `before` and everything after it remain."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "6, and no: the original final checkpoint is marked deleted and hidden from history",
+        "why": "The count is right, but the original final checkpoint is still there."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "6, and yes: the original branch is still in the history",
+        "why": "The update adds a `source == \"update\"` checkpoint, and resuming adds the new `write_joke` result."
+      }
+    ],
+    "explanation": "Every fork adds checkpoints to the same thread, and the original path stays reachable by its `checkpoint_id`. The latest checkpoint (what a plain thread config resolves to) is the end of the most recent branch. This is why the docs warn that `update_state` does not roll a thread back.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+    "source": "interview:time-travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-038",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph `START -> node_a -> node_b -> END` with a checkpointer is invoked twice with new input on the same thread. What does this print?\n\n```python\nprint([s.metadata[\"step\"] for s in graph.get_state_history(cfg, filter={\"source\": \"input\"})])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[-1, -1]`, because every run restarts its step counter",
+        "why": "The step counter continues across runs on a thread."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[-1, 3]`, oldest first",
+        "why": "History is newest first."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[3]`, because only the most recent input checkpoint is kept",
+        "why": "Every input checkpoint stays in the history."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`[3, -1]`",
+        "why": "The first run uses steps -1 to 2; the second run's input checkpoint is step 3; newest comes first."
+      }
+    ],
+    "explanation": "`step` is a counter per thread, not per run: a new run continues numbering from where the last one ended. Filtering on `source == \"input\"` finds the start of each run, which helps when you split a long thread into turns for debugging.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-039",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A supervisor agent calls a research sub-agent as a tool. The sub-agent is compiled with `checkpointer=True` so it remembers earlier exchanges. In production, when the model issues two parallel calls to that tool, runs fail or state gets mixed up. What is the best fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compile the sub-agent with `checkpointer=False` and keep its memory",
+        "why": "`False` is stateless: no memory and no interrupts."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Use the default per-invocation mode, or block parallel calls (for example with a tool-call limit) if memory is needed",
+        "why": "Per-thread subgraphs do not support parallel calls, because the calls collide in one namespace; per-invocation calls are isolated."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Give the parent an `InMemorySaver` instead of Postgres so both calls see one in-process copy",
+        "why": "The backend is not the problem; both calls write to the same subgraph namespace whatever the store."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `checkpointer=True` on the parent as well",
+        "why": "The parent needs a real checkpointer; `True` is a subgraph setting and does not separate the calls."
+      }
+    ],
+    "explanation": "The docs' persistence table: per-invocation (`None`) supports interrupts and parallel or repeated calls, but has no memory across calls. Per-thread (`True`) adds memory but cannot handle parallel or repeated calls to the same instance. Several different per-thread sub-agents each need a stable, unique namespace, for example by wrapping each in its own uniquely named node.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "source": "interview:subgraph-checkpointer",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-CKP-040",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You build a custom checkpointer on a key-value store whose row key is a reversed timestamp per thread. \"Get latest\" works, and plain chat works. But forking from an old checkpoint loads the wrong state, and `DeltaChannel` histories come back silently empty. What is the root cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`get_tuple` cannot look up a checkpoint by a specific `checkpoint_id`",
+        "why": "Time travel and delta reconstruction both read checkpoints by id; with a time-ordered key, that path is missing or broken."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`put_writes` is not implemented, so pending writes are lost",
+        "why": "That would hurt recovery after failures, not lookups of older checkpoints by id."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The store does not support transactions across the two tables",
+        "why": "Atomicity matters, but it does not explain wrong state on reads by id."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`list` returns checkpoints newest first",
+        "why": "Newest first is exactly what `list` is required to return."
+      }
+    ],
+    "explanation": "`get_tuple` must handle both cases: no `checkpoint_id` (return the latest) and a specific `checkpoint_id` (return exactly that one). The delta-channel walk calls `get_tuple` on each parent id; a lookup that returns `None` stops the walk and the channel rebuilds as empty without any error. Encode `checkpoint_id` in the key or add a secondary index, and run the `langgraph-checkpoint-conformance` suite in CI.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:persistence system design",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-CKP-041",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are reviewing a design for a custom `BaseCheckpointSaver`. Which choices are correct? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Store checkpoint `metadata` in full, keeping keys the saver does not recognise",
+        "why": "LangGraph adds metadata fields in minor releases; dropping them breaks features."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Make `delete_thread` remove both the checkpoint rows and the write rows for the thread",
+        "why": "The docs require both tables to be cleared."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Make lookup by `(thread_id, checkpoint_ns, checkpoint_id)` direct, with no scan of the thread",
+        "why": "Time travel and delta reconstruction rely on fast lookups by id."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Keep only the latest checkpoint per thread to save space",
+        "why": "That breaks history, replay, forking and parent-chain walks."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Pickle the metadata directly for speed instead of going through `self.serde`",
+        "why": "The docs say to use `self.serde` for checkpoints, writes and metadata."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Ignore `checkpoint_ns`, because subgraphs share the root graph's checkpoints",
+        "why": "Subgraph checkpoints live in their own namespaces; ignoring it makes them collide with the root."
+      }
+    ],
+    "explanation": "The docs' contract: two tables (one checkpoint row per super-step and one write row per task output), keys that include the namespace, serialization through `self.serde`, metadata stored in full, and both lookup paths in `get_tuple` working. Validate with the conformance suite before shipping.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:persistence-layer-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-CKP-042",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A service builds its own Postgres connection for the checkpointer. `setup()` seems to run, but checkpoint reads later fail with `TypeError`, and sometimes the tables are missing. What is the fix?\n\n```python\nwith psycopg.connect(DB_URI) as conn:\n    checkpointer = PostgresSaver(conn)\n    checkpointer.setup()\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Connect with `autocommit=True` and `row_factory=dict_row`",
+        "why": "`autocommit` lets `setup()` commit the tables, and the saver reads rows as dicts."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `setup()` before every run instead of once, so the tables always exist",
+        "why": "Calling it more often does not fix how the connection is configured."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to `AsyncPostgresSaver`",
+        "why": "The async saver has the same connection requirements."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap each `invoke` in an explicit transaction",
+        "why": "This does not provide dict rows, and `setup()` still is not committed."
+      }
+    ],
+    "explanation": "The Postgres checkpointer README: manual connections need `autocommit=True` (so `setup()` commits its tables) and `row_factory=dict_row` (the saver accesses columns by name; without it, reads raise `TypeError`). `PostgresSaver.from_conn_string(...)` configures the connection for you.",
+    "reference": "https://github.com/langchain-ai/langgraph/blob/main/libs/checkpoint-postgres/README.md",
+    "source": "interview:checkpointer backends",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/persistence",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-043",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nclass State(TypedDict):\n    point: tuple\n    tags: set\n\ndef mark(state: State):\n    return {\"tags\": state[\"tags\"] | {\"seen\"}}\n\ngraph = (StateGraph(State).add_node(mark).add_edge(START, \"mark\")\n         .compile(checkpointer=InMemorySaver()))\ncfg = {\"configurable\": {\"thread_id\": \"1\"}}\nout = graph.invoke({\"point\": (1, 2), \"tags\": {\"new\"}}, cfg)\nsaved = graph.get_state(cfg).values\nout2 = graph.invoke({\"tags\": {\"x\"}}, cfg)\nprint(type(out[\"point\"]).__name__, type(saved[\"point\"]).__name__, type(out2[\"point\"]).__name__)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`tuple tuple tuple`",
+        "why": "The value round-trips through the serializer, which does not keep tuples."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`tuple list list`",
+        "why": "The first run returns the live tuple; anything loaded from the checkpoint is a list."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`list list list`",
+        "why": "The first result comes from the in-run channel value, which is still the tuple you passed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`tuple list tuple`",
+        "why": "The second run starts from the checkpoint, so `point` is already a list."
+      }
+    ],
+    "explanation": "Checkpoints are serialized, so state read back from them is only as faithful as the serializer. msgpack has no tuple type, so tuples come back as lists. This often surfaces as a bug that appears only on the second turn or after a resume, for example code that uses `state[\"point\"]` as a dict key. Use lists, or a Pydantic model or dataclass, for structured values.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:serialization",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-044",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each subgraph requirement with the setting or call that meets it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`subgraph = builder.compile()`",
+        "why": "Per-invocation (the default)."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`builder.compile(checkpointer=True)`",
+        "why": "Per-thread persistence."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`builder.compile(checkpointer=False)`",
+        "why": "Stateless; no checkpoints."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`graph.get_state(config, subgraphs=True)`",
+        "why": "Inspect subgraph snapshots."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A sub-agent called as a tool for independent lookups; each call starts fresh but may still pause for approval",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A research sub-agent must remember earlier exchanges on the same thread",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A deterministic formatting subgraph that never pauses and should add no persistence overhead",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "An operator needs to see where a subgraph is paused and what its state is",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Per-invocation is the recommended default, especially for sub-agents used as tools. Choose per-thread only when the sub-agent needs memory across calls, and remember it cannot be called in parallel. Stateless removes checkpoint overhead along with durability and inspection. The parent must have a checkpointer for any subgraph persistence feature to work.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "source": "interview:subgraph-checkpointer",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CKP-045",
+    "domain": 2,
+    "skill": "checkpointing",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Nodes `ok` and `flaky` run in parallel; `flaky` fails, and later the developer calls `graph.invoke(None, config)`. Order what happens.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LangGraph loads the super-step's checkpoint together with the writes `ok` already saved",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`ok` and `flaky` start in the same super-step",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only `flaky` re-executes; the step is committed and `after` runs with both outputs",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ok` finishes and its writes are saved as task writes; `flaky` raises and the run stops",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "Task-level writes are what make this cheap. Each finished task's output is saved right away, linked to the in-progress checkpoint, so a failure in a sibling does not throw that work away. On resume, LangGraph applies the saved writes and schedules only the tasks that did not finish.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:pending-writes",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 4
+  }
+]
