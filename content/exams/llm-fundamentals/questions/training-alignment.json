@@ -1,0 +1,2271 @@
+[
+  {
+    "id": "LLM-TRN-001",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A team of annotators writes the correct next sentence for a sample of pages",
+        "why": "Human-written targets are used later, in supervised fine-tuning, not for the raw pretraining corpus."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The next token of the same text, at every position",
+        "why": "The text supplies its own labels: shift the sequence by one and every token becomes the target for the prefix before it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A reward model scores every generated continuation and the score is the target",
+        "why": "Reward models belong to RLHF, a post-training stage. Pretraining has no reward signal."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pages are clustered by topic and the cluster id is predicted",
+        "why": "LLM pretraining does not predict topic labels; it predicts the next token over the whole vocabulary."
+      }
+    ],
+    "stem": "During pretraining, a decoder-only LLM reads billions of web pages that nobody has labelled. Where do its training targets come from?",
+    "explanation": "Next-token prediction is called self-supervised because the labels are derived from the input itself: for a sequence of tokens, the target at position t is token t+1. That is why the objective scales to trillions of tokens without annotation cost.",
+    "reference": "https://arxiv.org/abs/2001.08361",
+    "source": "interview:llm-how-llms-are-trained-next-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://github.com/Devinterview-io/llms-interview-questions",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-TRN-002",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Mean squared error between the predicted and true token embeddings",
+        "why": "The model outputs a probability distribution over discrete tokens, not a point in embedding space, so MSE is not the standard objective."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Hinge loss on the margin between the top two logits",
+        "why": "Hinge losses appear in some preference variants, but next-token pretraining uses a probabilistic loss."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Cross-entropy of the true next token, averaged over positions",
+        "why": "The softmax over the vocabulary gives a probability for the true token; the loss is minus its log, averaged over every position."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "KL divergence between the model and a frozen reference model",
+        "why": "A KL term to a reference model is a regulariser used in RLHF and DPO, not the pretraining loss."
+      }
+    ],
+    "stem": "Which loss function is minimised when pretraining an LLM with the next-token objective?",
+    "explanation": "At each position the model produces logits over the vocabulary, softmax turns them into probabilities, and the loss is -log p(true next token). Averaging over all positions and sequences gives the training loss; exponentiating it gives perplexity.",
+    "reference": "https://huggingface.co/docs/trl/sft_trainer",
+    "source": "interview:llm-how-llms-are-trained-next-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://github.com/Devinterview-io/llms-interview-questions",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-TRN-003",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "This mixes up generation with training. At training time the whole sequence is known, so every position can be predicted in one pass."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. With the true sequence available (teacher forcing) and a causal mask stopping each position from seeing later tokens, the loss for all positions is computed in parallel in a single forward pass."
+      }
+    ],
+    "stem": "Because a decoder-only model generates text one token at a time, its pretraining forward pass must also process a sequence one position at a time.",
+    "explanation": "Training is parallel across positions: the full text is fed in, the causal mask hides future tokens, and the loss is computed at every position at once. Only inference is sequential, because each new token depends on the one sampled before it.",
+    "reference": "https://huggingface.co/docs/trl/sft_trainer",
+    "source": "interview:llm-how-llms-are-trained-next-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://github.com/Devinterview-io/llms-interview-questions",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-004",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Large volumes of raw, unlabelled text",
+        "why": "The input to pretraining with next-token prediction."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Prompts paired with a single good response",
+        "why": "Demonstration data used by supervised fine-tuning."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompts with a preferred and a less-preferred response",
+        "why": "Pairwise preference data used by reward models and DPO."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Prompts only; responses are sampled from the policy and scored",
+        "why": "Online RL data, as in the PPO stage of RLHF."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Pretraining a base model",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Supervised fine-tuning (instruction tuning)",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Direct Preference Optimization",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The PPO step of RLHF",
+        "answer": "D"
+      }
+    ],
+    "stem": "Match each training stage with the data it consumes.",
+    "explanation": "Pretraining learns language and world knowledge from raw text. SFT teaches the format and behaviour of an assistant from demonstrations. Preference methods learn from comparisons; DPO uses fixed (chosen, rejected) pairs offline, while PPO-based RLHF samples fresh responses from the current policy and scores them with a reward model.",
+    "reference": "https://arxiv.org/abs/2203.02155",
+    "source": "interview:llm-pretraining-vs-sft-vs-instruction-tuning",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.es/Entrevista/Amazon-Entrevista-E6036-RVW96903377.htm",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/pretraining-vs-finetuning-vs-instruction-finetuning.html",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-005",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Freezes base weights; trains a small low-rank update for chosen matrices",
+        "why": "The update is the product of two thin matrices, so only a tiny fraction of parameters is trained."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It removes the least important layers so the model is smaller and faster to fine-tune",
+        "why": "That describes pruning. LoRA keeps every original layer and adds trainable parameters alongside them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It quantizes all weights to 4 bits so full fine-tuning fits on one GPU",
+        "why": "Quantizing the frozen base is what QLoRA adds on top of LoRA; LoRA itself does not quantize anything."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It trains only the final output layer and keeps the transformer blocks frozen",
+        "why": "Training just the head is linear probing. LoRA adapts weight matrices inside the blocks, typically the attention and MLP projections."
+      }
+    ],
+    "stem": "In one sentence, what does LoRA do during fine-tuning?",
+    "explanation": "LoRA represents the weight change as dW = B A, where A is r x k and B is d x r with a small rank r. The base weight W stays frozen; only A and B receive gradients, which cuts trainable parameters and optimizer memory drastically.",
+    "reference": "https://arxiv.org/abs/2106.09685",
+    "source": "interview:llm-lora-how-and-why-cheaper",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://static.glassdoor.es/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP44.htm",
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+        "https://arxiv.org/abs/2106.09685"
+      ],
+      "companies": [
+        "UiPath",
+        "Fractal"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-TRN-006",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Reward hacking",
+        "why": "Reward hacking is a policy exploiting flaws in a reward model during RL; plain SFT on legal data has no reward model."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Mode collapse",
+        "why": "Mode collapse means outputs lose diversity. The symptom here is lost capability on other tasks, not repetitive outputs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Overfitting to the evaluation benchmark",
+        "why": "Benchmark overfitting would inflate benchmark scores, but here the general benchmarks went down."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Catastrophic forgetting",
+        "why": "Updating weights on a narrow distribution overwrites what the model knew about other tasks."
+      }
+    ],
+    "stem": "After fine-tuning a general model on a narrow legal Q&A dataset, its legal answers improve but its scores on general reasoning and coding benchmarks drop sharply. What is this called?",
+    "explanation": "Catastrophic forgetting is the loss of previously learned abilities after training on new data. Detect it by evaluating a fixed suite of general benchmarks before and after fine-tuning, not just the target task.",
+    "reference": "https://arxiv.org/abs/2405.09673",
+    "source": "interview:llm-catastrophic-forgetting",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-007",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "options": [],
+    "accepted": [
+      "rejected",
+      "`rejected`"
+    ],
+    "stem": "TRL's `DPOTrainer` expects a preference dataset. In the standard format each row has a `prompt` column, a `chosen` column and one more column holding the dispreferred completion. What is that column called? Type the column name.",
+    "explanation": "A DPO row is `{\"prompt\": ..., \"chosen\": ..., \"rejected\": ...}`. The trainer pushes up the policy's likelihood of the chosen completion relative to the rejected one, both measured against a reference model. Conversational datasets use the same three keys with lists of messages.",
+    "reference": "https://huggingface.co/docs/trl/dpo_trainer",
+    "source": "interview:llm-preference-data-and-when-to-align",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huggingface.co/docs/trl/dpo_trainer"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-008",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Removing duplicated documents from a pretraining corpus",
+        "why": "That is data deduplication, a data-cleaning step, not distillation."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Training a smaller student to imitate a larger teacher",
+        "why": "The student learns from the teacher's probability distributions or generated text instead of only from human labels."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Compressing weights to 4-bit integers after training",
+        "why": "That is quantization. It shrinks the same model; distillation trains a different, usually smaller, model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Summarising long documents before putting them in the prompt",
+        "why": "That is a context-management technique and changes no model weights."
+      }
+    ],
+    "stem": "What is knowledge distillation, in the LLM sense?",
+    "explanation": "Distillation transfers capability from a teacher to a student. The classic recipe (Hinton et al.) trains the student on the teacher's softened output probabilities; with LLMs it is also common to fine-tune the student on text the teacher generates.",
+    "reference": "https://arxiv.org/abs/1503.02531",
+    "source": "interview:llm-knowledge-distillation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://huggingface.co/docs/trl/index"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-009",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "0.25",
+        "why": "That is the probability itself. The loss is the negative log of the probability."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "About 2.0",
+        "why": "2.0 is log base 2 of 4, the loss in bits. Training frameworks use the natural log, giving nats."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "0.75",
+        "why": "1 - p is not cross-entropy; it would treat the loss as linear in probability."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "About 1.386",
+        "why": "-ln(0.25) = ln(4) = 1.386 nats."
+      }
+    ],
+    "stem": "At one position the model assigns probability 0.25 to the token that actually comes next. What is the cross-entropy loss at that position, using the natural log?",
+    "explanation": "Cross-entropy for one position is -ln p(correct token). A perfect prediction (p = 1) gives 0, and the loss grows without bound as p approaches 0. Frameworks such as PyTorch use the natural log, so the unit is nats.",
+    "reference": "https://huggingface.co/docs/trl/sft_trainer",
+    "source": "interview:llm-how-llms-are-trained-next-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://github.com/Devinterview-io/llms-interview-questions",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-010",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Optimise the policy against the reward model with PPO, adding a per-token KL penalty to the SFT model",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Collect human demonstrations and fine-tune the base model on them (SFT)",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Train a reward model to predict which response labellers preferred",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Have labellers rank several responses from the SFT model for each prompt",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "C",
+      "A"
+    ],
+    "stem": "Put the stages of the classic InstructGPT-style RLHF pipeline in order, starting from a pretrained base model.",
+    "explanation": "InstructGPT describes three steps: (1) collect demonstrations and train a supervised policy, (2) collect comparison data (labellers ranked 4 to 9 responses per prompt) and train a reward model, (3) optimise the policy against the reward model with PPO, with a KL penalty to the SFT model to limit over-optimisation.",
+    "reference": "https://arxiv.org/abs/2203.02155",
+    "source": "interview:llm-rlhf-pipeline",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.es/Entrevista/Meta-Entrevista-E40772-RVW104870532.htm",
+        "https://www.glassdoor.es/Entrevista/Amazon-Entrevista-E6036-RVW96903377.htm",
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://arxiv.org/abs/2203.02155"
+      ],
+      "companies": [
+        "Meta",
+        "Amazon"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-011",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A corrected version of the response",
+        "why": "Rewriting responses is what critique-and-revise methods do; a reward model only scores."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A probability distribution over the next token",
+        "why": "That is what the policy (the language model) produces. The reward model has a scalar head instead of a vocabulary head."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "One scalar score of how much people would prefer it",
+        "why": "It is trained on comparisons so that preferred responses receive higher scores, and PPO maximises that score."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A binary safe/unsafe label used to filter training data",
+        "why": "Safety classifiers exist, but the RLHF reward model outputs a continuous preference score used as the RL reward."
+      }
+    ],
+    "stem": "In RLHF, what does the reward model produce when given a prompt and a response?",
+    "explanation": "The reward model is usually initialised from a language model with its output layer replaced by a scalar head. It is trained on pairwise comparisons so that the chosen response scores higher than the rejected one, then frozen and used as the reward signal for PPO.",
+    "reference": "https://arxiv.org/abs/2203.02155",
+    "source": "interview:llm-rlhf-pipeline",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.es/Entrevista/Meta-Entrevista-E40772-RVW104870532.htm",
+        "https://www.glassdoor.es/Entrevista/Amazon-Entrevista-E6036-RVW96903377.htm",
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://arxiv.org/abs/2203.02155"
+      ],
+      "companies": [
+        "Meta",
+        "Amazon"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-012",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Training a separate, explicit reward model",
+        "why": "DPO reparameterises the reward in terms of the policy, so the preference pairs train the policy directly."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Sampling new responses from the policy during training",
+        "why": "DPO is offline: it computes log-probabilities of the fixed chosen and rejected responses rather than generating rollouts."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The frozen reference model",
+        "why": "DPO still needs reference log-probabilities; its loss is built from the policy-to-reference log ratios."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pairwise preference data",
+        "why": "DPO consumes exactly this data: a prompt with a chosen and a rejected response."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A hyperparameter controlling how far the policy may drift",
+        "why": "DPO keeps one: beta, which plays the role of the KL coefficient."
+      }
+    ],
+    "stem": "Compared with PPO-based RLHF, which two things does DPO remove from the training pipeline? (Choose two.)",
+    "explanation": "DPO shows that the RLHF objective with a KL constraint has a closed-form optimal policy, so the reward can be written as beta times the log ratio of policy to reference. Training becomes a simple classification-style loss on preference pairs, with no reward-model training and no sampling from the LM during fine-tuning.",
+    "reference": "https://arxiv.org/abs/2305.18290",
+    "source": "interview:llm-dpo-vs-rlhf-ppo",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.es/Entrevista/Amazon-Entrevista-E6036-RVW96903377.htm",
+        "https://dataford.io/interview-guides/msft/applied-scientist",
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://huggingface.co/docs/trl/dpo_trainer"
+      ],
+      "companies": [
+        "Amazon",
+        "Microsoft"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-013",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "So `B A` is zero and training starts from the base model's exact behaviour",
+        "why": "With B = 0 the update contributes nothing at step 0, so training begins from the base model's behaviour."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "So `B` receives no gradient at all and only matrix `A` is updated during training",
+        "why": "B does receive gradients (they depend on A, which is non-zero); both matrices are trained."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "To keep the adapter weights sparse after training",
+        "why": "Zero initialisation does not enforce sparsity; B becomes dense as soon as training updates it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Because zero-initialised matrices quantize better to 4 bits",
+        "why": "Adapters are kept in 16-bit precision in LoRA and QLoRA; the choice has nothing to do with quantization."
+      }
+    ],
+    "stem": "In the standard LoRA initialisation, matrix `A` gets small random values and matrix `B` is set to zero. Why zero for `B`?",
+    "explanation": "PEFT's default follows the reference implementation: Kaiming-uniform for A and zeros for B, which makes the adapter an identity transform (a no-op) at the start. If both were zero, the gradients of both would be zero and nothing would train; if both were random, the model would be perturbed before learning anything.",
+    "reference": "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+    "source": "interview:llm-lora-how-and-why-cheaper",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://static.glassdoor.es/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP44.htm",
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+        "https://arxiv.org/abs/2106.09685"
+      ],
+      "companies": [
+        "UiPath",
+        "Fractal"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-014",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing; more tokens in the loss always means a stronger training signal",
+        "why": "More loss tokens are not better when most of them teach the wrong thing. Here roughly 94% of the gradient comes from reproducing prompts."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Most of the gradient goes to reproducing prompts, diluting the answer signal",
+        "why": "Masking the prompt tokens (label -100) makes the loss focus on the completion, which is the behaviour being taught."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Loss on prompt tokens causes the KL penalty to explode",
+        "why": "Plain SFT has no KL penalty; that term belongs to RLHF and DPO."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It breaks the causal mask, so each prompt token can attend to the answer tokens that follow it",
+        "why": "Which tokens contribute to the loss has no effect on attention masking."
+      }
+    ],
+    "stem": "You fine-tune on a prompt-completion dataset where prompts average 900 tokens and answers 60 tokens. A teammate's custom training loop computes loss on every token. What is the main problem?",
+    "explanation": "For prompt-completion data, TRL's `SFTTrainer` computes loss on the completion only by default (`completion_only_loss`), and `assistant_only_loss=True` does the same for conversational data. Masked positions get the ignore index -100. Training on prompt tokens wastes capacity on modelling user inputs.",
+    "reference": "https://huggingface.co/docs/trl/sft_trainer",
+    "source": "interview:llm-sft-dataset-and-hyperparameters",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-015",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The LoRA adapter matrices, so the trainable part uses less memory",
+        "why": "Adapters stay in 16-bit (BF16) and are the only weights that receive gradients."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The activations, so long sequences fit in memory",
+        "why": "Computation runs in a 16-bit compute dtype; activations are not stored in 4-bit."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The frozen pretrained base weights",
+        "why": "The base model is stored in 4-bit NormalFloat and dequantized to BF16 on the fly for each matmul."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The optimizer states for every model weight",
+        "why": "Only adapter parameters have optimizer state at all, and QLoRA manages spikes with paged optimizers, not 4-bit states."
+      }
+    ],
+    "stem": "In QLoRA, which tensors are stored in 4-bit precision?",
+    "explanation": "QLoRA freezes a 4-bit NF4 copy of the base model and backpropagates through it into BF16 LoRA adapters. The paper reports it cut the memory needed to fine-tune a 65B model from over 780 GB to under 48 GB while matching 16-bit fine-tuning quality.",
+    "reference": "https://arxiv.org/abs/2305.14314",
+    "source": "interview:llm-lora-vs-qlora",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.es/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP44.htm",
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://arxiv.org/abs/2305.14314"
+      ],
+      "companies": [
+        "Fractal",
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-016",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "This describes serving the adapter unmerged. After merging there is nothing extra left to compute."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Merging computes W + scale * B A once and stores the result, so the merged model has the same shape and cost as the original."
+      }
+    ],
+    "stem": "Once a trained LoRA adapter is merged into the base weights, inference is slightly slower than with the original model, because the low-rank product still has to be computed on every forward pass.",
+    "explanation": "Merging folds the update into the weight matrix, so a merged LoRA model has zero added inference latency. Latency overhead only appears when the base and adapter are loaded separately, which is the price for being able to swap adapters.",
+    "reference": "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+    "source": "interview:llm-lora-merge-vs-separate-adapters",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+        "https://huggingface.co/learn/llm-course/chapter11/4"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-017",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Prefix tuning edits the tokenizer vocabulary, while prompt tuning edits the attention weights",
+        "why": "Neither method changes the tokenizer or the pretrained weights; both learn new continuous vectors."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Prefix tuning adds trainable vectors at every layer; prompt tuning only at the input",
+        "why": "That deeper insertion is the main architectural difference, and gives prefix tuning more capacity per virtual token."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prefix tuning trains the whole model on a prefix of each example, while prompt tuning trains only the head",
+        "why": "Both keep the pretrained model frozen and train only the soft-prompt parameters."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "They are the same method under different names",
+        "why": "They differ in where the trainable vectors go, and prefix tuning also uses a reparameterisation network during training."
+      }
+    ],
+    "stem": "How does prefix tuning differ from prompt tuning?",
+    "explanation": "Both are soft-prompt methods that keep the model frozen. Prompt tuning learns virtual-token embeddings concatenated with the input. Prefix tuning inserts trainable prefix parameters into all layers and optimises them through a separate feed-forward network that is discarded after training.",
+    "reference": "https://huggingface.co/docs/peft/main/en/conceptual_guides/prompting",
+    "source": "interview:llm-peft-families-comparison",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://huggingface.co/docs/peft/index"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-018",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It mainly teaches the format and behaviour of following instructions, using knowledge the model already has",
+        "why": "A base model already knows a lot; SFT shapes how it responds to prompts."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It uses the same next-token cross-entropy loss as pretraining, applied to curated prompt-response examples",
+        "why": "The objective is the same; what changes is the data and, usually, masking the prompt tokens."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It needs pairs of good and bad responses for every prompt",
+        "why": "That is preference data for DPO or reward modelling; SFT needs one target response per prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is the most reliable way to add large amounts of new factual knowledge",
+        "why": "Studies comparing knowledge injection found retrieval beats unsupervised fine-tuning for new facts; SFT is better at behaviour than at memorising facts."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It needs far more data than pretraining to have any effect",
+        "why": "SFT datasets are typically thousands to a few hundred thousand examples, tiny compared with a pretraining corpus."
+      }
+    ],
+    "stem": "Which two statements about supervised fine-tuning (instruction tuning) of a base model are accurate? (Choose two.)",
+    "explanation": "SFT turns a base model, which just continues text, into an assistant that answers in the expected format. It reuses the next-token loss on curated demonstrations and is usually followed by preference optimisation.",
+    "reference": "https://huggingface.co/docs/trl/sft_trainer",
+    "source": "interview:llm-pretraining-vs-sft-vs-instruction-tuning",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.es/Entrevista/Amazon-Entrevista-E6036-RVW96903377.htm",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/pretraining-vs-finetuning-vs-instruction-finetuning.html",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TRN-019",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Human-written ideal answers to harmful prompts",
+        "why": "The point of the method is to avoid collecting human labels for harmlessness."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Its own responses after it critiqued and revised them against written principles",
+        "why": "The model drafts a response, critiques it against a principle from the constitution, revises it, and is fine-tuned on the revisions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pairs of responses ranked by a human preference model",
+        "why": "Pairwise preferences are used in the later RL phase, and they come from an AI model, not humans."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A list of banned words extracted from the constitution",
+        "why": "The constitution is a set of natural-language principles used for critique, not a keyword filter."
+      }
+    ],
+    "stem": "In the supervised phase of Constitutional AI, what is the model fine-tuned on?",
+    "explanation": "Constitutional AI has two phases. Supervised: sample, self-critique, revise, then fine-tune on the revised answers. RL: a model judges which of two samples better follows the principles; those AI preferences train a preference model used as the reward (RL from AI Feedback, RLAIF).",
+    "reference": "https://arxiv.org/abs/2212.08073",
+    "source": "interview:llm-constitutional-ai-rlaif",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-020",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "options": [],
+    "accepted": [
+      "65536",
+      "65,536"
+    ],
+    "stem": "You apply LoRA with rank `r = 8` to one 4096 x 4096 weight matrix. How many trainable parameters does the adapter add for that matrix? Type a whole number with no commas.",
+    "explanation": "A is r x 4096 and B is 4096 x r, so the adapter has 8 x 4096 + 4096 x 8 = 65,536 parameters, against 16,777,216 in the full matrix: 256 times fewer. In general LoRA adds r x (d + k) parameters for a d x k matrix.",
+    "reference": "https://arxiv.org/abs/2106.09685",
+    "source": "interview:llm-lora-how-and-why-cheaper",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://static.glassdoor.es/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP44.htm",
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+        "https://arxiv.org/abs/2106.09685"
+      ],
+      "companies": [
+        "UiPath",
+        "Fractal"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-021",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It stays at 2, because PEFT automatically rescales `lora_alpha` to twice the chosen rank",
+        "why": "PEFT does not tie alpha to r; if you keep alpha at 16 the ratio changes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It doubles to 4; rsLoRA would leave it unchanged",
+        "why": "The ratio goes down, not up, when r grows with alpha fixed."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It halves to 1; rsLoRA uses `lora_alpha / sqrt(r)`, so the update shrinks less",
+        "why": "16/8 = 2 becomes 16/16 = 1. rsLoRA uses alpha / sqrt(r) to keep higher ranks stable and useful."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is unaffected, since rank only changes the number of parameters",
+        "why": "Rank appears in the denominator of the scale, so changing it changes the effective step size of the update."
+      }
+    ],
+    "stem": "With standard LoRA scaling, the update is multiplied by `lora_alpha / r`. A run used `r=8, lora_alpha=16`. You raise only the rank to `r=16`. What happens to the scaling factor, and what does rsLoRA change?",
+    "explanation": "Because the scale is alpha / r, increasing r while holding alpha fixed shrinks each adapter's contribution, which is one reason people retune alpha along with r. Rank-stabilised LoRA (`use_rslora=True`) uses alpha / sqrt(r) so that larger ranks are not over-damped.",
+    "reference": "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+    "source": "interview:llm-lora-rank-alpha-target-modules",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/lora-rank-alpha.html",
+        "https://huggingface.co/learn/llm-course/chapter11/4",
+        "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-022",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "For a fixed compute budget, model size and training tokens should be scaled in roughly equal proportion",
+        "why": "The paper finds that each doubling of model size should come with a doubling of training tokens."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Many large models of the time were significantly undertrained for their size",
+        "why": "They had grown parameters while keeping data roughly fixed; a smaller model on more data did better for the same compute."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "At a fixed budget, spending almost all extra compute on parameters gives the lowest loss",
+        "why": "That was closer to the earlier Kaplan-style recommendation that Chinchilla revised."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The compute-optimal ratio is about one training token per parameter",
+        "why": "Chinchilla's estimates work out to roughly 20 tokens per parameter (70B parameters on 1.4T tokens)."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Chinchilla beat Gopher by being four times larger",
+        "why": "It was four times smaller (70B vs 280B) and trained on about four times more data, with the same compute."
+      }
+    ],
+    "stem": "Which two conclusions come from DeepMind's Chinchilla paper on compute-optimal training? (Choose two.)",
+    "explanation": "Chinchilla (70B parameters, 1.4T tokens) used the same compute as Gopher (280B) and outperformed it and several larger models. The practical rule of thumb is about 20 training tokens per parameter for compute-optimal training; models meant for cheap inference are often trained well beyond that.",
+    "reference": "https://arxiv.org/abs/2203.15556",
+    "source": "interview:llm-scaling-laws-chinchilla",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://arxiv.org/abs/2203.15556"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-023",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "options": [],
+    "accepted": [
+      "20",
+      "~20",
+      "20 tokens"
+    ],
+    "stem": "Using the Chinchilla rule of thumb, roughly how many training tokens per parameter are compute-optimal? Type a whole number.",
+    "explanation": "Chinchilla trained 70B parameters on 1.4 trillion tokens, which is 20 tokens per parameter, and the paper's table of compute-optimal settings follows the same ratio (about 20.2B tokens for 1B parameters, 205B for 10B). Training compute is approximately 6 x N x D FLOPs.",
+    "reference": "https://arxiv.org/abs/2203.15556",
+    "source": "interview:llm-scaling-laws-chinchilla",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://arxiv.org/abs/2203.15556"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-024",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The learning rate is too low, so the policy has not converged yet",
+        "why": "Slow convergence would show flat rewards and little change in outputs, not rising proxy scores with falling human ratings."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The reward model is too accurate and needs label noise",
+        "why": "Adding noise does not address the policy exploiting what the reward model gets wrong."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The SFT data had too few examples",
+        "why": "SFT size affects the starting point, but the divergence between proxy and human scores appears during RL."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The policy is over-optimising an imperfect proxy reward (reward hacking)",
+        "why": "It has found features the reward model likes, such as length and flattery, that humans do not actually value."
+      }
+    ],
+    "stem": "During PPO, the average reward-model score keeps climbing, but in blind human evaluations the newer checkpoints are rated worse: answers are longer, more flattering and repeat certain phrases. What is the best diagnosis?",
+    "explanation": "The reward model is only a proxy for human preference. Optimising it too hard makes true quality fall even as the proxy rises (Goodhart's law); Gao et al. measured this with a gold reward model. Remedies include a stronger KL penalty, early stopping on held-out human or gold evals, better reward-model data, and length controls.",
+    "reference": "https://arxiv.org/abs/2210.10760",
+    "source": "interview:llm-reward-hacking-kl-penalty",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-025",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The policy barely moves from the SFT model, so alignment gains are small",
+        "why": "A heavy penalty makes any deviation expensive, so the reward model's signal is mostly overruled."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The policy drifts far from the reference and starts reward hacking",
+        "why": "That is the risk when beta is too small, not too large."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Training becomes faster because PPO needs fewer rollouts per update when beta is large",
+        "why": "Beta changes the objective, not the number of rollouts PPO needs."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The reward model is updated more often",
+        "why": "The reward model is frozen during PPO; beta only weights the KL term in the policy's reward."
+      }
+    ],
+    "stem": "In PPO-based RLHF the reward includes a KL penalty, weighted by a coefficient beta, between the policy and the SFT reference model. What is the typical effect of setting beta too large?",
+    "explanation": "The KL term keeps the policy close to the reference so it stays fluent and does not exploit reward-model blind spots. Too small a beta lets the policy drift and hack the reward; too large a beta pins it to the SFT model. InstructGPT used a per-token KL penalty from the SFT model for exactly this reason.",
+    "reference": "https://arxiv.org/abs/2203.02155",
+    "source": "interview:llm-reward-hacking-kl-penalty",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-026",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Lower it to 0.01, because a smaller beta strengthens the preference signal and fixes overfitting",
+        "why": "A smaller beta lets the policy move further from the reference, which makes the drift worse."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set it to 0, which turns DPO into plain SFT on the chosen responses",
+        "why": "With beta = 0 the loss gives no gradient signal at all; it does not become SFT."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Beta only affects logging, so change the learning rate instead",
+        "why": "Beta sits inside the loss and directly sets how strongly the policy is tied to the reference."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Raise it (say to 0.3): higher beta means less deviation from the reference",
+        "why": "TRL documents beta as controlling deviation from the reference: higher beta, less deviation."
+      }
+    ],
+    "stem": "You are running TRL's `DPOTrainer` and the model is drifting too far from the starting checkpoint: fluency drops and it overfits to the preference set. Which change to `beta` (default 0.1) addresses this, and why?",
+    "explanation": "In DPO, beta multiplies the difference of policy-to-reference log ratios and plays the role of the KL coefficient in RLHF. TRL's default is 0.1. Lowering the learning rate or the number of epochs also helps against overfitting.",
+    "reference": "https://huggingface.co/docs/trl/dpo_trainer",
+    "source": "interview:llm-dpo-vs-rlhf-ppo",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.es/Entrevista/Amazon-Entrevista-E6036-RVW96903377.htm",
+        "https://dataford.io/interview-guides/msft/applied-scientist",
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://huggingface.co/docs/trl/dpo_trainer"
+      ],
+      "companies": [
+        "Amazon",
+        "Microsoft"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-027",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "4-bit NormalFloat (NF4) storage for the frozen base weights",
+        "why": "NF4 is designed for normally distributed weights and stores the base model in 4 bits."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Double quantization of the quantization constants",
+        "why": "Quantizing the per-block constants saves about 0.37 bits per parameter, roughly 3 GB on a 65B model."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Paged optimizers that spill optimizer state to CPU memory during spikes",
+        "why": "They use unified memory so that gradient-checkpointing memory spikes do not crash the run."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Training the LoRA adapters themselves in 4-bit precision",
+        "why": "Adapters stay in BF16 and are the only parameters that get weight gradients."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Updating the 4-bit base weights directly with low-precision gradients",
+        "why": "The base stays frozen; gradients flow through it to the adapters but never update it."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Pruning half of the attention heads before training",
+        "why": "QLoRA does not prune; it keeps the full architecture."
+      }
+    ],
+    "stem": "Which three techniques did QLoRA introduce or combine to fit large-model fine-tuning on a single GPU? (Choose three.)",
+    "explanation": "QLoRA = frozen NF4 base + double quantization + paged optimizers + LoRA adapters in BF16. The paper also found LoRA had to be applied to all linear layers in each block to match full 16-bit fine-tuning; adapting only the query and value projections was not enough.",
+    "reference": "https://arxiv.org/abs/2305.14314",
+    "source": "interview:llm-lora-vs-qlora",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.es/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP44.htm",
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://arxiv.org/abs/2305.14314"
+      ],
+      "companies": [
+        "Fractal",
+        "UiPath"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-028",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "About 14 GB, the size of the FP16 weights",
+        "why": "That counts only the 2-byte weights; gradients and Adam's states come on top."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "About 28 GB, for FP16 weights plus FP16 gradients",
+        "why": "This omits the optimizer state, which is the largest part: an FP32 master copy plus two moment buffers."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "About 112 GB, at roughly 16 bytes per parameter",
+        "why": "2 bytes FP16 weights + 2 bytes gradients + 12 bytes for FP32 master weights, momentum and variance = 16 bytes x 7B."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "About 56 GB, at 8 bytes per parameter",
+        "why": "8 bytes would cover the two Adam moments in FP32 but not the FP16 weights, gradients and the FP32 master copy."
+      }
+    ],
+    "stem": "Roughly how much GPU memory do the model states alone (weights, gradients, optimizer state) need for full fine-tuning of a 7B model with mixed-precision Adam, before counting activations?",
+    "explanation": "The ZeRO paper breaks mixed-precision Adam down as 2 + 2 + 12 = 16 bytes per parameter (its 7.5B example needs 120 GB). With LoRA the base has no gradients or optimizer state, so memory is dominated by the frozen weights plus a small adapter's states, which is why PEFT fits on far smaller GPUs.",
+    "reference": "https://arxiv.org/abs/1910.02054",
+    "source": "interview:llm-full-finetune-vs-peft",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://sebastianraschka.com/faq/docs/full-finetuning-vs-lora-cost.html",
+        "https://www.techinterview.org/post/3233474925/ml-engineer-interview-post-llm-era/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-029",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LoRA",
+        "why": "Low-rank matrices added in parallel to existing weights; can be merged after training."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Bottleneck adapters",
+        "why": "Small new layers inserted in sequence inside each block; add inference latency."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompt tuning",
+        "why": "Learned virtual-token embeddings concatenated with the input only."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Prefix tuning",
+        "why": "Learned prefix vectors inserted into every layer, trained via a reparameterisation network."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A low-rank update B A next to a frozen weight matrix",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Extra down-project and up-project layers that every token must pass through",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A few trainable vectors placed in front of the input embeddings",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Trainable vectors injected at all layers, with an MLP used only during training",
+        "answer": "D"
+      }
+    ],
+    "stem": "Match each PEFT method with where its trainable parameters live.",
+    "explanation": "Re-parameterisation (LoRA) changes the effective weights and can be merged for zero overhead. Additive adapters insert layers that stay in the forward path, which is why the LoRA paper contrasts its lack of latency with adapters. Soft prompts (prompt and prefix tuning) learn continuous vectors and keep every weight frozen.",
+    "reference": "https://huggingface.co/docs/peft/main/en/conceptual_guides/prompting",
+    "source": "interview:llm-peft-families-comparison",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://huggingface.co/docs/peft/index"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-030",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Mix a share of general-purpose instruction data back into the fine-tuning set",
+        "why": "Replaying general data keeps the model practising the abilities it was losing."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Switch from full fine-tuning to LoRA, or lower the learning rate and number of epochs",
+        "why": "Smaller, constrained updates move the weights less; research found LoRA forgets less than full fine-tuning."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Train for more epochs on the domain data so the model settles",
+        "why": "More passes over narrow data usually increase forgetting."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise the learning rate so the domain is learned in fewer steps",
+        "why": "Larger steps cause larger weight changes and more forgetting."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Remove all general data so the domain signal is cleaner",
+        "why": "That is the opposite of replay and makes forgetting worse."
+      }
+    ],
+    "stem": "A domain fine-tune of a 7B model improved the target task but its general benchmarks fell 8 points. Which two changes are most likely to reduce this forgetting without giving up the domain gains? (Choose two.)",
+    "explanation": "Catastrophic forgetting comes from large updates on a narrow distribution. Data replay, PEFT, smaller learning rates, fewer epochs and regularising toward the base model all limit it. Biderman et al. found LoRA learns less on the target domain but also forgets less than full fine-tuning.",
+    "reference": "https://arxiv.org/abs/2405.09673",
+    "source": "interview:llm-catastrophic-forgetting",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-031",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "DPO",
+        "why": "DPO needs paired data: a chosen and a rejected answer for the same prompt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "KTO",
+        "why": "KTO learns from a binary signal of whether a single output is desirable or not, so unpaired thumbs data fits."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A reward model trained with a Bradley-Terry pairwise loss",
+        "why": "A Bradley-Terry loss is defined over pairs of answers to the same prompt, which you do not have."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "IPO",
+        "why": "IPO changes DPO's loss transform to reduce overfitting but still uses paired preferences."
+      }
+    ],
+    "stem": "Your product has thumbs-up and thumbs-down clicks on individual answers, but users never compare two answers for the same prompt. Which preference method is designed for this kind of data?",
+    "explanation": "Kahneman-Tversky Optimisation maximises a prospect-theory utility of single generations and reports matching or beating preference-based methods from 1B to 30B parameters using only binary desirable/undesirable labels. That makes it a natural fit for production feedback that is not paired.",
+    "reference": "https://arxiv.org/abs/2402.01306",
+    "source": "interview:llm-preference-data-and-when-to-align",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huggingface.co/docs/trl/dpo_trainer"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-032",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A higher T pushes the targets toward one-hot labels, so the student learns faster; no correction is needed",
+        "why": "A higher temperature makes distributions softer, not one-hot."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It softens the targets so wrong-class probabilities carry signal; scale the soft loss by T^2",
+        "why": "Soft-target gradients scale as 1/T^2, so multiplying by T^2 keeps the soft and hard losses balanced as T changes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A higher T reduces the teacher's memory use; the student is then run at T = 0",
+        "why": "Temperature does not change memory use, and the student is trained at the same high T and deployed at T = 1."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A higher T removes the teacher's mistakes; the hard-label loss is divided by T",
+        "why": "Softening keeps the teacher's mistakes in the targets; the documented correction is multiplying the soft-target term by T^2."
+      }
+    ],
+    "stem": "In classic knowledge distillation, why is the teacher's softmax run at a temperature T > 1 to produce targets, and what correction is applied when combining with a normal hard-label loss?",
+    "explanation": "Hinton et al. train the student on the teacher's softened distribution at a high temperature, using the same temperature in the student, then deploy the student at T = 1. When hard labels are also used, a weighted average of the two cross-entropies works best, with the soft-target term multiplied by T^2 because its gradients scale as 1/T^2.",
+    "reference": "https://arxiv.org/abs/1503.02531",
+    "source": "interview:llm-knowledge-distillation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://huggingface.co/docs/trl/index"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-033",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LoRA with r = 8 on the q and v projections in every layer",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Full fine-tuning of all weights",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompt tuning with 20 virtual tokens",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "LoRA with r = 16 on q, k, v and o in every layer",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Prefix tuning with 20 prefix vectors per layer for both keys and values (no reparameterisation)",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "A",
+      "E",
+      "D",
+      "B"
+    ],
+    "stem": "A model has 32 layers with hidden size 4096, and each layer's q, k, v and o projections are 4096 x 4096. Order these fine-tuning setups from fewest to most trainable parameters.",
+    "explanation": "Prompt tuning: 20 x 4096 = 81,920. LoRA r = 8 on q, v: 32 x 2 x 8 x (4096 + 4096) = 4,194,304. Prefix tuning: 32 layers x 2 (K and V) x 20 x 4096 = 5,242,880. LoRA r = 16 on four projections: 32 x 4 x 16 x 8192 = 16,777,216. Full fine-tuning trains billions. Prefix tuning ends up larger than a small LoRA because it adds vectors at every layer.",
+    "reference": "https://huggingface.co/docs/peft/main/en/conceptual_guides/prompting",
+    "source": "interview:llm-peft-families-comparison",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://huggingface.co/docs/peft/index"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TRN-034",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "About 0.474",
+        "why": "This uses beta x (policy chosen - policy rejected) = 0.5 and ignores the reference model, a common implementation bug."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "About 0.693",
+        "why": "ln 2 is the loss when the margin is exactly zero, as it is at the very first step when policy equals reference."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "About 0.049",
+        "why": "This forgets beta: using the raw margin of 3 gives -log sigmoid(3), roughly 0.049."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "About 0.554",
+        "why": "Log ratios are +2 (chosen) and -1 (rejected); margin = 0.1 x (2 - (-1)) = 0.3, and -log sigmoid(0.3) is about 0.554."
+      }
+    ],
+    "stem": "For one preference pair, the summed log-probabilities are: policy on chosen = -10, reference on chosen = -12, policy on rejected = -15, reference on rejected = -14. With beta = 0.1, what is the DPO loss for this pair?",
+    "explanation": "The DPO loss is -log sigmoid(beta x [(log pi(y+) - log ref(y+)) - (log pi(y-) - log ref(y-))]). Here the policy has raised the chosen answer by 2 nats relative to the reference and lowered the rejected one by 1, so the margin is positive and the loss is below ln 2.",
+    "reference": "https://huggingface.co/docs/trl/dpo_trainer",
+    "source": "interview:llm-implement-dpo-loss",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://huggingface.co/docs/trl/dpo_trainer",
+        "https://arxiv.org/abs/2305.18290"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-TRN-035",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`F.logsigmoid` should be replaced by `torch.log(torch.sigmoid(...))` for numerical stability",
+        "why": "It is the other way round: `logsigmoid` is the numerically stable form, and the naive version can underflow."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The loss should be maximised, so the leading minus sign must go",
+        "why": "Optimisers minimise; the negative log-sigmoid is the correct quantity to minimise."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It ignores the reference log-probabilities, so the margin is not measured relative to the reference model",
+        "why": "The logits must be `beta * ((pi_chosen - ref_chosen) - (pi_rejected - ref_rejected))`; without the reference there is no implicit KL anchor."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`beta` must be applied after the sigmoid, not before it",
+        "why": "Beta scales the log-ratio margin inside the sigmoid; moving it outside changes the objective."
+      }
+    ],
+    "stem": "A candidate writes this DPO loss. Each argument is a tensor of summed completion log-probabilities, shape `[batch]`.\n\n```python\nimport torch.nn.functional as F\n\ndef dpo_loss(pi_chosen, pi_rejected, ref_chosen, ref_rejected, beta=0.1):\n    logits = beta * (pi_chosen - pi_rejected)\n    return -F.logsigmoid(logits).mean()\n```\n\nWhat is wrong with it?",
+    "explanation": "The reference model is what makes DPO equivalent to KL-regularised RLHF: the implicit reward is beta x log(pi / ref). Dropping it turns the loss into a pure likelihood-margin objective that can drift arbitrarily far from the starting model. The arguments `ref_chosen` and `ref_rejected` are passed in but never used, which is the clue.",
+    "reference": "https://arxiv.org/abs/2305.18290",
+    "source": "interview:llm-implement-dpo-loss",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://huggingface.co/docs/trl/dpo_trainer",
+        "https://arxiv.org/abs/2305.18290"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-TRN-036",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The tokenizer was changed between rounds",
+        "why": "A tokenizer change would break far more than borderline prompts and is not tied to safety data."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Safety data rewards refusing benign prompts that merely sound risky",
+        "why": "Mixing in more safety data is known to raise false refusals, especially on borderline prompts that look adversarial but are not."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The sampling temperature at inference is too high",
+        "why": "Temperature affects variety, not a systematic shift toward refusing a class of prompts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The KL penalty or beta is so large that the model could not change at all",
+        "why": "If the model could not change, you would not see a new refusal behaviour after the round."
+      }
+    ],
+    "stem": "After a safety-focused preference-tuning round, your assistant refuses harmless requests such as \"How do I kill a stuck Python process?\". Harmful-request refusals look fine. What is the most likely root cause to check first?",
+    "explanation": "Llama 2 reported that as more safety data was mixed in, the false-refusal rate rose, staying rare on ordinary helpful prompts but much higher on a borderline set. XSTest describes the same exaggerated safety: safe prompts are refused when they use language similar to unsafe ones. Audit the preference pairs where a refusal is chosen and measure a borderline-but-benign eval set.",
+    "reference": "https://arxiv.org/abs/2307.09288",
+    "source": "interview:llm-debug-refusals-after-safety-round",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-TRN-037",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Add borderline-but-benign prompts with helpful chosen answers (and refusals as rejected) to the preference data",
+        "why": "This teaches the boundary directly: wording that sounds risky is not, by itself, a reason to refuse."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Track false-refusal rate on a borderline eval set as a release gate alongside harmful-compliance rate",
+        "why": "Both sides of the trade-off are measured, so a later round cannot silently regress helpfulness."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Post-process outputs and replace any refusal text with a generic answer",
+        "why": "This hides refusals, including correct ones on harmful prompts, without changing the model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise the inference temperature so the model sometimes skips the refusal",
+        "why": "That makes behaviour random rather than correct and also weakens refusals that should happen."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Drop all safety data from the next round",
+        "why": "That would trade over-refusal for unsafe compliance; the goal is a better balance, not removing safety training."
+      }
+    ],
+    "stem": "You confirmed that over-refusal came from the last safety-tuning round. Which two fixes target the cause rather than hiding the symptom? (Choose two.)",
+    "explanation": "Over-refusal is a data-mix and evaluation problem. Fix the data at the decision boundary and measure both failure modes (harmful compliance and false refusal) on every round. The Llama 2 report shows the trade-off moving as the share of safety data changes.",
+    "reference": "https://arxiv.org/abs/2307.09288",
+    "source": "interview:llm-debug-refusals-after-safety-round",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-TRN-038",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Keeping adapters unmerged lets one copy of the base serve all customers, swapping or mixing adapters per request",
+        "why": "PEFT can load several adapters, switch the active one, and even mix adapters within a batch for inference."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Merging an adapter removes its inference overhead but bakes it into a full-size copy of the weights",
+        "why": "A merged model is standalone; serving 40 merged models means 40 full copies."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Merging is required before an adapter can be used at all",
+        "why": "Adapters can be applied unmerged at inference; merging is an optimisation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Merging into a 4-bit quantized base and then unmerging restores the exact original weights",
+        "why": "PEFT warns that unmerging on a quantized model is not exact, because merging re-quantizes the base weight."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Merged and unmerged serving give different outputs even in full precision",
+        "why": "In full precision the merged weight W + scale x B A computes the same function as the separate path."
+      }
+    ],
+    "stem": "You serve one 8B base model for 40 enterprise customers, each with its own LoRA adapter. Which two statements about merging adapters are correct? (Choose two.)",
+    "explanation": "Merge when one adapter serves all traffic and latency matters. Keep adapters separate when many tenants share a base, adapters change often, or you need A/B tests. Merging is not exact on quantized bases.",
+    "reference": "https://huggingface.co/docs/peft/main/en/developer_guides/lora",
+    "source": "interview:llm-lora-merge-vs-separate-adapters",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+        "https://huggingface.co/learn/llm-course/chapter11/4"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-039",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Apply LoRA to all linear layers in each block, including the MLP projections",
+        "why": "The QLoRA authors found LoRA on all linear transformer-block layers was needed to match full fine-tuning; query and value alone were not enough."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise the rank to 256 on the same two modules",
+        "why": "Rank on two modules is a weaker lever than covering more modules, and very high ranks raise memory and overfitting risk."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch the base from NF4 to INT8 to reduce quantization error",
+        "why": "QLoRA reports NF4 adapters matching 16-bit full fine-tuning; base precision is not the bottleneck here."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower `lora_alpha` to 1 to stabilise training",
+        "why": "A tiny alpha shrinks the update and makes the gap larger, not smaller."
+      }
+    ],
+    "stem": "A QLoRA fine-tune for tool calling uses `r=16` on the `q_proj` and `v_proj` modules only. It learns the call syntax but still lags a full fine-tune on choosing the right arguments. What change is best supported by the QLoRA paper's findings?",
+    "explanation": "Target-module coverage matters. PEFT exposes `target_modules=\"all-linear\"` for this, which applies LoRA to every linear layer except the output head. Rank and alpha are secondary knobs once coverage is right.",
+    "reference": "https://arxiv.org/abs/2305.14314",
+    "source": "interview:llm-lora-rank-alpha-target-modules",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/lora-rank-alpha.html",
+        "https://huggingface.co/learn/llm-course/chapter11/4",
+        "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-040",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "When you only have a fixed set of human preference pairs and no way to score new samples",
+        "why": "That is the classic setting for offline DPO; online RL needs a way to score fresh samples."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "When you want the cheapest pipeline with no generation during training",
+        "why": "Online RL generates rollouts during training, so it is more expensive; DPO is the cheaper option."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "When there is no reliable way to tell a good answer from a bad one",
+        "why": "Without a scoring signal, online RL has nothing to optimise."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "When a verifiable reward can score fresh samples from the current policy",
+        "why": "Unit tests give a cheap reward for on-policy samples, which offline preference pairs cannot provide."
+      }
+    ],
+    "stem": "You are post-training a coding model and can check correctness automatically by running unit tests. When is an online RL method (PPO, or GRPO) a better choice than offline DPO?",
+    "explanation": "Offline methods such as DPO learn only from responses that already exist in the dataset. With a verifiable reward (tests pass or fail, answer matches), online RL can explore and improve on the model's current mistakes. GRPO does this with rule-based reward functions and group-relative advantages.",
+    "reference": "https://huggingface.co/docs/trl/grpo_trainer",
+    "source": "interview:llm-design-post-training-pipeline",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/"
+      ],
+      "companies": [
+        "OpenAI",
+        "Anthropic",
+        "Mistral AI",
+        "Cohere"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-TRN-041",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "DPO",
+        "why": "Offline loss on paired chosen/rejected data, anchored to a frozen reference model."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "KTO",
+        "why": "Learns from unpaired binary desirable/undesirable labels using a prospect-theory utility."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "ORPO",
+        "why": "Reference-free; adds an odds-ratio preference term to SFT so alignment happens in one stage."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "GRPO",
+        "why": "Online RL that drops PPO's critic and uses the group's average reward as the baseline."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "You have pairs for each prompt and want a simple, stable offline loss",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "You only have thumbs-up/down on single answers",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "You want to skip a separate preference stage and a reference model entirely",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "You sample several answers per prompt, score them with a rule-based reward, and want to avoid training a value model",
+        "answer": "D"
+      }
+    ],
+    "stem": "Match each preference-optimisation method with the property that sets it apart.",
+    "explanation": "DPO needs pairs plus a reference model. KTO needs only binary labels. ORPO is reference-model-free and folds preference alignment into SFT. GRPO is a PPO variant that skips the critic and estimates the baseline from scores within a group of samples, saving memory.",
+    "reference": "https://arxiv.org/abs/2402.03300",
+    "source": "interview:llm-preference-data-and-when-to-align",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huggingface.co/docs/trl/dpo_trainer"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-042",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "truefalse",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "DPO's derivation gives an implicit reward, so a score does exist even without a separate reward model."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. DPO defines an implicit reward of beta x log(pi(y|x) / ref(y|x)); TRL logs it as `rewards/chosen` and `rewards/rejected`, and the share of pairs where chosen beats rejected as `rewards/accuracies`."
+      }
+    ],
+    "stem": "Because DPO never trains an explicit reward model, there is no way to read a reward score for a response from a DPO-trained model.",
+    "explanation": "The paper's title says it: the language model is secretly a reward model. The implicit reward is beta times the policy-to-reference log ratio, up to a prompt-dependent constant, so it is meaningful for comparing responses to the same prompt. Watching reward margins and accuracies is the standard way to monitor a DPO run.",
+    "reference": "https://huggingface.co/docs/trl/dpo_trainer",
+    "source": "interview:llm-implement-dpo-loss",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://huggingface.co/docs/trl/dpo_trainer",
+        "https://arxiv.org/abs/2305.18290"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-043",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Train a preference model on AI-labelled comparisons",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Sample responses from a helpful model to harmful or tricky prompts",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run RL against the preference model (RLAIF)",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Fine-tune the model on the revised responses",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Have the model critique each response against a constitutional principle and revise it",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Have a model judge which of two samples better follows the principles",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "E",
+      "D",
+      "F",
+      "A",
+      "C"
+    ],
+    "stem": "Order the steps of Constitutional AI training, from the first data generation to the final policy.",
+    "explanation": "Supervised phase: sample, self-critique against a principle, revise, fine-tune on the revisions. RL phase: sample pairs from that model, have an AI judge which is better, train a preference model on those labels, and use it as the reward for RL. Replacing human harmlessness labels with AI feedback cuts cost and scales, but any bias in the principles or the judge model is scaled up too.",
+    "reference": "https://arxiv.org/abs/2212.08073",
+    "source": "interview:llm-constitutional-ai-rlaif",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475333/rlhf-post-training-interview-topics-2026/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-044",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Full fine-tuning: it learns more on the target domain but forgets more",
+        "why": "Biderman et al. found standard low-rank LoRA substantially underperforms full fine-tuning on code and math, but forgets less."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LoRA with rank 8, because it always matches full fine-tuning at a fraction of the cost",
+        "why": "Matching is not guaranteed; on hard domains like code, low-rank LoRA lagged full fine-tuning."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompt tuning, because it adds the most capacity for a new domain",
+        "why": "Prompt tuning has very few trainable parameters and the least capacity of the options here."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No fine-tuning at all, because fine-tuning always reduces benchmark scores",
+        "why": "Fine-tuning normally improves the target task; the trade-off is with other abilities."
+      }
+    ],
+    "stem": "A team needs the best possible score on a hard internal code-generation benchmark and does not care if the model gets worse at general chat. They have plenty of GPUs. Which choice is best supported by research comparing LoRA with full fine-tuning?",
+    "explanation": "LoRA learns less and forgets less. Full fine-tuning learns weight changes of much higher rank (10 to 100 times typical LoRA ranks), which helps on demanding domains. When general ability does not matter and compute is available, full fine-tuning is a reasonable call; otherwise PEFT is usually the default.",
+    "reference": "https://arxiv.org/abs/2405.09673",
+    "source": "interview:llm-full-finetune-vs-peft",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://sebastianraschka.com/faq/docs/full-finetuning-vs-lora-cost.html",
+        "https://www.techinterview.org/post/3233474925/ml-engineer-interview-post-llm-era/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TRN-045",
+    "domain": 1,
+    "skill": "training-alignment",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Logit distillation: minimise KL between teacher and student distributions at every position",
+        "why": "This needs the teacher's full distribution over a shared vocabulary, which you have neither of."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Fine-tune the student on the teacher's generated responses",
+        "why": "Teacher text is tokenizer-agnostic, so standard SFT on the teacher's outputs works with only API access."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Copy the teacher's embedding matrix into the student so their vocabularies line up",
+        "why": "You have no access to the teacher's weights, and different sizes and tokenizers make copying meaningless."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use the teacher as a frozen reference model in DPO",
+        "why": "DPO needs log-probabilities from the reference model, which the API does not return."
+      }
+    ],
+    "stem": "You want to distil a large teacher into a 3B student. The teacher is only reachable through an API that returns generated text with no token probabilities, and it uses a different tokenizer from the student. Which approach works?",
+    "explanation": "Distillation comes in two common forms: matching soft distributions (needs logits and a shared vocabulary) and training on teacher-generated text (needs only outputs). Generated-text distillation, sometimes with the teacher's rationales as extra supervision, is the usual choice when the teacher is a black box. Always check the teacher's terms of use first.",
+    "reference": "https://arxiv.org/abs/1503.02531",
+    "source": "interview:llm-knowledge-distillation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://huggingface.co/docs/trl/index"
+      ]
+    },
+    "roleLevel": 4
+  }
+]
