@@ -1,0 +1,35 @@
+{
+  "streaming-callbacks-async": {
+    "summary": "Streaming cuts time to first token, not total latency, and a chain streams end to end only if every step after the model can transform a stream. Know the three ways to watch a run (stream/astream output chunks, astream_events for every component, agent stream modes), how callback handlers hook into it, and how the async methods behave when a component has no native async code.",
+    "points": [
+      "Every Runnable has `invoke`, `batch`, `stream` and async twins `ainvoke`, `abatch`, `astream`, plus `batch_as_completed`/`abatch_as_completed` and `astream_events`. `astream` is an async generator: iterate it with `async for`, never `await` it.",
+      "`stream` yields the last step's output chunk by chunk: a chat model yields `AIMessageChunk`s, and `StrOutputParser` turns each into a string. A plain function (`RunnableLambda`) needs its whole input, so placed after the model it holds back the output until the end; placed before the model it costs nothing.",
+      "To keep streaming through custom code, pipe a generator function that takes an iterator of chunks; it is coerced to a `RunnableGenerator`. Wrapping the same generator in `RunnableLambda` first collects the whole input, then calls it.",
+      "`astream_events` defaults to `version=\"v2\"` in langchain-core 1.x. Events are named `on_<type>_<start|stream|end>`: `on_chat_model_stream` carries `data[\"chunk\"]`, parsers emit `on_parser_*`, tools and retrievers emit only start and end. Inner model tokens appear even when a later step blocks the final output.",
+      "Filter events with `include_names`, `include_types` (`chat_model`, `llm`, `parser`, `prompt`, `retriever`, `tool`, `chain`) and `include_tags`; include filters combine with OR, and `exclude_*` filters remove matches. Tags are inherited by child runs.",
+      "Chat models auto-stream: when a streaming-aware handler is attached (`astream_events`, LangGraph `messages` mode), `invoke` uses the streaming API internally and still returns one `AIMessage`. `disable_streaming=True` makes `stream` return a single chunk; `\"tool_calling\"` disables it only when tools are bound.",
+      "`create_agent` agents stream with `stream_mode`: `updates` gives per-step dicts keyed by node (`model`, `tools`), `messages` gives `(token, metadata)` tuples with `metadata[\"langgraph_node\"]`, `custom` gives whatever tools send through `get_stream_writer()`, `values` gives full state. A list of modes yields `(mode, chunk)` tuples; `version=\"v2\"` yields `StreamPart` dicts. The docs recommend `stream_events(version=\"v3\")` for new apps.",
+      "Callback handlers subclass `BaseCallbackHandler` (or `AsyncCallbackHandler`) and override hooks such as `on_chat_model_start`, `on_llm_new_token(token, **kwargs)`, `on_llm_end`, `on_chain_*`, `on_tool_*`, `on_retriever_*` and `on_custom_event`. If `on_chat_model_start` is not implemented, chat models fall back to `on_llm_start` with stringified messages.",
+      "Handler errors are logged and swallowed unless the handler sets `raise_error = True`. In async runs, sync handlers run in a thread executor (unless `run_inline = True`) and async handlers are awaited on the loop. One handler instance serves concurrent runs, so key per-call state by `run_id`.",
+      "`dispatch_custom_event(name, data)` (or `adispatch_custom_event`) inside a Runnable or tool surfaces as `on_custom_event` in `astream_events` v2 and in handlers' `on_custom_event`; outside a run it raises `RuntimeError`.",
+      "Default async methods run the sync code in asyncio's thread pool, so a sync-only component still works under `await` without blocking the loop. `max_concurrency` in the config caps parallel calls for `batch`/`abatch`; `return_exceptions=True` returns failures in place; `abatch_as_completed` yields `(index, result)` out of order.",
+      "LangChain passes config through context variables. Before Python 3.11, asyncio tasks cannot carry a context, so in async code pass `config` explicitly to `ainvoke`/`astream`/`adispatch_custom_event`, and take a `writer` parameter instead of calling `get_stream_writer()`. In Jupyter use top-level `await`, not `asyncio.run`."
+    ],
+    "traps": [
+      "Streaming does not reduce total generation time or token cost; it only shows the first tokens sooner.",
+      "A post-processing `RunnableLambda` at the end of a chain silently turns a token stream into one chunk at the end.",
+      "Calling sync `chain.invoke` or iterating `chain.stream` inside an `async def` FastAPI endpoint blocks the event loop and prevents cancellation on disconnect; use `ainvoke`/`astream`.",
+      "SSE frames end at a blank line, so a raw newline in a token breaks the frame; JSON-encode payloads. Clients must buffer across network chunks, because one chunk can hold part of a frame.",
+      "A tool that calls `get_stream_writer()` fails when invoked directly outside a LangGraph run, which breaks naive unit tests.",
+      "Naming the token parameter anything other than `token` in a sync `on_llm_new_token` makes every call fail, and the error is only logged.",
+      "Storing per-call state such as a start time on `self` in a handler gives wrong numbers under `abatch` or concurrent requests."
+    ],
+    "docs": [
+      { "title": "LangChain: Streaming", "url": "https://docs.langchain.com/oss/python/langchain/streaming" },
+      { "title": "LangGraph: Streaming", "url": "https://docs.langchain.com/oss/python/langgraph/streaming" },
+      { "title": "Runnable.astream_events reference", "url": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events" },
+      { "title": "Runnable reference", "url": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable" },
+      { "title": "BaseCallbackHandler reference", "url": "https://reference.langchain.com/python/langchain-core/callbacks/base/BaseCallbackHandler" }
+    ]
+  }
+}
