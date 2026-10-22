@@ -1,0 +1,2208 @@
+[
+  {
+    "id": "LCH-TLS-001",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nfrom langchain.tools import tool\n\n@tool\ndef multiply(a: int, b: int) -> int:\n    \"\"\"Multiply two integers.\"\"\"\n    return a * b\n\nprint(type(multiply).__name__, multiply.invoke({\"a\": 3, \"b\": 4}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`TypeError`, because a tool must be called as `multiply(3, 4)`",
+        "why": "Tools are Runnables and take a single input; `invoke` with a dict of arguments is the normal way to call them."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`StructuredTool 12`",
+        "why": "`@tool` wraps the function in a `StructuredTool`, and `invoke` with an argument dict runs it and returns the plain result."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`function 12`",
+        "why": "The decorator replaces the function with a tool object; `multiply` is no longer a plain function."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`StructuredTool ToolMessage(content='12')`",
+        "why": "A `ToolMessage` comes back only when you invoke with a full tool call (name, args, id, type). A bare argument dict returns the raw value."
+      }
+    ],
+    "explanation": "`@tool` turns a typed, documented function into a `StructuredTool` (a `BaseTool` and a Runnable). `tool.invoke({...})` validates the dict against the inferred schema and returns whatever the function returns, here the int `12`. Passing a model's tool call instead of a bare dict makes the same call return a `ToolMessage`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/convert/tool",
+    "source": "interview:lc-tool-decorator",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-002",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "When you call `model.bind_tools([get_weather]).invoke(\"Weather in Pune?\")` outside an agent, LangChain runs `get_weather` for you and returns its result inside the `AIMessage`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Binding only sends the tool definitions to the model; nothing executes the function on your behalf."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the model only returns a request in `AIMessage.tool_calls`; your code (or an agent runtime) must run the tool and send back a `ToolMessage`."
+      }
+    ],
+    "explanation": "Tool calling means the model emits a structured request (tool name, arguments, call id). It never runs your code. Outside an agent you read `ai_msg.tool_calls`, execute each tool and append the results as `ToolMessage`s before calling the model again; `create_agent` automates exactly this loop.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-tool-calling-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/"
+      ],
+      "companies": [
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-003",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when Python reaches this definition?\n\n```python\nfrom langchain.tools import tool\n\n@tool\ndef get_stock(sku: str) -> int:\n    return 3\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It works, and the tool description is an empty string",
+        "why": "The decorator does not fall back to an empty description; it needs one from somewhere."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It works, and the description is generated from the function name `get_stock`",
+        "why": "LangChain does not invent a description from the name; you supply a docstring or `description=`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It works until the model calls the tool, and then raises `ValueError`",
+        "why": "The check happens immediately when the decorator runs, not later at call time."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It raises `ValueError` as soon as the decorator runs",
+        "why": "With no docstring and no `description=` argument, `@tool` refuses to build the tool, since the model would have nothing explaining when to use it."
+      }
+    ],
+    "explanation": "The tool description is what the model reads to decide when to call a tool, so `@tool` requires a docstring or an explicit `description=`. In langchain-core 1.7 the missing docstring raises `ValueError: Function must have a docstring if description not provided.` as soon as the decorator runs.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/convert/tool",
+    "source": "interview:lc-tool-decorator",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-004",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "After `ai_msg = model_with_tools.invoke(messages)`, which attribute of `ai_msg` holds the list of tool calls the model wants you to run? Type the attribute name.",
+    "options": [],
+    "accepted": [
+      "tool_calls",
+      "ai_msg.tool_calls",
+      ".tool_calls"
+    ],
+    "explanation": "`AIMessage.tool_calls` is a list of dicts, each with `name`, `args` (already parsed into a dict), `id` and `type: \"tool_call\"`. It is empty when the model answered without calling a tool, which is also the usual stop condition for a tool loop. Calls whose arguments could not be parsed go to `invalid_tool_calls` instead.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "source": "interview:lc-tool-calling-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/"
+      ],
+      "companies": [
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-005",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each piece of LangChain's tool-calling flow with the job it does.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`bind_tools`",
+        "why": "Sends tool schemas to the model with each call."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`AIMessage.tool_calls`",
+        "why": "The model's requests: name, args and id."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`ToolMessage`",
+        "why": "Carries a tool's result back to the model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`@tool`",
+        "why": "Builds a tool and its schema from a function."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Make the chat model aware of which tools exist and what arguments they take",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Read which tools the model asked for on this turn, and with what arguments",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Report the output of a tool you ran, linked to the request by its id",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Turn a typed Python function with a docstring into something a model can call",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The flow is: define tools (`@tool`), attach them to the model (`bind_tools`), read the model's requests (`AIMessage.tool_calls`), run the tools, and reply with one `ToolMessage` per call, whose `tool_call_id` matches the request. Then call the model again so it can use the results.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-tool-calling-basics",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/"
+      ],
+      "companies": [
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-006",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a live coding round you write `model.bind_tools([get_weather])` and then call `model.invoke(\"Weather in Delhi?\")`. The reply never contains a tool call. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The model needs `tool_choice=\"auto\"` before it will consider tools",
+        "why": "Without `tool_choice`, the model is already free to choose a bound tool. The tools simply were not bound here."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`bind_tools` must be called after the first `invoke`, not before",
+        "why": "Order is not the issue; the tools are never attached to the object being invoked."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`bind_tools` returned a new Runnable that was never used",
+        "why": "Binding returns a new object with the tools attached. Assign it (`llm = model.bind_tools([...])`) and invoke that."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Tools only work through `create_agent`, never on a bare model",
+        "why": "A bound chat model can return tool calls directly; agents just automate running them."
+      }
+    ],
+    "explanation": "Like other Runnable configuration methods, `bind_tools` does not mutate the model; it returns a new Runnable that sends the tool schemas on every call. The fix is `llm_with_tools = model.bind_tools([get_weather])` and then `llm_with_tools.invoke(...)`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-coding-agent-one-tool",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ],
+      "companies": [
+        "Curling AI"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-007",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "For a plain `@tool` function with type hints and a one-line docstring, which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The return annotation is added to the schema so the model knows what it will get back",
+        "why": "The function-calling schema describes inputs only; the `-> int` annotation is not part of it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The function body is sent to the model so it can see what the tool does",
+        "why": "Only the name, description and argument schema are sent; the implementation stays on your side."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The tool name defaults to the function name",
+        "why": "`@tool` uses `func.__name__` unless you pass a name, as in `@tool(\"web_search\")`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The parameter type hints become the argument schema the model sees",
+        "why": "Annotations such as `a: int` become JSON-schema types, and parameters without defaults become required."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Parameters with default values are left out of the schema",
+        "why": "They stay in the schema with their default and are simply not listed as required."
+      }
+    ],
+    "explanation": "`convert_to_openai_tool(multiply)` shows exactly what a provider receives: `name`, `description` (the docstring) and `parameters` (properties, types and a `required` list built from the signature). Defaults appear as `default` values. The body and return type are never sent.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-tool-decorator",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-008",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A third-party package gives you a toolkit object, for example a SQL database toolkit. How do you hand its tools to a model or agent?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Call `toolkit.get_tools()` and pass the returned list of tools",
+        "why": "A toolkit is a `BaseToolkit` whose `get_tools()` returns a list of related `BaseTool` objects."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pass the toolkit object itself to `bind_tools`",
+        "why": "`bind_tools` expects tools, dicts, functions or Pydantic classes, not a toolkit container."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Subclass the toolkit and decorate it with `@tool`",
+        "why": "`@tool` wraps functions or Runnables, not toolkit classes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Register it globally with `langchain.tools.register(toolkit)`",
+        "why": "There is no global tool registry; tools are passed explicitly to each model or agent."
+      }
+    ],
+    "explanation": "`langchain_core.tools.BaseToolkit` is a small abstract class: a group of related tools that share configuration (a database connection, an API client). Its one required method, `get_tools()`, returns `list[BaseTool]`, which you pass to `bind_tools` or `create_agent(tools=...)` like any other tools.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "docs",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-TLS-009",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `search.args` contain?\n\n```python\n@tool\ndef search(query: str, limit: int = 5) -> str:\n    \"\"\"Search the catalog.\n\n    Args:\n        query: Free-text search terms.\n        limit: Max results.\n    \"\"\"\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Only `query`, because parameters with defaults are hidden from the model",
+        "why": "Parameters with defaults stay in the schema; they are just not required."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Both arguments with types and `limit`'s default, but no descriptions",
+        "why": "Without `parse_docstring=True` the schema comes from the signature only, and the whole docstring, `Args:` block included, becomes the tool description."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`query` and `limit`, each with the description from the `Args:` section",
+        "why": "That needs `@tool(parse_docstring=True)`; by default the `Args:` block is not parsed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An empty dict, because the docstring did not use Pydantic `Field` objects",
+        "why": "Type hints alone are enough to build the schema; `Field` is only needed for extra metadata."
+      }
+    ],
+    "explanation": "By default `@tool` builds the argument schema from type hints and defaults, and uses the full docstring as the description. With `@tool(parse_docstring=True)`, it parses a Google-style `Args:` section into per-argument descriptions and keeps only the summary as the tool description. Invalid Google-style docstrings then raise `ValueError` unless `error_on_invalid_docstring=False`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/convert/tool",
+    "source": "interview:lc-tool-decorator",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-010",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "What ends up in the schema the model sees for this tool? (Choose two.)\n\n```python\nfrom typing import Annotated, Literal\n\n@tool\ndef weather(city: Annotated[str, \"City name\"], unit: Literal[\"c\", \"f\"] = \"c\") -> str:\n    \"\"\"Get current weather.\"\"\"\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`unit` is restricted to the enum values `c` and `f`, with default `c`",
+        "why": "`Literal` becomes a JSON-schema `enum`, so the model is told the only valid values."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`unit` is required, because it has a type annotation",
+        "why": "It has a default, so it is optional in the schema."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Both arguments are plain strings with no extra metadata",
+        "why": "`Annotated` text and `Literal` values are both carried into the schema."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`city` is renamed to `City name` in the schema",
+        "why": "The text is a description; the property is still called `city`."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "`city` has the description `City name`",
+        "why": "A string in `Annotated[...]` metadata becomes the argument's description."
+      }
+    ],
+    "explanation": "`weather.args` gives `city: {type: string, description: 'City name'}` and `unit: {type: string, enum: ['c', 'f'], default: 'c'}`. Descriptions and enums are cheap ways to steer the model's arguments without writing a separate Pydantic `args_schema`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-args-schema",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-011",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `result` hold?\n\n```python\ntc = {\"name\": \"multiply\", \"args\": {\"a\": 2, \"b\": 5}, \"id\": \"call_1\", \"type\": \"tool_call\"}\nresult = multiply.invoke(tc)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An `AIMessage` whose `tool_calls` contains the result",
+        "why": "Tool results travel in `ToolMessage`s, not in `AIMessage`s."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `ValidationError`, because `name` and `id` are not parameters of `multiply`",
+        "why": "The tool recognises the tool-call shape and validates only `args`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The int `10`",
+        "why": "A bare argument dict returns the raw value; a full tool call returns a message."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A `ToolMessage` linked to `call_1`, with content `'10'`",
+        "why": "Invoking a tool with a model's tool call returns a ready-made `ToolMessage` linked to that call's id."
+      }
+    ],
+    "explanation": "Passing an item of `ai_msg.tool_calls` straight to `tool.invoke` is the idiomatic way to run it: you get back a `ToolMessage` with the stringified output and the right `tool_call_id`, ready to append to the conversation. The `type: \"tool_call\"` key matters; without it the dict is treated as plain arguments and validation fails.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-bind-tools-loop",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Curling AI",
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-012",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You bind three tools with `model.bind_tools(tools, tool_choice=\"any\")`. What does that change on each call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It must call one of the bound tools, but may pick which",
+        "why": "`\"any\"` forces a tool call, but the model still picks which tool."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LangChain picks a random tool and executes it",
+        "why": "LangChain does not choose or run tools; `tool_choice` is passed to the provider."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The model must call every bound tool once",
+        "why": "Forcing a tool call does not mean calling all of them."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The model may answer in text or call a tool, as it prefers",
+        "why": "That is the default behaviour when `tool_choice` is not set."
+      }
+    ],
+    "explanation": "By default the model decides whether to call a tool. `tool_choice=\"any\"` forces some tool call; `tool_choice=\"<tool name>\"` forces that specific tool. Forcing is useful for extraction-style steps, but in a loop it can stop the model from ever giving a final text answer, so it is usually applied to one step only.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-tool-choice",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/models"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-013",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "Complete the keyword so that a provider that supports it returns at most one tool call per turn:\n\n```python\nllm = model.bind_tools([get_weather], ________=False)\n```\n\nType the keyword.",
+    "options": [],
+    "accepted": [
+      "parallel_tool_calls"
+    ],
+    "explanation": "Most tool-calling models may return several tool calls in one `AIMessage`. Some providers, including OpenAI and Anthropic, let you disable that with `parallel_tool_calls=False`, passed through `bind_tools`. It is useful when one call's arguments depend on another call's result.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-tool-choice",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/models"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-014",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What is true of `adder` here?\n\n```python\nfrom langchain_core.tools import StructuredTool\n\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers.\"\"\"\n    return a + b\n\nadder = StructuredTool.from_function(add)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It is a `BaseTool` subclass that you must instantiate before use",
+        "why": "`from_function` already returns an instance, ready to invoke or bind."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It needs explicit `name`, `description` and `args_schema`, or `from_function` raises",
+        "why": "All three are inferred from the function, just as `@tool` does."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Metadata is inferred, and `ainvoke` runs `add` in a thread",
+        "why": "Like `@tool`, `from_function` infers metadata, and async calls fall back to the sync function in a thread."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`await adder.ainvoke(...)` raises, because no `coroutine=` was passed",
+        "why": "Without a coroutine, async calls run the sync function in an executor."
+      }
+    ],
+    "explanation": "`StructuredTool.from_function(func=..., coroutine=..., name=..., description=..., args_schema=...)` is the explicit form of `@tool`. It is handy when you build tools from existing functions at runtime or want a separate native async implementation (`coroutine=`). Without one, `ainvoke` runs the sync function in a thread executor.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "docs",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-TLS-015",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "For `@tool def multiply(a: int, b: int)`, calling `multiply.invoke({\"a\": \"3\", \"b\": 4})` raises a validation error, because `\"3\"` is a string.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Pydantic's default (lax) validation converts a numeric string to an int, so this call succeeds."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the argument schema is a Pydantic model in lax mode, so `\"3\"` becomes `3` and the call returns `12`."
+      }
+    ],
+    "explanation": "Tool input is validated with a Pydantic model built from the signature. Lax mode coerces values such as `\"3\"` to `3`, while truly invalid input (`\"x\"`, or a missing argument) raises `ValidationError`. Models usually send correct JSON types, but this is why type hints matter even for simple tools.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/convert/tool",
+    "source": "interview:lc-tool-decorator",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-016",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of a hand-written tool-calling loop in order, for a question that needs one tool.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Bind the tools: `llm = model.bind_tools(tools)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Invoke `llm` with the messages and append the returned `AIMessage`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "For each item in `ai_msg.tool_calls`, run `tools_by_name[tc[\"name\"]].invoke(tc)` and append the `ToolMessage`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Invoke `llm` again with the full message list",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Stop when the latest `AIMessage` has no `tool_calls`, and return its content",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "The model's `AIMessage` must go into the history before the `ToolMessage`s that answer it, and each `ToolMessage` carries the matching `tool_call_id`. The loop repeats steps 2 to 4 until the model replies without tool calls; real code also caps the number of iterations.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-bind-tools-loop",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Curling AI",
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-017",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `search_orders` tool fetches 500 order rows. The model only needs a short summary, but your UI must render the full rows from the same call. Which tool design fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Store the rows in a global variable and return only the summary",
+        "why": "That works for one user at a time but breaks under concurrency and loses the link to the specific tool call."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Use `@tool(response_format=\"content_and_artifact\")` and return `(summary, rows)`",
+        "why": "The first element becomes the `ToolMessage` content the model reads; the rows go on `ToolMessage.artifact`, which is not sent to the model."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `return_direct=True` so the rows go straight to the user",
+        "why": "That skips the model entirely; you lose the model's summary and any follow-up reasoning."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return the 500 rows as the tool output and tell the model in the prompt to ignore most of them",
+        "why": "Every row still goes into the context window and costs tokens on each later call."
+      }
+    ],
+    "explanation": "With `response_format=\"content_and_artifact\"` the function returns a two-tuple. When invoked with a tool call, the result is `ToolMessage(content=summary, artifact=rows)`. Your code can read `artifact`; the provider never receives it. If the function returns something other than a two-tuple, the tool raises `ValueError`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "source": "docs",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-TLS-018",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The model sometimes calls `place_order` with `qty: 0`. Which `args_schema` makes the tool reject that before your code runs, and tells the model the rule in the schema?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`qty: str`, then parse it with `int()` in the body",
+        "why": "Loosening the type removes the help the schema gives the model and still accepts `\"0\"`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`qty: Optional[int] = None`, then check for `None` in the body",
+        "why": "That makes the argument optional; `0` is still accepted."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`qty: int = Field(ge=1, description=\"Quantity\")` in a Pydantic model",
+        "why": "The constraint is enforced by validation (a `ValidationError` for `0`) and appears in the schema as `minimum: 1`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`qty: int` with the docstring line \"qty must be positive\"",
+        "why": "A docstring hint is advisory; nothing validates it, and `0` still reaches your function."
+      }
+    ],
+    "explanation": "Pass a Pydantic model as `@tool(args_schema=OrderIn)`. Field constraints such as `ge=1` serve twice: they show up in the JSON schema sent to the model (`minimum: 1`) and they are enforced when the tool is invoked. Add a field `description` for anything the model needs to know about the argument.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-args-schema",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-019",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What is `lookup.description`?\n\n```python\n@tool(\"lookup_order\", description=\"Find an order by its id\")\ndef lookup(order_id: str) -> str:\n    \"\"\"Internal helper, do not call.\"\"\"\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`\"Internal helper, do not call.\"`",
+        "why": "The docstring is only the fallback when no `description` is given."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`\"lookup_order\"`",
+        "why": "That string is the tool's name, not its description."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Both strings joined together",
+        "why": "LangChain uses one source, in priority order; it does not concatenate them."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`\"Find an order by its id\"`",
+        "why": "An explicit `description=` wins over the docstring."
+      }
+    ],
+    "explanation": "The tool's name comes from the first positional string (`lookup_order`), otherwise the function name. The description comes from `description=` first, then the docstring, then the `args_schema` docstring. That is handy when a docstring is written for developers but the model needs different wording.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/convert/tool",
+    "source": "interview:lc-tool-decorator",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-020",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After the tool runs, the second model call fails with a provider error saying a tool result does not match any tool call. What is the fix?\n\n```python\nai = llm.invoke(messages)\nmessages.append(ai)\nfor tc in ai.tool_calls:\n    out = tools_by_name[tc[\"name\"]].invoke(tc[\"args\"])\n    messages.append(ToolMessage(content=str(out), tool_call_id=\"1\"))\nllm.invoke(messages)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Set `tool_call_id=tc[\"id\"]`, or append `tool.invoke(tc)`",
+        "why": "Each result must carry the id of the call it answers; invoking with the whole tool call does that for you."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Rebind the tools before the second call",
+        "why": "The bound tools are unchanged; the hard-coded id is what breaks the conversation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Convert `out` to JSON with `json.dumps` before building the message",
+        "why": "Content format is not the problem; the link between result and request is."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put the `ToolMessage`s before the `AIMessage` in `messages`",
+        "why": "Results must come after the request they answer; the order is already right."
+      }
+    ],
+    "explanation": "`ToolMessage.tool_call_id` must equal the `id` of the tool call in the preceding `AIMessage`. Providers use it to pair each result with its request, especially when one turn has several calls. Passing `tc` itself to `tool.invoke` returns a `ToolMessage` with the right id and name.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "source": "interview:lc-tool-call-id-debug",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/messages"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-021",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "One `AIMessage` contains two tool calls, `get_price` (id `c1`) and `get_stock` (id `c2`). Your loop appends only the `get_price` result before calling the model again. What should the next request contain instead?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing changes; the model will ask for `get_stock` again on the next turn",
+        "why": "The history now has an unanswered tool call, which providers treat as an invalid conversation."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "One `ToolMessage` per call, with ids `c1` and `c2`",
+        "why": "Every tool call in the turn needs its own result, linked by its own id, before the next model call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A single `ToolMessage` that combines both results, with `tool_call_id=\"c1\"`",
+        "why": "Each call needs its own result; folding both into one message leaves `c2` unanswered."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A new `HumanMessage` repeating the question",
+        "why": "That does not answer the outstanding tool calls."
+      }
+    ],
+    "explanation": "Parallel tool calls are answered one-for-one: a `ToolMessage` per call, each with its own `tool_call_id`. The results may be computed in any order (even concurrently), but they must all be in the history before the model is called again. If a call fails, send an error `ToolMessage` for it rather than dropping it.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-parallel-tool-calls",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://docs.langchain.com/oss/python/langchain/models",
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-022",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `boom.invoke(tc)` return here, where `tc` is a model tool call with id `c2`?\n\n```python\nfrom langchain.tools import tool, ToolException\n\n@tool\ndef boom(x: int) -> str:\n    \"\"\"Call the flaky service.\"\"\"\n    raise ToolException(\"service down\")\n\nboom.handle_tool_error = True\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It raises `ToolException(\"service down\")`",
+        "why": "That is the default (`handle_tool_error=False`); here handling is turned on."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`None`, because the exception is swallowed",
+        "why": "Handled errors become tool output so the model can react; they are not discarded."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "An error `ToolMessage` whose content is `service down`",
+        "why": "With handling on, the exception message becomes the tool output, and a tool-call invocation marks it as an error result."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `ToolMessage` with an empty content and `status='success'`",
+        "why": "The error text is returned, and the status records that the call failed."
+      }
+    ],
+    "explanation": "`handle_tool_error` controls what happens to a `ToolException`: `False` re-raises, `True` returns the exception message, a string returns that string, and a callable receives the exception and returns the output. When the tool was invoked with a tool call, the handled content is wrapped in a `ToolMessage` with `status=\"error\"`, so the model can retry or explain.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/base/BaseTool",
+    "source": "interview:lc-tool-errors",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-023",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate sets `get_price.handle_tool_error = True`, expecting the model to see any failure as text. `get_price` does `return PRICES[sku]`, and the model sends an unknown SKU. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`get_price` is retried until it succeeds",
+        "why": "`handle_tool_error` never retries."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The model receives the `KeyError` message as a `ToolMessage`",
+        "why": "Only `ToolException` is covered by `handle_tool_error`; other exceptions are not converted."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The tool returns `None` and the model sees an empty result",
+        "why": "Nothing turns the exception into `None`; it is raised."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The `KeyError` is raised out of `invoke` unchanged",
+        "why": "To use the flag, catch expected failures inside the tool and raise `ToolException`, or handle errors around the call."
+      }
+    ],
+    "explanation": "`handle_tool_error` is scoped to `ToolException` on purpose: you decide which failures are expected and safe to show the model (\"unknown SKU\"), and unexpected bugs still surface. A common pattern is `except KeyError: raise ToolException(f\"Unknown SKU {sku}\")`. Inside `create_agent`, broader handling belongs in tool middleware.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/base/BaseTool",
+    "source": "interview:lc-tool-errors",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-024",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Given this tool, which statements are true? (Choose two.)\n\n```python\nfrom typing import Annotated\nfrom langchain.tools import tool, InjectedToolArg\n\n@tool\ndef get_orders(status: str, user_id: Annotated[str, InjectedToolArg]) -> str:\n    \"\"\"List the user's orders with the given status.\"\"\"\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LangChain fills `user_id` automatically from the `RunnableConfig`",
+        "why": "`InjectedToolArg` only hides the argument; nothing fills it for you in a hand-written loop."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The model can still pass `user_id`, but is told not to",
+        "why": "The model is not told about the argument at all."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`user_id` is missing from `get_orders.args` and from the schema sent by `bind_tools`",
+        "why": "Injected arguments are stripped from `tool_call_schema`, which is what the model sees."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`InjectedToolArg` makes the value read-only inside the function",
+        "why": "It is an annotation about the schema; it adds no runtime protection to the value."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Calling `get_orders.invoke({\"status\": \"open\"})` raises a validation error",
+        "why": "The argument is hidden from the model, not optional; your code must still supply it at execution time."
+      }
+    ],
+    "explanation": "`InjectedToolArg` marks an argument as supplied at runtime rather than by the model: it is left out of the schema sent to the model but remains a required input to the tool. In a manual loop you add it to the call's `args` before invoking; inside `create_agent`, the newer `ToolRuntime` parameter is the recommended way to reach state and context.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/base/InjectedToolArg",
+    "source": "interview:lc-tool-runtime-injected",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-025",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens on the last line?\n\n```python\nfrom typing import Annotated\nfrom langchain.tools import tool, InjectedToolCallId\n\n@tool\ndef remember(note: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> str:\n    \"\"\"Remember a note.\"\"\"\n    return f\"{note} via {tool_call_id}\"\n\nremember.invoke({\"note\": \"hi\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It returns `\"hi via None\"`",
+        "why": "The id is not defaulted to `None`; the tool refuses to run without one."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`ValueError`: it needs a full tool call to get the id",
+        "why": "The id can only come from a tool call dict with `name`, `args`, `id` and `type`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It returns a `ToolMessage` with a randomly generated `tool_call_id`",
+        "why": "LangChain does not invent ids; the call must come from a model tool call."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It returns `\"hi via remember\"`, using the tool name as the id",
+        "why": "The tool name is never used as a call id."
+      }
+    ],
+    "explanation": "`InjectedToolCallId` injects the id of the current tool call, which is useful when a tool builds its own `ToolMessage` or a `Command`. The argument is hidden from the model, and invoking with plain arguments raises `ValueError`. With `tc = {\"name\": \"remember\", \"args\": {\"note\": \"hi\"}, \"id\": \"c42\", \"type\": \"tool_call\"}` it returns a `ToolMessage` reading `hi via c42`. In 1.x the docs prefer `runtime.tool_call_id` via `ToolRuntime`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "docs",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-TLS-026",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A tool is declared as `def whoami(greeting: str, runtime: ToolRuntime) -> str`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`ToolRuntime` replaces `bind_tools`, so the tool does not need to be bound",
+        "why": "It is about what a running tool can read, not about which tools the model is told about."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Inside `create_agent`, `runtime` exposes things such as `state`, `context`, `store`, `stream_writer` and `tool_call_id`",
+        "why": "These are the fields LangChain injects when the agent executes the tool."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`runtime` must be the first parameter, or it is sent to the model",
+        "why": "Position does not matter; the type annotation is what marks it."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The model's schema contains only `greeting`",
+        "why": "A `ToolRuntime` parameter is excluded from `tool_call_schema`, so the model never sees or fills it."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Calling `whoami.invoke(tc)` in a plain script fills `runtime` with an empty default",
+        "why": "Outside an agent nothing builds the runtime, and validation fails because `runtime` is missing."
+      }
+    ],
+    "explanation": "`ToolRuntime` is the 1.x way to give a tool access to agent state, runtime context (such as a user id), the long-term store, a stream writer, the config and its own `tool_call_id`, all hidden from the model. It replaces the older `InjectedState`, `InjectedStore` and `InjectedToolCallId` patterns. The docs also reserve the parameter names `config` and `runtime`, so do not use them for ordinary model-facing arguments.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-tool-runtime-injected",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-027",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "With `sq.handle_validation_error = True` on `@tool def sq(x: int)`, invoking it with a tool call whose args are `{\"x\": \"abc\"}` returns a `ToolMessage` instead of raising.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: with the flag on, the `ValidationError` is caught and the output is the text `Tool input validation error`, marked as an error result."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "`handle_validation_error` exists for exactly this case: bad arguments become tool output instead of an exception."
+      }
+    ],
+    "explanation": "`handle_validation_error` is the sibling of `handle_tool_error`, but for argument validation failures. `True` returns a generic `Tool input validation error`, a string returns that string, and a callable can build a more helpful message (for example, listing the expected types) so the model can correct its next call. Both flags default to `False`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/base/BaseTool",
+    "source": "docs",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-TLS-028",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "A tool raises `ToolException(\"rate limited\")`. Match each `handle_tool_error` setting with the result of invoking it with a tool call.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`False` (the default)",
+        "why": "Re-raises the exception."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`True`",
+        "why": "Returns the exception's message."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`\"Try again later\"`",
+        "why": "Returns that fixed string."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`lambda e: f\"ERR: {e}\"`",
+        "why": "Returns whatever the callable builds."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The `ToolException` propagates out of `invoke`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "An error `ToolMessage` whose content is `rate limited`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "An error `ToolMessage` whose content ignores what went wrong",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "An error `ToolMessage` whose content is `ERR: rate limited`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Each handled result is wrapped in a `ToolMessage` with `status=\"error\"` when the tool is invoked with a tool call. A fixed string hides details (useful when error text may leak internals), while a callable can add guidance such as \"wait and retry with a smaller page size\".",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/base/BaseTool",
+    "source": "interview:lc-tool-errors",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-029",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "While streaming from a tool-bound model, you print `chunk.tool_calls` on every chunk and see `{'sku': 'A1'}` even though the final call is `{'sku': 'A1', 'qty': 2}`. What is the right way to get the complete arguments?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Disable streaming, because tool calls cannot be streamed",
+        "why": "Tool calls do stream, as `tool_call_chunks`; they just need to be accumulated."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Sum the chunks and read `tool_calls` on the result",
+        "why": "Chunks merge by `index`, joining the argument fragments, so the accumulated message has the full arguments."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Read `chunk.invalid_tool_calls`, which holds the remaining arguments",
+        "why": "Partial JSON on one chunk is parsed as far as possible into `tool_calls`; it is not split across the two lists."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `json.loads` on each chunk's `tool_call_chunks[0][\"args\"]`",
+        "why": "A single chunk holds a fragment of the JSON text, which usually does not parse on its own."
+      }
+    ],
+    "explanation": "Streamed tool calls arrive as `tool_call_chunks` with `name`, `id`, an `index` and a fragment of the argument JSON. `AIMessageChunk` addition concatenates fragments with the same `index`. On a lone chunk, `tool_calls` shows a best-effort partial parse, which is why it looked like `qty` was missing. Only act on the arguments once the message is complete.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "docs",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-TLS-030",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks how MCP relates to tool calling in a LangChain app. Which answer is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "MCP tools only work with Anthropic models, while `@tool` works with every provider",
+        "why": "Once adapted, MCP tools are LangChain tools and can be bound to any tool-calling model."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "MCP replaces tool calling: the model talks to MCP servers directly, so no tool calls appear in `AIMessage`",
+        "why": "In LangChain, MCP tools are adapted into ordinary tools, and the model still requests them through tool calls."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "MCP standardises tool serving; the adapted tools are still invoked via tool calls",
+        "why": "Discovery and serving follow the protocol; invocation still goes through tool calls."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "MCP is a prompt format that tells the model to print JSON instead of using native function calling",
+        "why": "MCP is a client-server protocol for exposing tools and context, not a prompt format."
+      }
+    ],
+    "explanation": "The Model Context Protocol is an open protocol for applications to expose tools and context to models. LangChain's adapter (`langchain.mcp.MCPAdapter` in langchain 1.4+, beta; earlier `langchain-mcp-adapters`) connects to MCP servers over stdio or streamable HTTP and returns LangChain tools from `await adapter.list_tools()`. You pass those to `create_agent` or `bind_tools`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/mcp",
+    "source": "interview:lc-mcp-tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/"
+      ],
+      "companies": [
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-031",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "`@tool` can take a tool's description from several places. Order them from highest priority (used first) to lowest.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `description=` argument to `@tool`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The function's docstring",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The docstring of the Pydantic class passed as `args_schema`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explanation": "An explicit `description=` always wins. Otherwise the function docstring is used (summary only when `parse_docstring=True`). If the function has no docstring, the `args_schema` class docstring is the fallback; with none of the three, the decorator raises `ValueError`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/convert/tool",
+    "source": "docs",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-TLS-032",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `tool_choice` and `parallel_tool_calls` in `bind_tools` are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Every provider supports the same `tool_choice` values and `parallel_tool_calls`",
+        "why": "Support differs by provider; check the provider's reference."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`tool_choice=\"any\"` makes LangChain execute the selected tool automatically",
+        "why": "Forcing a call still only produces a request; your code runs it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`parallel_tool_calls=False` asks the model for at most one tool call per turn, where the provider supports it",
+        "why": "It changes what the model returns; it is supported by some providers, such as OpenAI and Anthropic."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`parallel_tool_calls=False` makes LangChain run several returned calls one after another",
+        "why": "LangChain does not run tools from a bound model at all; the flag limits what the model requests."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "`tool_choice=\"get_weather\"` forces the model to call that particular tool",
+        "why": "Naming a tool forces that tool on the call."
+      }
+    ],
+    "explanation": "`tool_choice` constrains whether and which tool the model calls; `parallel_tool_calls` constrains how many calls it may emit at once. Both are passed to the provider, and the exact options vary by integration. Neither makes LangChain execute anything: that is your loop's job or `create_agent`'s.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-tool-choice",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/models"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-033",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An assistant has 40 tools, including `search_orders`, `find_order`, `lookup_purchase` and `get_order_history`, each with a one-line docstring. It often calls the wrong one. What should you look at first?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise the temperature so the model explores other tools",
+        "why": "More randomness makes tool choice less consistent, not more accurate."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Remove overlap: distinct names, sharper descriptions, fewer tools per step",
+        "why": "The model chooses from names and descriptions; overlap and sheer number are the usual causes of wrong picks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `tool_choice=\"any\"` so the model always calls a tool",
+        "why": "That forces a call but does not help it choose the right one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Move every tool's instructions into the system prompt and leave the docstrings empty",
+        "why": "Tool descriptions are the main signal for selection; an empty docstring also fails `@tool` without `description=`."
+      }
+    ],
+    "explanation": "Tool selection runs on the name, description and argument schema of each tool. Four near-synonyms with one-line descriptions are ambiguous by construction. Consolidate them, write descriptions that state when to use and when not to use each tool, and cut the set the model sees per step (grouping, routing, or dynamic tool selection in agent middleware). Then measure tool-choice accuracy on a test set.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-too-many-tools",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-034",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An internal agent gets a `delete_customer(customer_id: str)` tool. Which control best prevents wrong or malicious deletions?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `tool_choice` to a read-only tool so `delete_customer` can never be chosen",
+        "why": "Then the tool can never be used, even when the user really needs it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Rely on the JSON schema: `customer_id` is typed as a string, so invalid ids cannot get through",
+        "why": "Any string passes; the schema says nothing about which customer this user may delete."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Enforce authorisation in the tool's code and require human approval",
+        "why": "Enforcement in code plus an approval step does not depend on the model behaving."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add \"never delete customers unless the user is certain\" to the system prompt",
+        "why": "Prompts are advisory; prompt injection or a model mistake can still trigger the call."
+      }
+    ],
+    "explanation": "Treat tool arguments as untrusted input. Schemas catch shape errors, and prompts nudge behaviour, but only code-level checks (authorisation, allowlists, range checks against the real user from runtime context) and a human approval step for destructive actions give real guarantees. In `create_agent`, approval is usually `HumanInTheLoopMiddleware`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-malformed-tool-args",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "ByteDance",
+        "Curling AI"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-035",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Your model keeps sending malformed or out-of-range arguments to a `transfer_funds` tool. Which measures actually reduce bad calls reaching the backend? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Converting all parameters to `str` so validation never fails",
+        "why": "That removes validation and makes bad values reach the backend."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Returning validation failures to the model as error tool results (for example with `handle_validation_error`) so it can correct the call",
+        "why": "The model sees what was wrong and can retry, instead of the run crashing."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Business-rule checks inside the tool (limits, account ownership) that raise `ToolException` with a clear message",
+        "why": "Code enforces the rules no schema can express, and the message tells the model why."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Setting `parallel_tool_calls=False`",
+        "why": "That limits how many calls arrive per turn, not whether their arguments are valid."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "A Pydantic `args_schema` with types, enums and constraints such as `gt=0`",
+        "why": "The schema guides the model and rejects bad values at validation time."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Asking the model to double-check its arguments in the system prompt",
+        "why": "Helpful at the margin, but it enforces nothing."
+      }
+    ],
+    "explanation": "Layer the defences: a precise schema (types, `Literal` enums, `Field` constraints) shapes generation and rejects malformed input; error results (`handle_validation_error`, `ToolException` plus `handle_tool_error`, or tool middleware in an agent) let the model self-correct; and code-level business checks catch what a schema cannot. Prompts alone are not a control.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-malformed-tool-args",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "ByteDance",
+        "Curling AI"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-036",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "In one turn the model returns two tool calls: `check_stock(sku=\"A1\")` and `place_order(sku=\"A1\", qty=5)`. Your loop runs them concurrently, and orders are being placed for out-of-stock items. Which fix addresses the cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Disable parallel calls for this step and re-check stock in `place_order`",
+        "why": "The dependency needs a model turn in between; the in-tool check enforces the rule even if the model skips the lookup."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run the calls in list order instead of concurrently, so `check_stock` always finishes first",
+        "why": "`place_order` was decided before the stock result existed; running it second does not change its arguments."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Retry `place_order` whenever `check_stock` returns 0",
+        "why": "Retrying repeats an order the model never revisited."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `tool_choice=\"check_stock\"` on every call",
+        "why": "Then the model could never call `place_order` at all."
+      }
+    ],
+    "explanation": "Parallel calls in one `AIMessage` are planned together, so a call cannot depend on a sibling's result. Where one step depends on another, ask for one call per turn (`parallel_tool_calls=False`, if the provider supports it) or split the work into separate tools or steps. Because the model can still skip the check, critical invariants such as stock levels belong in the tool's own code.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-parallel-tool-calls",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://docs.langchain.com/oss/python/langchain/models",
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-037",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "To run parallel tool calls concurrently you write `results = get_price.batch(ai.tool_calls)`. One call has an unknown SKU, and `get_price` raises `KeyError` for it. What happens, and what is a sound fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`batch` retries the failed call three times by default",
+        "why": "`batch` never retries; that would be `with_retry`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises; use `return_exceptions=True` and answer each failure with an error result",
+        "why": "With `return_exceptions=True` the failing position holds the exception, so you can still answer every tool call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`batch` returns `ToolMessage`s for every call, with the failing one marked `status=\"error\"`",
+        "why": "That only happens for a `ToolException` with `handle_tool_error` set; a plain `KeyError` is raised."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`batch` skips the failed call and returns one fewer result, which is fine",
+        "why": "Even if it did, the model's call would be left unanswered, which breaks the conversation."
+      }
+    ],
+    "explanation": "`Runnable.batch` re-raises the first exception by default. With `return_exceptions=True` you get a list in input order where failures are exception objects. Map those to `ToolMessage(content=f\"Error: {e}\", tool_call_id=tc[\"id\"], status=\"error\")` so that every call in the turn has a result before the next model call.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-parallel-tool-calls",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://docs.langchain.com/oss/python/langchain/models",
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-038",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "In a hand-written loop, `get_orders(status: str, user_id: Annotated[str, InjectedToolArg])` must only show the logged-in user's orders. The code is below. What is the security problem?\n\n```python\nfor tc in ai.tool_calls:\n    tc[\"args\"].setdefault(\"user_id\", session.user_id)\n    messages.append(get_orders.invoke(tc))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "None: `InjectedToolArg` stops the model from ever sending `user_id`",
+        "why": "It hides the argument from the schema, but a model (or an injected prompt) can still put any key in `args`, and the tool accepts it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`invoke` drops injected arguments from tool calls, so `user_id` is always missing",
+        "why": "Injected arguments in `args` are passed through to the function."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`setdefault` keeps a model-supplied `user_id`; overwrite it instead",
+        "why": "Hiding is not enforcement; your loop must set the injected value itself."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`setdefault` mutates the tool call, which corrupts the `AIMessage` in history",
+        "why": "Mutating the dict is a style concern; the real issue is whose id ends up being used."
+      }
+    ],
+    "explanation": "`InjectedToolArg` keeps an argument out of the schema the model sees, but `tool.invoke(tc)` validates whatever is in `tc[\"args\"]`. A model that invents `user_id` (for example after a prompt injection) can override the default here. Always assign server-trusted values: `tc[\"args\"][\"user_id\"] = session.user_id`. In `create_agent`, read identity from `runtime.context` instead.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/base/InjectedToolArg",
+    "source": "interview:lc-malformed-tool-args",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "ByteDance",
+        "Curling AI"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-039",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your hand-written loop runs `while ai.tool_calls:`. A downstream API is down, the tool returns error `ToolMessage`s, and the model keeps retrying the same call, so one request burned 200 model calls. Which change fixes this without hiding errors from the model?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Lower the model's temperature to 0",
+        "why": "A deterministic model can repeat the same failing call just as reliably."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set `tool_choice=\"any\"` so the model must pick a different tool",
+        "why": "Forcing a tool call makes the loop less likely to end."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Remove `handle_tool_error` so the first failure raises and ends the loop immediately",
+        "why": "That stops the loop but crashes the request and gives the model no chance to explain or try another route."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Add a step budget and stop on repeated identical failures",
+        "why": "A budget bounds cost while error results still let the model adapt within it."
+      }
+    ],
+    "explanation": "Every tool loop needs a stop condition beyond \"the model stopped calling tools\": a maximum number of iterations, and ideally detection of repeated identical failing calls. Keep returning errors as `ToolMessage`s so the model can recover when it can, and add retries with backoff inside the tool for transient faults. `create_agent` offers the same controls as call-limit and retry middleware.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-tool-errors",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-040",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "fill",
+    "select": 1,
+    "stem": "A fake model is scripted to return first an `AIMessage` with two tool calls (`get_price` and `get_stock`), then a plain text answer. This loop starts from one `HumanMessage`. How many messages are in `messages` when it ends? Type a number.\n\n```python\nwhile True:\n    ai = llm.invoke(messages)\n    messages.append(ai)\n    if not ai.tool_calls:\n        break\n    for tc in ai.tool_calls:\n        messages.append(tools_by_name[tc[\"name\"]].invoke(tc))\n```",
+    "options": [],
+    "accepted": [
+      "5",
+      "five"
+    ],
+    "explanation": "The history is: the `HumanMessage`, the first `AIMessage` (two tool calls), two `ToolMessage`s (one per call, ids matching), and the final `AIMessage` with no tool calls. That is 5 messages, from 2 model calls and 2 tool runs.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-bind-tools-loop",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Curling AI",
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-041",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each way of declaring a hidden tool parameter with what it provides.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`runtime: ToolRuntime`",
+        "why": "Agent state, context, store, stream writer and call id."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Annotated[str, InjectedToolArg]`",
+        "why": "A value your own code must supply at execution."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Annotated[str, InjectedToolCallId]`",
+        "why": "Just the id of the current tool call."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`config: RunnableConfig`",
+        "why": "The run's config: tags, callbacks, `configurable`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Inside `create_agent`, read the current user from runtime context and write progress updates",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "In a hand-written loop, pass a tenant id that your server attaches to every call",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Build a `ToolMessage` yourself (older pattern) and link it to the request",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Read a value passed as `invoke(..., config={\"configurable\": {...}})`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "All four are excluded from the schema the model sees. `ToolRuntime` is the 1.x recommendation for agent tools; `InjectedToolArg` is the generic \"my code fills this\" marker; `InjectedToolCallId` is the older way to get the call id (now `runtime.tool_call_id`); and a parameter annotated `RunnableConfig` receives the run's config.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-tool-runtime-injected",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/tools"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-042",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps a robust hand-written loop should take for each tool call in an `AIMessage`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Look up the tool by `tc[\"name\"]`; if it is unknown, reply with an error `ToolMessage` for `tc[\"id\"]`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Overwrite injected arguments in `tc[\"args\"]` with server-trusted values",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Invoke the tool with the whole `tc`, catching exceptions and turning them into error `ToolMessage`s",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Append the resulting `ToolMessage` to the history",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "After every call in the turn has a result, check the step budget and call the model again",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Resolve the tool first (models can hallucinate tool names), then fix up injected arguments, then execute with the full tool call so the result carries the right id. Every call gets a result, success or error, before the next model call, and the iteration cap is checked before looping again.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "source": "interview:lc-bind-tools-loop",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Curling AI",
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-043",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "As the staff engineer, you must show that a new tool set and prompt pick the right tools more often than the current version before release. Which approach gives a trustworthy answer?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compare total token usage, since fewer tokens means better tool use",
+        "why": "Cost is worth tracking, but a cheaper run can still pick the wrong tool."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Ship to everyone and watch error logs for exceptions from tools",
+        "why": "Wrong-but-valid calls raise no exception, and users find the regressions first."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ask the team to try ten questions each and vote on which version feels better",
+        "why": "Small, unstructured samples and opinions cannot detect regressions reliably."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Score both versions offline on a labelled set of expected tool calls",
+        "why": "Labelled cases plus a repeatable comparison give a measurable result."
+      }
+    ],
+    "explanation": "Tool selection is testable: for each input, record which tool(s) should be called and with which critical arguments, then score each candidate on the first turn's `tool_calls` (and on whole trajectories for multi-step cases). Running the same dataset against both versions, for example as LangSmith experiments, turns tool selection into a number you can gate releases on.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:lc-too-many-tools",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-044",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your platform team proposes serving internal tools through MCP servers instead of defining them with `@tool` in each service. Which statements are fair in the design review? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "MCP removes the need for tool descriptions, because the server tells the model when to call each tool",
+        "why": "MCP servers still publish names, descriptions and schemas; the model still chooses from them."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "One MCP server can expose the same tools to many agents and clients, so tool definitions are not duplicated across services",
+        "why": "Standard discovery and serving is the main benefit of the protocol."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It adds a network or process boundary and a beta adapter, so connection lifecycle, auth and failures need explicit handling",
+        "why": "Remote tools fail differently from in-process functions, and the 1.x `langchain.mcp` namespace is beta."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "MCP guarantees that tool arguments are safe, so in-tool validation becomes unnecessary",
+        "why": "The protocol transports calls; validation and authorisation remain your job."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "With MCP the model executes tools itself, so your app no longer sees tool calls",
+        "why": "In LangChain the adapted tools are invoked from tool calls like any other tool."
+      }
+    ],
+    "explanation": "MCP standardises how tools are described and served, so a shared server avoids re-implementing tools per app, and LangChain's adapter turns them into normal tools. The costs are operational: a transport (stdio subprocess or streamable HTTP), connection management, auth, latency and partial failures, plus a beta adapter in langchain 1.4. Argument validation and approval for risky actions still apply.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/mcp",
+    "source": "interview:lc-mcp-tools",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/"
+      ],
+      "companies": [
+        "Mastercard"
+      ]
+    }
+  },
+  {
+    "id": "LCH-TLS-045",
+    "domain": 2,
+    "skill": "tools-tool-calling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your loop stops when `not ai.tool_calls`. Logs show runs that end with an empty reply, and the final `AIMessage` has `tool_calls == []` but a non-empty `invalid_tool_calls`. What is going on, and what should the loop do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The provider returned no tool calls, so the empty reply is the model's real answer",
+        "why": "The model did ask for a tool; the request just could not be parsed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The model attempted a call whose arguments were not valid JSON; send an error `ToolMessage` for each invalid call and let the model retry",
+        "why": "Unparseable calls land in `invalid_tool_calls`, so a loop that only checks `tool_calls` mistakes them for a finished answer."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to `tool_choice=\"any\"` so `invalid_tool_calls` is always empty",
+        "why": "Forcing a call does not make the JSON well formed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`invalid_tool_calls` lists calls that failed validation against `args_schema`, so they already ran and failed",
+        "why": "That list is filled while parsing the model output, before any tool runs."
+      }
+    ],
+    "explanation": "When a provider's tool-call arguments cannot be parsed, LangChain records an `InvalidToolCall` (name, raw `args` string, id, `error`) in `invalid_tool_calls` instead of `tool_calls`. A robust loop treats both lists as requests: answer invalid ones with an error result explaining the problem (or cap the retries), rather than ending the run.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/messages",
+    "source": "interview:lc-bind-tools-loop",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://leetcode.com/discuss/post/8539984/mastercard-ai-engineer-interview-experie-u5ak/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Curling AI",
+        "Mastercard"
+      ]
+    }
+  }
+]

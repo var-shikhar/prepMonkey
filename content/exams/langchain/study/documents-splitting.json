@@ -1,0 +1,36 @@
+{
+  "documents-splitting": {
+    "summary": "Ingestion decides what retrieval can ever find. Loaders turn sources into `Document` objects (text in `page_content`, provenance in `metadata`), and splitters cut them into chunks that are small enough to retrieve precisely and fit the model, while copying metadata onto every chunk. Know the `BaseLoader` contract, how the recursive splitter really cuts and overlaps, how to size by tokens, and when to split by structure instead of size.",
+    "points": [
+      "`Document(page_content, metadata={}, id=None)` from `langchain_core.documents`. `metadata` is a free-form dict (`source`, `page`, `row`, anything you add) used later for filtering and citations; `id` is an optional string.",
+      "Every loader implements `BaseLoader`: `load()`, `lazy_load()`, `aload()`, `alazy_load()` (and the legacy `load_and_split()`, which calls `load()` and should be treated as deprecated). Implement `lazy_load` as a generator; the default `load()` is `list(self.lazy_load())` and the default `alazy_load()` runs the sync generator in an executor. If a subclass overrides only `load()`, `lazy_load()` falls back to `iter(self.load())`, which is not lazy.",
+      "Concrete loaders: `PyPDFLoader` (`langchain-community`; default `mode=\"page\"` gives one `Document` per page with `source`, `total_pages`, zero-based `page` and `page_label`; `mode=\"single\"` returns one document; `extraction_mode=\"layout\"` is available), `CSVLoader` (one `Document` per row as `column: value` lines, metadata `source` and `row`), `DirectoryLoader(path, glob=..., loader_cls=...)`, `WebBaseLoader`. Layout-aware options for hard PDFs include Unstructured, Docling and PyMuPDF/PDFPlumber loaders.",
+      "Splitters come from `langchain-text-splitters`. `TextSplitter` defaults: `chunk_size=4000`, `chunk_overlap=200`, `length_function=len`, `add_start_index=False`, `strip_whitespace=True`. An overlap larger than the chunk size raises `ValueError` at construction. Splitters are document transformers, not Runnables (no `invoke`).",
+      "Entry points: `split_text(str) -> list[str]`; `create_documents(texts, metadatas=None) -> list[Document]`; `split_documents(docs) -> list[Document]`, which deep-copies each parent's metadata onto its chunks. Chunks get `id=None`; assign deterministic ids yourself if you upsert or delete by id.",
+      "`RecursiveCharacterTextSplitter` is the recommended default: separators `[\"\\n\\n\", \"\\n\", \" \", \"\"]`, cut on the first separator present, recursively re-split any piece still too big with the next one, then merge pieces up to `chunk_size`, carrying trailing pieces up to `chunk_overlap` into the next chunk. `CharacterTextSplitter` has one separator (default `\"\\n\\n\"`), so an oversized piece stays oversized and only logs a warning.",
+      "`keep_separator`: the recursive splitter defaults to `True` (same as `\"start\"`, separator begins the next piece); `\"end\"` attaches it to the previous piece; `False` drops it (the `CharacterTextSplitter` default). `is_separator_regex=True` treats separators as regexes, so a bare `.` matches every character.",
+      "`add_start_index=True` stores each chunk's character offset in the parent text as `metadata[\"start_index\"]`, correct even with overlap; use it to highlight the cited passage.",
+      "Token sizing: `length_function` sets the unit of `chunk_size`. `CharacterTextSplitter.from_tiktoken_encoder` can exceed the token limit; `RecursiveCharacterTextSplitter.from_tiktoken_encoder` enforces it; `TokenTextSplitter` slices tokens directly and can break a multi-byte character (avoid for Chinese/Japanese). `from_huggingface_tokenizer` and `SentenceTransformersTokenTextSplitter` size chunks for a specific embedding model's window. The tiktoken options need the `tiktoken` package.",
+      "Structure-aware splitting: `MarkdownHeaderTextSplitter(headers_to_split_on=[(\"#\", \"h1\"), ...], strip_headers=True, return_each_line=False)` puts the header path in metadata, ignores `#` lines inside code fences, has no `chunk_size` and no `split_documents`; follow it with `RecursiveCharacterTextSplitter.split_documents` to cap size (overlap stays within a section). HTML: `HTMLHeaderTextSplitter`, `HTMLSectionSplitter`, `HTMLSemanticPreservingSplitter` (keeps tables and lists; needs `bs4`). `RecursiveJsonSplitter` for nested JSON. Code: `RecursiveCharacterTextSplitter.from_language(Language.PYTHON, ...)` uses regex separators such as `\\nclass ` and `\\ndef ` (about 28 languages).",
+      "Semantic chunking: `SemanticChunker` (in `langchain_experimental`) embeds sentence groups (`buffer_size`) and breaks where cosine distance between neighbours exceeds a threshold (`breakpoint_threshold_type` percentile 95 by default, or standard_deviation, interquartile, gradient, or `number_of_chunks`). It costs extra embedding calls at ingest and has no maximum chunk size.",
+      "Chunk sizing is a trade-off: large chunks dilute the vector and waste prompt tokens; small chunks lose context; overlap protects boundaries but adds chunks and duplicate hits. Tune against real queries, and keep each chunk within the embedding model's window, since text past the window is truncated."
+    ],
+    "traps": [
+      "Using `split_text` on header-split sections (or on loaded documents) silently drops all metadata; use `split_documents`.",
+      "Assuming `chunk_size` is in tokens: by default it is characters, so chunks can overflow the embedding model's window.",
+      "`CharacterTextSplitter` cannot cut a paragraph larger than `chunk_size`; it only warns.",
+      "Displaying `PyPDFLoader`'s `page` as the printed page number: it is zero-based; use `page_label` or `page + 1`.",
+      "Expecting chunks to inherit the parent `Document.id`: they come back with `id=None`, and random store ids create duplicates on re-runs.",
+      "Calling `lazy_load()` on a loader that only overrides `load()` still builds the full list in memory.",
+      "Setting `is_separator_regex=True` with an unescaped `.` returns an empty list.",
+      "Blaming embeddings for retrieval misses before printing loaded text and chunk boundaries."
+    ],
+    "docs": [
+      { "title": "Text splitter integrations", "url": "https://docs.langchain.com/oss/python/integrations/splitters" },
+      { "title": "Recursively split text", "url": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter" },
+      { "title": "Split by tokens", "url": "https://docs.langchain.com/oss/python/integrations/splitters/split_by_token" },
+      { "title": "Split Markdown by headers", "url": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter" },
+      { "title": "Document loader integrations", "url": "https://docs.langchain.com/oss/python/integrations/document_loaders" }
+    ]
+  }
+}

@@ -1,0 +1,2164 @@
+[
+  {
+    "id": "LCH-STR-001",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which of these are async methods that every LangChain `Runnable` provides? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`ainvoke`",
+        "why": "The async counterpart of `invoke`: one input, one output, awaited."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`abatch`",
+        "why": "The async counterpart of `batch`: a list of inputs, run concurrently, results in input order."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`astream`",
+        "why": "The async counterpart of `stream`: an async iterator of output chunks."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`arun`",
+        "why": "`run` belonged to the legacy `Chain` class. Runnables use `invoke` and `ainvoke` instead."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`astream_batch`",
+        "why": "There is no such method. Streaming works on one input at a time."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`ainvoke_all`",
+        "why": "Not a Runnable method. Running many inputs asynchronously is what `abatch` is for."
+      }
+    ],
+    "explanation": "Every Runnable exposes `invoke`, `batch` and `stream`, plus `ainvoke`, `abatch` and `astream` for asyncio code. There are also `batch_as_completed`/`abatch_as_completed` and `astream_events`. Interviewers use this as a warm-up, then follow up on what those async methods do when a component has no native async code.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md"
+      ]
+    },
+    "source": "interview:lc-runnable-methods"
+  },
+  {
+    "id": "LCH-STR-002",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In `langchain-core` 1.x, calling `chain.astream_events(inputs)` without a `version` argument gives you the old `v1` event schema, so you must pass `version=\"v2\"` explicitly.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "That was the advice in older releases. In 1.x the parameter defaults to `\"v2\"`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `version` defaults to `\"v2\"`. `v1` is kept only for backwards compatibility."
+      }
+    ],
+    "explanation": "In `langchain-core` 1.7 the `version` parameter of `astream_events` defaults to `\"v2\"`, which is also the only schema that carries custom events and `parent_ids`. Many tutorials still pass `version=\"v2\"` explicitly, which is harmless and makes the intent clear. A beta `v3` exists for chat models and LangGraph graphs only; on a generic Runnable it raises `NotImplementedError`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-astream-vs-events"
+  },
+  {
+    "id": "LCH-STR-003",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "`model` is a chat model that streams its reply in pieces. What does the loop print?\n\n```python\nfrom langchain_core.output_parsers import StrOutputParser\n\nchain = prompt | model | StrOutputParser()   # prompt: a ChatPromptTemplate\nfor chunk in chain.stream({\"q\": \"Greet me\"}):\n    print(type(chunk).__name__)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`AIMessageChunk` on every line",
+        "why": "That is what `model.stream()` yields on its own. The parser at the end turns each chunk into text."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`str` on every line, one line per streamed piece",
+        "why": "`StrOutputParser` streams too: it turns each `AIMessageChunk` into its text as it arrives."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`str`, printed once, because the parser waits for the full reply",
+        "why": "`StrOutputParser` is a streaming parser; it does not buffer the whole message."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ChatPromptValue` first, then `str` for the rest",
+        "why": "`stream` yields only the final step's output. The prompt's output is consumed inside the chain."
+      }
+    ],
+    "explanation": "`stream` yields the output of the last step, chunk by chunk. A chat model yields `AIMessageChunk`s, and `StrOutputParser` maps each one to its text, so the loop sees a series of small strings. With a fake model whose reply is \"Hello there my friend\", the chunks are `'Hello'`, `' '`, `'there'` and so on.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md"
+      ]
+    },
+    "source": "interview:lc-runnable-methods"
+  },
+  {
+    "id": "LCH-STR-004",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `Runnable` method with what it gives back.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`invoke`",
+        "why": "One input in, one complete output back."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`batch`",
+        "why": "A list of inputs in, a list of outputs back in input order."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`stream`",
+        "why": "A sync iterator of output chunks for one input."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`astream_events`",
+        "why": "An async iterator of event dicts for every step of the run."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Answer one support ticket and return the full reply",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Classify 200 tickets in one call and get the labels in the same order",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Print the reply to a terminal as it is generated",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Show the retriever's documents and the model's tokens from one chain run",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`invoke`, `batch` and `stream` differ in how many inputs they take and how the output comes back. `astream_events` is different again: it reports what happens inside the run (starts, chunks and ends of each component) rather than only the final output. Each method has an async twin, and `astream_events` exists only in async form.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md"
+      ]
+    },
+    "source": "interview:lc-runnable-methods"
+  },
+  {
+    "id": "LCH-STR-005",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You write a `BaseCallbackHandler` to log every token as a chat model streams. Which method do you override?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`on_llm_end`",
+        "why": "That runs once, when the whole response is ready, not for each token."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`on_chain_stream`",
+        "why": "There is no such hook on `BaseCallbackHandler`. Chain chunks show up as `on_chain_stream` events in `astream_events`, not as a handler method."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`on_llm_new_token`",
+        "why": "Fires once per streamed token, for chat models and text LLMs alike."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`on_chat_model_start`",
+        "why": "That fires once, before the model call, with the input messages."
+      }
+    ],
+    "explanation": "`on_llm_new_token(self, token, **kwargs)` is called for every token while a model streams; the keyword arguments include `chunk`, `run_id` and `tags`. Pair it with `on_chat_model_start` and `on_llm_end` to time a call. It only fires when the model actually streams, which happens with `stream`/`astream` and inside streaming contexts such as `astream_events`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/base/BaseCallbackHandler",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callback-handler"
+  },
+  {
+    "id": "LCH-STR-006",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your chatbot takes 6 seconds to produce a full answer. You switch the UI from `chain.invoke` to `chain.stream`. What changes?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The answer finishes in about half the time",
+        "why": "The model still generates the same tokens at the same speed; streaming does not speed it up."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Words appear sooner; the full answer still takes about 6 s",
+        "why": "Streaming cuts time to first token, which is what users feel as speed. Total generation time stays the same."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The answer costs fewer tokens",
+        "why": "Billing depends on the tokens generated, which streaming does not change."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing visible, because only async code can stream",
+        "why": "`stream` is a sync method; streaming does not need asyncio."
+      }
+    ],
+    "explanation": "Streaming improves perceived latency: the user sees output as soon as the first tokens arrive instead of waiting for the whole response. The total time and the token cost are unchanged. Interviewers like candidates who separate time to first token from total latency.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "source": "interview:lc-why-stream"
+  },
+  {
+    "id": "LCH-STR-007",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this runs?\n\n```python\nasync def main():\n    stream = await chain.astream({\"q\": \"hi\"})\n    async for chunk in stream:\n        print(chunk, end=\"\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It prints the reply as it streams",
+        "why": "The first line already fails, before any chunk is read."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It prints the full reply once, because `await` collects the stream",
+        "why": "`await` does not collect an async generator; it cannot be applied to one at all."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It raises `TypeError` on the `await` line",
+        "why": "`astream` returns an async generator. Iterate it directly with `async for chunk in chain.astream(...)`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises `RuntimeError: no running event loop`",
+        "why": "The code runs inside a coroutine, so there is a loop. The error is about `await`, not the loop."
+      }
+    ],
+    "explanation": "`astream` is an async generator method: calling it returns the generator straight away, with no `await`. Write `async for chunk in chain.astream(inputs):`. Only `ainvoke` and `abatch` are awaited. In `langchain-core` 1.7 the snippet raises `TypeError: object async_generator can't be used in 'await' expression`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.techinterview.org/companies/langchain/"
+      ]
+    },
+    "source": "interview:lc-async-ainvoke"
+  },
+  {
+    "id": "LCH-STR-008",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "In `astream_events` (v2), what is the event name whose `data[\"chunk\"]` holds each `AIMessageChunk` streamed by a chat model? Type the event name.",
+    "options": [],
+    "accepted": [
+      "on_chat_model_stream",
+      "`on_chat_model_stream`"
+    ],
+    "explanation": "Chat models emit `on_chat_model_start`, then one `on_chat_model_stream` per chunk, then `on_chat_model_end`. Text-completion LLMs use the `on_llm_*` names instead, and output parsers emit `on_parser_stream`. Filtering for `on_chat_model_stream` is the usual way to forward tokens to a UI.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-astream-vs-events"
+  },
+  {
+    "id": "LCH-STR-009",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "The fake model streams its reply as 7 chunks (`'Hello'`, `' '`, `'there'`, ...). How many chunks does the loop print? Type a number.\n\n```python\nfrom langchain_core.language_models import GenericFakeChatModel\nfrom langchain_core.messages import AIMessage\n\nmodel = GenericFakeChatModel(messages=iter([AIMessage(content=\"Hello there my friend\")]))\nfrom langchain_core.output_parsers import StrOutputParser\nfrom langchain_core.prompts import ChatPromptTemplate\nfrom langchain_core.runnables import RunnableLambda\n\nprompt = ChatPromptTemplate.from_messages([(\"human\", \"{q}\")])\nchain = prompt | model | StrOutputParser() | RunnableLambda(lambda s: s.upper())\nfor chunk in chain.stream({\"q\": \"hi\"}):\n    print(repr(chunk))\n```",
+    "options": [],
+    "accepted": [
+      "1",
+      "one"
+    ],
+    "explanation": "A `RunnableLambda` over a plain function needs its whole input, so it waits for the parser to finish, runs once and emits one chunk: `'HELLO THERE MY FRIEND'`. Everything before it still streams internally, but the chain's output stream starts only when the last step produces something. Put whole-input steps before the model, or write them as generators, to keep streaming.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-streaming-events"
+  },
+  {
+    "id": "LCH-STR-010",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "`Slow` is a custom `Runnable` that implements only `invoke`, which sleeps for 0.5 s. About how many seconds does this take? Type a number.\n\n```python\nawait Slow().abatch([1, 2, 3, 4], config={\"max_concurrency\": 2})\n```",
+    "options": [],
+    "accepted": [
+      "1",
+      "1.0",
+      "1s",
+      "1 s",
+      "one"
+    ],
+    "explanation": "`max_concurrency: 2` lets two inputs run at once, so four 0.5 s calls take two rounds: about 1 second. Without the limit all four run together (about 0.5 s); with `max_concurrency: 1` they run one after another (about 2 s). The sync `invoke` runs on worker threads because `Slow` has no native async code. This setting is how you stay under a provider's rate limit in batch jobs.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-async-concurrency"
+  },
+  {
+    "id": "LCH-STR-011",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You stream a `create_agent` agent with `stream_mode=\"updates\"`. The model calls one tool, then answers. What does each streamed item look like?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `(token, metadata)` tuple for each model token",
+        "why": "That is the `messages` mode."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A dict keyed by the step that ran, e.g. `{\"tools\": {...}}`",
+        "why": "`updates` yields the state change made by each step, keyed by node name."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The whole agent state, including all messages so far, after every step",
+        "why": "That is the `values` mode. `updates` sends only what each step changed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A plain string with the final answer, sent once at the end",
+        "why": "That is closer to calling `invoke` and reading the last message."
+      }
+    ],
+    "explanation": "With `updates`, an agent that calls one tool yields three items: `{\"model\": ...}` with the tool call, `{\"tools\": ...}` with the `ToolMessage`, and `{\"model\": ...}` with the final answer. It suits progress displays such as \"calling tool...\". Use `messages` for tokens and `values` for full snapshots.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-agent-stream-modes"
+  },
+  {
+    "id": "LCH-STR-012",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If a custom `Runnable` subclass implements only `invoke`, then `await r.ainvoke(x)` raises `NotImplementedError`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The base class provides a default `ainvoke`, so nothing is missing."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the default `ainvoke` runs the sync `invoke` in a thread pool executor and awaits the result."
+      }
+    ],
+    "explanation": "Every `a`-prefixed method has a default: it runs the sync counterpart in asyncio's thread pool. Your code works under `await`, and the event loop is not blocked, but each call holds a worker thread. Override `ainvoke` (or `_aget_relevant_documents`, `_agenerate`, and so on for specific components) with real async I/O when throughput matters.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.techinterview.org/companies/langchain/"
+      ]
+    },
+    "source": "interview:lc-async-ainvoke"
+  },
+  {
+    "id": "LCH-STR-013",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which FastAPI endpoint streams a chain's output to the browser as server-sent events?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "```python\n@app.get(\"/chat\")\ndef chat(q: str):\n    return {\"answer\": chain.invoke({\"q\": q})}\n```",
+        "why": "This waits for the full answer and returns one JSON body; nothing streams."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "```python\n@app.get(\"/chat\")\nasync def chat(q: str):\n    async def gen():\n        async for chunk in chain.astream({\"q\": q}):\n            yield f\"data: {json.dumps(chunk)}\\n\\n\"\n    return StreamingResponse(gen(), media_type=\"text/event-stream\")\n```",
+        "why": "An async generator feeds `StreamingResponse`, each chunk is framed as an SSE `data:` line plus a blank line, and the media type is `text/event-stream`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "```python\n@app.get(\"/chat\")\nasync def chat(q: str):\n    chunks = [c async for c in chain.astream({\"q\": q})]\n    return StreamingResponse(iter(chunks), media_type=\"text/event-stream\")\n```",
+        "why": "It collects every chunk before responding, so the browser still waits for the whole answer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```python\n@app.get(\"/chat\")\nasync def chat(q: str):\n    return StreamingResponse(chain.astream({\"q\": q}), media_type=\"application/json\")\n```",
+        "why": "The chunks are not framed as SSE and the media type is wrong, so `EventSource` cannot read them."
+      }
+    ],
+    "explanation": "Server-sent events need three things: a generator that yields as chunks arrive (async, so the event loop is never blocked), frames of the form `data: <payload>` followed by a blank line, and the `text/event-stream` media type. JSON-encoding each chunk keeps newlines inside a token from ending the frame early.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-fastapi-sse"
+  },
+  {
+    "id": "LCH-STR-014",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool reports progress with `get_stream_writer()` and works inside the agent. A unit test then calls it directly: `lookup.invoke({\"sku\": \"A1\"})`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It returns the result, and the writer silently drops the progress message",
+        "why": "The writer is not a no-op outside a graph; getting it fails first."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises, because no LangGraph run is active",
+        "why": "`get_stream_writer` reads the current LangGraph runtime, which exists only while a graph is executing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It prints the progress message to stdout instead of streaming it",
+        "why": "There is no fallback to stdout."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It works only if the test passes `stream_mode=\"custom\"` to `invoke`",
+        "why": "Tool `invoke` has no `stream_mode` parameter; stream modes belong to the graph's `stream` method."
+      }
+    ],
+    "explanation": "The docs warn that a tool which calls `get_stream_writer` cannot be invoked outside a LangGraph execution context. In langgraph 1.2 the direct call fails with `KeyError: '__pregel_runtime'`. Test such tools by running the agent (or a small graph) with `stream_mode=\"custom\"`, or factor the business logic into a plain function you can test on its own.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-STR-015",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "A handler is passed with `config={\"callbacks\": [h]}` to `(prompt | model).stream(...)`, and the model streams three tokens. Put these handler calls in the order they happen.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`on_chain_start` for the `RunnableSequence`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`on_chat_model_start` for the model",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`on_llm_new_token`, three times",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`on_llm_end` for the model",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The outer sequence starts first (the prompt also starts and ends inside it), then the model starts, emits one `on_llm_new_token` per streamed token, and calls `on_llm_end` with the full result. The sequence's `on_chain_end` comes last. Timing a model call means pairing `on_chat_model_start` with `on_llm_end` for the same `run_id`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/base/BaseCallbackHandler",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callback-handler"
+  },
+  {
+    "id": "LCH-STR-016",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A tool calls `get_stream_writer()({\"progress\": \"querying\"})`. You run `for item in agent.stream(inputs, stream_mode=[\"updates\", \"custom\"]):`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Each `item` is a `(mode, chunk)` tuple, such as `(\"custom\", {...})`",
+        "why": "With a list of modes, every item says which mode produced it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The `custom` chunk is exactly the dict the tool passed to the writer",
+        "why": "The writer forwards whatever you give it, so `chunk` is `{\"progress\": \"querying\"}`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Each `item` is a dict with `type`, `ns` and `data` keys",
+        "why": "That is the `version=\"v2\"` output format, which you have to request explicitly."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Model tokens are included too, because `custom` covers all streamed data",
+        "why": "Tokens come from the `messages` mode, which is not in the list."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The `custom` mode needs a checkpointer, or the writer raises",
+        "why": "No checkpointer is needed for `custom`; only modes like `checkpoints` and `tasks` require one."
+      }
+    ],
+    "explanation": "Passing several stream modes turns each item into a `(mode, chunk)` pair, so one loop can branch on the mode. In our run the order was: `updates` from the model step, the tool's `custom` progress, `updates` from the tools step, then `updates` from the final model step. LangGraph 1.1+ also offers `version=\"v2\"`, which yields `StreamPart` dicts instead.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-agent-stream-modes"
+  },
+  {
+    "id": "LCH-STR-017",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a Jupyter notebook cell you write `result = asyncio.run(chain.ainvoke({\"q\": \"hi\"}))`. It fails with `RuntimeError`. What is the simplest fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Call `chain.invoke` inside `asyncio.run` instead",
+        "why": "`asyncio.run` needs a coroutine, and it fails for the same reason: a loop is already running."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Use top-level `await chain.ainvoke(...)` in the cell",
+        "why": "Jupyter already runs an event loop and allows top-level `await`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Wrap the call in `asyncio.create_task` and read the result on the next line",
+        "why": "That schedules the task but does not wait for it, so the result is not there yet."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch to `chain.abatch([...])`, which starts its own loop",
+        "why": "`abatch` is a coroutine like `ainvoke`; it does not create an event loop."
+      }
+    ],
+    "explanation": "`asyncio.run()` cannot be called from a running event loop, and Jupyter cells run inside one. Use top-level `await` in the notebook (or the sync methods). In a script, `asyncio.run(main())` is correct. Interviewers ask this because it trips up most people the first time they try LangChain's async API in a notebook.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.techinterview.org/companies/langchain/"
+      ]
+    },
+    "source": "interview:lc-async-ainvoke"
+  },
+  {
+    "id": "LCH-STR-018",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about streaming an LLM response are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It reduces the time until the user sees the first words",
+        "why": "Chunks are shown as they arrive, so time to first token drops sharply."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Every step after the model must be able to process input piece by piece, or the output stream starts only when that step finishes",
+        "why": "A step that needs its whole input holds back the stream until it has everything."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It lowers the token bill, because only the visible tokens are charged",
+        "why": "Streaming changes delivery, not the number of tokens generated."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It requires `async` code; sync code can only call `invoke`",
+        "why": "`stream` is a sync method; `astream` is the async version."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It shortens the total generation time on the provider's side",
+        "why": "The model produces tokens at the same rate either way."
+      }
+    ],
+    "explanation": "Streaming is about perceived latency. It does not change cost or total time. A chain streams end to end only if each step after the model can transform a stream (models, most parsers, generator functions). Whole-input steps such as plain functions buffer the stream.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "source": "interview:lc-why-stream"
+  },
+  {
+    "id": "LCH-STR-019",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `create_agent` stream mode with what it yields.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`messages`",
+        "why": "(token, metadata) tuples from model calls."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`updates`",
+        "why": "Per-step state changes keyed by node name."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`custom`",
+        "why": "Whatever code passed to the stream writer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`values`",
+        "why": "The full state after each step."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Render the answer word by word as the model writes it",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Show \"model called a tool\" and \"tool returned\" as each step finishes",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Show \"fetched 3 of 10 pages\" from inside a long-running tool",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Redraw the whole conversation from the complete state after every step",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`messages` is for typing-style token display, `updates` for step-by-step progress, `custom` for application data such as tool progress sent with `get_stream_writer`, and `values` for full snapshots. Combine modes with a list, then branch on the mode in each `(mode, chunk)` tuple.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-agent-stream-modes"
+  },
+  {
+    "id": "LCH-STR-020",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your chain is `prompt | model | StrOutputParser() | RunnableLambda(redact)`, where `redact(text: str) -> str` masks phone numbers. Since adding it, the UI shows the whole answer at once. Which change restores token streaming while still redacting?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Call `chain.astream` instead of `chain.stream`",
+        "why": "Async does not change the problem: `redact` still needs its whole input."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Pipe a generator version of `redact` that yields masked chunks",
+        "why": "A generator function that consumes an iterator becomes a `RunnableGenerator`, which processes the stream piece by piece."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Move `RunnableLambda(redact)` to the front of the chain",
+        "why": "Then it would redact the user's question, not the model's answer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap the chain with `.with_config(streaming=True)`",
+        "why": "There is no such config key; buffering comes from the function, not from a setting."
+      }
+    ],
+    "explanation": "A plain function gets called once with its full input, so it blocks the output stream. A generator function with the shape `def redact(chunks): for c in chunks: yield mask(c)` is coerced into a `RunnableGenerator` when piped, and it streams. The catch: a phone number can be split across two chunks, so a real redactor keeps a small buffer at chunk boundaries.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-streaming-events"
+  },
+  {
+    "id": "LCH-STR-021",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "`chain = prompt | model | StrOutputParser() | RunnableLambda(lambda s: s.upper())`. You iterate `chain.astream_events({\"q\": \"hi\"})`. Put these events in the order they first appear.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`on_chat_model_stream` with the first token",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`on_chat_model_end`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`on_chain_stream` from the `RunnableLambda`, holding the full upper-cased text",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`on_chain_end` for the `RunnableSequence`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "`astream_events` reports each component's own stream, so model tokens flow out as soon as they are generated even though the final `RunnableLambda` blocks. The lambda emits its single chunk only after the model and parser have finished, and the outer sequence ends last. This is why `astream_events` lets you show tokens from a chain whose final output does not stream.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-astream-vs-events"
+  },
+  {
+    "id": "LCH-STR-022",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this loop collect for `chain = prompt | model | StrOutputParser()`?\n\n```python\nseen = set()\nasync for e in chain.astream_events({\"q\": \"hi\"}, include_types=[\"chat_model\"]):\n    seen.add(e[\"event\"])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Only `on_chat_model_stream`",
+        "why": "`include_types` keeps every event from matching runs, including start and end."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`on_chat_model_start`, `on_chat_model_stream` and `on_chat_model_end`",
+        "why": "The filter keeps all events whose run type is `chat_model`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The chat model events plus the parser's events, because the parser consumes the model's output",
+        "why": "Filters match each run on its own; the parser's run type is `parser`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing, because the valid type name is `\"llm\"`",
+        "why": "`\"llm\"` matches text-completion models. Chat models have the type `\"chat_model\"`."
+      }
+    ],
+    "explanation": "`include_types` filters on the run type: `chat_model`, `llm`, `parser`, `prompt`, `retriever`, `tool`, `chain`. Every event of a matching run comes through (start, stream and end). `include_names` and `include_tags` work the same way on names and tags, and the `exclude_*` filters remove matches.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-astream-vs-events"
+  },
+  {
+    "id": "LCH-STR-023",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate's handler implements only `on_llm_start` and `on_llm_end`. It is attached to a chat model call (not a text-completion LLM). What happens at the start of the call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing: chat models fire only `on_chat_model_start`, so the handler misses the start",
+        "why": "LangChain falls back when a handler does not implement `on_chat_model_start`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`on_llm_start` fires, with the input messages converted to strings",
+        "why": "If `on_chat_model_start` is not implemented, the callback manager calls `on_llm_start` instead."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The call fails with `NotImplementedError` from `on_chat_model_start`",
+        "why": "The manager catches that error and uses the fallback; the call itself is unaffected."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both hooks fire, so implementing both would log the start twice",
+        "why": "If the handler implements `on_chat_model_start`, only that hook fires; `on_llm_start` is not called as well."
+      }
+    ],
+    "explanation": "`BaseCallbackHandler.on_chat_model_start` raises `NotImplementedError` by default. The callback manager catches it and calls `on_llm_start` with each message list rendered as a string. Once you implement `on_chat_model_start`, you get the structured messages and `on_llm_start` no longer fires for chat models. `on_llm_end` fires for both kinds of model.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/base/BaseCallbackHandler",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callback-handler"
+  },
+  {
+    "id": "LCH-STR-024",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This handler should count streamed tokens, but `h.count` stays 0 after `list(model.stream(\"hi\", config={\"callbacks\": [h]}))`. The stream itself works. Why?\n\n```python\nclass Counter(BaseCallbackHandler):\n    def __init__(self):\n        self.count = 0\n\n    def on_llm_new_token(self, tok, **kwargs):\n        self.count += 1\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The token arrives as keyword `token=`, so each call fails and is logged",
+        "why": "The sync manager calls `on_llm_new_token(token=..., ...)`. Callback errors are logged and swallowed by default."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`on_llm_new_token` fires only for text LLMs, not chat models",
+        "why": "It fires for chat models too, once per chunk."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Token hooks fire only when the model was created with `streaming=True`",
+        "why": "`model.stream()` streams regardless; the flag only matters for `invoke`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Handlers must subclass `AsyncCallbackHandler` to receive tokens",
+        "why": "Sync handlers receive tokens from sync and async runs."
+      }
+    ],
+    "explanation": "Hook signatures matter: the sync callback manager passes `token=` by keyword, so a parameter named `tok` raises `TypeError` on every call. Because `raise_error` is `False` by default, LangChain logs `Error in Counter.on_llm_new_token callback` and carries on, which makes this kind of bug easy to miss. Name the parameter `token`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/base/BaseCallbackHandler",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callback-handler"
+  },
+  {
+    "id": "LCH-STR-025",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A `RunnableLambda` step calls `dispatch_custom_event(\"progress\", {\"pct\": 50})` while running. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`astream_events` (v2) emits an `on_custom_event` event whose `name` is `\"progress\"` and whose `data` is `{\"pct\": 50}`",
+        "why": "Custom events surface in the v2 event stream with the name and payload you dispatched."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A callback handler passed in the run's config receives it in `on_custom_event`",
+        "why": "Handlers get custom events through the `on_custom_event` hook."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Calling it from a script, outside any run, emits a standalone event",
+        "why": "It needs a parent run; outside one it raises `RuntimeError`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is also delivered in the `v1` event schema",
+        "why": "Custom events are a v2 feature; `v1` does not include them."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The payload must be a string, or the event is dropped",
+        "why": "The payload is free-form; JSON-serialisable data is recommended, not enforced."
+      }
+    ],
+    "explanation": "`dispatch_custom_event` (and `adispatch_custom_event`) lets your code report progress through the callback system. It must run inside a Runnable, tool or `RunnableGenerator` so there is a parent run. On Python 3.10 with async code, `adispatch_custom_event` needs the `config` passed explicitly.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/manager/dispatch_custom_event",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-STR-026",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A service runs on Python 3.10. Its LangGraph nodes and tools are `async def` functions. Which problems should you expect? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`get_stream_writer()` does not work inside async nodes or tools; accept a `writer` parameter instead",
+        "why": "On Python 3.10 the runtime context is not carried into async tasks, so the writer cannot be found."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Model tokens may not reach `messages` mode unless you accept `config` in the node and pass it to `model.ainvoke(..., config)`",
+        "why": "Callbacks are not propagated automatically into async calls before 3.11."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Sync nodes are affected the same way, so they need the same workarounds",
+        "why": "The limitation is specific to async code; sync code propagates context normally."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`astream_events` refuses to run on Python 3.10",
+        "why": "It runs; it just cannot see child runs whose config was not passed."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Upgrading `langchain-core` removes the issue without changing Python",
+        "why": "The cause is that `asyncio.create_task` accepts a `context` argument only from Python 3.11."
+      }
+    ],
+    "explanation": "LangChain carries the current config (callbacks, tags, the LangGraph runtime) through context variables. Before Python 3.11, asyncio tasks cannot be created with an explicit context, so async children lose it. The documented fixes are to pass `config` explicitly to async model calls, accept a `writer` argument instead of calling `get_stream_writer`, or move to Python 3.11+.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-callback-scope"
+  },
+  {
+    "id": "LCH-STR-027",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`work` is an async function that sleeps 0.3 s for `\"a\"`, 0.1 s for `\"b\"` and 0.2 s for `\"c\"`, then returns its input in upper case. What does `out` hold?\n\n```python\nr = RunnableLambda(work)\nout = [item async for item in r.abatch_as_completed([\"a\", \"b\", \"c\"])]\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['A', 'B', 'C']`",
+        "why": "That is what `abatch` returns: outputs in input order, after every call has finished."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['B', 'C', 'A']`",
+        "why": "The order is right, but each item also carries the index of the input it belongs to."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`[(1, 'B'), (2, 'C'), (0, 'A')]`",
+        "why": "Results are yielded as they finish, each paired with its input's index."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[(0, 'A'), (1, 'B'), (2, 'C')]`",
+        "why": "The pairs are right, but they arrive in completion order, not input order."
+      }
+    ],
+    "explanation": "`batch_as_completed` / `abatch_as_completed` yield `(index, output)` tuples in the order the calls finish, so fast inputs are not held back by slow ones; use the index to map each result to its input. `batch` / `abatch` instead wait for everything and return outputs in input order. Both accept `max_concurrency` in the config and `return_exceptions=True`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-async-concurrency"
+  },
+  {
+    "id": "LCH-STR-028",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "An agent's model calls a tool that writes a progress message with `get_stream_writer`, then the model answers. You stream with `stream_mode=[\"updates\", \"custom\"]`. Put the items in the order they arrive.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`(\"updates\", {\"model\": ...})` holding the tool call",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`(\"custom\", {\"progress\": ...})` from the tool",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`(\"updates\", {\"tools\": ...})` holding the `ToolMessage`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`(\"updates\", {\"model\": ...})` holding the final answer",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The model step finishes first and its update arrives. The tool then runs, and its writer output is streamed while it is still running, before the tools step's own update. Finally the model runs again and its update carries the answer. This interleaving is why a UI can show tool progress in real time.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-agent-stream-modes"
+  },
+  {
+    "id": "LCH-STR-029",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your SSE endpoint yields `f\"data: {chunk}\\n\\n\"` for each string chunk. Sometimes the browser shows answers cut short, always where the model wrote a line break. What is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch the media type to `text/plain`",
+        "why": "Then `EventSource` would not parse the stream at all."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Yield one frame per character so line breaks travel on their own",
+        "why": "A bare newline still lands inside a frame, and the frame count explodes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add `retry: 0` to every frame",
+        "why": "`retry` sets the reconnection delay; it has nothing to do with framing."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "JSON-encode each chunk in its `data:` line",
+        "why": "Inside a JSON string a line break is the two characters backslash and n, so the frame stays on one line."
+      }
+    ],
+    "explanation": "In SSE, a line break separates fields and a blank line ends an event. A raw `\\n` in a token breaks the `data:` line, and `\\n\\n` ends the event early. Encode each payload as JSON on a single `data:` line and decode it in the browser. Using multiple `data:` lines also works, because the client joins them with newlines.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-fastapi-sse"
+  },
+  {
+    "id": "LCH-STR-030",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `astream_events` (v2) event with the component that emits it in a RAG agent.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`on_chat_model_stream`",
+        "why": "A chat model emitting one chunk of its reply."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`on_parser_stream`",
+        "why": "An output parser emitting a parsed chunk."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`on_tool_start`",
+        "why": "A tool starting, with its arguments in `data[\"input\"]`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`on_retriever_end`",
+        "why": "A retriever finishing, with documents in `data[\"output\"]`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The answer text, piece by piece",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Strings produced by `StrOutputParser` as the reply streams",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "\"Calling search_orders with {'id': 42}\"",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The list of source documents to show as citations",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Event names follow `on_<run type>_<phase>`. Tools and retrievers emit only start and end events (no stream). Chat models, parsers and chains also stream. Filtering on these names, or with `include_types`, is how a UI shows retrieved sources and tokens from a single run.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-astream-vs-events"
+  },
+  {
+    "id": "LCH-STR-031",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Inside an `async def` FastAPI endpoint, calling the sync `chain.invoke(...)` blocks the event loop, so other requests on that worker wait until the call returns.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: a sync call inside a coroutine runs on the event loop thread and holds it for the whole model call."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "FastAPI does not move sync calls made inside an `async def` endpoint to a thread; only sync endpoints (`def`) run in a thread pool."
+      }
+    ],
+    "explanation": "Use `await chain.ainvoke(...)` (or `astream`) in async endpoints, or declare the endpoint with plain `def` so FastAPI runs it in its thread pool. Mixing a blocking call into `async def` is a common reason a LangChain service handles only one request at a time.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.techinterview.org/companies/langchain/"
+      ]
+    },
+    "source": "interview:lc-async-ainvoke"
+  },
+  {
+    "id": "LCH-STR-032",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`Slow` is a custom `Runnable` whose sync `invoke` sleeps 0.5 s; it has no async code. About how long does this take, and why?\n\n```python\nawait asyncio.gather(*[Slow().ainvoke(i) for i in range(5)])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "About 2.5 s, because `ainvoke` just calls `invoke` on the event loop",
+        "why": "If it ran on the loop, the calls would run one after another. They do not."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "About 0.5 s: each call runs `invoke` on a worker thread",
+        "why": "The default async path hands the sync code to a thread pool, so the five sleeps overlap."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises `TypeError`, because `invoke` is not a coroutine",
+        "why": "The base class handles that by running the sync method in an executor."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "About 0.5 s, because `ainvoke` skips the sleep",
+        "why": "The sleep still runs, just on a different thread."
+      }
+    ],
+    "explanation": "Default `a*` methods wrap the sync version with asyncio's thread pool. You get concurrency without blocking the loop, but each call holds a thread, so thousands of concurrent calls are limited by the pool size. Native async implementations scale better for I/O-heavy components.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.techinterview.org/companies/langchain/"
+      ]
+    },
+    "source": "interview:lc-async-ainvoke"
+  },
+  {
+    "id": "LCH-STR-033",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A compliance handler writes every model response to an audit database in `on_llm_end`. The database goes down. By default, what happens to user requests, and how do you make them fail when the audit write fails?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Requests fail with the database error; set `raise_error = False` to keep them running",
+        "why": "The default is the other way round."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "They succeed and the error is logged; set `raise_error = True`",
+        "why": "Callback exceptions are logged and swallowed unless the handler opts into raising."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Requests hang until the handler returns, so add a timeout",
+        "why": "The handler error does not cause a hang; it is caught and logged."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The handler is removed after its first error, so later requests skip auditing silently",
+        "why": "The handler stays attached and is called again on the next request."
+      }
+    ],
+    "explanation": "`BaseCallbackHandler.raise_error` defaults to `False`, so an exception inside a hook is logged (`Error in AuditHandler.on_llm_end callback: ...`) and the run continues. For fail-closed requirements set `raise_error = True`. The trade-off is that an observability outage then takes down your user-facing path.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/base/BaseCallbackHandler",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callback-handler"
+  },
+  {
+    "id": "LCH-STR-034",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The model streams \"Hello there my friend\" as 7 chunks. How do the two chains differ when you call `stream`?\n\n```python\ndef shout(chunks):\n    for c in chunks:\n        yield c.upper()\n\na = prompt | model | StrOutputParser() | RunnableLambda(shout)\nb = prompt | model | StrOutputParser() | shout\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both stream 7 upper-cased chunks, because `shout` is a generator either way",
+        "why": "Wrapping it in `RunnableLambda` changes how the input is delivered."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`a` streams 7 chunks; `b` raises because a bare generator function cannot be piped",
+        "why": "Piping a generator function is allowed; it is coerced to a `RunnableGenerator`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`b` streams 7 chunks; `a` buffers, then yields single characters",
+        "why": "`RunnableLambda` hands its function the complete input, so iterating a string yields characters."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`a` streams 7 chunks; `b` yields one chunk at the end",
+        "why": "It is the other way round: only the coerced `RunnableGenerator` consumes the stream."
+      }
+    ],
+    "explanation": "A generator function that takes an iterator streams only when it becomes a `RunnableGenerator`, which happens when you pipe the bare function (or wrap it in `RunnableGenerator`). `RunnableLambda` with a generator function first collects the whole input, then calls the function with it. Here that input is one string, so `for c in chunks` walks its 21 characters.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-streaming-events"
+  },
+  {
+    "id": "LCH-STR-035",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Users complain that the chat UI shows nothing for several seconds and then the full answer. The chain is `prompt | model | StrOutputParser()`, the provider supports streaming, and the code iterates `chain.astream(...)`. Even `model.stream(\"hi\")` on its own yields a single chunk. Which cause fits every fact?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`StrOutputParser` buffers the reply until the message is complete",
+        "why": "It streams; and it cannot explain why `model.stream` alone yields one chunk."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The prompt template blocks the stream because it needs its whole input",
+        "why": "Steps before the model never hold back the output stream."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The model was built with `disable_streaming=True`",
+        "why": "With streaming disabled, `stream`/`astream` call `invoke` and yield the result once."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Async iteration is buffered; switching to `chain.stream` would fix it",
+        "why": "`astream` streams as well as `stream` does, and `model.stream` already fails."
+      }
+    ],
+    "explanation": "`disable_streaming=True` makes a chat model's streaming methods return the whole response as one chunk; the value `\"tool_calling\"` disables streaming only when tools are passed. Teams set it for deterministic tests or for models whose output must not reach a client, then forget about it. Checking the model on its own is the fastest way to locate where streaming is lost.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-streaming-events"
+  },
+  {
+    "id": "LCH-STR-036",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A custom step does `answer = model.invoke(messages)` inside a `RunnableLambda`, and it never calls `stream`. Yet `astream_events` on the outer chain shows `on_chat_model_stream` events for that model. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`astream_events` replays the final message split into words",
+        "why": "The events are real chunks produced while the model generates."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A streaming handler is attached, so `invoke` streams internally",
+        "why": "LangChain auto-streams `invoke` when it detects that the overall run is being streamed, then returns the aggregated message."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`RunnableLambda` rewrites `model.invoke` calls into `model.stream` calls",
+        "why": "The lambda does not touch your code; the model decides based on the attached handlers."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The model was created with `streaming=True`, which is required for any events",
+        "why": "No flag was needed here; the event stream's handler is enough."
+      }
+    ],
+    "explanation": "Chat models check whether a streaming-aware callback handler is attached (as `astream_events` and LangGraph's `messages` mode do). If so, `invoke` uses the provider's streaming API, emits per-chunk callbacks, and still returns one complete `AIMessage`. This is why agent nodes that call `invoke` still stream tokens in `messages` mode.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-streaming-events"
+  },
+  {
+    "id": "LCH-STR-037",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "On Python 3.10, `astream_events` on `RunnableLambda(answer)` shows no `on_chat_model_stream` events from the model call inside it. Which version of `answer` fixes this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "```python\nasync def answer(q):\n    return (await model.ainvoke(q)).content\n```",
+        "why": "This is the broken version: on 3.10 the async child does not inherit the run's callbacks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "```python\nasync def answer(q, config):\n    return (await model.ainvoke(q, config=config)).content\n```",
+        "why": "`RunnableLambda` passes its config to a function that accepts `config`, and passing it on links the model run to the event stream."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "```python\nasync def answer(q):\n    task = asyncio.create_task(model.ainvoke(q))\n    return (await task).content\n```",
+        "why": "A new task on 3.10 still cannot carry the context, so the callbacks are still lost."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```python\ndef answer(q):\n    return model.invoke(q).content\n```\nwith `astream_events(..., version=\"v1\")`",
+        "why": "Going back to the v1 schema is not the documented fix and drops v2 features such as custom events."
+      }
+    ],
+    "explanation": "LangChain propagates config through context variables, and before Python 3.11 asyncio tasks cannot be given an explicit context. So in async code on 3.10, pass `config` down by hand: accept it as a parameter (a `RunnableLambda` or tool injects it) and forward it to `ainvoke`, `astream` or `adispatch_custom_event`. On 3.11+ this happens automatically, but passing it explicitly is harmless.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/manager/adispatch_custom_event",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-callback-scope"
+  },
+  {
+    "id": "LCH-STR-038",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You must summarise 50,000 documents with `chain` against a provider limited to about 20 concurrent requests, survive individual failures, and record progress as you go. Which choices fit? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`abatch_as_completed(docs, config={\"max_concurrency\": 20}, return_exceptions=True)`, saving each `(index, result)` as it arrives",
+        "why": "It caps concurrency, keeps failures as values and yields each result with its input index as soon as it finishes."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Process the documents in slices with `abatch(slice, config={\"max_concurrency\": 20}, return_exceptions=True)` and checkpoint after each slice",
+        "why": "Slicing bounds memory, and each slice keeps input order and failure positions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`asyncio.gather(*[chain.ainvoke(d) for d in docs])`",
+        "why": "This starts 50,000 calls at once with no limit, and one exception fails the gather."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`chain.batch(docs, max_concurrency=20)`",
+        "why": "`max_concurrency` belongs inside `config`; extra keyword arguments are forwarded to each `invoke` call instead."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`abatch_as_completed` with results matched to documents by arrival order",
+        "why": "Results arrive out of order; you must use the index each one carries."
+      }
+    ],
+    "explanation": "`max_concurrency` in the `RunnableConfig` is the throttle; `return_exceptions=True` keeps one bad input from failing the job. `abatch_as_completed` yields `(index, output)` pairs out of order, which suits streaming progress to storage. Slicing with `abatch` is simpler and checkpoints cleanly. Add a rate limiter or retries for 429s on top (covered under reliability).",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-async-concurrency"
+  },
+  {
+    "id": "LCH-STR-039",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "This handler logs model latency. With `await chain.abatch(tickets)` over 20 tickets, the logged numbers are nonsense (some near zero, others far longer than any single call). What is the right fix?\n\n```python\nclass Latency(BaseCallbackHandler):\n    def on_chat_model_start(self, serialized, messages, **kwargs):\n        self.t0 = time.perf_counter()\n\n    def on_llm_end(self, response, **kwargs):\n        log(time.perf_counter() - self.t0)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Subclass `AsyncCallbackHandler` instead, so the hooks run in order",
+        "why": "Async hooks still interleave across concurrent runs, and they still share `self.t0`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Create the handler inside each model's constructor rather than passing it in config",
+        "why": "That shares one handler instance across every call made with that model, which is the same problem."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `max_concurrency: 1` so calls cannot overlap",
+        "why": "It hides the bug by giving up all concurrency."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Keep start times in a dict keyed by `run_id`",
+        "why": "Each model call has its own `run_id`, so concurrent calls no longer overwrite each other."
+      }
+    ],
+    "explanation": "One handler instance serves every run it is attached to, and with `abatch` those runs overlap, so per-call state kept on `self` is overwritten. Key all per-call state by `run_id`, which every hook receives, and clean up on both end and error to avoid leaks. The same applies to token counters and trace spans.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/base/BaseCallbackHandler",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callback-handler"
+  },
+  {
+    "id": "LCH-STR-040",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Which events does this loop collect for `chain = prompt | model | StrOutputParser()`?\n\n```python\nasync for e in chain.astream_events(\n    {\"q\": \"hi\"},\n    include_types=[\"chat_model\"],\n    include_names=[\"StrOutputParser\"],\n):\n    seen.add(e[\"event\"])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "None: no run is both a chat model and named `StrOutputParser`",
+        "why": "Include filters are combined with OR, not AND."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "All chat model events and all parser events",
+        "why": "An event is kept if it matches any include filter."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only the parser's events, because `include_names` overrides `include_types`",
+        "why": "Neither filter takes priority over the other."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only the chat model's events, because `include_types` is applied first",
+        "why": "Filters are not applied in sequence."
+      }
+    ],
+    "explanation": "In `langchain-core` 1.7, an event passes if it matches any of `include_names`, `include_types` or `include_tags`. The `exclude_*` filters then remove matches. If you need an AND, filter inside your loop. Tags are inherited by child runs, so tagging a sub-chain is a clean way to select all of its events.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/astream_events",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-astream-vs-events"
+  },
+  {
+    "id": "LCH-STR-041",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your Python client reads an SSE stream with `httpx` and runs `json.loads` on each payload. Network chunks can split frames anywhere. Which parser is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "```python\nfor chunk in resp.iter_text():\n    for line in chunk.split(\"\\n\"):\n        if line.startswith(\"data: \"):\n            yield json.loads(line[6:])\n```",
+        "why": "A frame split across two network chunks gives half a JSON string to `json.loads`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "```python\nbuf = \"\"\nfor chunk in resp.iter_text():\n    buf += chunk\n    while \"\\n\\n\" in buf:\n        frame, buf = buf.split(\"\\n\\n\", 1)\n        for line in frame.split(\"\\n\"):\n            if line.startswith(\"data: \"):\n                yield json.loads(line[6:])\n```",
+        "why": "It buffers until a blank line ends a frame, then parses only complete frames."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "```python\nfor chunk in resp.iter_text():\n    if chunk.startswith(\"data: \"):\n        yield json.loads(chunk[6:])\n```",
+        "why": "It assumes one network chunk equals one frame, which the network does not guarantee."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```python\nfor chunk in resp.iter_text():\n    try:\n        yield json.loads(chunk.removeprefix(\"data: \"))\n    except json.JSONDecodeError:\n        pass\n```",
+        "why": "It silently drops every split frame, so tokens go missing."
+      }
+    ],
+    "explanation": "Transport chunks and SSE frames are unrelated: one chunk can hold several frames or part of one. With chunks `'data: {\"t\": \"Hel'` and `'lo\"}\\n\\n...'` the naive line parser yields `'{\"t\": \"Hel'`, which is not valid JSON. Accumulate into a buffer, split on the blank line that ends each event, and keep the remainder for the next chunk. This is the classic follow-up in streaming coding rounds.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-stream-parser"
+  },
+  {
+    "id": "LCH-STR-042",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You stream an agent to the browser over SSE and want to send three kinds of data: tokens, tool progress and a final \"done\" signal. Which design choices are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Give each frame an `event:` field such as `token`, `tool` or `done`, so the client can attach a listener per kind",
+        "why": "SSE's `event` field names the event type, and `EventSource` dispatches by it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Always end with an explicit `done` event, because `EventSource` reconnects by default when the connection closes",
+        "why": "Without a terminal event the browser treats the close as a drop and reconnects."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Put several JSON objects in one frame on consecutive `data:` lines and parse each line separately in the browser",
+        "why": "The client joins consecutive `data:` lines with newlines into one string, so it never sees them separately."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use the `retry:` field to carry the running token count",
+        "why": "`retry` is the reconnection delay in milliseconds; other values are ignored."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Send each character as its own frame so the client never sees partial tokens",
+        "why": "Frames are not the problem; this only adds overhead."
+      }
+    ],
+    "explanation": "SSE gives you `event`, `data`, `id` and `retry` fields. Use `event` to separate kinds of data, one JSON payload per event, and close the stream with an explicit terminal event so the client calls `close()` instead of reconnecting. On the server, map agent stream modes (`messages`, `custom`, `updates`) to those event types.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-stream-parser"
+  },
+  {
+    "id": "LCH-STR-043",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your endpoint is `async def` and its generator does `for chunk in chain.stream(q): yield f\"data: {json.dumps(chunk)}\\n\\n\"`. When users close the tab, generation keeps running, and other users' requests stall while one answer streams. Which change fixes both?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Iterate `async for chunk in chain.astream(q)` inside an `async def` generator",
+        "why": "Each `await` gives the loop a chance to serve other requests and to cancel the generator on disconnect."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return `StreamingResponse(gen(), media_type=\"text/event-stream\")`",
+        "why": "The media type is about framing; the blocking loop is still there."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run more Uvicorn workers so that every streaming request gets a process of its own",
+        "why": "It hides the stalls under light load, but disconnects still do not stop generation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch to `chain.invoke` and send the whole answer as one event",
+        "why": "That gives up streaming without fixing cancellation of the long call."
+      }
+    ],
+    "explanation": "A sync `for` loop over `chain.stream` inside async code blocks the event loop for the whole generation, and FastAPI notes that an async task can be cancelled only when it reaches an `await`. With `astream`, every chunk is awaited, so other requests are served between chunks and a disconnect can cancel the run. This is a common reason streaming endpoints leak work in production.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-fastapi-sse"
+  },
+  {
+    "id": "LCH-STR-044",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A chat UI for a `create_agent` agent must show (1) tokens as the model writes them, (2) progress lines that tools send with `get_stream_writer`, and (3) a notice as each step finishes. It must use one `agent.stream` loop. Which call meets every requirement?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`agent.stream(inputs, stream_mode=\"messages\")`",
+        "why": "Gives tokens only; tool progress and step notices are missing."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`agent.stream(inputs, stream_mode=[\"updates\", \"custom\"])`",
+        "why": "Gives steps and tool progress, but no tokens."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`agent.stream(inputs, stream_mode=[\"messages\", \"custom\", \"updates\"])`",
+        "why": "Each requirement maps to one mode, and a list of modes delivers all three in one loop."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`agent.stream(inputs, stream_mode=\"values\")`, diffing successive states",
+        "why": "Full snapshots after each step give no tokens and no tool progress."
+      }
+    ],
+    "explanation": "Choose modes by what the UI needs: `messages` for tokens, `custom` for data your code emits, `updates` for step boundaries. With several modes each item is `(mode, chunk)`; for `messages` the chunk is itself a `(token, metadata)` pair, and `metadata[\"langgraph_node\"]` says which node produced it. The docs also offer `stream_events(version=\"v3\")` with typed projections for new apps.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/streaming",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-agent-stream-modes"
+  },
+  {
+    "id": "LCH-STR-045",
+    "domain": 4,
+    "skill": "streaming-callbacks-async",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A sync `BaseCallbackHandler` posts every `on_llm_end` to a logging service with a blocking HTTP call. The app runs agents with `await agent.ainvoke(...)`. What happens, and what is the trade-off?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It blocks the event loop on every model call, so handlers in async apps must subclass `AsyncCallbackHandler`",
+        "why": "LangChain runs sync handlers off the loop in async runs, unless the handler sets `run_inline = True`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It runs on a worker thread: the loop is free, but each call ties up a thread",
+        "why": "Sync handlers in async runs are dispatched to an executor by default."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Sync handlers are skipped in async runs, so nothing is logged",
+        "why": "They still fire; they just run on a thread."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises `RuntimeError` because a sync handler cannot be attached to an async run",
+        "why": "Mixing sync handlers with async runs is supported."
+      }
+    ],
+    "explanation": "In async runs, LangChain awaits `AsyncCallbackHandler` hooks on the event loop and runs sync handler hooks in an executor, unless the handler sets `run_inline = True` (then it runs on the loop thread and a blocking call would stall it). For high-volume logging from async services, use an async handler with an async HTTP client, or hand the records to a background queue.",
+    "reference": "https://reference.langchain.com/python/langchain-core/callbacks/base/AsyncCallbackHandler",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callback-handler"
+  }
+]

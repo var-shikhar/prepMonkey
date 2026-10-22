@@ -1,0 +1,2007 @@
+[
+  {
+    "id": "LCH-DOC-001",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A loader returns `Document` objects for a PDF. Which attribute holds the extracted text, and where do the file name and page number go?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The text is in `content`; source and page are top-level attributes",
+        "why": "`content` is the attribute name on chat messages, not on `Document`. A `Document` has no top-level `source` or `page` fields."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`page_content` holds the text; source and page go in the `metadata` dict",
+        "why": "A `Document` is text in `page_content` plus a free-form `metadata` dict, with an optional `id`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`text` holds the string; source and page go in `id`",
+        "why": "There is no `text` field, and `id` is a single optional string identifier, not a place for source and page."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`page_content` holds the text; the source and page are dropped by the loader",
+        "why": "Loaders keep provenance: PDF loaders record `source` and `page` in `metadata`, which is what makes citations possible."
+      }
+    ],
+    "explanation": "`Document(page_content=..., metadata={...}, id=None)` is the unit every loader, splitter, vector store and retriever passes around. Interviewers ask why metadata matters as much as text: it carries `source`, `page` and anything you add (tenant, section, date), and it is what you filter and cite on later. Splitters copy it onto every chunk.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-document-object",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-002",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What do LangChain document loaders such as `PyPDFLoader`, `CSVLoader` or `WebBaseLoader` hand back when you call `load()`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A single string containing all of the source's text",
+        "why": "Loaders wrap text in `Document` objects so that metadata such as `source` travels with it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A vector store that is ready to query",
+        "why": "Loading only reads data; embedding and indexing are later, separate steps."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A list of `Document` objects, via the shared `BaseLoader` interface",
+        "why": "Every loader implements `BaseLoader`, so `load()` returns `list[Document]` whatever the source."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A list of chunks already sized to fit the embedding model's context window",
+        "why": "Loaders do not split. A PDF loader typically gives one `Document` per page; chunking is the splitter's job."
+      }
+    ],
+    "explanation": "Loaders are adapters from a source (files, web pages, SaaS tools) to the standard `Document` format. Because they share the `BaseLoader` interface, the rest of the pipeline does not care whether text came from a PDF or Notion. They do not split or embed; that is why a load step is always followed by a splitter.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/document_loaders",
+    "source": "interview:lc-document-loaders-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/ai-engineer-gen-ai-interview-questions-SRCH_KO0,18.htm",
+        "https://www.glassdoor.sg/Interview/gen-ai-consultant-interview-questions-SRCH_KO0,17.htm",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "TCS"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-003",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does a RAG pipeline split long documents into chunks before embedding them, instead of embedding each whole file?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Embedding models give better vectors the longer the input is, so chunks must be merged first",
+        "why": "The opposite: one vector for a long, mixed document blurs many topics together."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Vector stores refuse any text longer than one paragraph",
+        "why": "Stores accept long strings; the limits that matter are the embedding model's window and the prompt budget."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Splitting removes the need to keep metadata such as the source file",
+        "why": "Splitters copy metadata onto each chunk precisely because you still need it."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Each chunk can be retrieved on its own and still fits in the model's context",
+        "why": "Small focused chunks match specific questions better, and only the relevant pieces go into the prompt."
+      }
+    ],
+    "explanation": "The retrieval docs describe splitters as breaking large documents into pieces that are retrievable individually and fit in a model's context window. A whole-file vector averages over every topic in the file, so a specific question matches it weakly, and stuffing whole files into the prompt wastes tokens. The interviewer wants both reasons: retrieval precision and context limits.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "source": "interview:lc-why-split",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/Infosys-AI-Engineer-Interview-Questions-EI_IE7927.0,7_KO8,19.htm",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ],
+      "companies": [
+        "Infosys"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-004",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`RecursiveCharacterTextSplitter(...).split_text(text)` returns a list of plain strings, not `Document` objects.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: `split_text` works on a string and returns `list[str]`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "`split_text` returns strings; `create_documents` and `split_documents` are the methods that return `Document` objects."
+      }
+    ],
+    "explanation": "There are three entry points. `split_text(str) -> list[str]`, `create_documents(texts, metadatas=None) -> list[Document]`, and `split_documents(docs) -> list[Document]`, which keeps each input's metadata. Mixing them up is a common reason metadata goes missing.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "roleLevel": 1
+  },
+  {
+    "id": "LCH-DOC-005",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "`RecursiveCharacterTextSplitter()` is created with no arguments. What is its default `chunk_size`? Type a number.",
+    "options": [],
+    "accepted": [
+      "4000",
+      "4,000"
+    ],
+    "explanation": "The `TextSplitter` base class defaults to `chunk_size=4000` and `chunk_overlap=200`, measured with `length_function=len`, so 4,000 characters. Tutorials almost always override this (the semantic search tutorial uses 1000 and 200), which is why it is worth knowing the default exists.",
+    "reference": "https://reference.langchain.com/python/langchain-text-splitters/base/TextSplitter",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-DOC-006",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "With `RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)`, what does `chunk_overlap` control?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Up to 200 characters from one chunk's end are repeated in the next",
+        "why": "Overlap carries a little context across each boundary, so a sentence cut at the edge still appears whole in one chunk."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Chunks may grow to 1,200 characters when a sentence would otherwise be cut",
+        "why": "`chunk_size` stays the target maximum; overlap does not add to it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Any two chunks that share 200 identical characters are merged",
+        "why": "The splitter never de-duplicates or merges chunks by content."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only the first 200 characters of each chunk are embedded",
+        "why": "The whole chunk text is embedded; overlap only affects where chunks start."
+      }
+    ],
+    "explanation": "Overlap is measured with the same `length_function` as `chunk_size` (characters by default). The splitter re-uses trailing pieces of the previous chunk, up to `chunk_overlap`, when it starts the next one. It is a guard against losing context at a boundary, and it costs a few more chunks and some duplicate hits.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "source": "interview:lc-chunk-size-overlap",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://levelup.gitconnected.com/chunking-strategies-in-rag-systems-insights-from-80-genai-interviews-8ceb4a17701a",
+        "https://www.reddit.com/r/LangChain/comments/1slfpsm/whats_your_approach_to_chunking_in_rag_pipelines/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-007",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each import path with what you import from it in LangChain 1.x.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Document`",
+        "why": "The text-plus-metadata class, from `langchain_core.documents`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`RecursiveCharacterTextSplitter`",
+        "why": "The default text splitter, from `langchain_text_splitters`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`PyPDFLoader`",
+        "why": "A community PDF loader, from `langchain_community.document_loaders`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`BaseLoader`",
+        "why": "The abstract loader interface, from `langchain_core.document_loaders`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`langchain_core.documents`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`langchain_text_splitters`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`langchain_community.document_loaders`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`langchain_core.document_loaders`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "In 1.x the core abstractions (`Document`, `BaseLoader`) live in `langchain-core`, splitters are their own package `langchain-text-splitters`, and concrete loaders such as `PyPDFLoader`, `CSVLoader` and `DirectoryLoader` come from `langchain-community` or dedicated integration packages. Old imports such as `langchain.text_splitter` and `langchain.document_loaders` belong to the 0.x layout.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-DOC-008",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two methods can you call on any LangChain document loader because they come from `BaseLoader`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`load()`",
+        "why": "Returns every document as a list."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`lazy_load()`",
+        "why": "Yields documents one at a time, which suits large sources."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`split_text()`",
+        "why": "That is a text splitter method, not a loader method."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`embed_documents()`",
+        "why": "That belongs to embedding models."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`similarity_search()`",
+        "why": "That is a vector store method."
+      }
+    ],
+    "explanation": "`BaseLoader` defines `load`, `lazy_load` and their async forms `aload` and `alazy_load` (plus the older `load_and_split`). Being able to name the shared interface, and say that each loader still has its own constructor arguments, is the usual first follow-up after \"which loaders have you used?\".",
+    "reference": "https://docs.langchain.com/oss/python/integrations/document_loaders",
+    "source": "interview:lc-document-loaders-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/ai-engineer-gen-ai-interview-questions-SRCH_KO0,18.htm",
+        "https://www.glassdoor.sg/Interview/gen-ai-consultant-interview-questions-SRCH_KO0,17.htm",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "TCS"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-009",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the default separators that `RecursiveCharacterTextSplitter` tries in order, from first tried to last.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`\"\\n\\n\"` (blank line between paragraphs)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`\"\\n\"` (line break)",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`\" \"` (space between words)",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`\"\"` (between individual characters)",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The default list is `[\"\\n\\n\", \"\\n\", \" \", \"\"]`. The splitter cuts on the first separator found in the text, then recursively re-splits any piece still at or over `chunk_size` with the next separator. So paragraphs stay whole when they fit, then lines, then words, and only as a last resort single characters.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "source": "interview:lc-recursive-splitter",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-010",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `RecursiveCharacterTextSplitter.from_language(Language.PYTHON, chunk_size=500, chunk_overlap=0)` change compared with the plain splitter?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It parses the file into an AST and returns exactly one chunk per function",
+        "why": "No parser is involved, and a function larger than `chunk_size` is still cut into several chunks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It uses separators that prefer `class` and `def` boundaries",
+        "why": "For Python the list starts with `\"\\nclass \"`, `\"\\ndef \"` and `\"\\n\\tdef \"`, then falls back to the defaults."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It measures `chunk_size` in Python tokens instead of characters",
+        "why": "`length_function` is still `len` unless you pass another one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It removes comments and docstrings before splitting",
+        "why": "Text is never rewritten; only where cuts are made changes."
+      }
+    ],
+    "explanation": "`get_separators_for_language(Language.PYTHON)` returns `['\\nclass ', '\\ndef ', '\\n\\tdef ', '\\n\\n', '\\n', ' ', '']`. It is the same recursive algorithm with language-aware separators (treated as regexes), so code tends to break between definitions. There are presets for about 28 languages, including JS, TS, Go, Java, Markdown and HTML.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/code_splitter",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-DOC-011",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nfrom langchain_text_splitters import RecursiveCharacterTextSplitter\n\ntext = \"one two three four five six seven eight nine ten\"\ns = RecursiveCharacterTextSplitter(chunk_size=15, chunk_overlap=5)\nprint(s.split_text(text))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['one two three', 'four five six', 'seven eight', 'nine ten']`",
+        "why": "That is the output with `chunk_overlap=0`; with 5 the word `six` is carried into the next chunk."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['one two three', 'three four five', 'five six seven', 'seven eight nine', 'nine ten']`",
+        "why": "Overlap is a character budget, not \"always repeat the last word\". The piece ` three` is 6 characters, more than the 5 allowed."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`['one two three', 'four five six', 'six seven', 'eight nine ten']`",
+        "why": "The piece ` six` (4 characters with its space) fits in the 5-character overlap, so the third chunk starts with it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`['one two three fo', 'ur five six seve', 'n eight nine ten']`",
+        "why": "The space separator is found, so the splitter never cuts inside words here."
+      }
+    ],
+    "explanation": "The recursive splitter defaults to `keep_separator=True`, so the pieces are `one`, ` two`, ` three` and so on, each carrying its leading space. Pieces are merged until the next would push the chunk past 15 characters. When a new chunk starts, trailing pieces of the previous chunk are kept only while their total is at most `chunk_overlap`: after `four five six`, only ` six` (4) fits, so the third chunk is ` six seven` (10), and adding ` eight` would make 16, so `eight` starts the fourth chunk. Whitespace is stripped from the finished chunks. Reasoning through overlap at this level is exactly what interviewers probe with chunk-size questions.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "source": "interview:lc-chunk-size-overlap",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://levelup.gitconnected.com/chunking-strategies-in-rag-systems-insights-from-80-genai-interviews-8ceb4a17701a",
+        "https://www.reddit.com/r/LangChain/comments/1slfpsm/whats_your_approach_to_chunking_in_rag_pipelines/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-012",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What metadata does the second chunk have?\n\n```python\nfrom langchain_core.documents import Document\nfrom langchain_text_splitters import RecursiveCharacterTextSplitter\n\ndoc = Document(\n    page_content=\"alpha beta gamma delta epsilon zeta eta theta\",\n    metadata={\"source\": \"a.pdf\", \"page\": 3},\n)\ns = RecursiveCharacterTextSplitter(chunk_size=20, chunk_overlap=0, add_start_index=True)\nchunks = s.split_documents([doc])\nprint(chunks[1].metadata)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'start_index': 17}`",
+        "why": "`split_documents` copies the parent's metadata onto every chunk; it is not replaced."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'source': 'a.pdf', 'page': 3}`",
+        "why": "With `add_start_index=True` each chunk also records its character offset."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'source': 'a.pdf', 'page': 3, 'start_index': 17, 'end_index': 35}`",
+        "why": "Only `start_index` is added; there is no `end_index` key."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`{'source': 'a.pdf', 'page': 3, 'start_index': 17}`",
+        "why": "The second chunk, `delta epsilon zeta`, starts at character 17 of the parent text."
+      }
+    ],
+    "explanation": "`split_documents` deep-copies each parent's metadata into every chunk and, with `add_start_index=True`, adds `start_index`, the chunk's offset in the parent's `page_content`. Those copied fields (`source`, `page`) are what let you cite \"a.pdf, page 3\" and filter by source later. Because the copy is deep, editing one chunk's metadata does not touch its siblings.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-metadata-preservation",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/handshake-senior-ai-engineer-interview-5759be",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Handshake"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-013",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A folder holds 300,000 support tickets. When should you call `loader.lazy_load()` rather than `loader.load()`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "When the tickets are small, because `lazy_load()` is faster per document",
+        "why": "Neither method is faster per document; the difference is memory, not speed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only in async code, because `lazy_load()` is the async version",
+        "why": "The async versions are `aload()` and `alazy_load()`; `lazy_load()` is a normal generator."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "When you want to process documents without holding them all in memory",
+        "why": "`lazy_load()` yields one `Document` at a time, so you can split and index in batches."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "When you need the documents sorted by source, which `load()` does not guarantee",
+        "why": "Neither method sorts; order comes from the loader's own iteration."
+      }
+    ],
+    "explanation": "`load()` builds the full `list[Document]`; `lazy_load()` is a generator. The docs call `lazy_load()` the option for large datasets, and the `BaseLoader` docstring says implementations should load lazily with generators so not every document is in memory at once. In fact the default `load()` is just `list(self.lazy_load())`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/document_loaders/base/BaseLoader",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-DOC-014",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "One paragraph in a file is 300 characters long, between two 50-character paragraphs separated by blank lines. What does `CharacterTextSplitter(chunk_size=100, chunk_overlap=0).split_text(text)` produce?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Chunks of 50, 300 and 50 characters, plus a logged warning",
+        "why": "It splits only on its single separator (`\"\\n\\n\"`), so the long paragraph cannot be cut further."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Chunks of 50, 100, 100, 100 and 50 characters",
+        "why": "That kind of re-splitting needs fallback separators, which `RecursiveCharacterTextSplitter` has and this class lacks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `ValueError` because a piece exceeds `chunk_size`",
+        "why": "Oversized pieces only log a warning; nothing is raised."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Two chunks of 50 characters; the oversized paragraph is skipped with a warning",
+        "why": "No text is dropped; the 300-character paragraph is kept as one chunk."
+      }
+    ],
+    "explanation": "`CharacterTextSplitter` has one separator (default `\"\\n\\n\"`), so `chunk_size` is a target it cannot enforce when a single piece is bigger. The run logs \"Created a chunk of size 300, which is longer than the specified 100\". `RecursiveCharacterTextSplitter` on the same text gives 50, 99, 100, 100, 1 and 50, because it falls back to newlines, spaces and characters. This is the main reason the recursive splitter is the recommended default.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters",
+    "source": "interview:lc-recursive-splitter",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-015",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=150)` raises a `ValueError` when it is constructed.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: the constructor rejects an overlap larger than the chunk size."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It fails fast at construction with \"Got a larger chunk overlap (150) than chunk size (100), should be smaller.\""
+      }
+    ],
+    "explanation": "The check runs in `TextSplitter.__init__`, so a bad config from an env var or settings file fails at startup rather than producing odd chunks. Sensible overlaps are a fraction of the chunk, commonly 10 to 20 percent (the semantic search tutorial uses 200 on 1000).",
+    "reference": "https://reference.langchain.com/python/langchain-text-splitters/base/TextSplitter",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-DOC-016",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the metadata of the chunk whose text is `Be nice.`?\n\n```python\nfrom langchain_text_splitters import MarkdownHeaderTextSplitter\n\nmd = \"# Guide\\nIntro text.\\n## Install\\nRun pip.\\n## Usage\\nCall it.\\n### Tips\\nBe nice.\"\nsplitter = MarkdownHeaderTextSplitter(\n    headers_to_split_on=[(\"#\", \"h1\"), (\"##\", \"h2\"), (\"###\", \"h3\")]\n)\nchunks = splitter.split_text(md)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'h3': 'Tips'}`",
+        "why": "All enclosing headers are recorded, not only the nearest one."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'h1': 'Guide', 'h2': 'Usage', 'h3': 'Tips'}`",
+        "why": "The chunk sits under Guide, then Usage, then Tips, and each level is stored under the key you chose."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'h1': 'Guide', 'h2': 'Install', 'h3': 'Tips'}`",
+        "why": "`## Usage` replaced `## Install` at the h2 level before `### Tips` appeared."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'header': '### Tips'}`",
+        "why": "Keys come from `headers_to_split_on`, and values are the header text without the `#` marks."
+      }
+    ],
+    "explanation": "`MarkdownHeaderTextSplitter` groups content by header and stores the header path in metadata using your key names. A new header at a level replaces the old value at that level and clears deeper ones. Headers are stripped from `page_content` by default (`strip_headers=True`), so the chunk text is just `Be nice.`. Keeping the section path as metadata is the structure-aware answer interviewers look for with manuals and policies.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter",
+    "source": "interview:lc-structure-aware-splitting",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rtrjqe/standard_rag_fails_terribly_on_legal_contracts_i/",
+        "https://www.reddit.com/r/LangChain/comments/1rzmtzk/built_a_rag_system_for_insurance_policy_docs_the/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-017",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many chunks does this return? Type a number.\n\n```python\nfrom langchain_text_splitters import RecursiveCharacterTextSplitter\n\ns = RecursiveCharacterTextSplitter(\n    chunk_size=3,\n    chunk_overlap=0,\n    length_function=lambda t: len(t.split()),\n)\nprint(s.split_text(\"a b c d e f g\"))\n```",
+    "options": [],
+    "accepted": [
+      "3"
+    ],
+    "explanation": "`length_function` changes the unit of `chunk_size`; here it counts words, so each chunk holds at most three words: `['a b c', 'd e f', 'g']`. The same hook is how token-based sizing works: pass a function that counts tokens with the tokenizer of the model you care about.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-DOC-018",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`people.csv` has a header row `name,city` and three data rows. What does `CSVLoader(\"people.csv\").load()` return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "One `Document` for the whole file, with the raw CSV text as `page_content`",
+        "why": "`CSVLoader` works row by row, not file by file."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A list of dicts, one per row",
+        "why": "Loaders always return `Document` objects, not plain dicts."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Four `Document`s, because the header row becomes its own document",
+        "why": "The header supplies the field names; it is not loaded as a row."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Three `Document`s with `name: ...` and `city: ...` lines and a `row` key",
+        "why": "Each data row becomes one `Document` with `key: value` lines and metadata such as `{'source': ..., 'row': 0}`."
+      }
+    ],
+    "explanation": "`CSVLoader` (from `langchain_community.document_loaders`) emits one `Document` per data row, renders the row as `column: value` lines, and records `source` (the file path, or a column chosen with `source_column`) and `row`. Knowing what a loader really emits is the follow-up to \"which loaders have you used?\".",
+    "reference": "https://docs.langchain.com/oss/python/integrations/document_loaders",
+    "source": "interview:lc-document-loaders-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/ai-engineer-gen-ai-interview-questions-SRCH_KO0,18.htm",
+        "https://www.glassdoor.sg/Interview/gen-ai-consultant-interview-questions-SRCH_KO0,17.htm",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "TCS"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-019",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each kind of content with the splitter that suits it best.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`RecursiveCharacterTextSplitter`",
+        "why": "Generic splitter that falls back from paragraphs to lines, words and characters."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`MarkdownHeaderTextSplitter`",
+        "why": "Splits on `#` headers and records the header path in metadata."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`RecursiveCharacterTextSplitter.from_language(Language.PYTHON)`",
+        "why": "Recursive splitter with separators that prefer `class` and `def` boundaries."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`RecursiveJsonSplitter`",
+        "why": "Splits nested JSON into smaller dicts that keep their keys."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Plain-text support emails with no markup",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A Markdown handbook where answers should cite the section",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A Python repository for a code assistant",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Large nested API responses that must stay valid objects",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The splitters page groups splitters into text-structure based (recursive), length based (characters or tokens) and document-structure based (Markdown headers, HTML tags, JSON objects, code). Start with the recursive splitter and switch to a structure-aware one when the format carries meaning you want to keep.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-DOC-020",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your splitter uses `chunk_size=2000` with the default `length_function=len`. The embedding model accepts at most 512 tokens per input. What is the risk, and the direct fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "None: `chunk_size` is already counted in tokens, so the chunks fit",
+        "why": "The default `length_function` is `len`, so the size is in characters."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The splitter raises an error once a chunk exceeds the model limit, so just catch it",
+        "why": "The splitter knows nothing about the embedding model and raises nothing."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A chunk can exceed 512 tokens; size chunks with a token-counting `length_function`",
+        "why": "Pass a token counter (or use `from_tiktoken_encoder` / `from_huggingface_tokenizer`) so `chunk_size` is in the model's units."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Chunks will be too small; double `chunk_size` to use the model fully",
+        "why": "2,000 characters is roughly several hundred tokens and can exceed 512 for dense text, code or non-English scripts."
+      }
+    ],
+    "explanation": "Characters and tokens do not map one to one, and the ratio changes with language and content. The docs advise counting tokens with the same tokenizer the model uses. `TextSplitter` exposes this through `length_function`, plus the `from_tiktoken_encoder` and `from_huggingface_tokenizer` constructors, which just install a token-counting length function.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/split_by_token",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-DOC-021",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You need chunks that never exceed 400 tiktoken tokens and that still prefer to break at paragraph and line boundaries. Which splitter fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`CharacterTextSplitter.from_tiktoken_encoder(chunk_size=400)`",
+        "why": "It has a single separator, so the docs warn its chunks can be larger than the token `chunk_size`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`TokenTextSplitter(chunk_size=400)`",
+        "why": "It does keep chunks under the limit, but cuts on raw token positions with no regard for paragraphs or lines."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=400)`",
+        "why": "It counts tokens and recursively re-splits any piece that is too large, falling back from paragraphs to lines and words."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`RecursiveCharacterTextSplitter(chunk_size=400)`",
+        "why": "Without a token-counting `length_function`, 400 means 400 characters."
+      }
+    ],
+    "explanation": "Three tiktoken options, three behaviours: `CharacterTextSplitter.from_tiktoken_encoder` merges by token count but cannot cut an oversized piece; `RecursiveCharacterTextSplitter.from_tiktoken_encoder` enforces the limit by recursing through separators; `TokenTextSplitter` slices the token sequence directly. Only the recursive variant satisfies both constraints here. All of them need the `tiktoken` package.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/split_by_token",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-DOC-022",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Only `#` is configured as a header. What is the `page_content` of the first chunk?\n\n```python\nfrom langchain_text_splitters import MarkdownHeaderTextSplitter\n\nmd = \"# A\\nintro\\n## B\\nb text\\n# C\\nc text\"\nchunks = MarkdownHeaderTextSplitter([(\"#\", \"H1\")]).split_text(md)\nprint(repr(chunks[0].page_content))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`'intro\\n## B\\nb text'`",
+        "why": "`##` is not a configured header, so its line stays in the text of section A."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`'intro'`",
+        "why": "That would need `(\"##\", ...)` in `headers_to_split_on`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`'# A\\nintro\\n## B\\nb text'`",
+        "why": "Configured headers such as `# A` are stripped from the text by default."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`'intro\\nb text'`",
+        "why": "Unconfigured header lines are kept as ordinary text, not removed."
+      }
+    ],
+    "explanation": "The splitter only reacts to the prefixes you list. Unlisted header levels are treated as plain lines and remain inside the enclosing chunk, so `chunks[0].metadata` is `{'H1': 'A'}` and the next chunk is `c text` under `H1: C`. Decide which levels define sections for your documents; too few levels give huge chunks, too many give tiny ones.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter",
+    "source": "interview:lc-structure-aware-splitting",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rtrjqe/standard_rag_fails_terribly_on_legal_contracts_i/",
+        "https://www.reddit.com/r/LangChain/comments/1rzmtzk/built_a_rag_system_for_insurance_policy_docs_the/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-023",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After `MarkdownHeaderTextSplitter`, some policy sections are still 6,000 characters. How do you cap their size without losing the header metadata?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pass `chunk_size=1000` to `MarkdownHeaderTextSplitter`",
+        "why": "It has no `chunk_size` parameter; it only splits on headers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run `RecursiveCharacterTextSplitter.split_text` on each chunk's `page_content`",
+        "why": "`split_text` returns plain strings, so the `h1`/`h2` metadata is lost."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Pass the header chunks to `RecursiveCharacterTextSplitter.split_documents`",
+        "why": "`split_documents` copies each section's metadata onto every smaller chunk."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `strip_headers=False` so the headers keep each section short",
+        "why": "That only keeps the header line in the text; it does nothing to section length."
+      }
+    ],
+    "explanation": "The docs show exactly this two-stage pipeline: header split first, then a size-constrained splitter via `split_documents(md_header_splits)`. Each sub-chunk keeps `{'h1': ..., 'h2': ...}`, and overlap is applied within a section only, never across a header boundary. Using `split_text` at the second stage is the classic way the metadata gets lost.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter",
+    "source": "interview:lc-structure-aware-splitting",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rtrjqe/standard_rag_fails_terribly_on_legal_contracts_i/",
+        "https://www.reddit.com/r/LangChain/comments/1rzmtzk/built_a_rag_system_for_insurance_policy_docs_the/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-024",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this return?\n\n```python\nfrom langchain_text_splitters import RecursiveCharacterTextSplitter\n\ns = RecursiveCharacterTextSplitter(chunk_size=12, chunk_overlap=0, separators=[\". \"])\nprint(s.split_text(\"Hello world. Bye now.\"))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['Hello world.', 'Bye now.']`",
+        "why": "The full stop is part of the separator, and by default the separator is not attached to the end of the first piece."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`['Hello world', '. Bye now.']`",
+        "why": "`RecursiveCharacterTextSplitter` defaults to `keep_separator=True`, which attaches the separator to the start of the next piece."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`['Hello world', 'Bye now.']`",
+        "why": "That is the output with `keep_separator=False`, which drops the separator."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`['Hello world', '. ', 'Bye now.']`",
+        "why": "The separator is never emitted as a chunk of its own; with `keep_separator=True` it is attached to the next piece."
+      }
+    ],
+    "explanation": "`keep_separator` accepts `True` or `\"start\"` (separator begins the next chunk), `\"end\"` (separator ends the previous chunk) or `False` (dropped). For sentence separators the default gives chunks that begin with `. `; `keep_separator=\"end\"` produces `['Hello world. ', 'Bye now.']`, which reads naturally. Note that `CharacterTextSplitter` defaults to `False` while the recursive splitter defaults to `True`.",
+    "reference": "https://reference.langchain.com/python/langchain-text-splitters/base/TextSplitter",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-DOC-025",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Each loaded page has a stable `id`, and your sync job relies on ids. After `split_documents`, what is `chunks[0].id`, and what should you do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It equals the parent's id, so all chunks of a page share one id",
+        "why": "Chunk ids are not inherited; sharing one id would also make chunks overwrite each other in a store."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is the parent id plus an index, such as `page-7-0`",
+        "why": "The splitter does not generate ids."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is a fresh random UUID that the splitter assigns to every chunk it creates",
+        "why": "No id is generated at split time; the field is simply empty."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It is `None`; assign chunk ids yourself and keep the parent id in metadata",
+        "why": "Only `page_content` and metadata are carried over; derive ids such as `f\"{parent_id}:{i}\"` if you need them."
+      }
+    ],
+    "explanation": "In langchain-core 1.7 `split_documents` builds new `Document(page_content=chunk, metadata=copied_metadata)` objects, so `id` is `None`. If you rely on ids for upserts or deletes, generate them deterministically from the parent id (or source plus `start_index`) and also store the parent id in metadata so you can delete all chunks of a page. Otherwise the vector store invents random ids and re-runs create duplicates.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-metadata-preservation",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/handshake-senior-ai-engineer-interview-5759be",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Handshake"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-026",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate wants to split on full stops and writes the code below. What does it return?\n\n```python\nfrom langchain_text_splitters import CharacterTextSplitter\n\ns = CharacterTextSplitter(separator=\".\", is_separator_regex=True, chunk_size=6, chunk_overlap=0)\nprint(s.split_text(\"ab.cd.ef.gh\"))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['ab.cd', 'ef.gh']`",
+        "why": "That is what you get with the default `is_separator_regex=False`, where `.` is matched literally."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['ab', 'cd', 'ef', 'gh']`",
+        "why": "As a regex, `.` matches any character, not only full stops."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`[]`",
+        "why": "As a regex, `.` matches every character, so every piece is empty and empty pieces are discarded."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `re.error` for an invalid pattern",
+        "why": "`.` is a valid regex; it just matches far too much."
+      }
+    ],
+    "explanation": "With `is_separator_regex=True` the separator is used as a regular expression. `.` matches every character, so the text splits into empty strings, which are stripped and dropped, and the call returns an empty list. Leave the flag `False` (the splitter escapes the separator for you) or use `r\"\\.\"`. A silent empty result like this is why you should print chunk counts while building an ingestion job.",
+    "reference": "https://reference.langchain.com/python/langchain-text-splitters/character/CharacterTextSplitter",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-DOC-027",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "How does `SemanticChunker` (from `langchain_experimental`) decide where to break text?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It asks a chat model to mark topic boundaries in the text",
+        "why": "No LLM is called; it uses an embeddings model only."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It embeds sentence groups and breaks where neighbours are far apart",
+        "why": "Adjacent groups are compared by cosine distance; by default a break goes where the distance is above the 95th percentile."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It splits on headings and paragraphs, then merges chunks that share keywords",
+        "why": "That describes a structure-based splitter, not a semantic one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It cuts every `chunk_size` tokens and moves each cut to the nearest sentence end",
+        "why": "It has no `chunk_size`; chunk length follows the similarity breakpoints."
+      }
+    ],
+    "explanation": "`SemanticChunker` splits text into sentences with a regex, combines each with `buffer_size` neighbours, embeds those groups and computes cosine distances between consecutive ones. A breakpoint is placed where the distance is above a threshold: `breakpoint_threshold_type` can be `percentile` (default, 95), `standard_deviation`, `interquartile` or `gradient`, or you can ask for a `number_of_chunks`. It is not part of the core `langchain-text-splitters` package.",
+    "reference": "https://github.com/langchain-ai/langchain-experimental/blob/main/libs/experimental/langchain_experimental/text_splitter.py",
+    "source": "interview:lc-semantic-chunking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-028",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are considering `SemanticChunker` instead of `RecursiveCharacterTextSplitter` for a 2-million-page corpus. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Indexing costs extra embedding calls, because every sentence group is embedded just to find break points",
+        "why": "The chunks are then embedded again for the vector store, so ingestion embeds the text roughly twice."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It has no `chunk_size` cap, so a long coherent passage can come out as one very large chunk",
+        "why": "Chunk length follows similarity breakpoints; only a `min_chunk_size` option exists."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It needs no embeddings model, since it compares sentences by word overlap",
+        "why": "It takes an `Embeddings` instance and compares cosine distances of embedded sentence groups."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It ships in `langchain-text-splitters` next to the recursive splitter",
+        "why": "It lives in `langchain_experimental.text_splitter`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It always improves retrieval quality enough to justify the cost",
+        "why": "Gains depend on the corpus; you should measure it on your own queries before paying for it."
+      }
+    ],
+    "explanation": "Semantic chunking can give more coherent chunks on prose with topic shifts, but it costs embedding calls at ingest, depends on an experimental package, and gives no hard size guarantee, so you may still need a size cap afterwards. A good interview answer names when it is worth it (long unstructured prose) and says you would evaluate it against the recursive baseline.",
+    "reference": "https://github.com/langchain-ai/langchain-experimental/blob/main/libs/experimental/langchain_experimental/text_splitter.py",
+    "source": "interview:lc-semantic-chunking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-029",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "PDF answers are poor: `PyPDFLoader` output shows tables flattened into word soup, two-column pages interleaved line by line, and the same header and footer on every page. Which two changes address the root cause? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Switch to a layout-aware parser (for example Unstructured, Docling, a PyMuPDF loader, or `PyPDFLoader(..., extraction_mode=\"layout\")`)",
+        "why": "The text is broken at extraction time, so a better parser is the fix."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Strip repeated headers and footers from each page before splitting",
+        "why": "Boilerplate on every page adds noise to every chunk and near-duplicate hits."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to a larger embedding model",
+        "why": "Embeddings cannot recover table structure that extraction has already destroyed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise `chunk_overlap` so table rows end up in the same chunk",
+        "why": "Overlap repeats boundary text; it cannot re-order scrambled cells or columns."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Increase `k` in the retriever so more chunks reach the prompt",
+        "why": "More scrambled chunks are still scrambled."
+      }
+    ],
+    "explanation": "Garbage in, garbage out: when the loaded `page_content` is already wrong, nothing downstream fixes it. Inspect loader output first, then choose a parser that understands layout and tables (the PDF loader list includes Unstructured, Docling and PyMuPDF/PDFPlumber loaders; `PyPDFLoader` itself has `extraction_mode=\"layout\"`), and clean boilerplate before chunking.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/document_loaders",
+    "source": "interview:lc-loader-real-world-pdfs",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/What-is-RAG-Retrieval-Augmented-Generation-QTN_8034044.htm",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-030",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "The answer is in the source PDF, but the chain never retrieves it. Order the checks from first to last, so each stage is cleared before the next.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Print the loaded `Document`s and confirm the answer text survived parsing",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Find the chunk that contains it and check whether a boundary cuts it in half",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run `similarity_search` with the user's question and see where that chunk ranks",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Inspect the retriever settings (`k`, filters) and the final prompt the model saw",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Debug the pipeline in data-flow order. If the loader mangled the text, no chunking or embedding change helps. If the text is fine but the chunk boundary splits the fact, fix the splitter (overlap, structure-aware splits). If the right chunk exists but ranks low, look at embeddings and query phrasing; if it ranks well but still never reaches the answer, the retriever config or prompt is the culprit.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "source": "interview:lc-chunking-debug",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.ie/Interview/EPAM-Systems-Interview-E15544-RVW102905190.htm",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "EPAM"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-031",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`MarkdownHeaderTextSplitter` treats a line such as `# not a header` inside a fenced code block as a new header and starts a new chunk there.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It tracks code fences and leaves lines inside them as content."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: lines inside a fenced block stay part of the current chunk, so a `#` comment in a code sample does not start a section."
+      }
+    ],
+    "explanation": "Running the splitter on a section containing a fenced block with `# not header` inside it keeps the whole block in the chunk with the enclosing metadata. Contrast `RecursiveCharacterTextSplitter.from_language(Language.MARKDOWN)`: its separators are just regexes, and the code splitter docs show a `#` line inside a code block being split off.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-DOC-032",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "What is `chunks[2].metadata[\"start_index\"]`? Type a number.\n\n```python\nfrom langchain_text_splitters import RecursiveCharacterTextSplitter\n\ntext = \"one two three four five six seven eight nine ten\"\ns = RecursiveCharacterTextSplitter(chunk_size=15, chunk_overlap=5, add_start_index=True)\nchunks = s.create_documents([text])\n```",
+    "options": [],
+    "accepted": [
+      "24"
+    ],
+    "explanation": "The chunks are `one two three` (0), `four five six` (14), `six seven` (24) and `eight nine ten` (34). The third chunk starts with the overlapped word `six`, which sits at offset 24 in the original string. `start_index` is found by searching the text near the expected position, so overlapping chunks get their true offsets, which you can use to highlight the cited passage.",
+    "reference": "https://reference.langchain.com/python/langchain-text-splitters/base/TextSplitter",
+    "source": "interview:lc-metadata-preservation",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/handshake-senior-ai-engineer-interview-5759be",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Handshake"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-033",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each HTML-splitting need with the splitter that fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`HTMLHeaderTextSplitter`",
+        "why": "Splits on `h1`/`h2`/... tags and records the headers each chunk falls under."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`HTMLSectionSplitter`",
+        "why": "Splits into broader sections, can apply an XSLT transform and uses font size."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`HTMLSemanticPreservingSplitter`",
+        "why": "Keeps tables, lists and other chosen elements whole, with custom tag handlers."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`RecursiveCharacterTextSplitter.from_language(Language.HTML)`",
+        "why": "Recursive splitter whose separators are HTML tags; no HTML parsing."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Docs pages whose heading hierarchy should become chunk metadata",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Legacy pages with styled `span`s for titles that need converting into sections",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Pricing pages where a table must never be cut in half",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A quick tag-boundary split with only plain separators, accepting mid-word cuts",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The HTML guide positions the header splitter for heading hierarchy, the section splitter for broader or custom sections (XSLT, font size), and the semantic-preserving splitter for keeping tables, lists and code intact (its `max_chunk_size` is a target, not a hard cap). The language preset only uses tag separators, and the code-splitter docs show it cutting mid-word at small sizes.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/split_html",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-DOC-034",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are choosing a token-based splitter for a mixed English and Japanese corpus. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`CharacterTextSplitter.from_tiktoken_encoder` can produce chunks larger than `chunk_size` tokens",
+        "why": "It splits on one separator and merges by token count; an oversized piece cannot be cut further."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`TokenTextSplitter` can split the tokens of one character across two chunks, giving malformed Unicode",
+        "why": "The docs warn about this and suggest the `from_tiktoken_encoder` variants for Chinese and Japanese."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`TokenTextSplitter` is the docs' recommendation for Chinese and Japanese text",
+        "why": "It is the opposite: the docs warn against it for these scripts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`RecursiveCharacterTextSplitter.from_tiktoken_encoder` counts characters and only uses tiktoken for overlap",
+        "why": "It installs a tiktoken-based `length_function`, so `chunk_size` and overlap are both in tokens."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`from_tiktoken_encoder` works without `tiktoken` installed by estimating four characters per token",
+        "why": "It raises an `ImportError` if `tiktoken` is missing."
+      }
+    ],
+    "explanation": "For CJK text the safe choice is `RecursiveCharacterTextSplitter.from_tiktoken_encoder` (hard limit, separator-aware), ideally with separators that include CJK punctuation, as the recursive splitter guide shows. `TokenTextSplitter` guarantees the size but can cut multi-byte characters; the character variant respects separators but not the size.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/split_by_token",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-DOC-035",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Contract Q&A must cite the clause number, and the embedding model takes at most 512 tokens. Clauses run from 50 to 3,000 tokens, and answers often come back as half a clause. Which design meets every constraint?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keep the recursive character splitter but raise `chunk_overlap` to 80 percent of `chunk_size`",
+        "why": "Heavy overlap multiplies the index size and still does not attach a clause number to anything."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set `chunk_size` to 3,000 tokens so every clause fits in one chunk",
+        "why": "That breaks the 512-token embedding limit, so long clauses would be truncated when embedded."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Split on clause headings with the clause number in metadata, then token-cap long clauses",
+        "why": "Clauses stay whole when they fit, long ones are capped at the model limit, and every piece can cite its clause."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `SemanticChunker` so break points follow meaning instead of size",
+        "why": "It has no size cap and no notion of clause numbers, so it can violate both constraints."
+      }
+    ],
+    "explanation": "This is the structure-first, size-second pattern: split along the document's own units (clause headings via a header splitter or custom separators), put the unit's identifier in metadata, then run a token-sized recursive splitter with `split_documents` so pieces of long clauses inherit the clause metadata. Practitioners report plain fixed-size RAG failing on contracts for exactly this reason.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter",
+    "source": "interview:lc-chunk-size-overlap",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://levelup.gitconnected.com/chunking-strategies-in-rag-systems-insights-from-80-genai-interviews-8ceb4a17701a",
+        "https://www.reddit.com/r/LangChain/comments/1slfpsm/whats_your_approach_to_chunking_in_rag_pipelines/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-036",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You build a Markdown pipeline: `MarkdownHeaderTextSplitter`, then `RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)`. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Calling `split_documents` on the header chunks keeps their header metadata on every sub-chunk",
+        "why": "Each section's metadata is deep-copied onto its pieces."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Overlap is only applied inside a section; no chunk mixes the end of one section with the next",
+        "why": "Each section is split as its own document, so overlap never crosses a header boundary."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "You can skip the first stage and call `MarkdownHeaderTextSplitter.split_documents(docs)` directly on loaded files",
+        "why": "The class does not provide `split_documents`; it exposes `split_text` for a Markdown string."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`strip_headers=False` stops header metadata from being recorded",
+        "why": "It only keeps the header line in the text; metadata is recorded either way."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`MarkdownHeaderTextSplitter` already enforces `chunk_size`, so the second stage only adds overlap",
+        "why": "The header splitter has no size limit; the second stage is what caps size."
+      }
+    ],
+    "explanation": "The header splitter is not a `TextSplitter` subclass: it has `split_text(markdown)` and returns `Document`s with header metadata, but no `chunk_size` and no `split_documents`. So you loop over loaded files with `split_text`, keep any loader metadata yourself, then cap sizes with `split_documents`. Knowing the API edges of the pipeline is what separates a working design from a whiteboard sketch.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter",
+    "source": "interview:lc-structure-aware-splitting",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rtrjqe/standard_rag_fails_terribly_on_legal_contracts_i/",
+        "https://www.reddit.com/r/LangChain/comments/1rzmtzk/built_a_rag_system_for_insurance_policy_docs_the/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-037",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A sentence-transformers embedding model has a 256-token window. Ingestion uses `RecursiveCharacterTextSplitter(chunk_size=1500)`. Recall is low on facts near the end of long chunks, and nothing errors. What is the most likely cause and fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Text past the window is truncated at embed time; size chunks in its tokens",
+        "why": "Use `SentenceTransformersTokenTextSplitter` or a `from_huggingface_tokenizer` splitter so chunks fit the window."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The vector store drops chunks over 1,000 characters; lower `chunk_size` to 1,000 characters",
+        "why": "Stores keep long texts; the symptom points at the embedding window, and characters are the wrong unit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Overlap is missing; add `chunk_overlap=500` so the tail of each chunk is repeated",
+        "why": "Overlap repeats text in the next chunk, but every chunk is still cut off at 256 tokens when embedded."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The retriever's `k` is too small; raise it so more long chunks are returned",
+        "why": "The tail of each chunk never made it into its vector, so more results do not help."
+      }
+    ],
+    "explanation": "The embedding model only \"sees\" its window; text after that does not affect the vector, so facts late in a chunk become unfindable even though they sit in the stored text. Measure chunk size in the embedding model's own tokens. The token-splitting docs describe `SentenceTransformersTokenTextSplitter`, sized to a sentence-transformer model's window, and `CharacterTextSplitter.from_huggingface_tokenizer` for Hugging Face tokenizers.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/split_by_token",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-DOC-038",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A nightly job over 2 million files runs `docs = loader.load()`, then `splitter.split_documents(docs)`, then `vector_store.add_documents(chunks)`, and is killed for running out of memory. Which change fixes it with the least rework?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Call `loader.aload()` instead, since async loading uses less memory",
+        "why": "`aload()` still returns the whole list at once."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Iterate `lazy_load()`, splitting and adding in batches",
+        "why": "Only one batch of documents and chunks is in memory at any time."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Lower `chunk_size` so each chunk takes less memory",
+        "why": "Smaller chunks mean more of them; the full corpus is still in memory."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `load_and_split()` so loading and splitting happen in one step",
+        "why": "It calls `self.load()` first, so the whole corpus is still loaded."
+      }
+    ],
+    "explanation": "`lazy_load()` is a generator, so you can stream: take N documents, `split_documents` them, `add_documents` the chunks, repeat. `load()` is just `list(self.lazy_load())`, `aload()` is its async twin, and `load_and_split()` calls `load()` and then splits (its docstring says not to override it and to treat it as deprecated). Streaming ingestion is the expected answer at the senior level.",
+    "reference": "https://reference.langchain.com/python/langchain-core/document_loaders/base/BaseLoader",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-DOC-039",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Which custom loader is implemented the way `BaseLoader` intends, for a source that can be paged through lazily?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "```python\nclass TicketLoader(BaseLoader):\n    def load(self):\n        return [to_doc(t) for t in api.all_tickets()]\n```",
+        "why": "It works, but everything is fetched into a list first, and `load` is meant to be a convenience you do not override."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "```python\nclass TicketLoader(BaseLoader):\n    async def alazy_load(self):\n        for t in api.all_tickets():\n            yield to_doc(t)\n```",
+        "why": "Without `lazy_load`, sync `load()` and `lazy_load()` raise `NotImplementedError`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "```python\nclass TicketLoader(BaseLoader):\n    def lazy_load(self):\n        for page in api.pages():\n            for t in page:\n                yield to_doc(t)\n```",
+        "why": "A generator `lazy_load` is the hook to implement; `load`, `aload` and `alazy_load` come from the base class."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```python\nclass TicketLoader(BaseLoader):\n    def lazy_load(self):\n        return [to_doc(t) for t in api.all_tickets()]\n```",
+        "why": "Returning a list makes `load()` work but defeats the point: nothing is lazy."
+      }
+    ],
+    "explanation": "The `BaseLoader` docstring asks implementations to provide lazy loading with generators and says `load` is a user convenience that should not be overridden. Implement `lazy_load` as a generator; the base class turns it into `load()` (`list(...)`) and into `alazy_load()` (runs the sync generator in an executor). Override `alazy_load` only if you have a native async client.",
+    "reference": "https://reference.langchain.com/python/langchain-core/document_loaders/base/BaseLoader",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-DOC-040",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Users report that citations say \"page 4\" for text that is printed on page 5 of the PDF. Ingestion uses `PyPDFLoader(path)` with defaults. What is going on?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`add_start_index=True` shifts page numbers by one; turn it off",
+        "why": "`start_index` is a character offset within the page text and does not touch `page`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The default `mode=\"single\"` merges pages, so page numbers are estimated",
+        "why": "The default is `mode=\"page\"`, one `Document` per page; `single` would drop the `page` key entirely."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`page` is zero-based; show `page + 1` or `page_label`",
+        "why": "The loader enumerates pages from 0 and also records `page_label`, the label printed in the PDF."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The splitter re-orders chunks across pages; split each page separately",
+        "why": "Splitters never re-order text, and chunks inherit their own page's metadata."
+      }
+    ],
+    "explanation": "In `langchain-community` 0.4, `PyPDFLoader` defaults to `mode=\"page\"` and gives each page metadata such as `source`, `total_pages`, `page` (zero-based) and `page_label` (the PDF's own label, which may be roman numerals or offset in front matter). Citations should display `page_label`, or `page + 1` if labels are absent. With `mode=\"single\"` you get one document and lose per-page citations.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-loader-real-world-pdfs",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.com/Interview/What-is-RAG-Retrieval-Augmented-Generation-QTN_8034044.htm",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-041",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Order an ingestion job for a Markdown knowledge base that needs section citations, a token cap and safe re-runs.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Stream files with `lazy_load()`, keeping `source` in metadata",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Split each file on headers with `MarkdownHeaderTextSplitter`, adding `source` back to each section's metadata",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Cap sizes with a token-counting `RecursiveCharacterTextSplitter.split_documents`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Give every chunk a deterministic id (for example source, header path and position) before indexing",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Load lazily, split by structure, then by size (so pieces inherit section metadata), and only then assign ids, because `split_documents` returns chunks with `id=None`. Note the header splitter's `split_text` builds fresh metadata from headers only, so loader metadata such as `source` must be merged back in. Deterministic ids are what let a re-run update instead of duplicate.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-DOC-042",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which three statements about choosing `chunk_size` and `chunk_overlap` are accurate? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Very large chunks dilute the vector, so a specific fact buried in unrelated text matches its question weakly",
+        "why": "One vector averages everything in the chunk."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Very small chunks can lose the context needed to answer, even when the right one is retrieved",
+        "why": "A two-line fragment may omit the subject or the condition."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Overlap increases the number of chunks and can return near-duplicate neighbours",
+        "why": "On a 2,000-word text with `chunk_size=1000`, overlap 200 gives 13 chunks instead of 10."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "More overlap always improves retrieval, so set it close to `chunk_size`",
+        "why": "Huge overlap mostly duplicates content and inflates cost; it also must stay below `chunk_size`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`chunk_size` has no effect on cost, because embedding is priced per document",
+        "why": "Embedding and prompt costs scale with tokens, and chunk size changes how many tokens each answer pulls in."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "There is a universally correct size, 1,000 characters with 200 overlap",
+        "why": "Those are tutorial values; the right size depends on the content and should be tuned against real queries."
+      }
+    ],
+    "explanation": "Chunking is a trade-off between precision (small, focused chunks) and self-contained context (larger chunks), with overlap as insurance at boundaries that costs storage and duplicates. A strong answer ties the choice to the embedding window, the type of question and an evaluation set rather than a magic number.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "source": "interview:lc-chunk-size-overlap",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://levelup.gitconnected.com/chunking-strategies-in-rag-systems-insights-from-80-genai-interviews-8ceb4a17701a",
+        "https://www.reddit.com/r/LangChain/comments/1slfpsm/whats_your_approach_to_chunking_in_rag_pipelines/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-043",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A staff engineer proposes dropping chunking: the chat model has a very large context window, so every question could send whole documents from a 40,000-document corpus. What is the strongest counter-argument?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Large-context models cannot read Markdown or PDF text at all",
+        "why": "They read the text fine; the issue is how much of it you send."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "You still must pick which files to send, and whole files cost tokens and latency",
+        "why": "A large window does not remove retrieval; precise chunks keep prompts small and grounded."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LangChain vector stores require split documents, so the pipeline cannot run without a splitter",
+        "why": "Vector stores accept whole documents; splitting is a design choice, not an API requirement."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Chunking is needed because models refuse prompts over a few thousand characters",
+        "why": "That is not true of the models in question; the argument is about cost and relevance."
+      }
+    ],
+    "explanation": "Big context windows change the trade-off but not the need to select: 40,000 documents will not fit, and padding every prompt with whole files raises cost and latency and gives the model more irrelevant text to wade through. Sending whole documents can be right for a small, fixed set; for a large corpus you still retrieve, and chunking is what makes retrieval precise.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "source": "interview:lc-why-split",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/Infosys-AI-Engineer-Interview-Questions-EI_IE7927.0,7_KO8,19.htm",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ],
+      "companies": [
+        "Infosys"
+      ]
+    }
+  },
+  {
+    "id": "LCH-DOC-044",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A custom loader overrides only `load()`, which fetches every record from an API into a list. A teammate switches the pipeline to `for doc in loader.lazy_load(): ...` to save memory. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`lazy_load()` raises `NotImplementedError`, because only `load()` was implemented",
+        "why": "`BaseLoader.lazy_load` checks whether `load` was overridden and falls back to it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Records now stream one at a time, because `lazy_load()` wraps the API call in a generator",
+        "why": "The base class cannot make your `load()` lazy; it just iterates the list `load()` already built."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It runs, but the whole list is still built in memory first",
+        "why": "The fallback is `iter(self.load())`, so memory use does not change."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It loops forever, because `load()` and `lazy_load()` call each other",
+        "why": "The base class guards against this; the default `load` is only used when not overridden."
+      }
+    ],
+    "explanation": "Default `lazy_load()` returns `iter(self.load())` when a subclass overrides `load`, and raises `NotImplementedError` only when neither is implemented. So switching the caller to `lazy_load()` changes nothing about memory. The fix is in the loader: implement `lazy_load` as a generator that pages through the API, and drop the `load` override.",
+    "reference": "https://reference.langchain.com/python/langchain-core/document_loaders/base/BaseLoader",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-DOC-045",
+    "domain": 3,
+    "skill": "documents-splitting",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Retrieval misses \"What is the notice period for contractors?\". The loaded page text has the sentence intact, but the chunk mentioning contractors ends just before \"...is 30 days\", which starts the next chunk. `chunk_overlap` is 0. Which two changes address the root cause? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Add a modest `chunk_overlap` so text at each boundary appears in both neighbouring chunks",
+        "why": "The boundary sentence would then exist whole in at least one chunk."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Split on the document's structure (sections or sentences) so a clause is not cut in the middle",
+        "why": "Respecting natural units keeps the question and its answer together."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to a larger embedding model",
+        "why": "No embedding model can join two half-sentences stored in separate chunks."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise the retriever's `k` from 4 to 50",
+        "why": "This may drag in the second half by luck, but floods the prompt and leaves the cut in place."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Load the PDF with `mode=\"single\"`",
+        "why": "Merging pages does not move chunk boundaries and loses page citations."
+      }
+    ],
+    "explanation": "The evidence says the loader is fine and the splitter cut the fact in half, so the fix belongs at the splitting stage: overlap, structure-aware separators, or both. Changing embeddings or `k` treats the symptom. This is the stage-by-stage diagnosis interviewers want when they ask how you debug a RAG miss.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter",
+    "source": "interview:lc-chunking-debug",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.ie/Interview/EPAM-Systems-Interview-E15544-RVW102905190.htm",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "EPAM"
+      ]
+    }
+  }
+]

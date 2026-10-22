@@ -1,0 +1,50 @@
+{
+  "memory-chat-history": {
+    "summary": "Chat models are stateless, so \"memory\" means your application stores the conversation and puts the right parts back into each request. In LangChain 1.x, short-term memory is thread-scoped agent state saved by a checkpointer (`create_agent(..., checkpointer=...)` plus a `thread_id`), and long-term memory is a store that any thread can read. Know how to keep history inside the context window (trim, delete, summarise) without breaking message structure, how to keep users isolated, and where the legacy memory classes and `RunnableWithMessageHistory` now stand.",
+    "points": [
+      "Short-term memory: pass `checkpointer=InMemorySaver()` (development) or a database-backed saver such as `PostgresSaver.from_conn_string(DB_URI)` with `setup()` (production) to `create_agent`, then call `agent.invoke(input, {\"configurable\": {\"thread_id\": \"42\"}})`. Same thread id, same conversation; a new thread id starts empty.",
+      "With a checkpointer attached, a call without `thread_id` raises `ValueError` (the checkpointer requires `thread_id`, `checkpoint_ns` or `checkpoint_id`). Without a checkpointer, a `thread_id` does nothing and each invoke starts from only the messages you pass.",
+      "Long-term memory: pass `store=` to `create_agent` (`InMemoryStore` for development, `PostgresStore` with `setup()` in production). Items are JSON dicts under a namespace tuple and a key: `store.put(ns, key, value)`, `store.get(ns, key)` (returns `None` if absent), `store.search(ns_prefix, filter=..., query=..., limit=10)`. Namespaces are hierarchical, so a prefix search covers sub-namespaces.",
+      "Semantic `query` ranking in a store needs an index: `InMemoryStore(index={\"embed\": embeddings, \"dims\": N})`. Without one, search returns items unranked with `score=None`.",
+      "Tools reach memory through `runtime: ToolRuntime[Ctx]` (hidden from the model): `runtime.state` for thread state, `runtime.store` for the store, `runtime.context` for per-call context such as the user id. Context is not checkpointed and must be passed on every invoke.",
+      "Custom thread state: subclass `AgentState`, add fields such as `user_id`, and pass `state_schema=`; values come in with the invoke input and persist per thread with the checkpointer.",
+      "The `messages` key uses the `add_messages` reducer: new ids append, an existing id replaces that message, `RemoveMessage(id=...)` deletes it (a missing id raises `ValueError`), and `RemoveMessage(id=REMOVE_ALL_MESSAGES)` followed by messages rewrites the list. Updates from hooks like `before_model` are permanent in the checkpoint.",
+      "`trim_messages(messages, *, max_tokens, token_counter, strategy=\"last\", allow_partial=False, end_on=None, start_on=None, include_system=False, text_splitter=None)` returns a new list. `token_counter` can be a callable, a chat model, `\"approximate\"`, or `len` (counts messages). Called without `messages`, it returns a runnable.",
+      "For a valid chat history use `strategy=\"last\"`, `start_on=\"human\"` and `include_system=True`. The kept system message counts toward the budget, and `start_on` can return fewer messages than the budget allows.",
+      "`filter_messages` keeps messages that match any `include_*` condition (names, types, ids) and no `exclude_*` condition; `exclude_tool_calls=True` removes AI messages with tool calls and all `ToolMessage`s.",
+      "Summarisation (for example `SummarizationMiddleware` with a `trigger` and `keep`) bounds context while keeping the gist, at the cost of extra model calls and possibly lost exact details. Keep exact identifiers in state or the store.",
+      "Legacy: `ConversationBufferMemory`, `ConversationBufferWindowMemory` (`k=5`), `ConversationTokenBufferMemory`, `ConversationSummaryMemory`, `ConversationSummaryBufferMemory` (`max_token_limit=2000`), `VectorStoreRetrieverMemory` and `ConversationChain` live in `langchain-classic` and warn that they are deprecated in favour of `create_agent` with checkpointing or the Store API. `RunnableWithMessageHistory` (config key `session_id`, plus `input_messages_key`, `history_messages_key`, `output_messages_key`, `history_factory_config`) and `InMemoryChatMessageHistory` also emit deprecation warnings in `langchain-core` 1.7."
+    ],
+    "traps": [
+      "Trimming by count can start the history on an AI message or an orphaned `ToolMessage`; providers reject a tool result whose requesting `AIMessage` was cut. Use `start_on=\"human\"`.",
+      "A hard-coded `thread_id` or `session_id`, or a history factory that ignores its argument, makes every user share one conversation.",
+      "`InMemorySaver` and dict-held histories are per process: lost on restart and not shared across replicas. Sticky sessions hide only half the problem.",
+      "`RunnableWithMessageHistory` over a chain that returns a dict needs `output_messages_key`; without it the call succeeds, a callback error is logged, and nothing is saved.",
+      "Session ids go in `config[\"configurable\"]`, not in the input dict, and `thread_id` does not satisfy `RunnableWithMessageHistory`.",
+      "Using the user id as the `thread_id` merges every conversation into one ever-growing thread; put cross-conversation facts in the store instead.",
+      "`from langchain.memory import ...` fails in 1.x; the classes are in `langchain_classic.memory`."
+    ],
+    "docs": [
+      {
+        "title": "Short-term memory",
+        "url": "https://docs.langchain.com/oss/python/langchain/short-term-memory"
+      },
+      {
+        "title": "Long-term memory",
+        "url": "https://docs.langchain.com/oss/python/langchain/long-term-memory"
+      },
+      {
+        "title": "trim_messages reference",
+        "url": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages"
+      },
+      {
+        "title": "RunnableWithMessageHistory reference",
+        "url": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory"
+      },
+      {
+        "title": "Memory concepts",
+        "url": "https://docs.langchain.com/oss/python/concepts/memory"
+      }
+    ]
+  }
+}

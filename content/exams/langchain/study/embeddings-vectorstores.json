@@ -1,0 +1,35 @@
+{
+  "embeddings-vectorstores": {
+    "summary": "Retrieval is a pipeline you can reason about: an embedding model turns text into vectors, a vector store keeps and searches them, and a retriever is the Runnable \"query in, Documents out\" interface that chains and agents call. Know the VectorStore API and its defaults, how `as_retriever` maps `search_type` and `search_kwargs` onto store methods, which advanced retrievers fix which failure, and how to keep an index in sync with the indexing API.",
+    "points": [
+      "`Embeddings` has two abstract methods: `embed_documents(texts) -> list[list[float]]` (one vector per text) and `embed_query(text) -> list[float]`. Index and query with the same model; vectors from different models are not comparable even at the same dimension.",
+      "`CacheBackedEmbeddings.from_bytes_store(model, store, namespace=...)` (in `langchain_classic.embeddings`) caches document vectors by a hash of the text. Set `namespace` (for example the model name) to avoid collisions between models; query embeddings are only cached if you pass `query_embedding_cache`.",
+      "Shared VectorStore API: `add_documents(docs, ids=...)`, `add_texts`, `from_documents`, `delete(ids=...)`, `get_by_ids`, `similarity_search(query, k=4)`, `similarity_search_with_score`, `similarity_search_with_relevance_scores` and `max_marginal_relevance_search(query, k=4, fetch_k=20, lambda_mult=0.5)`. Re-adding an existing id upserts; adding without ids creates new UUIDs and therefore duplicates.",
+      "Vector stores are not Runnables; `as_retriever()` returns a `VectorStoreRetriever` (a Runnable). `search_type` is `\"similarity\"` (default), `\"mmr\"` or `\"similarity_score_threshold\"` (which requires `search_kwargs={\"score_threshold\": x}` with x between 0 and 1). `search_kwargs` such as `k`, `fetch_k`, `lambda_mult` and `filter` are passed to the store method.",
+      "Scores are store-specific: `InMemoryVectorStore` returns cosine similarity (higher is better), FAISS defaults to Euclidean distance (lower is better). Normalised 0 to 1 scores come from `similarity_search_with_relevance_scores`, which `InMemoryVectorStore` does not implement, so its threshold retriever raises `NotImplementedError` at query time.",
+      "Filters vary by store: `InMemoryVectorStore` takes a callable on a `Document`, Chroma takes dicts such as `{\"source\": \"news\"}`, PGVector supports `$eq`, `$ne`, `$lt`, `$in`, `$nin`, `$between`, `$like`, `$and`, `$or`. Filter inside the search, never in the prompt, and derive tenant filters from the authenticated session.",
+      "Store choice: `InMemoryVectorStore` (in-process dict, `dump`/`load` to JSON) for tests and tutorials; FAISS (`langchain-community`, in-process, `save_local`/`load_local` with a pickled docstore that needs `allow_dangerous_deserialization=True`); Chroma (`langchain-chroma`, in memory unless `persist_directory` or a client is set); PGVector (`langchain-postgres`, psycopg3 connection string) for production multi-user systems.",
+      "Custom retriever: subclass `BaseRetriever` and implement `_get_relevant_documents(query, *, run_manager)`; `_aget_relevant_documents` is optional (the default runs the sync method in an executor). Call retrievers with `invoke`, `batch` or `ainvoke`; `get_relevant_documents` is not available in langchain-core 1.x.",
+      "Advanced retrievers live in `langchain-classic`: `MultiQueryRetriever` (one LLM call writes rephrasings, results are a unique union), `EnsembleRetriever` (weighted reciprocal rank fusion, `c=60`, de-duplicated by `page_content` or `id_key`) usually paired with `BM25Retriever` from `langchain-community` (needs `rank_bm25`), `ParentDocumentRetriever` (children in the vector store, parents in a docstore linked by `doc_id`; optional `parent_splitter`), `ContextualCompressionRetriever` with a reranker or `EmbeddingsFilter`, and `SelfQueryRetriever` (LLM writes query plus filter from `document_contents` and `metadata_field_info`; needs `lark`).",
+      "Indexing API: `index(docs, record_manager, vector_store, cleanup=..., source_id_key=...)` from `langchain_core.indexing` hashes documents, skips unchanged ones and reports `num_added`, `num_updated`, `num_skipped`, `num_deleted`. Cleanup: `None` deletes nothing; `incremental` and `scoped_full` need `source_id_key` and only clean up source ids seen in the run; `full` deletes everything the loader did not return. The store must implement `delete`. Prefer a non-SHA-1 `key_encoder` for new indexes.",
+      "RAG wiring: LCEL `{\"context\": retriever | format_docs, \"question\": RunnablePassthrough()} | prompt | model | StrOutputParser()`; legacy `create_retrieval_chain(retriever, create_stuff_documents_chain(model, prompt))` expects `{\"input\": ...}` and returns `input`, `context` and `answer`; for agentic RAG, `create_retriever_tool(retriever, name, description, response_format=\"content_and_artifact\")` returns text as content and the `Document` list as the artifact.",
+      "Two-step RAG gives high control and predictable latency; agentic RAG lets the model decide when to search (more flexible, variable latency); hybrid designs add query rewriting and validation steps."
+    ],
+    "traps": [
+      "Querying with a different embedding model of the same dimension raises no error; results just become garbage.",
+      "MMR with `fetch_k` equal to `k` cannot change the result set, only its order.",
+      "`ParentDocumentRetriever` applies `k` to child chunks, so several hits from one parent collapse into a single returned document.",
+      "`index(..., cleanup=\"full\")` with a loader that returns only changed files deletes every unchanged document; an empty incremental run deletes nothing.",
+      "Porting a score threshold between stores breaks when one returns similarity and the other returns distance.",
+      "Feeding a dict into a chain whose first step is a retriever, or skipping `format_docs`, either fails or stuffs the `Document` repr (ids and metadata) into the prompt.",
+      "Putting tenant or permission rules in the system prompt, or letting a self-query LLM choose the tenant filter, is not access control."
+    ],
+    "docs": [
+      { "title": "Retrieval (LangChain docs)", "url": "https://docs.langchain.com/oss/python/langchain/retrieval" },
+      { "title": "Build a semantic search engine", "url": "https://docs.langchain.com/oss/python/langchain/knowledge-base" },
+      { "title": "Vector store integrations", "url": "https://docs.langchain.com/oss/python/integrations/vectorstores" },
+      { "title": "Embedding model integrations and caching", "url": "https://docs.langchain.com/oss/python/integrations/text_embedding" },
+      { "title": "index() API reference", "url": "https://reference.langchain.com/python/langchain-core/indexing/api/index" }
+    ]
+  }
+}

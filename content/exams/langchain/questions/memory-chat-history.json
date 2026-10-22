@@ -1,0 +1,2101 @@
+[
+  {
+    "id": "LCH-MEM-001",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A chatbot built with a plain `model.invoke(question)` call forgets the user's name one message after being told it. What is the underlying reason?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The provider deletes conversation data after every request for privacy reasons",
+        "why": "Retention policies are not why the model forgets; the API never kept a conversation to begin with."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Chat models keep no state between calls, so earlier turns must be sent again with each request",
+        "why": "Each call sees only the messages in that request, so the application has to store and resend the history."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The temperature is too high, so the model ignores facts from earlier turns",
+        "why": "Temperature changes sampling randomness; it cannot recover messages that were never sent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "LangChain caches the first answer and replays it, so the new turn never reaches the model",
+        "why": "There is no implicit response cache here; the model is called fresh on every turn."
+      }
+    ],
+    "explanation": "Every model call is independent. \"Memory\" in LangChain means the application keeps the conversation (in a message history, a checkpointer or a store) and puts the relevant parts back into each request. That is also why memory has a token cost: whatever you resend counts against the context window.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-memory-why",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-002",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "An agent is built with `create_agent(model, tools=[])` and no checkpointer. Calling `agent.invoke(...)` twice with the same `{\"configurable\": {\"thread_id\": \"1\"}}` lets the model see the first turn during the second call.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Without a checkpointer nothing saves the first run's state, so the `thread_id` has nothing to load."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: with no checkpointer each invoke starts from only the messages you pass in; the `thread_id` is simply unused."
+      }
+    ],
+    "explanation": "A `thread_id` is only a lookup key for a checkpointer. Running two invokes on a fake model with no checkpointer showed the second model call received just the new human message. Add `checkpointer=InMemorySaver()` (or a database-backed saver) and the same two invokes share history.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-memory-why",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-003",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which legacy LangChain memory class keeps only the last `k` exchanges and drops older ones?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`ConversationBufferMemory`",
+        "why": "This keeps the whole conversation and grows without limit."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`ConversationSummaryBufferMemory`",
+        "why": "This keeps a summary of older turns plus recent turns up to a token limit, not a fixed number of exchanges."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`ConversationBufferWindowMemory`",
+        "why": "It is a sliding window over the most recent `k` exchanges (default `k=5`)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`VectorStoreRetrieverMemory`",
+        "why": "This stores past exchanges in a vector store and retrieves the most relevant ones, not the most recent."
+      }
+    ],
+    "explanation": "The classic memory family differs in what it keeps: everything (buffer), the last `k` turns (window), recent turns up to a token budget (token buffer), an LLM summary (summary), a summary plus recent raw turns (summary buffer), or semantically relevant snippets (vector store). All of them now live in `langchain-classic` and are deprecated in favour of agent checkpointing and the store.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-legacy-memory-types",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-004",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "A chain is wrapped with `RunnableWithMessageHistory(chain, get_session_history, ...)` using the default history factory config. Which key must appear inside `config[\"configurable\"]` on every call? Type the key name.",
+    "accepted": [
+      "session_id",
+      "\"session_id\"",
+      "'session_id'"
+    ],
+    "explanation": "By default the wrapper expects `config={\"configurable\": {\"session_id\": \"...\"}}` and passes that value to `get_session_history`. Leaving it out raises `ValueError: Missing keys ['session_id'] in config['configurable']`. You can replace it with other keys (such as `user_id` and `conversation_id`) through `history_factory_config`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory",
+    "source": "interview:lc-runnable-with-message-history",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-005",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In LangChain 1.x, what gives a `create_agent` agent short-term memory across several `invoke` calls in one conversation?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Passing `memory=ConversationBufferMemory()` to `create_agent`",
+        "why": "`create_agent` has no `memory` parameter; the buffer memory classes are legacy and live in `langchain-classic`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Setting `return_messages=True` on the chat model",
+        "why": "That is a parameter of the legacy memory classes, not of chat models, and it would not persist anything."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `checkpointer` on `create_agent` and a `thread_id` in the invoke config",
+        "why": "The checkpointer saves state per thread; reusing the thread id loads the earlier messages."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Appending every reply to the `system_prompt` string before the next call",
+        "why": "This bloats the instructions, mixes roles and is not how the agent keeps history."
+      }
+    ],
+    "explanation": "Short-term memory in 1.x is thread-scoped agent state saved by a checkpointer: `create_agent(model, tools, checkpointer=InMemorySaver())`, then `agent.invoke(input, {\"configurable\": {\"thread_id\": \"42\"}})`. Use `InMemorySaver` for development and a database-backed saver such as `PostgresSaver` in production.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-checkpointer-thread-id",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-006",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "After upgrading to LangChain 1.x, `from langchain.memory import ConversationBufferMemory` fails. Which statement is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`langchain.memory` is gone; the class lives on, deprecated, in `langchain_classic.memory`",
+        "why": "In 1.x the legacy memory classes moved to the `langchain-classic` package and emit a deprecation warning."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The class was renamed to `ChatMemory` and is still exported from `langchain.memory`",
+        "why": "No such rename exists, and `langchain.memory` is gone in 1.x."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The class moved into `langchain_core.memory` and is fully supported there",
+        "why": "`langchain-core` does not host the buffer memory classes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It was deleted outright in 1.0, so no package provides it any more and the code must be rewritten first",
+        "why": "It still exists in `langchain-classic`, which is how old code keeps running during migration."
+      }
+    ],
+    "explanation": "`langchain` 1.x is slimmed down to agents, models, messages and tools. Legacy chains and memory (`ConversationChain`, `ConversationBufferMemory` and friends) are in `langchain-classic`. Instantiating `ConversationBufferMemory` there warns that it was deprecated in 0.3.1, will be removed in 2.0.0, and that you should use `create_agent` with checkpointing or the Store API instead.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "source": "interview:lc-legacy-memory-deprecated",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-007",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "How does the scope of long-term memory (a store) differ from short-term memory (a checkpointer) in a LangChain agent?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Short-term memory is kept in RAM and long-term memory on disk; that storage medium is the only difference",
+        "why": "Both can be in memory or in a database; the difference is scope, not medium."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Short-term memory holds only the system prompt, while long-term memory holds the message history",
+        "why": "The message history is short-term state; the system prompt is configuration."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Short-term memory is limited to one model call; long-term memory covers one thread",
+        "why": "A checkpointer already spans every call in a thread."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Short-term memory belongs to one thread; long-term memory is reachable from any thread",
+        "why": "Checkpointed state is per thread, while store items live under namespaces you choose, such as a user id."
+      }
+    ],
+    "explanation": "A checkpointer saves agent state for a single `thread_id`, so a new conversation starts empty. A store (`InMemoryStore` for development, `PostgresStore` for production) holds JSON documents under namespace tuples and keys, and any thread can read them, typically through `runtime.store` inside a tool.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/long-term-memory",
+    "source": "interview:lc-store-vs-checkpointer",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ],
+      "companies": [
+        "Kin"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-008",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which of these problems is NOT a consequence of letting a conversation's message history grow without limit?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Each request costs more and takes longer because every turn resends more tokens",
+        "why": "This is a direct cost of long history."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Requests eventually fail once the history exceeds the model's context window",
+        "why": "Overflowing the context window is the classic long-history failure."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The embedding model's vector dimension changes, breaking the vector store",
+        "why": "Embedding dimension is fixed by the embedding model and has nothing to do with chat length."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The model pays less attention to facts buried in the middle of a long prompt",
+        "why": "Long contexts dilute attention, so details in the middle are often missed."
+      }
+    ],
+    "explanation": "Long histories raise cost and latency, risk context-length errors and degrade answer quality as relevant facts get buried. The usual remedies are trimming, deleting, summarising, or moving durable facts out of the prompt into long-term memory.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-long-conversation-problems",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-009",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `msgs` below, what does `trim_messages(msgs, max_tokens=3, token_counter=len)` return?\n\n```python\nmsgs = [\n    SystemMessage(\"sys\", id=\"s\"),\n    HumanMessage(\"h1\", id=\"h1\"), AIMessage(\"a1\", id=\"a1\"),\n    HumanMessage(\"h2\", id=\"h2\"), AIMessage(\"a2\", id=\"a2\"),\n    HumanMessage(\"h3\", id=\"h3\"), AIMessage(\"a3\", id=\"a3\"),\n]\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[h3, a3]`, because trimming always starts on a human message",
+        "why": "Only `start_on=\"human\"` adds that rule; it is not the default."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[sys, h1, a1]`",
+        "why": "That is `strategy=\"first\"`; the default strategy is `\"last\"`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[sys, h3, a3]`, because the system message is always kept",
+        "why": "The system message is kept only with `include_system=True`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`[a2, h3, a3]`",
+        "why": "With the default `strategy=\"last\"` and `len` counting messages, it keeps the last three."
+      }
+    ],
+    "explanation": "`strategy` defaults to `\"last\"` and `include_system` and `start_on` are off by default, so the function simply keeps the most recent messages that fit. Here that history starts with an AI message, which many providers reject. Production code usually adds `start_on=\"human\"` and `include_system=True`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "source": "interview:lc-trim-messages",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-010",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does passing `token_counter=len` to `trim_messages` do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It makes `max_tokens` a message count, since each message counts as 1",
+        "why": "`len` on a list of messages counts messages, so the budget becomes \"keep at most N messages\"."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It counts characters in every message and divides by four to estimate tokens",
+        "why": "That is roughly what an approximate token counter does, not `len`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It counts real tokens with the default tokenizer of the installed provider",
+        "why": "For real token counts you pass a chat model or a tokenizer-based counter."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It disables trimming, because `len` is not a recognised counter",
+        "why": "`len` is an explicitly supported shortcut."
+      }
+    ],
+    "explanation": "`token_counter` accepts a callable, a chat model (its `get_num_tokens_from_messages` is used), the string `\"approximate\"` for a fast estimate, or `len` to count messages. Counting messages is handy for tests and simple window limits, but it does not protect you from one huge message.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-MEM-011",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent has `checkpointer=InMemorySaver()`. What happens on this call?\n\n```python\nagent.invoke({\"messages\": [HumanMessage(\"hi\")]})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It runs normally and saves the state under a default thread",
+        "why": "There is no default thread; the checkpointer refuses to guess."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises a `ValueError` asking for a `thread_id` in `configurable`",
+        "why": "A checkpointed graph needs to know which thread to load and save."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It runs but silently skips checkpointing for that call",
+        "why": "Nothing is silently skipped; the call fails up front."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It creates a random thread id and returns it in the result",
+        "why": "No id is generated for you."
+      }
+    ],
+    "explanation": "Once a checkpointer is attached, every call must say which thread it belongs to. Running this showed: `ValueError: Checkpointer requires one or more of the following 'configurable' keys: thread_id, checkpoint_ns, checkpoint_id`. Pass `{\"configurable\": {\"thread_id\": ...}}` as the config.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-checkpointer-thread-id",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-012",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your FastAPI chatbot keeps each session's history in a module-level Python `dict` of `InMemoryChatMessageHistory` objects. Which two problems will you hit in production? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Every history is lost when the process restarts or is redeployed",
+        "why": "The dict lives in process memory, so a restart wipes it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "With several workers or replicas, a user's next request can land on a process that has never seen their history",
+        "why": "Each process has its own dict, so history is not shared."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`InMemoryChatMessageHistory` cannot hold `AIMessage` objects, only strings",
+        "why": "It stores message objects of every type."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The dict forces every request to run sequentially, so concurrency drops to one",
+        "why": "A dict does not serialise requests; the problems are durability and sharing."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The model provider rejects requests whose history came from a dict",
+        "why": "The provider only sees the messages you send; it cannot tell where they were stored."
+      }
+    ],
+    "explanation": "In-process history is for demos and tests (the reference docs say so, and `InMemoryChatMessageHistory` now emits a deprecation warning). Production needs a shared, durable backend: a Redis or Postgres chat-history integration for legacy chains, or a database-backed checkpointer such as `PostgresSaver` for `create_agent`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory",
+    "source": "interview:lc-persist-chat-history",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/selvamsmk/spur-live-chat-agent",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "Spur"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-013",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each legacy `langchain_classic.memory` class with what it keeps in the prompt.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The entire conversation, growing without limit",
+        "why": "Plain buffer memory."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only the most recent `k` exchanges",
+        "why": "A sliding window."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The most recent turns that fit within `max_token_limit`, dropping the oldest",
+        "why": "A token-bounded buffer, which needs an LLM to count tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An LLM-written summary of older turns plus the most recent turns verbatim",
+        "why": "A hybrid of summary and buffer."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`ConversationBufferMemory`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`ConversationBufferWindowMemory`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`ConversationTokenBufferMemory`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`ConversationSummaryBufferMemory`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Testing these with a fake model that counts 10 tokens per message and `max_token_limit=25`: the token buffer kept only the last exchange, and the summary buffer returned a `System` summary line followed by the last exchange. All four classes warn that they are deprecated in favour of `create_agent` with checkpointing or the Store API.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-legacy-memory-types",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-014",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent has a checkpointer. What does the model receive on the third call?\n\n```python\nagent.invoke({\"messages\": [HumanMessage(\"I am Bob\")]}, {\"configurable\": {\"thread_id\": \"1\"}})\nagent.invoke({\"messages\": [HumanMessage(\"my name?\")]}, {\"configurable\": {\"thread_id\": \"1\"}})\nagent.invoke({\"messages\": [HumanMessage(\"my name?\")]}, {\"configurable\": {\"thread_id\": \"2\"}})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Only the third human message, `my name?`",
+        "why": "Thread `2` has no saved state, so the conversation starts fresh."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "All five earlier messages plus `my name?`, because the checkpointer is shared",
+        "why": "One checkpointer serves many threads, but each thread's state is separate."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The two thread-1 human messages, because human messages are shared across threads",
+        "why": "No messages cross threads; nothing is shared by message type."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing, because the call raises for using a second thread on one agent",
+        "why": "One agent can serve any number of threads."
+      }
+    ],
+    "explanation": "A fake-model run confirmed it: the second call's model input was `[I am Bob, hi Bob, my name?]`, while the thread-2 call received only `[my name?]`. The `thread_id` is the conversation key, so use one per chat session.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-checkpointer-thread-id",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-015",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`trim_messages(msgs, ...)` trims the list you pass in place, so `msgs` itself is shorter after the call.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The input list is left untouched; trimming returns a new list."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: it returns a new list and does not mutate its input."
+      }
+    ],
+    "explanation": "After trimming a seven-message list down to three, the original list still had seven messages. This matters in agents: trimming inside `before_model` and returning the result does nothing to state unless you return the right update (for example `RemoveMessage(id=REMOVE_ALL_MESSAGES)` followed by the kept messages).",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-MEM-016",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This call raises `ValueError: Missing keys ['session_id'] in config['configurable']`. What is the fix?\n\n```python\nchat = RunnableWithMessageHistory(\n    chain, get_history,\n    input_messages_key=\"question\", history_messages_key=\"history\",\n)\nchat.invoke({\"question\": \"hi\", \"session_id\": \"u1\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rename the input key to `session_id` in `input_messages_key`",
+        "why": "The input key names the user's message, not the session."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pass `config={\"configurable\": {\"thread_id\": \"u1\"}}` instead",
+        "why": "The wrapper ignores `thread_id`; it still reports the missing `session_id` key."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Move the id into the config: `config={\"configurable\": {\"session_id\": \"u1\"}}`",
+        "why": "The session id is read from `config[\"configurable\"]`, not from the input dict."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Make `get_history` take no arguments, so the wrapper stops asking for a session id at all",
+        "why": "Then every user would share one history, which is a data leak."
+      }
+    ],
+    "explanation": "`RunnableWithMessageHistory` reads the history factory's arguments from the config. The default factory config is a single `session_id`. A `thread_id` is the checkpointer's key in agents and does not satisfy the wrapper; running that variant gives the same missing-key error.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory",
+    "source": "interview:lc-runnable-with-message-history",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-017",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "`RemoveMessage(id=...)` only works on a state key whose reducer can process removals. Which reducer function, used by the default `AgentState` for `messages`, provides this? Type the function name.",
+    "accepted": [
+      "add_messages",
+      "add_messages()",
+      "langgraph.graph.message.add_messages"
+    ],
+    "explanation": "`add_messages` appends new messages, replaces a message when an incoming one has the same `id`, and deletes messages when it receives `RemoveMessage(id=...)` (or all of them with `REMOVE_ALL_MESSAGES`). The default `AgentState` already declares `messages` with this reducer, so `RemoveMessage` works in agent middleware out of the box.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-MEM-018",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A team replaces trimming with summarisation of older turns. Which trade-off should they expect?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Summaries keep every number and id intact; the only cost is that responses become noticeably slower to stream to clients",
+        "why": "Summaries compress, so exact values such as order ids or amounts can be dropped."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It costs nothing extra, because the main model writes the summary in the same call",
+        "why": "Summarising is a separate model call whenever it triggers."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Context stays bounded and the gist survives, but each summary is an extra model call and can lose exact details",
+        "why": "That is the real trade-off compared with trimming, which is free but forgets entirely."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Summaries remove the need for a checkpointer, since the summary is stored in the prompt",
+        "why": "The summary still has to be persisted somewhere between turns, usually in checkpointed state."
+      }
+    ],
+    "explanation": "Trimming and deleting are cheap but lose information outright. Summarisation (for example the built-in `SummarizationMiddleware` with a `trigger` and `keep`) keeps the meaning of older turns at the cost of extra model calls, and it can paraphrase away exact identifiers. Facts you must keep exactly are better stored in state fields or long-term memory.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-summarize-history",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-019",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "You call `trim_messages` before every model call and want the result to be a valid chat history that keeps the instructions. Which three settings does the reference documentation recommend? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`strategy=\"last\"`",
+        "why": "Keeps the most recent turns and drops the oldest."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`start_on=\"human\"`",
+        "why": "Makes the kept history begin with a human message (after any system message)."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`include_system=True`",
+        "why": "Keeps the leading `SystemMessage` with the instructions."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`allow_partial=True`",
+        "why": "Splitting messages saves space but does nothing for validity, and can cut a message mid-thought."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`strategy=\"first\"`",
+        "why": "This keeps the oldest messages and drops the user's latest turn."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`end_on=\"ai\"`",
+        "why": "Ending on an AI message would drop the user's newest question."
+      }
+    ],
+    "explanation": "The reference guidance for chat models is: keep the last messages, start on a human message (or a system message followed by a human message), and keep the system message. A `ToolMessage` should also only follow the `AIMessage` that requested it, and starting on a human message usually takes care of that.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-MEM-020",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `msgs` below, what does `trim_messages(msgs, max_tokens=3, token_counter=len)` return, and what is wrong with it?\n\n```python\nmsgs = [\n    SystemMessage(\"sys\", id=\"s\"),\n    HumanMessage(\"weather in Pune?\", id=\"h1\"),\n    AIMessage(\"\", id=\"a1\", tool_calls=[{\"name\": \"weather\", \"args\": {\"city\": \"Pune\"}, \"id\": \"c1\"}]),\n    ToolMessage(\"sunny\", tool_call_id=\"c1\", id=\"t1\"),\n    AIMessage(\"It is sunny in Pune.\", id=\"a2\"),\n    HumanMessage(\"thanks\", id=\"h2\"),\n]\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[a2, h2]`; the cut is fine because the trimmer removes the orphaned tool message automatically",
+        "why": "Nothing removes orphans unless you ask for it, and the budget of three is filled."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[sys, a2, h2]`; the system message is kept, so the history is valid",
+        "why": "The system message is only kept with `include_system=True`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`[t1, a2, h2]`; it begins with a `ToolMessage` whose requesting `AIMessage` was dropped",
+        "why": "The cut landed in the middle of a tool exchange, so most providers will reject the request."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[a1, t1, a2]`; the latest human message is dropped to keep the tool pair together",
+        "why": "`strategy=\"last\"` keeps the newest messages, so `h2` is always kept."
+      }
+    ],
+    "explanation": "Plain trimming counts messages without regard to tool call pairs. Running this returned `[t1, a2, h2]`. Adding `start_on=\"human\"` returns `[h2]` (and with `include_system=True`, `[sys, h2]`), which is valid, if short. Interviewers probe this to see whether you know trimming must respect message structure, not just size.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "source": "interview:lc-trim-messages",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-021",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Given `msgs` below, what does this return?\n\n```python\nmsgs = [\n    SystemMessage(\"sys\", id=\"s\"),\n    HumanMessage(\"h1\", id=\"h1\"), AIMessage(\"a1\", id=\"a1\"),\n    HumanMessage(\"h2\", id=\"h2\"), AIMessage(\"a2\", id=\"a2\"),\n    HumanMessage(\"h3\", id=\"h3\"), AIMessage(\"a3\", id=\"a3\"),\n]\n```\n\n```python\ntrim_messages(msgs, max_tokens=4, token_counter=len,\n              include_system=True, start_on=\"human\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[sys, a2, h3, a3]`",
+        "why": "`start_on=\"human\"` drops the leading `a2` after the cut."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`[sys, h3, a3]`",
+        "why": "The system message uses one slot, the last three fit, and then `a2` is dropped to start on a human message."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[h2, a2, h3, a3]`",
+        "why": "The system message is kept with `include_system=True` and counts against the budget."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[sys, h2, a2, h3, a3]`",
+        "why": "That is five messages, over the budget of four."
+      }
+    ],
+    "explanation": "With `include_system=True` the system message is kept and counts toward `max_tokens`. The remaining budget of three selects `a2, h3, a3`, and `start_on=\"human\"` then drops `a2`. Trimming can therefore return less than the budget, which is the price of keeping the history well-formed.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "source": "interview:lc-trim-messages",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-022",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Users of a multi-tenant support bot start seeing each other's earlier messages. Given this handler, what is the cause?\n\n```python\nagent = create_agent(model, tools, checkpointer=PostgresSaver(conn))\nCONFIG = {\"configurable\": {\"thread_id\": \"support\"}}\n\n@app.post(\"/chat\")\ndef chat(req: ChatRequest):\n    return agent.invoke({\"messages\": [HumanMessage(req.text)]}, CONFIG)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`PostgresSaver` stores rows without user ids, so it cannot keep users apart",
+        "why": "The saver keys everything by thread; isolation comes from the ids you give it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Sharing one compiled `agent` object across requests mixes their state",
+        "why": "A compiled agent is reusable; state lives in the checkpointer, keyed by thread."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Every request uses the same hard-coded `thread_id`, so all users append to one conversation",
+        "why": "One thread id means one shared history; derive it from the user's own conversation id."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The handler is synchronous, so concurrent requests overwrite each other's messages",
+        "why": "Sync versus async does not decide which conversation a request belongs to."
+      }
+    ],
+    "explanation": "Memory isolation comes down to the conversation key. Build the config per request, for example `{\"configurable\": {\"thread_id\": f\"{user.id}:{req.conversation_id}\"}}`, and authorise that the caller owns the conversation id. The same bug appears with `RunnableWithMessageHistory` when `session_id` is fixed or the history factory ignores it.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-session-leak",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-023",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An agent should remember a user's preferred language even when the user starts a brand-new conversation (new `thread_id`). Which two changes achieve that? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pass a store to the agent: `create_agent(..., store=store)` (a database-backed store in production)",
+        "why": "The store is what persists across threads and is exposed to tools as `runtime.store`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Have a tool save it with `runtime.store.put((\"prefs\",), runtime.context.user_id, {\"lang\": lang})`, and read it the same way",
+        "why": "Namespacing by the user's id makes the item reachable from any of that user's threads."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add a `preferred_language` field to a custom `state_schema`",
+        "why": "Custom state is checkpointed per thread, so a new thread starts without it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Reuse one `thread_id` for all of a user's conversations",
+        "why": "This merges every chat into one ever-growing history instead of separating durable facts from conversations."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Put the language in `runtime.context` once at sign-up",
+        "why": "Runtime context is per invocation and is not saved; it must be passed on every call."
+      }
+    ],
+    "explanation": "A fake-model test saved `Tamil` with a tool on thread `A` and read it back with another tool on thread `B`, using `ToolRuntime[Ctx]`, `runtime.context.user_id` and `runtime.store`. The checkpointer keeps a conversation; the store keeps facts about the user across conversations.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/long-term-memory",
+    "source": "interview:lc-store-vs-checkpointer",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ],
+      "companies": [
+        "Kin"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-024",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a chat-over-documents app, the follow-up \"what about its pricing?\" retrieves irrelevant chunks, although the first question (\"tell me about Plan X\") worked. Which fix addresses the cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise `k` on the retriever so more chunks come back for every query",
+        "why": "More chunks for a vague query are still unrelated to Plan X."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Rewrite the follow-up with the chat history into a standalone query before searching",
+        "why": "\"its pricing\" means nothing alone; a rewritten query such as \"Plan X pricing\" retrieves the right chunks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prepend the whole chat history to the query string sent to the vector store",
+        "why": "Embedding a long transcript dilutes the query; rewriting is more precise."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch the vector store from cosine to dot-product similarity",
+        "why": "The similarity metric does not resolve the pronoun."
+      }
+    ],
+    "explanation": "History-aware retrieval rewrites the question before searching. The legacy helper `create_history_aware_retriever(llm, retriever, prompt)` in `langchain_classic.chains` does exactly that: with an empty `chat_history` it sends `input` straight to the retriever; otherwise it runs prompt, LLM and parser to produce a search query. In 1.x you can get the same effect by giving an agent a retriever tool, so the model writes the query itself.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "source": "interview:lc-conversational-rag-followups",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-025",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order what `RunnableWithMessageHistory` does on one call to a prompt-plus-model chain set up with `input_messages_key=\"question\"` and `history_messages_key=\"history\"`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Read `session_id` from `config[\"configurable\"]` and call `get_session_history(session_id)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Put the stored messages into the input under the `history` key",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run the wrapped chain, so the prompt renders history before the new question",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Append the new human message and the model's reply to the history object",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The wrapper loads history before the run and writes back after it. A spy on the prompt showed the second call rendered `[system, hi, r1, again]`, and the history object afterwards held `[hi, r1, again, r2]`. Because saving happens after the run, a call that raises (tested with a failing runnable) leaves the history unchanged.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory",
+    "source": "interview:lc-runnable-with-message-history",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-026",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If a node or middleware returns `{\"messages\": [AIMessage(\"fixed\", id=\"m7\")]}` and state already holds a message with `id=\"m7\"`, the `add_messages` reducer appends a second message with that id.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "An incoming message with an existing id replaces it rather than duplicating it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: matching ids are replaced in place, which is how you edit a stored message."
+      }
+    ],
+    "explanation": "`add_messages` merges by id: new ids are appended, matching ids replace the old message in place, and `RemoveMessage(id=...)` deletes. In a test, merging `AIMessage(\"B!\", id=\"2\")` into `[a(id=1), b(id=2)]` produced `[a, B!]`. Messages without ids get one assigned automatically.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-MEM-027",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This middleware keeps the conversation short. After a few turns, a provider that requires the history to start with a user message starts rejecting requests. Why?\n\n```python\n@before_model\ndef keep_last_two(state, runtime):\n    msgs = state[\"messages\"]\n    if len(msgs) <= 2:\n        return None\n    return {\"messages\": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *msgs[-2:]]}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`REMOVE_ALL_MESSAGES` also deletes the new human message, so the model gets an empty list",
+        "why": "The kept messages are re-added after the removal, so the list is not empty."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`before_model` runs after the model, so trimming happens too late",
+        "why": "`before_model` runs before every model call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`RemoveMessage` needs a custom reducer that `create_agent` does not provide",
+        "why": "The default `AgentState` uses `add_messages`, which handles removals."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The last two messages are usually the previous AI reply and the new question",
+        "why": "Cutting by count ignores turn boundaries; the request then begins with the assistant's reply."
+      }
+    ],
+    "explanation": "A run with a fake model showed the model inputs `[q1]`, then `[r1, q2]`, then `[r2, q3]`. Trim on structure instead: for example `trim_messages(..., start_on=\"human\", include_system=True)`, or keep the first message as the docs' example does. Note also that this rewrite is permanent: the checkpoint loses the removed turns.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-MEM-028",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A support conversation has run for 300 turns with the full history resent every time. Which three effects should you expect? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Higher cost and latency per turn, because input tokens keep growing",
+        "why": "Every turn pays for the whole transcript again."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Eventual context-length errors from the provider",
+        "why": "Once the history plus the new turn exceed the window, requests fail."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Weaker use of facts buried in the middle of the transcript",
+        "why": "Long contexts dilute attention, so mid-transcript details get missed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Tool schemas silently drop out of the request to make room",
+        "why": "Nothing trims tool definitions for you; the request just grows."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The checkpointer refuses to save threads over a fixed message count",
+        "why": "Checkpointers have no message-count cap; growth is your job to manage."
+      }
+    ],
+    "explanation": "Long history hurts cost, latency, reliability and quality. The tools for it are trimming (`trim_messages`), deleting (`RemoveMessage`), summarising (`SummarizationMiddleware` with a `trigger`), and moving durable facts into the store so they do not need the transcript at all.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-long-conversation-problems",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-029",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "Using `msgs` below, how many messages does `trim_messages(msgs, max_tokens=4, token_counter=len, start_on=\"human\")` return? Type a number.\n\n```python\nmsgs = [\n    SystemMessage(\"sys\", id=\"s\"),\n    HumanMessage(\"weather in Pune?\", id=\"h1\"),\n    AIMessage(\"\", id=\"a1\", tool_calls=[{\"name\": \"weather\", \"args\": {\"city\": \"Pune\"}, \"id\": \"c1\"}]),\n    ToolMessage(\"sunny\", tool_call_id=\"c1\", id=\"t1\"),\n    AIMessage(\"It is sunny in Pune.\", id=\"a2\"),\n    HumanMessage(\"thanks\", id=\"h2\"),\n]\n```",
+    "accepted": [
+      "1",
+      "one"
+    ],
+    "explanation": "The last four messages are `a1, t1, a2, h2`. `start_on=\"human\"` drops everything before the first human message in that window, leaving only `h2`, so the answer is 1. The result is valid but loses the tool exchange; a larger budget or summarisation keeps more context.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "source": "interview:lc-trim-messages",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-030",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "You are designing memory for a long-running personal assistant. Match each kind of information with where it belongs.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The agent's message state for the current thread, kept by the checkpointer",
+        "why": "Short-term, per-thread history."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A running summary that replaces older turns in the thread",
+        "why": "Condensed short-term context."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The long-term store, namespaced by the user's id",
+        "why": "Durable facts reachable from any thread."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A vector store queried through a retriever tool",
+        "why": "Large reference corpora searched by meaning."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The last few exchanges of today's conversation",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The gist of 200 earlier turns in this same conversation",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The user is vegetarian and prefers replies in Hindi",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "3,000 pages of product manuals the assistant may need to quote",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Recent turns stay verbatim in thread state; older turns are summarised to bound the prompt; durable user facts go to the store under the user's namespace; documents go to a vector store and are fetched on demand. Keeping these layers separate is also how you stop the prompt from filling with stale or irrelevant memories.",
+    "reference": "https://docs.langchain.com/oss/python/concepts/memory",
+    "source": "interview:lc-memory-architecture",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Kin"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-031",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `RunnableWithMessageHistory` argument with what it controls.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The key in the input dict that holds the new user message",
+        "why": "The current turn, saved to history as a human message."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The key under which past messages are injected into the input",
+        "why": "Usually the name of a `MessagesPlaceholder`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The key in a dict output that holds the reply to save",
+        "why": "Needed when the wrapped chain returns a dict."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Extra config fields passed to the history factory instead of `session_id`",
+        "why": "A list of `ConfigurableFieldSpec`, for example `user_id` plus `conversation_id`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`input_messages_key`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`history_messages_key`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`output_messages_key`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`history_factory_config`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The three `*_key` arguments tell the wrapper how to find the input, where to put history and where to find the output; `history_factory_config` changes which configurable keys reach `get_session_history`. With two specs, the factory received `user_id` and `conversation_id` and stored history under that tuple.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-MEM-032",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "When `chat_history` is non-empty, order the steps of a retriever built with `create_history_aware_retriever(llm, retriever, prompt)`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Format `prompt` with the `input` and the `chat_history`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `llm` to write a standalone search query",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Parse the model output into a plain string",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass that string to `retriever` and return its documents",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The helper (in `langchain_classic.chains`) is a `RunnableBranch`: with no history it pipes `input` straight into the retriever; otherwise it runs `prompt | llm | StrOutputParser() | retriever`. The prompt must contain an `input` variable or construction raises `ValueError`.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "source": "interview:lc-conversational-rag-followups",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-033",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps to give a production agent Postgres-backed long-term memory that a tool can write to.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Open the store with `PostgresStore.from_conn_string(DB_URI)` as a context manager",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `store.setup()` so the tables exist",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Build the agent with `create_agent(model, tools, store=store, context_schema=Context)`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Invoke with `context=Context(user_id=...)` so the tool can write via `runtime.store.put(...)`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The long-term memory docs use this sequence: install `langgraph-checkpoint-postgres` and `psycopg[binary]`, open the store, run `setup()` once, pass the store to `create_agent`, and give each call the user's id through runtime context. Tools then read and write `runtime.store` under a user-specific namespace.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/long-term-memory",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-MEM-034",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "This chain runs without raising, yet the history for `s5` stays empty after every call (a callback error mentioning `KeyError('output')` appears in the logs). What is wrong?\n\n```python\nchain = RunnableParallel(answer=prompt | model, sources=retriever)\nchat = RunnableWithMessageHistory(\n    chain, get_history,\n    input_messages_key=\"question\", history_messages_key=\"history\",\n)\nchat.invoke({\"question\": \"q\"}, config={\"configurable\": {\"session_id\": \"s5\"}})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`get_history` must return a brand-new history object on every call, or the wrapper refuses to save",
+        "why": "Returning a fresh object each time would lose history; the factory should return the stored one."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It returns a dict, so it needs `output_messages_key=\"answer\"` to know which value to save",
+        "why": "Without it the wrapper looks for a default key that does not exist, and the save step fails inside a callback."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`RunnableParallel` cannot be wrapped; only a prompt piped into a model can",
+        "why": "Any runnable can be wrapped as long as the keys are configured."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`history_messages_key` must match `input_messages_key`",
+        "why": "They name different things: past messages and the new message."
+      }
+    ],
+    "explanation": "Saving happens in a listener after the run, so a misconfigured output key does not fail the call; it only logs a callback error and nothing is saved. Running the same chain with `output_messages_key=\"answer\"` stored `[q, d2]`. This is a classic \"memory silently doesn't work\" bug.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory",
+    "source": "interview:lc-runnable-with-message-history",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-035",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Each request's history is trimmed before the model call. Requests that follow a tool call occasionally fail with a provider error about a tool result without a matching tool call. Which change fixes it with the least loss of context?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Add `start_on=\"human\"` (plus `include_system=True`)",
+        "why": "The window can then never start in the middle of a tool exchange, and the rest of the budget is kept."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Filter every request with `filter_messages(msgs, exclude_tool_calls=True)`",
+        "why": "This removes every tool call and result, including the ones the model needs to answer the current turn."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add `end_on=\"tool\"` so the window ends on a tool message",
+        "why": "`end_on` trims the end, not the start, and would drop the user's newest message."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `allow_partial=True` so the cut message is split instead of dropped",
+        "why": "Partial splitting applies to message content; it does not restore the dropped `AIMessage` with the tool call."
+      }
+    ],
+    "explanation": "Most providers require every tool result to follow the `AIMessage` that asked for it. `start_on=\"human\"` makes the trimmed history begin at a turn boundary, so an orphaned `ToolMessage` cannot appear at the front. `exclude_tool_calls=True` is a blunt alternative that removes all tool messages and AI messages with tool calls.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/trim_messages",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-MEM-036",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent uses `checkpointer=InMemorySaver()` and runs on Kubernetes with three replicas behind a round-robin load balancer. Users say the bot \"randomly forgets\" mid-conversation, and every deploy wipes all chats. What is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Enable sticky sessions on the load balancer",
+        "why": "This hides the cross-replica symptom but history is still lost on every restart or deploy."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Switch to a shared, durable checkpointer such as `PostgresSaver`",
+        "why": "All replicas then read and write the same durable checkpoints."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to `RunnableWithMessageHistory` with `InMemoryChatMessageHistory`",
+        "why": "That is still per-process memory, with the same two problems."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run a single replica so only one process holds the memory",
+        "why": "This removes scaling and still loses everything on restart."
+      }
+    ],
+    "explanation": "`InMemorySaver` is for development: each process has its own memory, and nothing survives a restart. The short-term memory docs show `PostgresSaver.from_conn_string(DB_URI)` with `checkpointer.setup()` for production; other backends such as SQLite are listed in the persistence docs.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-persist-chat-history",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/selvamsmk/spur-live-chat-agent",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "Spur"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-037",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Two users report seeing each other's conversation, yet every request passes a different `session_id`. What is the bug?\n\n```python\n_history = InMemoryChatMessageHistory()\n\ndef get_session_history(session_id: str) -> BaseChatMessageHistory:\n    return _history\n\nchat = RunnableWithMessageHistory(\n    chain, get_session_history,\n    input_messages_key=\"question\", history_messages_key=\"history\",\n)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The factory must be `async` to keep concurrent sessions apart",
+        "why": "Sync factories are supported; the problem is what it returns."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`InMemoryChatMessageHistory` keeps messages in a class-level list shared by all instances",
+        "why": "Each instance has its own message list; here there is only one instance."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`history_messages_key` must equal the `session_id` so each user gets their own key",
+        "why": "That key names where history goes in the prompt input, not which history is loaded."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The factory ignores `session_id` and always returns the same object",
+        "why": "The wrapper trusts the factory; it must look up or create a history per id."
+      }
+    ],
+    "explanation": "`RunnableWithMessageHistory` passes the session id to your factory and uses whatever history object comes back. Key the lookup on the id (and, in production, on a durable backend such as a Redis or Postgres history). The same class of leak appears in agents when the `thread_id` is hard-coded.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/history/RunnableWithMessageHistory",
+    "source": "interview:lc-session-leak",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-038",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A long-lived assistant writes facts about users into the store, and over months the memories become duplicated, contradictory and slow to search. Which two statements reflect sound memory design? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Writing memories in a background process keeps latency out of replies, but a fact may not be available to another thread right away",
+        "why": "That is the documented trade-off of background writing versus the hot path."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A single profile document per user is easy to read as a whole, but every update must merge with the old profile, which gets error-prone as it grows",
+        "why": "The profile approach trades easy reads for harder, riskier updates."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Saving every message into the store is the simplest way to avoid duplicates",
+        "why": "Dumping raw messages creates the most duplication and noise."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Using one shared namespace for all users makes search more accurate",
+        "why": "Shared namespaces mix users' facts and invite leaks; namespace by user id."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Writing memories in the hot path has no effect on response latency",
+        "why": "Hot-path writes add model or tool work to the reply."
+      }
+    ],
+    "explanation": "The memory concepts guide contrasts hot-path writes (immediate and transparent, but slower and distracting for the agent) with background writes (no added latency, but you must decide when to run them). It also contrasts one profile per user with a collection of small memories (easier to add to, harder to update and deduplicate). Pollution control means choosing deliberately among these and namespacing per user.",
+    "reference": "https://docs.langchain.com/oss/python/concepts/memory",
+    "source": "interview:lc-memory-architecture",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Kin"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-039",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A billing assistant summarises older turns once the history passes a token threshold. Late in long chats, it confidently quotes the wrong invoice number from early in the conversation. What is the best fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Lower the summarisation threshold so summaries happen more often",
+        "why": "More frequent summaries compress details even sooner."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Turn off summarisation and resend the full history every turn",
+        "why": "This brings back cost growth and context overflow."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Keep summarising, but keep exact identifiers in state fields or the store",
+        "why": "Summaries keep the gist; exact values belong in fields the model reads verbatim."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch the summarizer to a larger model so it never omits details",
+        "why": "A stronger summarizer helps but cannot guarantee it keeps every identifier."
+      }
+    ],
+    "explanation": "Summarisation keeps the meaning of past turns and bounds the context, but a summary is a paraphrase, so exact strings can be lost or garbled. Put must-be-exact data in custom agent state (`state_schema`) or long-term memory, and keep summarisation for conversational context.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-summarize-history",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-040",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "In a multi-tenant SaaS, an agent's tools save memories to the store. You need to (1) keep tenants and users isolated, (2) search all of one user's memories at once, and (3) delete everything for a user on request. Which namespace scheme fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "One namespace `(\"memories\",)` with the user id as a field inside each value",
+        "why": "Isolation then depends on every query remembering a filter, and deletion needs a scan."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`(org_id, user_id, \"memories\")`, with keys per memory",
+        "why": "Hierarchical namespaces isolate by tenant and user, and a prefix covers all of a user's items."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Use the `thread_id` as the namespace so each conversation has its own memories",
+        "why": "Then memories never cross threads, which defeats long-term memory."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`(\"memories\", memory_type)` with the user id embedded in each key",
+        "why": "Keys inside a shared namespace give no isolation and no clean per-user prefix."
+      }
+    ],
+    "explanation": "Store namespaces are tuples and are hierarchical: `store.search((\"u1\",))` returned items stored under `(\"u1\", \"memories\")` in a test. Putting the tenant and the user at the front of the tuple gives isolation and a natural prefix for listing or deleting one user's data. Derive the ids from trusted runtime context, never from model output.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/long-term-memory",
+    "source": "interview:lc-memory-architecture",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "LangChain",
+        "Kin"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-041",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool calls `store.search((user_id, \"memories\"), query=\"what does the user drink?\")` on an `InMemoryStore()` created with no arguments. The results look unranked and every `score` is `None`. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`query` only works when a `filter` is also passed",
+        "why": "A filter narrows by exact field values; it does not enable ranking."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The namespace needs a trailing `\"*\"` wildcard element before search will rank any results",
+        "why": "Namespaces are plain prefixes; there is no wildcard syntax."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`InMemoryStore` never supports semantic search, only `PostgresStore` does",
+        "why": "`InMemoryStore` supports it when you give it an index."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It has no `index` (embedding function and `dims`), so nothing is embedded",
+        "why": "Semantic search needs an index config so items are embedded."
+      }
+    ],
+    "explanation": "Without an index, the store returned items in insertion order with `score=None`, up to the default `limit=10`. Create it as `InMemoryStore(index={\"embed\": embeddings, \"dims\": N})` (or pass `index=` to `PostgresStore`) so values are embedded and `query` ranks by similarity. `filter` remains an exact match on content.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/long-term-memory",
+    "source": "interview:lc-store-vs-checkpointer",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ],
+      "companies": [
+        "Kin"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-042",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "With this code, what does `who` return on the second call, and why?\n\n```python\n@dataclass\nclass Ctx:\n    user_id: str\n\n@tool\ndef who(runtime: ToolRuntime[Ctx]) -> str:\n    \"\"\"Return the caller.\"\"\"\n    return str(runtime.context)\n\nagent = create_agent(model, [who], checkpointer=InMemorySaver(), context_schema=Ctx)\ncfg = {\"configurable\": {\"thread_id\": \"t\"}}\nagent.invoke({\"messages\": [HumanMessage(\"1\")]}, cfg, context=Ctx(user_id=\"u1\"))\nagent.invoke({\"messages\": [HumanMessage(\"2\")]}, cfg)  # model calls `who` again\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Ctx(user_id='u1')`, because the checkpointer restores the context with the thread",
+        "why": "Only graph state (here, `messages`) is checkpointed; context is not part of it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It raises a `ValueError`, because `context` is required whenever `context_schema` is set",
+        "why": "Leaving out `context` did not raise in the test."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`None`, because runtime context is per invocation and is not saved by the checkpointer",
+        "why": "Context must be passed on every call; persistent per-thread data belongs in state."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An empty `Ctx`, built from the dataclass defaults",
+        "why": "There are no defaults, and nothing builds a `Ctx` for you."
+      }
+    ],
+    "explanation": "A test showed `Ctx(user_id='u1')` on the first call and `None` on the second, and the checkpointed state held only `messages`. Use context for per-request inputs (user id, tenant, API handles), custom `state_schema` fields for data that must persist within a thread, and the store for data that must persist across threads.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-MEM-043",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Messages carry a `name` per speaker. Which messages does this `filter_messages` call keep?\n\n```python\nmsgs = [\n    HumanMessage(\"x\", id=\"n1\", name=\"alice\"),\n    HumanMessage(\"y\", id=\"n2\", name=\"bob\"),\n    AIMessage(\"z\", id=\"n3\", name=\"bot\"),\n]\nfilter_messages(msgs, include_names=[\"alice\"], include_types=[\"ai\"])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[]`, because no single message is both named `alice` and of type `ai`",
+        "why": "That would be AND logic; include conditions are combined with OR."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[n1]`, because `include_names` takes precedence over `include_types`",
+        "why": "Neither condition takes precedence; a message matching either is kept."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[n1, n2, n3]`, because the include filters are ignored when both are set",
+        "why": "The filters are applied; `n2` matches neither and is dropped."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`[n1, n3]`, because a message is kept if it meets any include condition",
+        "why": "`n1` matches the name, `n3` matches the type."
+      }
+    ],
+    "explanation": "`filter_messages` keeps messages that satisfy at least one `include_*` condition and none of the `exclude_*` conditions. A test returned `[n1, n3]`. To require both a name and a type, filter twice or write a list comprehension.",
+    "reference": "https://reference.langchain.com/python/langchain-core/messages/utils/filter_messages",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-MEM-044",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are migrating a 0.2-era chatbot that uses `ConversationChain`, `ConversationBufferMemory` and, elsewhere, `RunnableWithMessageHistory`. On `langchain` 1.4 / `langchain-core` 1.7, which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`ConversationBufferMemory` still imports from `langchain_classic.memory`, and its deprecation warning points to `create_agent` with checkpointing or the Store API",
+        "why": "That is the warning text on instantiation; the class is scheduled for removal in 2.0."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`RunnableWithMessageHistory` still works but emits a deprecation warning recommending LangGraph's built-in persistence",
+        "why": "It runs, and each use warns that it is deprecated."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`from langchain.memory import ConversationBufferMemory` keeps working as a compatibility alias",
+        "why": "`langchain.memory` no longer exists; the import raises `ModuleNotFoundError`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ConversationChain` was removed from every package, so it has to be rewritten before the upgrade",
+        "why": "It still exists in `langchain_classic.chains`, so you can upgrade first and migrate after."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`InMemoryChatMessageHistory` is the recommended production history in 1.x",
+        "why": "It is in-process only and now warns that it is deprecated (since 1.6.4)."
+      }
+    ],
+    "explanation": "A staged migration works: install `langchain-classic`, fix imports, then move conversational logic to `create_agent` with a checkpointer and `thread_id`, and move cross-session facts to the store. The deprecation warnings themselves name these targets.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "source": "interview:lc-legacy-memory-deprecated",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-MEM-045",
+    "domain": 3,
+    "skill": "memory-chat-history",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Users chat with your assistant from a phone and a laptop and keep several separate conversations. Which two design choices are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use one `thread_id` per conversation (for example `user_id:conversation_id`), so either device can resume that conversation",
+        "why": "Threads are conversations; any device that sends the same id loads the same checkpoint."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Keep facts that should follow the user into every conversation in the store, namespaced by user id",
+        "why": "Cross-conversation memory is the store's job."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Use the `user_id` as the `thread_id` so the assistant always remembers everything",
+        "why": "That merges every conversation into one ever-growing history."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use the device id as the `thread_id` so each device has its own memory",
+        "why": "Then the same conversation cannot be resumed on the other device."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Rely on the checkpointer to share messages across threads that belong to the same user",
+        "why": "Checkpointers have no notion of users; threads never share state."
+      }
+    ],
+    "explanation": "Pick the thread key to match what should share short-term history: one conversation. Durable, cross-conversation knowledge belongs in the store. Both ids should come from your authenticated session, not from client input you have not checked.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:lc-checkpointer-thread-id",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  }
+]
