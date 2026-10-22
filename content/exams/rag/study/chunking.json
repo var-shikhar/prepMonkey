@@ -1,0 +1,50 @@
+{
+  "chunking": {
+    "summary": "Chunking decides what a retriever can find: each chunk becomes one vector, so it must fit the embedding model's input limit, be focused enough to match specific questions, and carry enough context to make sense alone. Know the strategies (fixed, recursive, sentence, semantic, structure-aware, code- and table-aware), how to compute chunk counts with overlap, how token limits interact with languages and models, Anthropic's Contextual Retrieval, and how to evaluate chunking at the retrieval layer.",
+    "points": [
+      "Chunks exist because embedding models have input limits (all-MiniLM-L6-v2 truncates beyond 256 word pieces by default; OpenAI text-embedding-3 models accept 8,192 tokens), because focused units retrieve more precisely, and because the prompt's context budget is finite.",
+      "Fixed-size windows: step = size - overlap; chunks = ceil((n - size) / step) + 1 when splitting stops at the end. 10,000 characters at 512/64 gives 23 chunks; 8,000 at 800/400 gives 19 chunks and about 1.9x the embedded text.",
+      "Recursive splitting tries separators from coarse to fine (paragraph break, newline, space, character), keeping paragraphs, then sentences, then words together while the size limit allows.",
+      "Sentence chunking keeps sentences whole but needs a good segmenter (abbreviations such as `Dr.` and `e.g.` break naive regex splits) and packing up to a size cap.",
+      "Semantic chunking embeds sentences and cuts where the distance between neighbours exceeds a threshold (chunks = breakpoints + 1). It costs extra embedding calls at ingest, gives variable lengths and needs a maximum size; Chroma found the default variant slightly below average.",
+      "Structure-aware chunking follows headings, clauses, functions or messages, falls back to finer structural units for oversized pieces, and carries the heading or clause path (or file, class and signature for code) with each chunk.",
+      "Tables: keep them separate from prose, split by whole rows and repeat the header row and caption in every table chunk so numbers keep their column meaning.",
+      "Size chunks in tokens using the embedding model's own tokenizer: with `cl100k_base`, English ran about 5.3 characters per token and Hindi about 1, so character-based limits silently overflow for some scripts.",
+      "Trade-offs: large chunks dilute vectors and waste context; small chunks lose context and can hurt recall; overlap protects boundary facts but adds redundancy. Tokens sent to the model are roughly k x chunk size.",
+      "Anthropic's Contextual Retrieval (September 2024) prepends a 50 to 100-token, LLM-written context to each chunk before embedding and BM25 indexing. Top-20 failure rates: 5.7% baseline, 3.7% (contextual embeddings, -35%), 2.9% (+ contextual BM25, -49%), 1.9% (+ reranking, -67%). Prompt caching keeps the cost near $1.02 per million document tokens.",
+      "Whole-document or \"list every\" questions need coverage (map-reduce, hierarchical summaries, exhaustive filtered passes), not top-k retrieval.",
+      "Evaluate chunking at the retrieval layer with a golden question set: recall at k plus precision or token-level IoU, comparing strategies at equal token budgets (Chroma: removing overlap raised precision and IoU; 800/400 had the lowest precision)."
+    ],
+    "traps": [
+      "Assuming smaller chunks or more overlap are always better; both are trade-offs and should be measured.",
+      "Sizing chunks in characters and forgetting that embedding limits are in tokens, which differ widely by language and content.",
+      "Ignoring silent truncation: chunks longer than the embedding limit index without error but only their beginning is searchable.",
+      "Comparing chunkers at the same top-k when chunk sizes differ, so the larger-chunk strategy wins just by sending more text.",
+      "Splitting tables by characters or dropping header rows, leaving chunks of unlabelled numbers.",
+      "Describing Contextual Retrieval as a query-time trick; the context is generated at ingest and changes both the embeddings and the BM25 index.",
+      "Using top-k retrieval for questions that need the whole document or every occurrence of something."
+    ],
+    "docs": [
+      {
+        "title": "Anthropic: Introducing Contextual Retrieval",
+        "url": "https://www.anthropic.com/engineering/contextual-retrieval"
+      },
+      {
+        "title": "Chroma: Evaluating Chunking Strategies for Retrieval",
+        "url": "https://www.trychroma.com/research/evaluating-chunking"
+      },
+      {
+        "title": "sentence-transformers/all-MiniLM-L6-v2 model card",
+        "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"
+      },
+      {
+        "title": "OpenAI: Vector embeddings guide",
+        "url": "https://developers.openai.com/api/docs/guides/embeddings"
+      },
+      {
+        "title": "Unstructured: Chunking",
+        "url": "https://docs.unstructured.io/open-source/core-functionality/chunking"
+      }
+    ]
+  }
+}

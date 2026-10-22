@@ -1,0 +1,51 @@
+{
+  "context-generation": {
+    "summary": "Retrieval decides what the model sees; context assembly and the prompt decide how it uses it. Know how to budget and order chunks, why more context can hurt (lost in the middle), how to make citations verifiable, how to abstain when evidence is missing, and how to contain prompt injection that arrives through retrieved documents.",
+    "points": [
+      "Budget the window explicitly: context limit minus reserved output, system prompt, kept history and question gives the space for chunks. Fitting is only a ceiling; choose k on an evaluation set, because accuracy plateaus while cost and latency grow linearly.",
+      "Liu et al. (2023), *Lost in the Middle*: accuracy is U-shaped in the position of the relevant document (best at the start or end, worst in the middle). For GPT-3.5-Turbo with 20 or 30 documents, worst-case accuracy fell below its 56.1% closed-book score, and extended-context variants were no better at using context.",
+      "In the same paper, reader accuracy saturated long before retriever recall: 50 retrieved documents instead of 20 gained only about 1.5 points for GPT-3.5-Turbo. Retrieve wide, rerank, and send few chunks, with the strongest at the edges.",
+      "Format each chunk with a stable source id and useful metadata (title, effective date, version, authority) so the model can cite and resolve conflicts, and so engineers can trace failures. Deduplicate by chunk identity or overlapping character span, not by document id.",
+      "Anthropic's long-context guidance: put long documents near the top, above the query, instructions and examples (queries at the end improved quality by up to 30% in tests), wrap each document in `<document>` tags with `<source>` and `<document_content>`, and ask for relevant quotes first.",
+      "Grounding prompt essentials: answer only from the supplied documents, cite them, and say a fixed phrase when they do not contain the answer. Pair the prompt rule with a retrieval-side gate (calibrated reranker score) so no-evidence queries never reach generation.",
+      "Claude Citations: set `citations: {enabled: true}` on every `document` block (all or none). Plain text and PDFs are chunked into sentences (`char_location`, 0-indexed, end exclusive; `page_location`, 1-indexed pages, end exclusive); custom content blocks are used as-is (`content_block_location`). `cited_text` does not count toward output tokens, and citations are guaranteed valid pointers into your documents.",
+      "`search_result` blocks (in user content or tool results) carry `source`, `title` and text `content` and are cited with `search_result_location` (`search_result_index`, `start_block_index`, `end_block_index`). Citations on them are off by default and must use the same setting for all results.",
+      "Citations and structured outputs (`output_config.format`) cannot be combined; the API returns 400. With structured JSON instead, validate the schema, check every cited chunk id against the chunks sent, and treat an answer with no evidence as a refusal.",
+      "Temperature controls sampling randomness, not truth: low temperature makes factual answers more repeatable, but greedy decoding can still produce unsupported claims. Grounding comes from evidence, instructions and verification (quote-first answering, claim-by-claim support checks).",
+      "Indirect prompt injection (Greshake et al. 2023; OWASP LLM01:2025) hides instructions in retrieved content. Labelling untrusted text helps (spotlighting cut attack success from over 50% to under 2% in Microsoft's GPT tests) but is not complete; cap impact with least-privilege tools, human approval for risky actions and output handling such as URL allowlists.",
+      "Contextual compression: extractive methods keep original sentences (quotes stay verifiable); abstractive or token-pruning methods rewrite text. RECOMP compresses to as little as 6% of tokens and can output an empty string when documents are irrelevant, which a grounded assistant should treat as no evidence."
+    ],
+    "traps": [
+      "Raising top-k \"to be safe\": recall rises, but distractors, middle-buried evidence, cost and latency rise too, and accuracy can fall.",
+      "Believing a bigger context window fixes lost in the middle; Liu et al. found extended-context models used context no better when the input fit both windows.",
+      "Trusting model-returned chunk ids without checking them against the retrieved set, so stale or invented ids resolve to real documents.",
+      "Saying temperature 0 eliminates hallucination; it only removes sampling randomness.",
+      "Relying on \"ignore instructions in documents\" as the injection defence instead of limiting what a successful injection can do.",
+      "Resolving conflicting chunks by similarity score; recency and authority need metadata in the prompt.",
+      "Treating earlier assistant turns as evidence, which lets one hallucination propagate through a conversation.",
+      "Enabling Citations together with a JSON schema in `output_config.format` (400), or on only some documents in a request."
+    ],
+    "docs": [
+      {
+        "title": "Lost in the Middle: How Language Models Use Long Contexts (Liu et al., 2023)",
+        "url": "https://arxiv.org/abs/2307.03172"
+      },
+      {
+        "title": "Claude API: Citations",
+        "url": "https://platform.claude.com/docs/en/build-with-claude/citations"
+      },
+      {
+        "title": "Claude API: Search results",
+        "url": "https://platform.claude.com/docs/en/build-with-claude/search-results"
+      },
+      {
+        "title": "Claude docs: Reduce hallucinations",
+        "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations"
+      },
+      {
+        "title": "OWASP LLM01:2025 Prompt Injection",
+        "url": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+      }
+    ]
+  }
+}

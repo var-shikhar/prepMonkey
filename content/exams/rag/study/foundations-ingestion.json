@@ -1,0 +1,50 @@
+{
+  "foundations-ingestion": {
+    "summary": "RAG adds a searchable, updatable non-parametric memory to an LLM: an offline pipeline turns documents into indexed chunks, and an online path retrieves the relevant ones into the prompt. Know what RAG fixes (missing, private, stale knowledge; provenance) and what it does not (reasoning, guaranteed faithfulness), when to prefer prompting, fine-tuning, long context or SQL instead, and how ingestion quality (parsing, cleaning, dedupe, metadata) decides retrieval quality.",
+    "points": [
+      "Lewis et al. (2020) coined RAG: a DPR bi-encoder retriever (BERT-base) over a FAISS index of the December 2018 Wikipedia dump split into disjoint 100-word chunks (21M passages), with a BART-large generator (400M parameters). They kept the document encoder fixed because updating it means re-embedding the whole corpus.",
+      "The paper's index hot-swap test (2016 vs 2018 Wikipedia) gave about 70% and 68% accuracy with matched indices and 12% and 4% with mismatched ones: knowledge can be updated by replacing the index, without retraining.",
+      "Offline indexing: load, parse, clean, chunk, embed each chunk, store vector with text and metadata. Online path: embed the query with the same model, retrieve, optionally rerank, build the prompt, generate.",
+      "RAG fixes missing, private and stale knowledge and enables citations. It does not improve reasoning, does not enlarge the context window and does not guarantee faithfulness: wrong, stale or missing chunks and a model ignoring context still cause errors.",
+      "Decision order: prompt engineering first; RAG when knowledge is missing (context optimisation); fine-tuning when behaviour, format or style stays inconsistent (LLM optimisation). They stack. Live values come from tool calls, aggregates over tables from SQL.",
+      "Long context vs RAG: small bounded inputs can go straight into the prompt (Anthropic suggests under about 200,000 tokens, around 500 pages); large or growing corpora, per-user permissions and per-query cost and latency keep retrieval necessary.",
+      "PDFs store positioned glyphs, not paragraphs or tables: expect reading-order errors in multi-column layouts, lost table cell structure, ligature code points such as U+FB01, line-break hyphens and repeated headers and footers.",
+      "Scanned pages have no text layer; pypdf is not OCR software. Check extracted characters per page and route failing pages to OCR or a layout or vision model; quarantine pages that still fail.",
+      "Clean before chunking: NFKC normalisation (NFC leaves compatibility ligatures alone), strip lines repeating at the same position across pages, rejoin hyphenated line breaks only when the joined word is real, drop HTML boilerplate and quoted email history.",
+      "Exact duplicates: hash normalised text and keep one copy with all source paths and their permissions. Near-duplicates: shingles, MinHash (agreement estimates Jaccard), LSH banding with candidate probability 1 - (1 - s^r)^b and threshold near (1/b)^(1/r); verify candidates and pick the survivor by version or date.",
+      "Capture metadata at ingest from authoritative sources: tenant and permissions from the connector's identity, source and page for citations, effective date and version for freshness, language and translation group for multilingual corpora.",
+      "Make ingestion idempotent: deterministic chunk ids (document id, version, chunk index or hash) with upsert, so at-least-once queue redelivery never duplicates chunks. Monitor extraction statistics and golden-set retrieval recall when parsers change."
+    ],
+    "traps": [
+      "Saying RAG eliminates hallucination: it reduces it, but retrieval misses, stale chunks and models ignoring context still produce wrong answers.",
+      "Proposing fine-tuning to fix an outdated answer that comes from stale chunks in the index; the fix is superseding or deleting old chunks at ingest.",
+      "Claiming a fine-tuned model can cite where a fact came from; provenance comes from retrieved passages.",
+      "Using RAG for numeric aggregates over a database (\"total revenue by region\"); generate and run SQL instead.",
+      "Assuming a text extractor can read scanned pages, or that NFC normalisation fixes ligatures such as `ﬁ`.",
+      "Deduplicating near-duplicates by arrival order and silently dropping the newer policy version, or deduplicating exact copies while keeping only one copy's permissions.",
+      "Inferring tenant or permission fields from document text or model output instead of the ingestion connector's authenticated identity."
+    ],
+    "docs": [
+      {
+        "title": "Lewis et al. 2020: Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+        "url": "https://arxiv.org/abs/2005.11401"
+      },
+      {
+        "title": "Anthropic: Introducing Contextual Retrieval",
+        "url": "https://www.anthropic.com/engineering/contextual-retrieval"
+      },
+      {
+        "title": "OpenAI: Optimizing LLM accuracy",
+        "url": "https://developers.openai.com/api/docs/guides/optimizing-llm-accuracy"
+      },
+      {
+        "title": "pypdf: Extract text from a PDF",
+        "url": "https://pypdf.readthedocs.io/en/stable/user/extract-text.html"
+      },
+      {
+        "title": "datasketch: MinHash LSH",
+        "url": "https://ekzhu.com/datasketch/lsh.html"
+      }
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "production-ops": {
+    "summary": "Running RAG in production means keeping the index fresh and consistent, controlling cost and latency per stage, enforcing permissions and tenant isolation at retrieval time, protecting personal data across every derived store, and tracing each request well enough to tell retrieval failures from generation failures.",
+    "points": [
+      "Incremental indexing treats a document as a unit: on change, delete all chunks for its doc id and insert the new set (or upsert and delete ids no longer present). Upserting only new chunk ids leaves orphaned chunks from the old version.",
+      "Many vector stores soft-delete. Qdrant marks deleted records and its vacuum optimizer purges them later, when a segment's deleted fraction passes `deleted_threshold`. Retrieval exclusion is immediate; physical removal waits for compaction.",
+      "Changing the embedding model requires a full re-embed into a new index (blue/green): backfill plus dual-write, evaluate, then switch an alias atomically (Qdrant applies multiple alias actions atomically). The query-side model must switch with the alias, so record the model id with each collection.",
+      "Freshness is end to end: polling interval + queue lag + indexing time + any answer cache in front. Cached answers need lineage (source doc ids and versions) and event-driven eviction, with a lifetime only as a backstop.",
+      "Semantic caches return a stored answer when a new query's embedding is within a similarity threshold. Set the threshold from labelled pairs including near-miss intents, and scope keys by tenant/permission set, corpus version, and prompt and model version.",
+      "Anthropic prompt caching matches an identical prefix (tools, then system, then messages) up to a `cache_control` breakpoint, with up to 4 breakpoints. The default lifetime is 5 minutes, refreshed free on each hit; 1 hour is optional. Writes cost 1.25x (5 min) or 2x (1 h) the base input price; reads usually cost 0.1x, and some newer models read cheaper. The minimum cacheable length depends on the model (512 to 4,096 tokens).",
+      "In RAG prompts, put static content (tools, system instructions, fixed reference text) before the breakpoint and per-request content (timestamps, retrieved chunks, question) after it.",
+      "Latency budgets track time to first token (sum of pre-generation stages plus model first-token latency) and total time (plus decoding). Parallelise independent retrieval legs, shrink rerank windows, use small models for rewrites, and stream for perceived latency.",
+      "Retrieved context is usually the largest cost line: input tokens x price on every request. Rerank to fewer, better chunks, cache stable prefixes, route easy queries to smaller models, and verify each cut on an evaluation set.",
+      "Enforce permissions inside the retrieval query with a server-side filter built from the authenticated identity. Store group or role principals on chunks and resolve memberships at query time; filtering after generation is too late.",
+      "Qdrant multitenancy: one collection with a tenant payload field indexed with `is_tenant: true` for many small tenants; separate collections only for a few tenants needing strict isolation; tiered multitenancy for uneven sizes. pgvector suggests list partitioning or separate tables so tenants do not share an approximate index. PostgreSQL RLS is bypassed by superusers, `BYPASSRLS` roles and table owners unless `FORCE ROW LEVEL SECURITY` is set.",
+      "Trace per request: original and rewritten query, filters, retrieved ids with scores and ranks, final prompt or included chunk ids, prompt, index and model versions, answer, tokens and latency per stage. Monitor per-source ingestion freshness and guardrail decision rates as well as uptime."
+    ],
+    "traps": [
+      "Saying RAG retrieval or embedding \"trains\" the model, and so forgetting that erasure must cover vectors, caches, traces and evaluation sets instead.",
+      "Enforcing access control by prompt instruction or output scanning instead of a server-side retrieval filter.",
+      "A semantic cache keyed only on the query embedding: it leaks across tenants and serves stale answers after document updates.",
+      "Treating PII redaction as perfect: Presidio states it cannot guarantee finding all sensitive information, so keep access controls and retention limits too.",
+      "Assuming a dimension check catches an embedding-model mismatch: two models with the same dimension fail silently.",
+      "Believing streaming reduces total generation time; it only moves the perceived wait to the first token.",
+      "Putting a timestamp or request id at the start of a cached prompt prefix, so no request ever hits the cache.",
+      "Changing models or prompts after a wrong-answer report without first checking whether the answer-bearing chunk was retrieved."
+    ],
+    "docs": [
+      {
+        "title": "Claude API: Prompt caching",
+        "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      },
+      {
+        "title": "Qdrant: Multitenancy (multiple partitions)",
+        "url": "https://qdrant.tech/documentation/guides/multiple-partitions/"
+      },
+      {
+        "title": "Qdrant: Collections (aliases)",
+        "url": "https://qdrant.tech/documentation/concepts/collections/#collection-aliases"
+      },
+      {
+        "title": "PostgreSQL: Row Security Policies",
+        "url": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"
+      },
+      {
+        "title": "pgvector README (filtering, multitenancy)",
+        "url": "https://github.com/pgvector/pgvector"
+      }
+    ]
+  }
+}

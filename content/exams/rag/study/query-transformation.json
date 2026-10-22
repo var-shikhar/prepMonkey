@@ -1,0 +1,47 @@
+{
+  "query-transformation": {
+    "summary": "Query transformation changes what is searched for before retrieval: rewriting follow-ups into standalone questions, generating hypothetical answers or several paraphrases, abstracting or decomposing the question, extracting metadata filters and routing to the right strategy. Know which failure each technique fixes, what it costs on the query path, and when it hurts.",
+    "points": [
+      "Conversational condensation rewrites a follow-up into a standalone query from the chat history, resolving pronouns and carrying forward constraints (product, plan, region, dates). The rewrite goes to retrieval; the generator still sees the user's message and history.",
+      "HyDE (Gao et al., 2022): an instruction-following LLM writes a hypothetical answer document, the corpus encoder embeds it, and nearest-neighbour search finds real documents. The draft may be wrong; the paper relies on the dense bottleneck to ground it. A variant averages N drafts plus the query embedding.",
+      "HyPE (Vake et al.) moves generation to index time: one LLM call per chunk produces several hypothetical questions whose embeddings point back to the chunk, so the query path is a plain vector search. doc2query (Nogueira et al., 2019) instead appends predicted queries to the document text for lexical indexing.",
+      "Query2doc concatenates the query with an LLM pseudo-document; for BM25 it repeats the query 5 times to balance a short query against a long passage, and for dense retrieval it joins them with [SEP]. The paper names efficiency (LLM latency, slower inverted-index search) as its main limitation.",
+      "Multi-query retrieval generates N paraphrases, searches each (in parallel), then unions, deduplicates and fuses the lists, typically with reciprocal rank fusion as in RAG-Fusion. Cost: one extra LLM call on the critical path plus N searches.",
+      "Step-back prompting (Zheng et al., 2023) asks a higher-level question first (for example, a person's education history instead of one school in one window). For knowledge QA the paper uses passages retrieved for both the original and the step-back question.",
+      "Decomposition splits compound questions into sub-queries. Independent parts (comparisons) run in parallel; bridge questions whose later hop needs an earlier answer must run sequentially, as self-ask makes explicit with follow-up questions.",
+      "Self-query uses an LLM, given the metadata schema, to split a request into structured filters (team, type, date range) and a semantic string. Validate the output against allowed values and treat an empty filtered result as a reason to relax or clarify, not as proof nothing exists.",
+      "Routing picks a strategy per query. Adaptive-RAG trains a small classifier (T5-Large) to choose no retrieval, single-step or multi-step retrieval, labelling training queries by the simplest strategy that answers correctly.",
+      "Latency arithmetic: sequential LLM calls add up, parallel searches cost about as much as the slowest one. Under a tight budget prefer index-time expansion or cheap rewrites over stacked query-time generation."
+    ],
+    "traps": [
+      "Saying HyDE needs a factually correct draft: it is only a search probe, but it does hurt on exact identifiers and on private jargon the LLM does not know.",
+      "Claiming a reranker or larger top-k fixes a compound query that retrieves only one side; the missing side was never retrieved, so decompose.",
+      "Parallelising bridge questions: the second hop cannot be searched until the first hop's entity is known.",
+      "Condensers that drop constraints from earlier turns (region, plan) produce fluent but less specific queries that retrieve the wrong policy.",
+      "Letting LLM-extracted filters control access: tenant and permission filters must come from the authenticated session, ANDed in code.",
+      "Assuming offline generation is always cheaper: HyPE's cost scales with chunk churn, HyDE's with query volume."
+    ],
+    "docs": [
+      {
+        "title": "Precise Zero-Shot Dense Retrieval without Relevance Labels (HyDE)",
+        "url": "https://arxiv.org/abs/2212.10496"
+      },
+      {
+        "title": "Take a Step Back: Evoking Reasoning via Abstraction in LLMs",
+        "url": "https://arxiv.org/abs/2310.06117"
+      },
+      {
+        "title": "Query2doc: Query Expansion with Large Language Models",
+        "url": "https://arxiv.org/abs/2303.07678"
+      },
+      {
+        "title": "Adaptive-RAG: Learning to Adapt Retrieval-Augmented LLMs through Question Complexity",
+        "url": "https://arxiv.org/abs/2403.14403"
+      },
+      {
+        "title": "Hypothetical Prompt Embeddings (HyPE)",
+        "url": "https://arxiv.org/abs/2607.29402"
+      }
+    ]
+  }
+}

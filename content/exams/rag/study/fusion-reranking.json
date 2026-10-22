@@ -1,0 +1,49 @@
+{
+  "fusion-reranking": {
+    "summary": "Fusion merges ranked lists from several retrievers or query variants; reranking rescores a shortlist with a slower, more accurate model before the context window is filled. Know how RRF works and what its score does and does not mean, why cross-encoders rerank but cannot retrieve, how LLM rerankers trade cost for quality, and how to budget, threshold and evaluate the reranking stage.",
+    "points": [
+      "Reciprocal Rank Fusion (Cormack, Clarke and Buttcher, SIGIR 2009): score(d) = sum over rankings of 1 / (k + rank), with k = 60 fixed in a pilot study and found near-optimal but not critical. It needs no training data or score calibration and beat Condorcet Fuse and CombMNZ in their experiments.",
+      "k sets how fast contributions decay: a small k makes first place dominant, a large k flattens the curve so agreement across lists wins. With k = 60, rank 1 in one list (1/61) ties rank 62 in two lists (2/122), and k damps outlier retrievers' top picks.",
+      "RRF reflects rank agreement, not relevance: whatever tops both lists scores 2/61. Do not threshold on RRF scores; use a calibrated reranker score for no-answer detection.",
+      "Raw BM25 and cosine scores are on incomparable scales, so summing them lets BM25 dominate. Score fusion needs normalisation plus weights that are corpus specific and drift; RRF is the robust unsupervised default.",
+      "RAG-Fusion generates several query variants, retrieves for each, fuses with RRF and generates; the evaluation reports off-topic answers when generated queries drift from the original.",
+      "Bi-encoders embed queries and documents independently (precomputable, ANN-searchable); cross-encoders read the (query, passage) pair jointly and output one score, so they are more accurate but must run per pair at query time. Scoring a 2-million-chunk corpus at 5 ms per pair would take about 2.8 hours per query.",
+      "Reranker latency is roughly linear in candidate count and grows with model size and passage length. Tune depth against recall at that depth, use smaller or distilled models, batch on GPU and truncate long passages.",
+      "A reranker cannot raise recall over its candidate set. Recall fixes live in the first stage: hybrid legs, chunking, embeddings, query transformation or larger first-stage k.",
+      "LLM rerankers: pointwise (independent scores, parallel; monoT5 reads relevance from generated target words), pairwise (PRP asks both orders to counter position bias; all-pairs is O(N^2), sorting O(N log N), sliding window O(N) per pass) and listwise (RankGPT outputs permutations with a 20-passage window, step 10, back to front). RankGPT distilled its rankings into a ~440M DeBERTa cross-encoder that beat a 3B monoT5 on BEIR.",
+      "Cohere Rerank (current: rerank-v5.0-pro and -fast, plus v4.0 and v3.5) returns relevance scores normalised to [0, 1] that are query dependent and not ratios. v5.0 truncates each document to max_tokens_per_doc (default 4096); older models scored chunks and took the maximum. Calibrate thresholds on 30-50 representative queries with borderline documents.",
+      "Evaluate rerankers with rank-sensitive metrics at the served cut-off (nDCG@k, MRR) before and after, sliced by query type; recall over the candidate set cannot change."
+    ],
+    "traps": [
+      "Claiming a reranker fixes low recall: it only reorders what was retrieved.",
+      "Treating a high RRF score as proof of relevance or using it as a confidence threshold.",
+      "Implementing RRF over the intersection of lists, or forgetting that ranks start at 1.",
+      "Saying cross-encoders can precompute document embeddings; their output depends on the query.",
+      "Reading Cohere relevance scores as ratios or using one global threshold such as 0.5 without calibration.",
+      "Letting rank fusion decide between sources that disagree: relevance is not authority or freshness.",
+      "Rerank whole long documents and lose the answer to truncation; rerank chunks you control."
+    ],
+    "docs": [
+      {
+        "title": "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods (Cormack et al., 2009)",
+        "url": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf"
+      },
+      {
+        "title": "Sentence Transformers: Cross-Encoders",
+        "url": "https://sbert.net/examples/cross_encoder/applications/README.html"
+      },
+      {
+        "title": "Is ChatGPT Good at Search? LLMs as Re-Ranking Agents (RankGPT)",
+        "url": "https://arxiv.org/abs/2304.09542"
+      },
+      {
+        "title": "Large Language Models are Effective Text Rankers with Pairwise Ranking Prompting",
+        "url": "https://arxiv.org/abs/2306.17563"
+      },
+      {
+        "title": "Cohere: Best practices for using Rerank",
+        "url": "https://docs.cohere.com/docs/reranking-best-practices"
+      }
+    ]
+  }
+}
