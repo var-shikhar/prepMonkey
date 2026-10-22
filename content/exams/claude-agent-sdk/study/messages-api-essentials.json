@@ -1,0 +1,36 @@
+{
+  "messages-api-essentials": {
+    "summary": "Under every Agent SDK run sits the stateless `POST /v1/messages` endpoint. Know the tool-use loop and its formatting rules, how to read `stop_reason` and `usage`, how prompt caching's prefix match is won or lost, how thinking and effort are configured and passed back, how SSE streams are structured, and when Batches, structured outputs or token counting are the right tool.",
+    "points": [
+      "The API is stateless: each request resends `system`, `tools` and the full `messages` history. Client tools are run by your code: Claude stops with `stop_reason: \"tool_use\"` and `tool_use` blocks (`id`, `name`, `input`), and you reply with a user message of `tool_result` blocks whose `tool_use_id` matches.",
+      "Tool-result formatting: results must immediately follow the assistant turn that requested them, every `tool_result` comes before any text in that user message (text first is a 400), and all parallel results go in one message. Splitting them across messages teaches Claude to stop calling tools in parallel.",
+      "Report tool failures as `tool_result` with `is_error: true` and an instructive message. Every `tool_use` id needs a result, including calls you chose not to run.",
+      "Stop reasons: `end_turn`, `max_tokens` (never run a truncated `tool_use`; retry larger), `stop_sequence`, `tool_use`, `pause_turn` (resend the assistant content as-is, no \"continue\" message), `refusal` (do not treat content as an answer), `model_context_window_exceeded`.",
+      "Prompt caching is a byte-exact prefix match over `tools`, then `system`, then `messages`, with up to 4 `cache_control` breakpoints (automatic caching uses one slot). Default TTL is 5 minutes, refreshed free on every hit and measured from request start. `ttl: \"1h\"` costs more to write, and longer-TTL entries must come before shorter ones.",
+      "Read cache health from `usage`: `cache_creation_input_tokens` (writes), `cache_read_input_tokens` (hits) and `input_tokens` (the uncached tail only). Total input is the sum of all three. Zero reads across identical requests means a silent invalidator: timestamps, unsorted JSON, per-user tool lists.",
+      "Invalidation tiers: changing tool definitions or the model rebuilds everything; editing `system` keeps only the tools cache; changing `tool_choice` or images invalidates only messages; thinking or top-level effort changes always invalidate the messages cache. Caches are per organisation (and per workspace on the Claude API), and an entry is readable only after the first response starts streaming.",
+      "Thinking: current models use adaptive thinking (`thinking: {type: \"adaptive\"}`), with depth controlled by `output_config.effort`. Fixed `budget_tokens` is deprecated or rejected on newer models. Thinking tokens bill as output and count toward `max_tokens` even when the text is omitted. Within a tool-use turn, pass thinking blocks back complete and unmodified (edits are a 400).",
+      "Effort (`low`, `medium`, `high`, and `xhigh`/`max` where supported) shapes all output tokens, including text, tool calls and thinking. It is a soft behavioural signal; `max_tokens` is the hard cap. Defaults vary by model, so set it explicitly and tune per route against evals.",
+      "Streaming SSE order: `message_start`, then per block `content_block_start`, deltas and `content_block_stop`, then `message_delta` (carrying `stop_reason` and cumulative `usage`) and `message_stop`. Tool arguments arrive as `input_json_delta` partial JSON to accumulate and parse at block stop. `ping` and `error` events (such as `overloaded_error`) can appear after the HTTP 200.",
+      "Message Batches: asynchronous at a 50% discount, up to 100,000 requests or 256 MB, most done within an hour, expiring at 24 hours, results kept 29 days. Results come back in any order, so key them by `custom_id`. `stream`, fast-mode `speed`, `fallbacks` and `max_tokens: 0` are rejected; caching works best-effort (consider the 1-hour TTL).",
+      "Structured outputs: `output_config.format` (`type: \"json_schema\"`) shapes the reply and `strict: true` on a tool guarantees schema-valid inputs; they can be combined. Schemas need `additionalProperties: false` and cannot use recursion or length/numeric limits. `output_format` is deprecated. Count tokens with `POST /v1/messages/count_tokens` (free, separate RPM limit, an estimate, no caching), never with another vendor's tokenizer."
+    ],
+    "traps": [
+      "Summing `usage` across `message_delta` events double-counts: those counts are cumulative.",
+      "Treating `input_tokens` as the prompt size: with caching it is only the uncached tail after the last breakpoint.",
+      "Assuming a bigger `max_tokens` burns OTPM rate limit: only generated tokens count, while a small cap causes truncation and retries.",
+      "Matching batch results by position instead of `custom_id`.",
+      "Swapping tool sets or models per turn to implement modes, which silently destroys the cache on every switch.",
+      "Forcing a tool with `tool_choice` `any`/`tool` to get reasoning plus a call: a forced call skips thinking, and some current models reject forced tool choice outright. Use `auto` plus an instruction and `strict: true`.",
+      "Retrying every 429 the same way: a spend-cap 429 (`enforced_spend_limit_reached`, no `retry-after`) will not clear with backoff.",
+      "Expecting the MCP connector to reach a local stdio server: it connects from Anthropic's side to public HTTP servers and supports tool calls only."
+    ],
+    "docs": [
+      { "title": "Tool use: handle tool calls", "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls" },
+      { "title": "Prompt caching", "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching" },
+      { "title": "Thinking", "url": "https://platform.claude.com/docs/en/build-with-claude/thinking" },
+      { "title": "Streaming messages", "url": "https://platform.claude.com/docs/en/build-with-claude/streaming" },
+      { "title": "Batch processing", "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing" }
+    ]
+  }
+}

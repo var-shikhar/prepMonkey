@@ -1,0 +1,2080 @@
+[
+  {
+    "id": "CSK-API-001",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You pass a `get_order_status` tool in `tools` on a Messages API request. Claude responds with a `tool_use` block for it. Who actually runs `get_order_status`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Anthropic's servers call it automatically, then return the final answer in the same response",
+        "why": "That describes server tools such as web search. A user-defined (client) tool is only described to the model; the API cannot run your function."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Your application code, which then sends the output back as a `tool_result`",
+        "why": "Claude only emits the request (`name`, `id`, `input`). Your code executes it and replies with a `tool_result` that carries the matching `tool_use_id`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The model itself, inside a sandbox attached to the request",
+        "why": "The model never executes client tools. Sandboxed execution exists only for specific server tools like code execution."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nobody; the `tool_use` block is just a suggestion the API discards",
+        "why": "The block is a real request with `stop_reason: \"tool_use\"`. If you never answer it, the conversation cannot continue normally."
+      }
+    ],
+    "explanation": "With client tools the API is a pure model call: Claude decides to call a tool and stops with `stop_reason: \"tool_use\"`. Your code runs the function and continues the conversation with a user message containing a `tool_result`. Server tools (web search, code execution) are the exception: Anthropic runs those and the result arrives in the same response.",
+    "reference": "Claude API docs: Handle tool calls",
+    "roleLevel": 1,
+    "source": "interview:tool-use-loop",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://agentswarms.fyi/interview-questions",
+        "https://myengineeringpath.dev/genai-engineer/interview-questions/",
+        "https://www.cloudvyn.com/blog/gen-ai-interview-questions-2026"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-002",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "The Messages API keeps the conversation on the server, so after the first turn you only need to send the newest user message.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "There is no server-side conversation state in the Messages API. Each request must carry the history you want the model to see."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the API is stateless, so you resend the full `messages` array (plus `system` and `tools`) on every request."
+      }
+    ],
+    "explanation": "`POST /v1/messages` is stateless. Multi-turn chat works by appending each assistant response and the next user message to your own `messages` array and sending the whole thing again. Prompt caching makes resending a long history cheap, but it does not change who owns the state.",
+    "reference": "Claude API docs: Messages API, multi-turn conversations",
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-API-003",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "A Messages API response contains a `tool_use` block for one of your client tools. What is the value of its `stop_reason` field? Type the exact string.",
+    "options": [],
+    "accepted": [
+      "tool_use",
+      "\"tool_use\"",
+      "`tool_use`"
+    ],
+    "explanation": "`stop_reason: \"tool_use\"` tells your loop that Claude is waiting for one or more `tool_result` blocks. The other common values are `end_turn` (finished naturally), `max_tokens` (hit the cap), `stop_sequence`, `pause_turn` (a server-tool loop paused) and `refusal`.",
+    "reference": "Claude API docs: Handling stop reasons",
+    "roleLevel": 1,
+    "source": "interview:messages-api-shape",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-004",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `stop_reason` value with what it means.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`end_turn`",
+        "why": "The model finished its response naturally."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`max_tokens`",
+        "why": "Generation hit the request's `max_tokens` cap."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`pause_turn`",
+        "why": "A server-tool loop reached its iteration limit; send the content back to continue."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`refusal`",
+        "why": "The model declined to respond."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The answer is complete and nothing else is pending",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The output was cut off because the request's output cap was reached",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A long web-search run stopped partway and can be resumed by sending the assistant content back",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The model declined the request for safety reasons",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Always branch on `stop_reason` before reading `content`. `end_turn` is done, `max_tokens` means truncated output (retry with a larger cap if it matters), `pause_turn` means resend the assistant turn as-is so the server-side loop resumes, and `refusal` means the content should not be treated as a normal answer.",
+    "reference": "Claude API docs: Handling stop reasons",
+    "roleLevel": 1,
+    "source": "interview:messages-api-shape",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-005",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `description` for a `get_stock_price` tool best follows Anthropic's tool-definition guidance?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "\"Gets the stock price for a ticker.\"",
+        "why": "Too brief: it leaves Claude guessing when to use the tool, what it returns and what it does not return."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "\"IMPORTANT!!! ALWAYS call this tool for ANY finance question, no exceptions.\"",
+        "why": "Shouting a blanket rule tells Claude nothing about inputs or limits and pushes it to call the tool when it does not fit."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "\"Returns the latest trade price in USD for a ticker on NYSE or NASDAQ. Use when the user asks for a stock's current price. Gives no other company data.\"",
+        "why": "It says what the tool does, when to use it, what the input must be and what it does not return: the details Anthropic calls the most important factor in tool performance."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "\"Stock tool v2. Wraps the internal pricing microservice owned by the market-data team. Usage notes, quotas and known limitations are on the team wiki.\"",
+        "why": "Claude cannot read your wiki. Internal implementation notes do not help the model decide when or how to call the tool."
+      }
+    ],
+    "explanation": "Anthropic's guidance is to write detailed descriptions (at least 3-4 sentences for most tools): what the tool does, when to use it and when not to, what each parameter means, and caveats such as what it does not return. Descriptions are by far the biggest lever on whether Claude picks the right tool with the right arguments.",
+    "reference": "Claude API docs: Define tools (best practices)",
+    "roleLevel": 2,
+    "source": "interview:tool-definition-quality",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-006",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Every night you need to classify about 40,000 support tickets. Nobody reads the labels until the next morning. Which Claude API feature fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Streaming each request so results appear as soon as tokens are generated",
+        "why": "Streaming lowers time-to-first-token for interactive use. Nobody is watching here, so it adds complexity without saving anything."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The Message Batches API, collecting results once the batch has ended",
+        "why": "Batches are built for large, non-urgent workloads: requests run asynchronously at a 50% discount and most batches finish well within the 24-hour window."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Fast mode, to push more output tokens per second through the synchronous endpoint",
+        "why": "Fast mode buys synchronous latency at a premium price; it is the opposite of what an overnight job needs and is not available inside batches."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "40,000 parallel synchronous requests fired at once from a worker pool",
+        "why": "This pays full price and is very likely to hit rate limits (429s), all for latency nobody needs."
+      }
+    ],
+    "explanation": "The Message Batches API (`POST /v1/messages/batches`) processes Messages requests asynchronously at half the standard price. A batch holds up to 100,000 requests or 256 MB, most finish within an hour, and anything not processed within 24 hours expires. It is the default choice for offline evaluation, classification and bulk summarisation.",
+    "reference": "Claude API docs: Batch processing",
+    "roleLevel": 2,
+    "source": "interview:batches-api",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/batch-processing"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-007",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Before sending a large prompt you want to know how many input tokens it will use with Claude. What should you use?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "OpenAI's `tiktoken` library, since all modern LLMs share one tokenizer",
+        "why": "Tokenizers differ by vendor and even by model generation; `tiktoken` gives wrong counts for Claude."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Divide the character count by four and add a safety margin",
+        "why": "A rough heuristic, and especially unreliable for code, non-English text, images and tool definitions."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The `POST /v1/messages/count_tokens` endpoint with the same model and inputs",
+        "why": "It accepts the same structure as a Messages request (system, tools, images, PDFs) and counts with the tokenizer of the model you name."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Send the real request first with `max_tokens: 1` and read `input_tokens` from its `usage` field",
+        "why": "That bills a real request just to measure it; the counting endpoint exists so you do not have to."
+      }
+    ],
+    "explanation": "The token counting endpoint takes the same `model`, `system`, `messages` and `tools` you would send to `/v1/messages` and returns `input_tokens`. It is free (with its own RPM limits) and returns an estimate that may differ slightly from the billed count. Counts are model-specific, so pass the model you will actually call.",
+    "reference": "Claude API docs: Token counting",
+    "roleLevel": 2,
+    "source": "interview:token-counting",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/token-counting"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-008",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 1,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of a single client-tool round trip on the Messages API in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Send a request that includes the tool definitions in `tools`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Receive a response with `stop_reason: \"tool_use\"` and a `tool_use` block",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run the requested function in your own code with the block's `input`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Send a user message containing a `tool_result` with the matching `tool_use_id`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Receive the final answer with `stop_reason: \"end_turn\"`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "The loop is: define tools and send; Claude answers with `tool_use` and stops; your code executes; you append the full assistant content plus a user message of `tool_result` blocks and send again; repeat while `stop_reason` is `tool_use`. When Claude has what it needs it ends with `end_turn`. The SDK Tool Runner automates exactly this loop.",
+    "reference": "Claude API docs: How tool use works",
+    "roleLevel": 1,
+    "source": "interview:tool-use-loop",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://agentswarms.fyi/interview-questions",
+        "https://myengineeringpath.dev/genai-engineer/interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-009",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your `fetch_invoice` tool times out against a downstream service. How should your tool-use loop report this to Claude? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Return a `tool_result` for that `tool_use_id` with `is_error: true` and a message such as \"Billing service timed out; retry in 30 s or ask for the invoice number\"",
+        "why": "`is_error: true` plus an instructive message lets Claude retry, change approach or tell the user, instead of guessing."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "If it was one of several parallel calls and you skip the rest, still return a `tool_result` for every call, marking the skipped ones `is_error: true`",
+        "why": "Every `tool_use` needs a `tool_result`. A brief \"not executed\" error result keeps the history valid and tells Claude what happened."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Leave the failed call out of the next user message so Claude assumes nothing happened",
+        "why": "A `tool_use` without a matching `tool_result` makes the next request fail with a 400."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return the bare string \"failed\" as normal tool output so the loop stays simple",
+        "why": "A generic, unflagged message gives Claude nothing to recover with and may be read as real data."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Append the error text to the `system` prompt for the next request",
+        "why": "Editing `system` invalidates the prompt cache and still leaves the `tool_use` unanswered."
+      }
+    ],
+    "explanation": "Report tool failures as data, not as transport errors: a `tool_result` with `is_error: true` and an informative message. Claude will usually retry with corrected input, try another path, or explain the problem. Every `tool_use` id must get a `tool_result` in the next user message, including calls you chose not to run.",
+    "reference": "Claude API docs: Handle tool calls (is_error); Parallel tool use",
+    "roleLevel": 2,
+    "source": "interview:tool-result-is-error",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-010",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You added `cache_control` to a large system prompt. Which `usage` field on the second, identical request tells you the cache was actually hit?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`cache_creation_input_tokens`",
+        "why": "This counts tokens written to the cache. It is non-zero on the first request; a hit shows up elsewhere."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`input_tokens`, which should equal the full prompt length",
+        "why": "`input_tokens` is only the uncached remainder after the last breakpoint, so on a hit it gets smaller, not equal to the prompt."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`cache_read_input_tokens`",
+        "why": "It reports how many prompt tokens were served from the cache at the reduced read price."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`output_tokens`, which drops to zero on a hit",
+        "why": "Caching applies to the input prefix only. The model still generates and bills its output."
+      }
+    ],
+    "explanation": "Three fields describe input: `cache_creation_input_tokens` (written to cache, billed at the write premium), `cache_read_input_tokens` (served from cache, billed at a fraction of base input) and `input_tokens` (the uncached tail). Total prompt size is the sum of all three. If `cache_read_input_tokens` stays at zero across identical requests, something is changing the prefix.",
+    "reference": "Claude API docs: Prompt caching (tracking cache performance)",
+    "roleLevel": 2,
+    "source": "interview:cache-usage-fields",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview",
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-011",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Claude returned two `tool_use` blocks with ids `toolu_01` and `toolu_02`. How does the API know which of your results belongs to which call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "By position: the first `tool_result` answers the first `tool_use`",
+        "why": "Order is not how results are matched; ids are. Relying on position breaks as soon as you run calls concurrently."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Each `tool_result` carries a `tool_use_id` equal to the `id` of the call it answers",
+        "why": "The `tool_use_id` field links each result to its request, so order within the message does not matter."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Each `tool_result` repeats the tool `name`, and names are matched",
+        "why": "Two calls can use the same tool with different inputs, so the name is not a unique key; `tool_result` has no `name` field."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "You send each result in its own follow-up request, tagged with an `x-tool-call-id` header naming the call",
+        "why": "There is no such header. All results go back as content blocks in the next user message."
+      }
+    ],
+    "explanation": "A `tool_use` block has `id`, `name` and `input`. The reply is a user message whose content includes one `tool_result` per call, each with `tool_use_id` set to that call's `id`, plus optional `content` (string or blocks of text, image, document) and optional `is_error`.",
+    "reference": "Claude API docs: Handle tool calls",
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-API-012",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about Claude prompt caching are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It is a prefix match over the rendered prompt in the order `tools`, then `system`, then `messages`",
+        "why": "The cache key covers the exact bytes up to each breakpoint, so a change at any position invalidates everything after it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A request can set at most four `cache_control` breakpoints",
+        "why": "Four is the documented maximum; automatic caching also uses one of those slots."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Two organisations sending a byte-identical prompt share one cache entry",
+        "why": "Caches are never shared across organisations, and on the Claude API they are also isolated per workspace."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The default cache lifetime is one hour, and each read extends it for a small fee",
+        "why": "The default TTL is 5 minutes. Reads refresh the timer at no additional cost; one hour is an opt-in TTL."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Changing only the final user question invalidates the cached system prompt",
+        "why": "Content after the breakpoint does not affect the cached prefix before it; that is why volatile content goes last."
+      }
+    ],
+    "explanation": "Design for the prefix rule: stable content first (tool definitions, frozen system prompt), volatile content last (the per-request question). Put the breakpoint at the end of the shared part. The default TTL is 5 minutes, refreshed free on every hit; `ttl: \"1h\"` is available at a higher write price.",
+    "reference": "Claude API docs: Prompt caching",
+    "roleLevel": 2,
+    "source": "interview:prompt-caching-basics",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview",
+        "https://jobsbyculture.com/blog/prompt-caching-engineers-guide-2026",
+        "https://dataford.io/interview-guides/anthropic/ai-engineer",
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-013",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Raising `max_tokens` from 4,000 to 32,000 makes each request consume more of your output-tokens-per-minute (OTPM) rate limit, even if the actual reply length stays the same.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "OTPM is not reserved from `max_tokens`; only tokens actually generated count."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: OTPM is evaluated in real time on generated tokens, and `max_tokens` does not factor into it."
+      }
+    ],
+    "explanation": "Anthropic's rate-limit docs state that OTPM counts only the output tokens actually produced, so there is no rate-limit downside to a generous `max_tokens`. Setting it too low has a real cost, though: truncated answers (`stop_reason: \"max_tokens\"`) that need a retry.",
+    "reference": "Claude API docs: Rate limits",
+    "roleLevel": 3,
+    "source": "interview:api-rate-limits",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/api/rate-limits"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-014",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Old code sends a top-level `output_format` with a JSON schema to `messages.create()` and now gets a 400 error. What is the current way to constrain the response to a JSON schema?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`response_format: {type: \"json_object\"}` at the top level",
+        "why": "That is another vendor's parameter name; the Messages API does not accept it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Prefill the assistant turn with `{` so the model continues in JSON",
+        "why": "Prefill is not a schema guarantee, and recent models reject assistant prefill with a 400."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Force a dummy tool with `tool_choice: {type: \"tool\"}` and read its input",
+        "why": "This was a workaround before structured outputs; some current models reject forced tool choice outright."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`output_config: {format: {type: \"json_schema\", schema: ...}}`",
+        "why": "The format moved under `output_config`; `output_format` is deprecated and only works with an old beta header."
+      }
+    ],
+    "explanation": "JSON outputs are configured with `output_config.format` (`type: \"json_schema\"` plus the schema). SDK helpers such as `client.messages.parse()` build this and validate the result for you. The deprecated `output_format` returns a 400 unless you send the legacy `structured-outputs-2025-11-13` beta header.",
+    "reference": "Claude API docs: Structured outputs",
+    "roleLevel": 2,
+    "source": "interview:api-structured-outputs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://dataford.io/interview-guides/google/genai-engineer",
+        "https://platform.claude.com/docs/en/build-with-claude/structured-outputs"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-015",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "At peak hours your service starts getting HTTP 429 `rate_limit_error` responses from the Messages API. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "When the response has a `retry-after` header, wait that many seconds before retrying",
+        "why": "The docs say earlier retries will fail; `retry-after` is the authoritative wait."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The official SDKs already retry 429 and 5xx errors with backoff, twice by default",
+        "why": "`max_retries` defaults to 2 and covers 408, 409, 429, 5xx and connection errors, so first check what the SDK is already doing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompt caching cannot help, because cached tokens count against ITPM like any other input",
+        "why": "On most models `cache_read_input_tokens` do not count toward ITPM, so caching raises effective throughput."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Limits reset at the top of each minute, so a burst right after the reset is always safe",
+        "why": "The API uses a token bucket that refills continuously, and short bursts can exceed the limit even below the per-minute figure."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`anthropic-ratelimit-tokens-reset` gives the seconds remaining as an integer",
+        "why": "The reset headers are timestamps in RFC 3339 format, not second counts."
+      }
+    ],
+    "explanation": "Limits are RPM, ITPM and OTPM per model class, enforced with a token bucket. A 429 names the limit that was exceeded; honour `retry-after` when present and let the SDK's built-in retries handle transient cases. The `anthropic-ratelimit-*` headers show limit, remaining and reset time, and caching is the cheapest way to raise effective input throughput.",
+    "reference": "Claude API docs: Rate limits; Errors",
+    "roleLevel": 2,
+    "source": "interview:api-rate-limits",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/api/rate-limits",
+        "https://platform.claude.com/docs/en/api/errors"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-016",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "What is the maximum number of `cache_control` breakpoints allowed in a single Messages API request? Type a number.",
+    "options": [],
+    "accepted": [
+      "4",
+      "four"
+    ],
+    "explanation": "A request can define up to 4 breakpoints. Top-level automatic caching consumes one of the four slots, so if four explicit block-level breakpoints already exist, adding automatic caching returns a 400. Use multiple breakpoints when sections change at different rates (tools never, retrieved context daily, conversation every turn).",
+    "reference": "Claude API docs: Prompt caching",
+    "roleLevel": 2,
+    "source": "interview:prompt-caching-basics",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview",
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-017",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You stream a response that calls a tool. How do you get the tool's `input` object from the SSE events?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Join the `partial_json` fragments from its `input_json_delta` events; parse at `content_block_stop`",
+        "why": "Tool input deltas are partial JSON strings; the final `tool_use.input` is an object only after the fragments are joined and parsed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Parse each `text_delta` as JSON, because tool arguments stream as text",
+        "why": "`text_delta` carries visible text blocks. Tool arguments arrive in a separate delta type."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Read it from `content_block_start`, whose `tool_use` block already contains the complete `input` object",
+        "why": "`content_block_start` opens the `tool_use` block with an empty input; the arguments follow as deltas."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`JSON.parse` every `input_json_delta` fragment as it arrives and merge the objects",
+        "why": "Individual fragments such as `{\"location\":` are not valid JSON on their own, so per-fragment parsing throws."
+      }
+    ],
+    "explanation": "Each content block streams as `content_block_start`, one or more `content_block_delta` events, and `content_block_stop`. For `tool_use` blocks the delta type is `input_json_delta` with a `partial_json` string. Accumulate and parse at the stop event, or let the SDK's stream helpers (`finalMessage()`, `get_final_message()`) assemble it for you.",
+    "reference": "Claude API docs: Streaming messages (input JSON delta)",
+    "roleLevel": 3,
+    "source": "interview:streaming-events",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dataford.io/interview-guides/google/genai-engineer",
+        "https://platform.claude.com/docs/en/build-with-claude/streaming"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-018",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate's batch job zips the results of `messages.batches.results(id)` with the original request list by index and writes labels to the database. Some labels end up on the wrong tickets. What is the bug?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Results arrive in input order, so the mismatch must be caused by retries inside the SDK",
+        "why": "The premise is false: the docs state results can come back in any order."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The job polled before `processing_status` was `ended`, so the list is still partial",
+        "why": "Results are only available once the batch ends, and a partial list would be short, not reshuffled."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Batch results can come back in any order; each must be matched by its `custom_id`",
+        "why": "Every request carries a unique `custom_id` (1-64 chars of letters, digits, `-`, `_`), and each result echoes it. Key by that, never by position."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Errored requests are silently dropped from the results, shifting every later index by one",
+        "why": "Errored, canceled and expired requests still appear with their `custom_id` and a `result.type`; matching by id handles them correctly."
+      }
+    ],
+    "explanation": "Treat batch results as an unordered set keyed by `custom_id`. Each line has `custom_id` and `result.type` of `succeeded`, `errored`, `canceled` or `expired`. Errored, canceled and expired requests are not billed; retry them selectively by id.",
+    "reference": "Claude API docs: Batch processing (results may not match input order)",
+    "roleLevel": 2,
+    "source": "interview:batches-api",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/batch-processing"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-019",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each HTTP status from the Claude API with its error type.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`invalid_request_error`",
+        "why": "Malformed body, bad parameters or an unsupported combination; not retryable as-is."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`authentication_error`",
+        "why": "Missing or invalid credentials."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`rate_limit_error`",
+        "why": "Too many requests or tokens for your limits; retryable after a wait."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`overloaded_error`",
+        "why": "The API is temporarily overloaded; retryable."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "400",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "401",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "429",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "529",
+        "answer": "D"
+      }
+    ],
+    "explanation": "400, 401, 403 and 404 indicate a problem with the request or credentials and should not be blindly retried. 429, 500 and 529 are transient and retryable with backoff. Catch the SDK's typed exceptions (most specific first) rather than string-matching messages, so retryable and non-retryable failures stay distinct.",
+    "reference": "Claude API docs: Errors",
+    "roleLevel": 2,
+    "source": "interview:api-rate-limits",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/api/errors",
+        "https://platform.claude.com/docs/en/api/rate-limits"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-020",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your agent loop runs parallel tool calls with `asyncio.gather`, but to keep the code simple it appends one user message per `tool_result`. Over a long session Claude makes fewer and fewer parallel calls. What is going on, and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The API caps parallel calls per session; pass `disable_parallel_tool_use: false` to lift the cap",
+        "why": "There is no per-session cap. `disable_parallel_tool_use` only turns parallelism off; parallel calls are already on by default."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`asyncio.gather` returns results out of order, which slowly confuses the model; switch to running the tool calls one at a time",
+        "why": "Order inside the message does not matter because `tool_use_id` matches results; running sequentially only adds latency."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Separate result messages teach the model that it calls one tool at a time; return every `tool_result` in one user message",
+        "why": "The docs call this the most common parallel-tool bug: split results in history \"teach\" Claude to stop making parallel calls."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Parallel calls only work with `tool_choice: {type: \"any\"}`, so the default `auto` gradually stops them",
+        "why": "Parallel tool use is the default with `auto`. `tool_choice` does not have to change for it."
+      }
+    ],
+    "explanation": "Execute parallel calls however suits your tools, but always reply with one user message containing every `tool_result` (results first, before any text). History is a strong few-shot signal: if prior turns show one result per message, Claude imitates that pattern and parallelism fades.",
+    "reference": "Claude API docs: Parallel tool use",
+    "roleLevel": 3,
+    "source": "interview:parallel-tool-results",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-021",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This follow-up request fails with a 400 error. The assistant turn before it called only client tools.\n\n```json\n{\n  \"role\": \"user\",\n  \"content\": [\n    { \"type\": \"text\", \"text\": \"Here are the results:\" },\n    { \"type\": \"tool_result\", \"tool_use_id\": \"toolu_01\", \"content\": \"15 degrees\" }\n  ]\n}\n```\n\nWhat is wrong?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`tool_result` content must be a list of blocks, never a plain string",
+        "why": "A plain string is valid `content` for a `tool_result`; lists of text, image or document blocks are also allowed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The text block comes first; in a tool-result message every `tool_result` must precede any text",
+        "why": "The docs show exactly this shape as a 400 case. Text is allowed only after all the results."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tool results must be sent with `role: \"tool\"`, not `role: \"user\"`",
+        "why": "The Claude API has no `tool` role. Results go in a `user` message."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `tool_result` must also repeat the tool's `name` next to `tool_use_id`, or the API cannot route it to the call",
+        "why": "Results are linked by `tool_use_id` only; there is no `name` field on `tool_result`."
+      }
+    ],
+    "explanation": "Two formatting rules: tool results must immediately follow the assistant message that requested them, and inside that user message the `tool_result` blocks come first. Even text placed after the results is best avoided in steady loops, because it can teach the model to end turns early with empty replies.",
+    "reference": "Claude API docs: Handle tool calls (formatting requirements)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-API-022",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A support bot marks its system prompt with `cache_control`, but `cache_read_input_tokens` is 0 on every request, even for back-to-back identical questions. Which causes could explain this? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The system prompt begins with `Current time: {now()}`",
+        "why": "The timestamp changes on every request at the very front of the prefix, so no two requests share cached bytes."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Tool definitions are built from a dict iterated in a different order per process, so the `tools` JSON varies",
+        "why": "Tools render before the system prompt; non-deterministic serialisation changes the prefix bytes and every breakpoint after them misses."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The user question at the end of `messages` differs between requests",
+        "why": "Content after the breakpoint does not affect the cached prefix; varying questions are exactly what caching expects."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Requests arrive about 90 seconds apart",
+        "why": "That is well inside the 5-minute TTL, and every hit refreshes the timer."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The responses are streamed rather than returned in one piece",
+        "why": "Streaming is a transport choice; it is not part of the cached prefix."
+      }
+    ],
+    "explanation": "Caching is a byte-exact prefix match over `tools`, then `system`, then `messages`. Silent invalidators are anything dynamic early in the prefix: timestamps, request ids, per-user interpolation, unsorted JSON, or a tool list that varies per user. Fix by moving the dynamic part after the last breakpoint or making it deterministic, then confirm with `cache_read_input_tokens > 0`.",
+    "reference": "Claude API docs: Prompt caching (what invalidates the cache)",
+    "roleLevel": 3,
+    "source": "interview:cache-usage-fields",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview",
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-023",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your hand-written tool loop only handles `tool_use` and `end_turn`. Which additions are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "On `max_tokens` with an incomplete `tool_use` block, do not run the tool; retry the request with a higher `max_tokens`",
+        "why": "A truncated tool call has incomplete input. The docs say to retry with more room to get the full call."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "On `pause_turn`, append the assistant content as-is and send the request again without adding a \"continue\" message",
+        "why": "The server-side loop resumes from the trailing server-tool block; an extra user message is unnecessary."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "On `refusal`, resend the identical request in a loop until a normal answer comes back",
+        "why": "An unchanged request is likely to be declined again, and each attempt is billed. Handle refusals explicitly (surface them, or use a supported fallback)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "On `max_tokens`, parse whatever tool input arrived and run the tool to save a round trip",
+        "why": "The input may be truncated yet still parse, so the tool could run with wrong arguments."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "To avoid empty `end_turn` replies, append a text block such as \"Continue\" after every `tool_result`",
+        "why": "This is the documented cause of empty replies: text after every tool result teaches Claude to end its turn."
+      }
+    ],
+    "explanation": "A robust loop branches on every `stop_reason`: `tool_use` (run tools, return results), `end_turn` (done), `max_tokens` (retry larger if the cut matters, never run a truncated tool call), `pause_turn` (resend as-is), `refusal` (do not treat content as an answer; never execute that turn's tools), and `model_context_window_exceeded`. Cap continuations so a loop cannot run forever.",
+    "reference": "Claude API docs: Handling stop reasons",
+    "roleLevel": 3,
+    "source": "interview:stop-reasons-handling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use",
+        "https://platform.claude.com/docs/en/api/errors"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-024",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With thinking on, Claude returns `[thinking, tool_use]`. To save input tokens, your loop strips the `thinking` block before sending back the assistant turn with the `tool_result`. Which statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "That is fine: a thinking block is never needed again once the response that produced it has been received",
+        "why": "Within a tool-use turn they are required, because the tool loop is one continuous assistant turn."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Better to keep the thinking text but shorten it to its first paragraph",
+        "why": "Edited thinking blocks are rejected with a 400; the sequence must match what the model generated."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Within a tool-use turn, pass the thinking blocks back complete and unmodified alongside the `tool_use`",
+        "why": "The docs mark this as required: Claude continues the same reasoning after the tool result, and the API checks the blocks."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Keep the `thinking` block but drop its `signature` field, which is only metadata",
+        "why": "The signature verifies the block's integrity; altering or removing it counts as modifying the block."
+      }
+    ],
+    "explanation": "Rules for thinking blocks: required to pass back (unchanged) within a tool-use turn, recommended to pass everything back across turns, and allowed to omit prior turns' thinking outside tool use. You do not need to prune old blocks yourself; the API filters them and bills only what it shows the model.",
+    "reference": "Claude API docs: Thinking (preserving thinking blocks)",
+    "roleLevel": 3,
+    "source": "interview:extended-thinking",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/extended-thinking",
+        "https://platform.claude.com/docs/en/build-with-claude/effort"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-025",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A product manager asks you to \"make the agent cheaper with effort\". Which description of the `effort` parameter is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It is a top-level integer that caps thinking tokens, replacing `max_tokens`",
+        "why": "Effort is a named level, not a token cap, and `max_tokens` remains the strict output limit."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It only changes how long the thinking blocks are; the visible text, the tool calls and their arguments are all left unaffected",
+        "why": "Effort applies to all output tokens: text, tool calls and their arguments, and thinking when active."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It has no effect unless adaptive thinking is explicitly enabled on the request",
+        "why": "The docs state effort works with or without thinking, because it shapes every output token."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Set via `output_config.effort`, it shapes all output (text, tool calls, thinking) as a soft signal; `max_tokens` stays the hard cap",
+        "why": "Lower effort means fewer, terser tool calls and less thinking, but it is behavioural guidance, not an enforced budget."
+      }
+    ],
+    "explanation": "Effort levels (`low`, `medium`, `high`, and on supporting models `xhigh` and `max`) trade thoroughness against token spend within one model. Setting it to the model's default equals omitting it. For a hard ceiling use `max_tokens`. Measure on your own evals before lowering it on quality-sensitive routes.",
+    "reference": "Claude API docs: Effort",
+    "roleLevel": 3,
+    "source": "interview:effort-parameter",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/effort",
+        "https://code.claude.com/docs/en/model-config"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-026",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the server-sent events of a streamed single-text-block Messages response in the order they arrive (ignore `ping`).",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`message_start`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`content_block_start`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`content_block_delta`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`content_block_stop`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`message_delta`",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`message_stop`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "explanation": "`message_start` carries a `Message` with empty `content`. Each content block then streams as start, one or more deltas, stop, with an `index` matching its position in the final `content` array. `message_delta` carries top-level changes such as `stop_reason` and cumulative `usage`, and `message_stop` ends the stream. `ping` events can appear anywhere.",
+    "reference": "Claude API docs: Streaming messages (event types)",
+    "roleLevel": 3,
+    "source": "interview:streaming-events",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/streaming",
+        "https://dataford.io/interview-guides/google/genai-engineer"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-027",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In a streamed response, the `usage.output_tokens` value in each `message_delta` event is an increment, so a cost tracker should add up the values from every `message_delta` it sees.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Summing would over-count whenever a stream has more than one `message_delta`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the docs warn that token counts in `message_delta` usage are cumulative, so take the latest value."
+      }
+    ],
+    "explanation": "The streaming docs carry an explicit warning that `message_delta` usage counts are cumulative. Read the final value (or the usage on the SDK's assembled final message) rather than summing deltas. The same idea applies to any metering you build on top of streaming.",
+    "reference": "Claude API docs: Streaming messages (event types)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-API-028",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent sends a 180,000-token conversation every turn with caching on. A dashboard built on `usage.input_tokens` shows about 3,000 tokens per request, and finance thinks the dashboard is broken. What is the right reading?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The API silently truncated the oldest turns of the history to fit a smaller window, so only about 3,000 tokens of input were actually processed and billed",
+        "why": "The API does not silently drop history. A request that does not fit fails or stops with a specific stop reason."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`input_tokens` is only the uncached tail; total input is `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`",
+        "why": "Most of the prompt was served from cache, so it shows up in `cache_read_input_tokens`, not in `input_tokens`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Cached tokens are free, so 3,000 really is the billable input",
+        "why": "Cache reads are cheap but not free, and cache writes cost more than base input; both must be priced."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "For cached requests, `input_tokens` counts only the system prompt, while the message history is reported inside `output_tokens`",
+        "why": "History is input. `output_tokens` counts what the model generated this request."
+      }
+    ],
+    "explanation": "With caching, `input_tokens` covers only tokens after the last breakpoint. A healthy agent loop shows `cache_read_input_tokens` growing turn over turn, a small `cache_creation_input_tokens` (the newly appended turn) and a small `input_tokens`. Cost dashboards must price all three input fields plus output.",
+    "reference": "Claude API docs: Prompt caching; Rate limits (cache-aware ITPM)",
+    "roleLevel": 3,
+    "source": "interview:cache-usage-fields",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-029",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are building a service that extracts 12 fields from each incoming invoice email into your database. Each email is independent, there are no tools to call, and volume is high. Which way of calling Claude fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The Claude Agent SDK, so the agent can explore the email with built-in Read, Bash and Grep tools",
+        "why": "The Agent SDK is the Claude Code harness for open-ended, tool-driven work; a fixed extraction does not need an agent loop or file tools."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The SDK Tool Runner with one tool per field, letting Claude call them in a loop",
+        "why": "This invents a tool loop for a single-shot task, adding turns, latency and cost."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A single Messages API call per email with a JSON schema in `output_config.format`",
+        "why": "One request and one schema-valid response is the simplest tier that meets the need; batch it if latency does not matter."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A Managed Agents session per email so the loop runs on Anthropic's infrastructure",
+        "why": "Managed Agents is for hosted, long-running agents with a workspace; it is heavy for a stateless extraction."
+      }
+    ],
+    "explanation": "Start with the simplest tier: classification, extraction and summarisation are single calls. Reach for the Tool Runner when you need a loop over your own tools, the Agent SDK when you want Claude Code's built-in tools and harness on your own infrastructure, and Managed Agents when you want Anthropic to host both the loop and the sandbox.",
+    "reference": "Claude API docs: Tool runner; Claude Agent SDK overview",
+    "roleLevel": 4,
+    "source": "interview:raw-api-vs-sdk",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/overview",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-runner",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-030",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You want Claude to call your `create_ticket` tool with arguments that always match its schema, and also to finish with a JSON summary in a fixed shape. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Set `strict: true` on the tool definition so its `input` is guaranteed to validate against `input_schema`",
+        "why": "Strict tool use is a field on the tool itself and removes missing-parameter and type-mismatch errors."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Strict tools and `output_config.format` can be used together in the same request",
+        "why": "The docs describe combining them: guaranteed-valid tool inputs plus a structured final response."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`strict: true` belongs inside `tool_choice`, not on the tool",
+        "why": "It is a top-level field of the tool definition, alongside `name`, `description` and `input_schema`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The schema may use `minLength` and `maximum`, which the API enforces during generation",
+        "why": "String-length and numeric constraints are not supported by the API's constrained decoding; the Python and TS SDKs strip them and check client-side."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Objects may set `additionalProperties: true` to allow future fields",
+        "why": "Structured outputs require `additionalProperties: false` on objects."
+      }
+    ],
+    "explanation": "JSON outputs (`output_config.format`) control what Claude says; strict tool use (`strict: true`) controls how Claude calls your functions. Both use constrained decoding with a supported JSON Schema subset: `additionalProperties: false`, no recursive schemas, no numeric or string-length constraints. A `refusal` or `max_tokens` stop can still yield output that does not match the schema.",
+    "reference": "Claude API docs: Structured outputs; Strict tool use",
+    "roleLevel": 3,
+    "source": "interview:api-structured-outputs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-031",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A Message Batch holds 20,000 requests that all start with the same 30,000-token policy manual marked with `cache_control`. The default TTL gives a poor hit rate. What is the documented recommendation?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use the 1-hour cache TTL, and treat batch cache hits as best-effort",
+        "why": "Batches can take longer than 5 minutes and run requests concurrently in any order, so the docs suggest `ttl: \"1h\"` and note hits are not guaranteed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add a `max_tokens: 0` warm-up request at the start of the batch",
+        "why": "`max_tokens: 0` is rejected inside a batch; an entry written during batch processing would probably expire before it was read."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Caching is unsupported inside batches; drop the markers and rely on the batch discount",
+        "why": "Prompt caching works with batches; the docs only caution that hits are best-effort there."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Stream each batch request so the cache entry becomes readable sooner",
+        "why": "`stream: true` is one of the parameters batches reject; results come back as a file."
+      }
+    ],
+    "explanation": "Batch requests are processed independently and possibly concurrently, so cache hits are best-effort. The 1-hour TTL keeps the shared prefix alive across a long batch. Remember the parameters batches reject: `stream: true`, fast-mode `speed`, server-side `fallbacks` and `max_tokens: 0`.",
+    "reference": "Claude API docs: Batch processing (prompt caching tip)",
+    "roleLevel": 4,
+    "source": "interview:batches-api",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/batch-processing"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-032",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "Besides `message_start`, content block events, `message_delta`, `message_stop` and `error`, a Messages API stream can contain any number of keep-alive events with no payload. What is their event type? Type the exact name.",
+    "options": [],
+    "accepted": [
+      "ping",
+      "`ping`",
+      "\"ping\""
+    ],
+    "explanation": "Streams may include `ping` events (`data: {\"type\": \"ping\"}`) anywhere. Parsers should ignore them, and more generally should handle unknown event types gracefully, because the versioning policy allows new event types to be added.",
+    "reference": "Claude API docs: Streaming messages (ping events)",
+    "roleLevel": 3,
+    "source": "interview:streaming-events",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/streaming"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-033",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Prompt caching matches a prefix of the rendered request. Order these parts from the start of the rendered prompt to the end.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Tool definitions",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "System prompt",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Earlier conversation turns in `messages`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The newest user question",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Render order is `tools`, then `system`, then `messages`. That is why changing a tool definition invalidates everything, why a breakpoint on the last system block caches tools and system together, and why the volatile per-request question belongs at the very end after the last breakpoint.",
+    "reference": "Claude API docs: Prompt caching",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-API-034",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You want the static system prompt cached for 1 hour (users come back after long gaps) and the growing conversation tail cached with the default 5 minutes. Which configuration is valid?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A 5-minute marker on the system prompt and top-level automatic caching with `ttl: \"1h\"` for the tail",
+        "why": "This puts a 1-hour entry after a 5-minute one, breaking the rule that longer TTLs must come first."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "An explicit `ttl: \"1h\"` marker on the last system block and a 5-minute breakpoint (explicit or automatic) on the tail",
+        "why": "Longer-TTL entries must appear before shorter ones; a 1-hour prefix followed by a 5-minute tail satisfies that."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only top-level automatic caching with `ttl: \"1h\"`; it gives the system prompt 1 hour and automatically falls back to 5 minutes for the growing tail",
+        "why": "Automatic caching places one breakpoint with one TTL. Per-block TTLs need explicit markers."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "1-hour markers on all of the last four message blocks, so every turn survives the long gaps",
+        "why": "This uses all four slots, leaves none for the system prompt boundary, and pays the doubled 1-hour write price on every turn."
+      }
+    ],
+    "explanation": "You can mix 1-hour and 5-minute entries in one request, but entries with the longer TTL must appear earlier in the prompt. The robust pattern for agents: one explicit breakpoint at the end of the static prefix (with `ttl: \"1h\"` if gaps warrant it) plus automatic caching for the conversation tail.",
+    "reference": "Claude API docs: Prompt caching (mixing TTLs)",
+    "roleLevel": 4,
+    "source": "interview:cache-ttl",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+        "https://jobsbyculture.com/blog/prompt-caching-engineers-guide-2026"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-035",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Two caching workloads share a 60,000-token prefix. Workload X: an agent loop whose turns start about 40 seconds apart. Workload Y: a document assistant where users typically reply 15-30 minutes after the last answer. Which TTL choice is best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "1 hour for both, because longer TTLs always mean more hits",
+        "why": "For X, every 40-second request already refreshes a 5-minute entry, so the 1-hour TTL only adds the doubled write price."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "5 minutes for both; reads refresh the timer, so Y's entries stay alive anyway",
+        "why": "A read only refreshes an entry that still exists. After a 15-30 minute gap, a 5-minute entry has expired and Y misses every time."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "1 hour for X, where cache volume is highest, and no caching for Y",
+        "why": "This is backwards: X is the case where 5 minutes is free and sufficient, and Y is where 1 hour pays off."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "5 minutes for X, 1 hour for Y",
+        "why": "Pick TTL by the start-to-start gap: under 5 minutes the default stays warm on its own; 5-60 minute gaps are where the 1-hour write premium earns its keep."
+      }
+    ],
+    "explanation": "A hit refreshes an entry's timer at no cost, and lifetime is measured from the start of the request. If requests sharing a prefix start less than 5 minutes apart, the default TTL stays warm indefinitely. For 5-60 minute gaps the 1-hour TTL (pricier writes) avoids repeated cold misses. Beyond an hour, neither helps directly.",
+    "reference": "Claude API docs: Prompt caching (1-hour cache duration)",
+    "roleLevel": 4,
+    "source": "interview:cache-ttl",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://jobsbyculture.com/blog/prompt-caching-engineers-guide-2026",
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-036",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An assistant has \"read-only\" and \"edit\" modes. The current code sends a different `tools` list per mode, and the conversation often switches modes. Cache costs are high. Which change keeps the most cache while still steering behaviour per mode?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Always send the same deterministically ordered tool list; express the mode in message content or via `tool_choice`",
+        "why": "Changing tool definitions invalidates the tools, system and messages caches. A `tool_choice` change or message content only affects the messages tier onward."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep the per-mode tool lists, but describe the active mode in the system prompt so that the tool definitions stay cached",
+        "why": "Tools still change per mode (full invalidation), and editing `system` also invalidates the system and messages caches."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to a cheaper model while in read-only mode to compensate for the misses",
+        "why": "Caches are model-scoped, so switching models mid-conversation discards the whole cache too."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put a breakpoint on every tool so that unchanged tools keep their cache entries",
+        "why": "Caching is a prefix match: once one tool differs, every later breakpoint misses, and there are only four slots."
+      }
+    ],
+    "explanation": "The invalidation hierarchy: tool-definition changes and model switches rebuild everything; system-prompt changes keep only the tools cache; `tool_choice` and image changes keep tools and system and invalidate messages. Design modes as data inside the conversation, not as a different request skeleton.",
+    "reference": "Claude API docs: Prompt caching (what invalidates the cache)",
+    "roleLevel": 4,
+    "source": "interview:prompt-caching-basics",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview",
+        "https://dataford.io/interview-guides/anthropic/ai-engineer"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-037",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A research feature fires 30 requests at the same instant. All share a byte-identical 80,000-token prefix with a correct `cache_control` marker, yet all 30 report `cache_creation_input_tokens` near 80,000 and zero reads. What explains it, and what is the cheapest fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Concurrent requests always bypass the cache; serialise all 30 requests one after another",
+        "why": "Fully serialising throws away the latency benefit. Only the first request needs to finish writing before the rest can read."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The prefix exceeds the cacheable maximum; split it across four breakpoints",
+        "why": "There is a minimum cacheable length, not a maximum that 80K would exceed; the markers are fine."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "An entry becomes readable only once the first response begins; send one request, wait for its first streamed token, then fire the other 29",
+        "why": "This turns 29 cache writes into 29 cache reads at the cost of one time-to-first-token delay."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Parallel requests land in different workspaces; pin them all to the default workspace",
+        "why": "Workspace isolation depends on the credential used, not on timing; the same key always resolves to the same workspace."
+      }
+    ],
+    "explanation": "The docs note that a cache entry is only available after the first response starts, so N simultaneous requests with the same prefix all pay full write price. For fan-out, warm first (or pre-warm at startup with a `max_tokens: 0` request), then fan out. In multi-agent designs, fewer lanes over a byte-identical prefix turn writes into reads.",
+    "reference": "Claude API docs: Prompt caching (concurrent requests)",
+    "roleLevel": 5,
+    "source": "interview:latency-cost-levers",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://myengineeringpath.dev/genai-engineer/interview-questions/",
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-038",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are asked to cut the cost and latency of an existing Claude-powered IT-support assistant without hurting answer quality. Which plans are sound? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Freeze the system prompt and tool list, put per-request data after the last breakpoint, and verify with `cache_read_input_tokens`",
+        "why": "Caching is a free win: same outputs, cheaper and faster input, as long as the prefix is stable."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Move the nightly ticket-summary report to the Message Batches API",
+        "why": "Work nobody waits on gets the batch discount with no change to the model or prompt."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Lower `effort` on routine routes such as greetings and status lookups, but only after measuring that quality holds on an eval set",
+        "why": "Effort is a real quality trade-off, so it is safe only when measured per route."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Route each turn of a conversation to whichever model is cheapest for that turn",
+        "why": "Caches are model-scoped, so hopping models mid-conversation forfeits the cached history on every switch."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Cut `max_tokens` to 300 everywhere to free up OTPM rate limit",
+        "why": "`max_tokens` does not count toward OTPM, and a low cap truncates answers and causes retries."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Trim prompts to a target length using `tiktoken` counts",
+        "why": "`tiktoken` is another vendor's tokenizer and miscounts Claude tokens; use `count_tokens` with the target model."
+      }
+    ],
+    "explanation": "Order the levers: free wins first (caching with a stable prefix, batching offline work, trimming unused input), then measured trade-offs (effort per route, model choice per workload). Judge by cost per completed task, not per request; a cheaper request that needs retries is not cheaper.",
+    "reference": "Claude API docs: Prompt caching; Batch processing; Effort",
+    "roleLevel": 5,
+    "source": "interview:latency-cost-levers",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://myengineeringpath.dev/genai-engineer/interview-questions/",
+        "https://www.cloudvyn.com/blog/gen-ai-interview-questions-2026",
+        "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-039",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A chat backend raises the top-level `output_config.effort` to `high` whenever a user writes \"think carefully\", and uses `low` otherwise, inside the same long cached conversation. After this ships, `cache_creation_input_tokens` spikes to the full history size on many turns. What is the best explanation and remedy?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Effort is rendered into the prompt, so a top-level change invalidates the messages cache; pin effort per route, or use a per-message effort change where the model supports it",
+        "why": "The docs say any thinking or top-level effort change starts the cache over; per-message effort in a system message preserves the prefix on supporting models."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "High effort produces more thinking blocks, and thinking blocks can never be cached",
+        "why": "Thinking blocks cannot carry `cache_control` directly, but they are cached along with prior turns; the spike comes from the configuration change itself."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The phrase \"think carefully\" in the user message changes the prefix and breaks the cache",
+        "why": "New user content is appended after the cached history and does not invalidate earlier turns."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Effort changes only affect the tools cache, so moving tool definitions after the system prompt fixes it",
+        "why": "Message-level breakpoints always miss after an effort change, and you cannot reorder `tools` after `system` anyway."
+      }
+    ],
+    "explanation": "The thinking configuration and resolved effort are part of the rendered prompt. Changing them between requests always invalidates message-level breakpoints (and, depending on the model, tool and system ones too). Hold effort constant within cached conversations, vary it across workloads, or use the per-message effort mechanism on models that support it.",
+    "reference": "Claude API docs: Thinking (thinking and prompt caching); Effort",
+    "roleLevel": 4,
+    "source": "interview:effort-parameter",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/effort",
+        "https://platform.claude.com/docs/en/build-with-claude/extended-thinking"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-040",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A developer runs a stdio MCP server on their laptop and uses it from Claude Code. They now want the same tools in a backend that calls the Messages API, and plan to list the server in `mcp_servers` with the MCP connector. What is the key constraint?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "None: the connector launches the stdio process on the developer's laptop, authenticated by the API key that sent the request",
+        "why": "The API cannot start processes on your machine; the connection is made from Anthropic's side."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Anthropic's servers connect to it, so it must be a public HTTP server (Streamable HTTP or SSE); local stdio is not supported",
+        "why": "These are the documented limitations, along with support for tool calls only; in Claude Code the MCP client runs locally instead."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The connector supports stdio but not tools; only MCP resources and prompts are exposed",
+        "why": "It is the reverse: only tool calls are supported, and only remote HTTP transports."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It works if the server also appears in `tools` as a normal client tool with an `input_schema`",
+        "why": "The connector pairs `mcp_servers` with an `mcp_toolset` entry, and the server still has to be remotely reachable."
+      }
+    ],
+    "explanation": "Where the MCP client runs decides what is reachable. In Claude Code or the Agent SDK, the client runs in your process and can spawn stdio servers. With the Messages API MCP connector (beta), Anthropic connects to a public HTTP endpoint, supports only tool calls, and expects you to obtain and refresh any OAuth token yourself and pass it as `authorization_token`.",
+    "reference": "Claude API docs: MCP connector (limitations)",
+    "roleLevel": 4,
+    "source": "interview:mcp-connector-vs-claude-code-mcp",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-041",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You must add a per-run dollar cap and cost tracing to an existing hand-written Messages API tool loop without rewriting it. Which minimal design is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Before each iteration, call `count_tokens` on the full history and stop the loop as soon as the running count passes a token budget derived from the dollar cap, logging each count for tracing",
+        "why": "This counts input only, misses output and thinking tokens (often the expensive part), ignores cache pricing, and is an estimate."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Read `anthropic-ratelimit-tokens-remaining` after each call and stop when it falls below a threshold",
+        "why": "Rate-limit headers describe organisation or workspace capacity, not what this run has spent."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `max_tokens` small enough that no single run can exceed the budget",
+        "why": "`max_tokens` caps one response, not a multi-turn loop, and a low cap truncates tool calls."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "After each response, price `input_tokens`, both cache fields and `output_tokens` from `usage`, add to a run total, log it with the message id, and stop before the next call once over budget",
+        "why": "`usage` is the billed ground truth per response, and checking between iterations bounds the whole loop without touching its structure."
+      }
+    ],
+    "explanation": "Per-response `usage` is the only reliable meter: uncached input, cache writes, cache reads and output (which includes thinking) each have their own price. Accumulate in the loop and enforce the cap between iterations. If you move to the Agent SDK later, it reports cost and offers a budget option natively.",
+    "reference": "Claude API docs: Prompt caching (usage fields); Agent SDK: cost tracking",
+    "roleLevel": 4,
+    "source": "interview:cost-cap-and-tracing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-042",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each prompt-caching symptom with its most likely cause.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A timestamp or request id near the start of the system prompt",
+        "why": "Changes the prefix on every request, so nothing is ever read."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Automatic caching placing the breakpoint after a unique per-request tail",
+        "why": "Writes a fresh entry each time that is never read back."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The prefix is shorter than the model's minimum cacheable length",
+        "why": "Silently skipped: no error and no write."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Identical traffic split across several workspaces",
+        "why": "Each workspace keeps its own cache entries on the Claude API."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Both cache fields are zero even though a `cache_control` marker is present",
+        "answer": "C"
+      },
+      {
+        "id": "P2",
+        "text": "`cache_creation_input_tokens` is large on every request, but reads never cover the shared prefix",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Reads are always zero; diffing two payloads shows the first difference in the opening line of `system`",
+        "answer": "A"
+      },
+      {
+        "id": "P4",
+        "text": "Hit rate halved after a team moved half the traffic to a new API key in another workspace",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Diagnose from the usage fields, then localise. Zero writes and zero reads with a marker means below the minimum. Constant writes with no matching reads means a breakpoint after unique content (move an explicit marker to the end of the shared part). Zero reads with a changing opening line means a silent invalidator. Workspace isolation explains splits by credential.",
+    "reference": "Claude API docs: Prompt caching",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-API-043",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your streaming client treats HTTP 200 as success and concatenates `text_delta` values until the connection closes. During a busy period users see answers that just stop mid-sentence, with nothing logged. What most likely happened?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The server switched to a non-streaming response halfway through, which the client cannot parse",
+        "why": "A stream does not change format midway; failures inside a stream arrive as events."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`ping` events were mistaken for end-of-stream markers",
+        "why": "Pings are harmless keep-alives with no text; ignoring them does not truncate output."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "An SSE `error` event (for example `overloaded_error`) arrived after the 200; the client must handle it and check for `message_stop`",
+        "why": "Errors can be delivered inside the event stream after the HTTP 200, so success means reaching `message_stop`, not seeing a 200."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`max_tokens` was reached, and the API reports that only through a closed connection",
+        "why": "A cap is reported as `stop_reason: \"max_tokens\"` in `message_delta`, followed by `message_stop`, not as a silent close."
+      }
+    ],
+    "explanation": "Once streaming has started, the HTTP status is already 200, so errors arrive as `event: error` with a body like `{\"type\": \"error\", \"error\": {\"type\": \"overloaded_error\"}}` (the streaming counterpart of a 529). Treat the stream as complete only after `message_stop`, log `error` events, and retry or resume. Ignore `ping` and unknown event types gracefully.",
+    "reference": "Claude API docs: Streaming messages (error events)",
+    "roleLevel": 4,
+    "source": "interview:streaming-events",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/build-with-claude/streaming",
+        "https://dataford.io/interview-guides/google/genai-engineer"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-044",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Overnight, every request to the Messages API returns HTTP 429 `rate_limit_error`. The responses have no `retry-after` header, and `error.details.error_code` is `enforced_spend_limit_reached`. The SDK's retries all fail. What is happening?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A short burst exceeded RPM; exponential backoff for a few minutes will clear it",
+        "why": "A burst-related 429 is transient and normally carries `retry-after`; this error code marks a different condition that backoff cannot fix."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A spend limit you set yourself in the Console was reached, so the API keeps answering 429 until you raise or remove that limit",
+        "why": "A self-set spend limit returns HTTP 400 `invalid_request_error`, not a 429."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An acceleration limit tripped because traffic ramped up too quickly",
+        "why": "Acceleration limits are another 429 cause, but they ease as traffic stabilises and are not reported with this error code."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The organisation hit its tier's monthly spend cap; retries fail until the month resets or a higher tier is granted",
+        "why": "The docs describe exactly this: a `rate_limit_error` with no `retry-after` and `enforced_spend_limit_reached`, paused until the cap lifts."
+      }
+    ],
+    "explanation": "Not every 429 is retryable. Distinguish ordinary rate limits (honour `retry-after`), acceleration limits (ramp traffic gradually) and the tier spend cap (`error.details.error_code: \"enforced_spend_limit_reached\"`, no `retry-after`), where retrying just burns time. Alert on that error code instead of letting retry loops spin.",
+    "reference": "Claude API docs: Rate limits (reaching your spend cap)",
+    "roleLevel": 4,
+    "source": "interview:api-rate-limits",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://platform.claude.com/docs/en/api/rate-limits",
+        "https://platform.claude.com/docs/en/api/errors"
+      ]
+    }
+  },
+  {
+    "id": "CSK-API-045",
+    "domain": 4,
+    "skill": "messages-api-essentials",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You want Claude to reason before calling `submit_report`, and the call's arguments must always match the schema. The code must run on current models, some of which reject forced `tool_choice` (`any` or `tool`) with a 400. Which design satisfies every constraint?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`tool_choice: {type: \"tool\", name: \"submit_report\"}` with thinking enabled",
+        "why": "Fails on models that reject forced tool choice, and where it is accepted a forced call skips thinking entirely."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`tool_choice: auto`, an explicit instruction to call `submit_report`, `strict: true` on the tool, and a check that retries if no call was made",
+        "why": "`auto` lets the model think first and is accepted everywhere; strict mode guarantees valid arguments; the check covers the case where `auto` answers without calling."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`tool_choice: any` with `disable_parallel_tool_use: true`, so exactly one tool call is guaranteed",
+        "why": "Still forced tool use: rejected on some models, and where accepted the response starts with the call and has no thinking."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Prefill the assistant turn with an opening `tool_use` block so the model must continue it",
+        "why": "Assistant prefill is rejected on recent models, and a prefilled turn would also bypass thinking."
+      }
+    ],
+    "explanation": "Forcing a tool (`any` or `tool`) makes the API start the turn with the call, so the model cannot think or explain first, and some current models reject it outright. The portable pattern is `auto` plus a prompt instruction, strict tool use for schema-valid inputs, and a guard that verifies a call happened. If you only need JSON, structured outputs are simpler.",
+    "reference": "Claude API docs: Define tools (forcing tool use); Thinking with tool use",
+    "roleLevel": 4
+  }
+]
