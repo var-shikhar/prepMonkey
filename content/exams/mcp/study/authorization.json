@@ -1,0 +1,50 @@
+{
+  "authorization": {
+    "summary": "MCP authorization (revision 2026-07-28) is OAuth 2.1 for HTTP transports: the MCP server is a resource server that publishes Protected Resource Metadata, the client discovers the authorization server, registers, runs authorization code with PKCE and the resource parameter, validates iss, and sends an audience-bound bearer token on every request. stdio servers take credentials from the environment instead.",
+    "points": [
+      "Authorization is OPTIONAL. HTTP-based transports SHOULD follow the spec; stdio implementations SHOULD NOT and should take credentials from the environment (per-server `env`, narrowly scoped tokens).",
+      "Roles: MCP server = OAuth 2.1 resource server, MCP client = OAuth client, authorization server = issues tokens (co-hosted or separate). In 2025-03-26 the server could also act as the authorization server with `/authorize`, `/token` and `/register` fallbacks; 2025-06-18 made servers resource servers with Protected Resource Metadata and required RFC 8707.",
+      "Discovery chain: unauthenticated request, then `401` with `WWW-Authenticate: Bearer resource_metadata=...`, then the RFC 9728 PRM document (MUST list at least one `authorization_servers` entry), then RFC 8414 or OIDC Discovery metadata. Without the header, try `/.well-known/oauth-protected-resource/<path>` and then the root.",
+      "Authorization server metadata for issuer `https://as/t1` is tried as `/.well-known/oauth-authorization-server/t1`, then `/.well-known/openid-configuration/t1`, then `/t1/.well-known/openid-configuration`. The document's `issuer` MUST be identical to the issuer used to build the URL, or it is rejected.",
+      "Registration priority: pre-registered info, then Client ID Metadata Documents (HTTPS URL with a path as `client_id`, advertised via `client_id_metadata_document_supported`), then Dynamic Client Registration (deprecated in 2026-07-28, earliest removal in the first revision on or after 2027-07-28), then asking the user.",
+      "DCR clients MUST send `application_type` (`native` for desktop, CLI and localhost apps, `web` for remote browser apps); under OIDC the default `web` clashes with loopback redirect URIs. Pre-registered and DCR credentials MUST be keyed by issuer and re-registered when the authorization server changes; CIMD IDs are portable.",
+      "PKCE is mandatory with `S256` when technically capable. If `code_challenge_methods_supported` is missing from the metadata, the client MUST refuse to proceed.",
+      "The RFC 8707 `resource` parameter (the server's canonical URI: scheme, no fragment, usually no trailing slash) MUST be sent in both the authorization and token requests, even if the authorization server ignores it. Servers MUST reject tokens whose audience is not themselves.",
+      "RFC 9207: record the issuer before redirecting, then validate `iss` before redeeming the code. If metadata advertises support and `iss` is absent, reject; if `iss` is present, compare by exact string match (no normalization); if neither, proceed. Ignore error details from a mismatched response.",
+      "Tokens go in `Authorization: Bearer` on every HTTP request, never in the query string. Invalid or expired tokens get `401`; insufficient scope gets `403` with `error=\"insufficient_scope\"`, `scope` and `resource_metadata`; malformed requests get `400`.",
+      "Scopes: use the challenge `scope`, else all of `scopes_supported` (so keep that list minimal). Step-up: request the union of previous and challenged scopes, retry a few times, and track attempts. Servers emit all scopes an operation needs in one challenge and MUST honour scope hierarchies.",
+      "Extensions: OAuth Client Credentials for no-user workloads (JWT bearer assertion recommended) and Enterprise-Managed Authorization (ID token, then ID-JAG from the IdP, then an access token from the MCP authorization server). Both are negotiated via the `extensions` capability."
+    ],
+    "traps": [
+      "Saying the MCP server must issue its own tokens. Since 2025-06-18 it is a resource server; the authorization server may be separate.",
+      "Treating PKCE as a defence against mix-up attacks. The client hands its `code_verifier` to the attacker's token endpoint; only `iss` validation stops mix-up.",
+      "Forwarding the client's token to a downstream API (token passthrough). The server MUST use a separate token issued for the upstream API.",
+      "Requesting only the newly challenged scope on step-up and losing earlier permissions; request the union.",
+      "Calling DCR removed. In 2026-07-28 it is deprecated but still in the spec for authorization servers without CIMD support.",
+      "Validating signature and expiry but not audience. In Python SDK 2.3, `AuthSettings.validate_token_resource` left unset behaves as False.",
+      "Asking for API keys in chat, in tool arguments or through form-mode elicitation. Use URL-mode elicitation so secrets never reach the model or the client."
+    ],
+    "docs": [
+      {
+        "title": "MCP Authorization (2026-07-28)",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization"
+      },
+      {
+        "title": "Authorization Server Discovery",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/authorization-server-discovery"
+      },
+      {
+        "title": "Client Registration",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration"
+      },
+      {
+        "title": "Authorization Security Considerations",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations"
+      },
+      {
+        "title": "MCP Authorization Extensions",
+        "url": "https://modelcontextprotocol.io/extensions/auth/overview"
+      }
+    ]
+  }
+}
