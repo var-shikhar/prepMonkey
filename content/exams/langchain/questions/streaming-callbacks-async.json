@@ -1228,34 +1228,34 @@
     "difficulty": 3,
     "type": "single",
     "select": 1,
-    "stem": "What does this print?\n\n```python\nfrom langchain_core.runnables import RunnableLambda\n\ndef f(x):\n    if x == 2:\n        raise ValueError(\"bad\")\n    return x * 10\n\nprint(await RunnableLambda(f).abatch([1, 2, 3], return_exceptions=True))\n```",
+    "stem": "`work` is an async function that sleeps 0.3 s for `\"a\"`, 0.1 s for `\"b\"` and 0.2 s for `\"c\"`, then returns its input in upper case. What does `out` hold?\n\n```python\nr = RunnableLambda(work)\nout = [item async for item in r.abatch_as_completed([\"a\", \"b\", \"c\"])]\n```",
     "options": [
       {
         "id": "A",
         "correct": false,
-        "text": "It raises `ValueError: bad`",
-        "why": "That is the behaviour without `return_exceptions=True`."
+        "text": "`['A', 'B', 'C']`",
+        "why": "That is what `abatch` returns: outputs in input order, after every call has finished."
       },
       {
         "id": "B",
         "correct": false,
-        "text": "`[10, 30]`",
-        "why": "Failed inputs are not dropped; that would break the mapping to input positions."
+        "text": "`['B', 'C', 'A']`",
+        "why": "The order is right, but each item also carries the index of the input it belongs to."
       },
       {
         "id": "C",
         "correct": true,
-        "text": "`[10, ValueError('bad'), 30]`",
-        "why": "Each failure is returned in its input's position, so the list lines up with the inputs."
+        "text": "`[(1, 'B'), (2, 'C'), (0, 'A')]`",
+        "why": "Results are yielded as they finish, each paired with its input's index."
       },
       {
         "id": "D",
         "correct": false,
-        "text": "`[10, None, 30]`",
-        "why": "The exception object itself is returned, not `None`, so you can inspect it."
+        "text": "`[(0, 'A'), (1, 'B'), (2, 'C')]`",
+        "why": "The pairs are right, but they arrive in completion order, not input order."
       }
     ],
-    "explanation": "With `return_exceptions=True`, `batch`/`abatch` return exceptions in place of the failed outputs and keep input order, so one bad document does not lose the whole batch. Without it, the first exception propagates. For long jobs, combine this with `max_concurrency` and retries.",
+    "explanation": "`batch_as_completed` / `abatch_as_completed` yield `(index, output)` tuples in the order the calls finish, so fast inputs are not held back by slow ones; use the index to map each result to its input. `batch` / `abatch` instead wait for everything and return outputs in input order. Both accept `max_concurrency` in the config and `return_exceptions=True`.",
     "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
     "roleLevel": 3,
     "asked": {
