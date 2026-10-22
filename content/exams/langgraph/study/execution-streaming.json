@@ -1,0 +1,41 @@
+{
+  "execution-streaming": {
+    "summary": "A `StateGraph` is only a builder. `compile()` turns it into a runnable graph that you invoke or stream. You need to know what compile accepts, what each stream mode emits, how config and runtime context reach nodes, and how to stream tokens and progress out of nested graphs.",
+    "points": [
+      "`compile()` takes `checkpointer`, `store`, `cache`, `interrupt_before`, `interrupt_after`, `debug` and `name`, and it checks the graph structure. Per-run values such as `recursion_limit`, `thread_id` and context go to `invoke`, not to compile.",
+      "A compiled graph is a LangChain Runnable, so `invoke`/`ainvoke`, `stream`/`astream` and `batch`/`abatch` all work. In async code, use `ainvoke` or `astream`. The sync calls block the event loop.",
+      "`stream()` defaults to `stream_mode=\"values\"`, the full state after each step. `updates` yields `{node: delta}` for each node, `messages` yields `(message_chunk, metadata)` for LLM tokens, `custom` yields whatever nodes write, and `checkpoints`, `tasks` and `debug` show execution detail.",
+      "Pass a list such as `stream_mode=[\"updates\", \"custom\"]` and each chunk becomes a `(mode, data)` tuple. With `subgraphs=True`, a namespace tuple is added in front, and it is `()` for the root graph.",
+      "Opting in with `version=\"v2\"` gives one consistent shape. Stream chunks become dicts with `type`, `ns` and `data`, and `invoke` returns a `GraphOutput` with `.value` and `.interrupts`. v1 is still the default.",
+      "`invoke(inputs, stream_mode=\"updates\")` returns the list of chunks for that mode instead of the final state.",
+      "Inside a node, `get_stream_writer()` (or `runtime.stream_writer`) sends any data to `stream_mode=\"custom\"`. If the caller does not ask for `custom`, those writes are dropped. In async code it needs Python 3.11 or later, because it relies on contextvar propagation.",
+      "In `messages` mode, filter by `metadata[\"langgraph_node\"]` or by tags set with `model.with_config(tags=[...])`. Tokens stream even when the node calls `model.invoke`, as long as the call happens inside the graph run.",
+      "Tokens and progress events from a subgraph reach the parent's stream only with `subgraphs=True`. The namespace (for example `('agent:<task_id>',)`) tells you which subgraph produced each chunk.",
+      "A node can take `config: RunnableConfig` and `runtime: Runtime[Ctx]` parameters. `Runtime` exposes `context`, `store`, `stream_writer` and execution info, and context is passed on each call with `invoke(..., context={...})`.",
+      "`recursion_limit` is a top-level config key (`{\"recursion_limit\": 50}`), not one inside `configurable`. Hitting it raises `GraphRecursionError`. In 1.2 the default is very high (10,007 steps), so set it on purpose.",
+      "`graph.get_graph().draw_mermaid()` returns Mermaid text, and `draw_mermaid_png()` renders an image. Conditional edges are drawn from the path map or the router's return type hint, so a router without either shows incomplete edges."
+    ],
+    "traps": [
+      "Putting `recursion_limit` under `configurable`. It is silently ignored, and the default limit applies.",
+      "Calling sync `invoke` inside an `async def` FastAPI handler. It blocks the event loop for every other request.",
+      "Streaming `values` to a browser. Every event resends the whole growing state and exposes internal keys. Stream filtered `messages` and `custom` events instead.",
+      "Expecting subgraph tokens in the parent's stream without passing `subgraphs=True`.",
+      "Writing with `get_stream_writer()` but streaming only `updates`, so the progress events never arrive.",
+      "Still unpacking `(mode, chunk)` tuples after switching to `version=\"v2\"`, where chunks are dicts with a `type` key."
+    ],
+    "docs": [
+      {
+        "title": "Streaming",
+        "url": "https://docs.langchain.com/oss/python/langgraph/streaming"
+      },
+      {
+        "title": "Graph API overview: compiling, config and recursion limit",
+        "url": "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      },
+      {
+        "title": "Use the Graph API: runtime context and visualisation",
+        "url": "https://docs.langchain.com/oss/python/langgraph/use-graph-api"
+      }
+    ]
+  }
+}

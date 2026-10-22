@@ -1,0 +1,2047 @@
+[
+  {
+    "id": "LGR-EXS-001",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate writes this and gets an error on the last line. What is wrong?\n\n```python\nfrom typing import TypedDict\nfrom langgraph.graph import StateGraph, START, END\n\nclass State(TypedDict):\n    text: str\n\ndef shout(state: State):\n    return {\"text\": state[\"text\"].upper()}\n\nbuilder = StateGraph(State)\nbuilder.add_node(shout)\nbuilder.add_edge(START, \"shout\")\nbuilder.add_edge(\"shout\", END)\nresult = builder.invoke({\"text\": \"hi\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`invoke` is called on the builder instead of on `builder.compile()`",
+        "why": "A `StateGraph` is only a builder. It has no `invoke` method (you get `AttributeError`); `compile()` returns the runnable `CompiledStateGraph`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A node added without an explicit name cannot be referenced by edges, so `\"shout\"` is unknown",
+        "why": "`add_node(shout)` registers the node under the function name `shout`, so the edges are fine."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`END` must not be connected with `add_edge`; the graph ends automatically",
+        "why": "Adding an edge to `END` is the normal way to finish a branch."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The state schema must be a Pydantic model for `invoke` to accept a dict",
+        "why": "TypedDict, dataclass and Pydantic state schemas are all supported; dict input works with TypedDict."
+      }
+    ],
+    "explanation": "You must compile a graph before you can run it. `compile()` checks the structure and attaches runtime options such as a checkpointer, then returns a `CompiledStateGraph` that exposes `invoke`, `stream`, `batch` and their async variants. Calling `invoke` on the builder raises `AttributeError: 'StateGraph' object has no attribute 'invoke'`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:stategraph-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-002",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which of these is passed to `compile()` rather than to `invoke()`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A checkpointer such as `InMemorySaver()`",
+        "why": "Checkpointer, store, cache and static breakpoints are compile-time options attached to the compiled graph."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{\"configurable\": {\"thread_id\": \"42\"}}`",
+        "why": "The thread id changes per conversation, so it is part of the per-call config passed to `invoke`/`stream`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`recursion_limit`",
+        "why": "The recursion limit is a per-call config key: `invoke(inputs, {\"recursion_limit\": 50})`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`context={\"user_id\": \"u1\"}`",
+        "why": "Runtime context is supplied per call through the `context=` argument of `invoke`/`stream`."
+      }
+    ],
+    "explanation": "Think of `compile()` as wiring the graph to its infrastructure (checkpointer, store, cache, `interrupt_before`/`interrupt_after`, `name`) and `invoke()` as one execution with per-run values (input, config with `thread_id`, `recursion_limit`, tags, and `context`).",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:compile",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-003",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Calling `graph.stream(inputs)` on a compiled `StateGraph` without a `stream_mode` yields the full state after every step.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The default for a compiled `StateGraph` is `updates`, not `values`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: with no `stream_mode` a compiled `StateGraph` streams `updates`, one `{node_name: returned_update}` dict per node."
+      }
+    ],
+    "explanation": "A compiled `StateGraph` has `stream_mode = \"updates\"` by default, so `graph.stream(inputs)` yields `{'node': {...delta...}}` chunks. Pass `stream_mode=\"values\"` to get the full state after each step. (`invoke` still returns the final state because it uses `values` internally.)",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:stream-modes",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-004",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Complete the call that prints a Mermaid diagram of a compiled graph: `print(graph.get_graph().______())`. Type the method name.",
+    "options": [],
+    "accepted": [
+      "draw_mermaid",
+      "draw_mermaid()"
+    ],
+    "explanation": "`graph.get_graph()` returns a drawable graph object; `draw_mermaid()` returns Mermaid source text and `draw_mermaid_png()` renders an image (by default through the Mermaid.Ink API). It is a quick way to check that every node is reachable and that branches end at `__end__`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:graph visualisation",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://docs.langchain.com/langsmith/studio"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-005",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You want to show an LLM's answer token by token in a chat UI while the graph runs. Which stream mode do you use?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`messages`",
+        "why": "`messages` yields `(message_chunk, metadata)` tuples for LLM tokens from any node, tool or subgraph."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`values`",
+        "why": "`values` yields the whole state after each step, so text appears only when the node finishes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`updates`",
+        "why": "`updates` yields each node's returned delta after the node completes, not individual tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`checkpoints`",
+        "why": "`checkpoints` yields checkpoint snapshots and needs a checkpointer; it carries no token stream."
+      }
+    ],
+    "explanation": "Token streaming comes from `stream_mode=\"messages\"`. LangGraph captures tokens through LangChain callbacks, so they are emitted even if the node calls `model.invoke()` rather than `model.stream()`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:stream-modes",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-006",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each stream mode with what a single chunk contains (v1 output format, one mode at a time).",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`values`",
+        "why": "Full state after each step."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`updates`",
+        "why": "Per-node deltas keyed by node name."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`messages`",
+        "why": "LLM token plus metadata tuples."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`custom`",
+        "why": "Whatever a node passed to the stream writer."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`{'topic': 'ice cream and cats', 'joke': ''}`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`{'refine_topic': {'topic': 'ice cream and cats'}}`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`(AIMessageChunk(content='Why'), {'langgraph_node': 'call_model', ...})`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`{'status': 'thinking of a joke...'}`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`values` is the whole state, `updates` is `{node: delta}`, `messages` is a `(chunk, metadata)` 2-tuple, and `custom` is the arbitrary payload you passed to `get_stream_writer()`. Knowing these shapes is what lets you write the consumer loop correctly.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:streaming",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/",
+        "https://schoolofcoreai.com/interview-prep/tools/langgraph-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-007",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which of these are valid values for `stream_mode` in LangGraph? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`\"updates\"`",
+        "why": "Streams per-node state updates."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`\"checkpoints\"`",
+        "why": "Streams checkpoint events in the same format as `get_state()`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`\"custom\"`",
+        "why": "Streams data emitted with `get_stream_writer()`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`\"tokens\"`",
+        "why": "There is no `tokens` mode; LLM tokens come from `messages`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`\"events\"`",
+        "why": "Not a stream mode. `stream_events()` is a separate method, not a `stream_mode` value."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`\"state\"`",
+        "why": "Not a mode; the full state is streamed with `values`."
+      }
+    ],
+    "explanation": "The stream modes are `values`, `updates`, `messages`, `custom`, `checkpoints`, `tasks` and `debug`. You can pass one string or a list of them.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-EXS-008",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "When does this mistake surface?\n\n```python\nbuilder = StateGraph(State)\nbuilder.add_node(\"plan\", plan)\nbuilder.add_edge(START, \"plan\")\nbuilder.add_edge(\"plan\", \"exectue\")   # typo\ngraph = builder.compile()\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "At `compile()`, as a `ValueError` about an unknown node",
+        "why": "Compilation validates the structure, including edges that point at nodes that were never added."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only when `invoke()` reaches the `plan` node at runtime",
+        "why": "This is caught before anything runs; structural checks happen in `compile()`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Never: the edge is silently ignored and the graph ends after `plan`",
+        "why": "LangGraph does not ignore dangling edges; it raises during compilation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "At `add_edge`, because edges must reference existing nodes immediately",
+        "why": "`add_edge` only records the edge; you may add nodes in any order, so the check is deferred to `compile()`."
+      }
+    ],
+    "explanation": "`compile()` performs basic structural checks such as unknown edge targets or a missing entry point (`Graph must have an entrypoint`). That is one reason compiling is mandatory.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:stategraph-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-009",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "How many chunks does this loop print?\n\n```python\nclass State(TypedDict):\n    x: int\n\ndef a(s): return {\"x\": s[\"x\"] + 1}\ndef b(s): return {\"x\": s[\"x\"] * 10}\n\ngraph = (StateGraph(State).add_node(a).add_node(b)\n         .add_edge(START, \"a\").add_edge(\"a\", \"b\").add_edge(\"b\", END)\n         .compile())\n\nfor chunk in graph.stream({\"x\": 1}, stream_mode=\"values\"):\n    print(chunk)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "3: `{'x': 1}`, `{'x': 2}`, `{'x': 20}`",
+        "why": "`values` emits the state after the input step as well as after each node, so the input appears first."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "2: `{'x': 2}`, `{'x': 20}`",
+        "why": "That would be true of `updates`-style counting, but `values` also emits the initial state."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "1: only the final `{'x': 20}`",
+        "why": "That is what `invoke` returns; streaming yields intermediate states."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "4: one per edge including `END`",
+        "why": "Chunks are per step, not per edge; `END` does not produce a chunk."
+      }
+    ],
+    "explanation": "In `values` mode the first chunk is the state after the input has been applied, followed by one chunk per super-step. In `updates` mode the same graph yields two chunks: `{'a': {'x': 2}}` and `{'b': {'x': 20}}`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:streaming",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-010",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Nodes need the current `user_id` and a database client for each request, but neither should be saved in checkpoints. What is the recommended approach in LangGraph 1.x?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Declare a `context_schema`, pass `context=` per call, read `runtime.context`",
+        "why": "Runtime context is per-run and not part of state, so it is never checkpointed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add `user_id` and `db` keys to the state TypedDict so every node, including resumed ones, can read them",
+        "why": "State is checkpointed and serialised every step; a DB client is not serialisable and secrets would be persisted."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pass them inside `compile(context=...)` so every run shares them",
+        "why": "`compile()` has no `context` parameter, and per-request values must not be fixed at compile time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Read them from module-level globals set before each `invoke`",
+        "why": "Globals race under concurrent requests and bypass the typed context mechanism."
+      }
+    ],
+    "explanation": "`context_schema` (a dataclass, TypedDict or Pydantic model) declares run-scoped dependencies such as a user id, model name or DB connection. Nodes and conditional edges receive them via a `runtime: Runtime[Ctx]` parameter, keeping graph state limited to data that should be persisted.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:runtime context",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-011",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which of these are keyword arguments of `StateGraph.compile()` in LangGraph 1.2? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`store`",
+        "why": "Attaches a long-term `BaseStore`, exposed to nodes as `runtime.store`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`cache`",
+        "why": "Attaches a node cache (for example `InMemoryCache()`) used with cache policies."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`interrupt_before`",
+        "why": "Static breakpoints can be set at compile time (or per call)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`recursion_limit`",
+        "why": "This is a per-call config key, not a compile argument."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`thread_id`",
+        "why": "The thread id goes in `config[\"configurable\"]` on each call."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`stream_mode`",
+        "why": "Stream mode is chosen per `stream()`/`invoke()` call."
+      }
+    ],
+    "explanation": "The 1.2 signature is `compile(checkpointer=None, *, cache=None, store=None, interrupt_before=None, interrupt_after=None, debug=False, name=None, transformers=None)`. Anything that varies per request (thread id, recursion limit, context, stream mode) belongs on the call.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:compile",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-012",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent loops forever in production even though the team set a recursion limit. What is the bug?\n\n```python\ngraph.invoke(\n    inputs,\n    {\"configurable\": {\"thread_id\": tid, \"recursion_limit\": 25}},\n)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It belongs at the top level of config; inside `configurable` it is ignored",
+        "why": "LangGraph reads `config[\"recursion_limit\"]`. A key inside `configurable` is just user configuration."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The limit counts LLM tokens rather than steps, so 25 is reached instantly and then silently reset",
+        "why": "The limit counts super-steps, and hitting it raises `GraphRecursionError`; it never resets."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`recursion_limit` only works when there is no checkpointer",
+        "why": "It works with or without a checkpointer; placement is the problem."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It must be passed to `compile(recursion_limit=25)` instead",
+        "why": "`compile()` has no such argument; the limit is a per-run config value."
+      }
+    ],
+    "explanation": "Write `graph.invoke(inputs, {\"recursion_limit\": 25, \"configurable\": {\"thread_id\": tid}})`. The docs call out that `recursion_limit` is a standalone config key, unlike user-defined values that go in `configurable`. When exceeded, LangGraph raises `GraphRecursionError`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:recursion-limit",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://raw.githubusercontent.com/mchittineni/ultimate-ai-engineering-guide/main/ai-agents-and-mcp/how-do-you-prevent-infinite-agentic-loops-and-runaway-execution.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-013",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A node calls `get_stream_writer()({\"progress\": 40})`. To receive that payload, the `stream_mode` passed to `stream()` must include which mode? Type the mode name.",
+    "options": [],
+    "accepted": [
+      "custom",
+      "\"custom\"",
+      "'custom'"
+    ],
+    "explanation": "Custom data reaches the caller only when `stream_mode` contains `\"custom\"` (alone or in a list such as `[\"updates\", \"custom\"]`). Otherwise the writer is a no-op.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:custom-stream-writer",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-014",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this loop receive on each iteration (default v1 format)?\n\n```python\nfor item in graph.stream(inputs, stream_mode=[\"updates\", \"custom\"]):\n    print(item)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A `(mode, data)` tuple, e.g. `('custom', {...})`",
+        "why": "With a list of modes, v1 output tags each chunk with its mode in a 2-tuple."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A plain dict, and you cannot tell which of the two modes produced it",
+        "why": "That is the single-mode v1 shape; lists of modes add the mode name."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A dict with `type`, `ns` and `data` keys",
+        "why": "That is the v2 `StreamPart` shape, which needs `version=\"v2\"`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `(namespace, data)` tuple",
+        "why": "Namespaces are added only with `subgraphs=True`."
+      }
+    ],
+    "explanation": "v1 output shape depends on options: one mode gives raw data, several modes give `(mode, data)`, `subgraphs=True` adds a namespace. `version=\"v2\"` replaces all of these with one `{\"type\", \"ns\", \"data\"}` dict.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:stream-modes",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-015",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team adopts `graph.stream(..., version=\"v2\")`. How should the consumer tell a `custom` event from an `updates` event?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Check `chunk[\"type\"]`; every chunk is a dict with `type`, `ns` and `data`",
+        "why": "v2 always yields a `StreamPart` dict, regardless of how many modes or whether subgraphs are streamed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Unpack `mode, data = chunk` as in v1",
+        "why": "v2 chunks are dicts, not tuples."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Inspect whether `data` has a node-name key",
+        "why": "Guessing from payload shape is fragile; v2 gives an explicit `type`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass only one mode per `stream()` call, because v2 does not support lists",
+        "why": "v2 supports lists of modes; that is the main reason it exists."
+      }
+    ],
+    "explanation": "v2 (LangGraph 1.1+) is opt-in; v1 is still the default. Each v2 chunk has `type` (the mode), `ns` (empty tuple at the root, populated for subgraphs) and `data`, and the `TypedDict` types in `langgraph.types` let type checkers narrow `data` per mode.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-016",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If a node calls `get_stream_writer()` but the caller streams with `stream_mode=\"updates\"` only, the node raises an error.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "No error is raised; the writer simply has nowhere to send the data."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: without `custom` in the requested modes the writer is a no-op, and the node returns its update normally."
+      }
+    ],
+    "explanation": "This makes it safe to instrument nodes with progress events: callers that do not request `custom` are unaffected. The flip side is a common debugging trap. When custom events never appear, check that `\"custom\"` is in `stream_mode`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-EXS-017",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The Mermaid diagram of this graph shows `router --> __end__` and no edge to `t2`, even though the graph runs correctly. Why?\n\n```python\ndef router(state):\n    return Command(goto=\"t2\")\n\nbuilder.add_node(\"router\", router)\nbuilder.add_node(\"t2\", t2)\nbuilder.add_edge(START, \"router\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`router` lacks a `-> Command[Literal[\"t2\"]]` return annotation",
+        "why": "With the annotation the diagram shows a dashed `router -.-> t2` edge."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Command(goto=...)` is ignored at runtime unless a static edge also exists",
+        "why": "The graph does reach `t2`; only the drawing is missing the edge."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`draw_mermaid()` never draws conditional or dynamic routes, only static edges added with `add_edge`",
+        "why": "It draws conditional edges as dashed arrows."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The graph needs `get_graph(xray=True)` to show `Command` routes",
+        "why": "`xray` expands subgraphs; it does not discover un-annotated `Command` destinations."
+      }
+    ],
+    "explanation": "LangGraph cannot see inside the function body, so a `Command`-returning node must declare its possible destinations in the return type for rendering and validation: `def router(state) -> Command[Literal[\"t2\", \"other\"]]:`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:visualization",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/functional-api"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-018",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps for building and running a minimal LangGraph graph in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Define the state schema (for example a `TypedDict`)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Create `StateGraph(State)` and `add_node` each function",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Wire edges, starting with `add_edge(START, ...)`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `compile()`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Call `invoke()` or `stream()` on the compiled graph",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "State first, then the builder with nodes, then edges (an entry edge from `START` is required), then `compile()`, which validates the structure, and finally execution on the compiled object.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:stategraph-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-019",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "A node is declared as `def node(state: State, runtime: Runtime[Ctx])`. Which of these does `runtime` give it? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`runtime.context`: the run's context object",
+        "why": "Populated from the `context=` argument of `invoke`/`stream`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`runtime.execution_info`, e.g. `.thread_id` and `.node_attempt`",
+        "why": "Exposes thread, run, checkpoint and task ids plus retry attempt info."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`runtime.stream_writer` for custom stream events",
+        "why": "Equivalent to calling `get_stream_writer()`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`runtime.get_state_history()` for the current thread",
+        "why": "History is read from the compiled graph (`graph.get_state_history(config)`), not from `Runtime`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`runtime.checkpointer` to write checkpoints manually",
+        "why": "`Runtime` does not expose the checkpointer; checkpointing is handled by the engine."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`runtime.recursion_limit`",
+        "why": "Not a `Runtime` attribute. Step information is in `config[\"metadata\"]` or a `RemainingSteps` state key."
+      }
+    ],
+    "explanation": "`Runtime` carries `context`, `store`, `stream_writer`, `execution_info`, `server_info`, `heartbeat`, `previous` and `control`. `execution_info.thread_id` is `None` when the graph runs without a checkpointer, and `runtime.store` is `None` unless a store was passed to `compile()`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-EXS-020",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Two nodes, `write_joke` and `write_poem`, both call the same chat model in parallel. The UI must show only the poem's tokens. Which consumer is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`messages` mode, filtered on `metadata[\"langgraph_node\"]`",
+        "why": "Each `(chunk, metadata)` tuple carries the node that produced it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Stream `updates` and print `chunk[\"write_poem\"]`",
+        "why": "`updates` arrives only after the node has finished, so you lose token streaming."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Stream `messages` and keep chunks whose `chunk.content` starts with the poem title",
+        "why": "Content-based filtering is brittle and misses tokens without the title."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Stream `values` and diff `state[\"poem\"]` between chunks",
+        "why": "`values` has no partial text; `poem` only changes when the node returns."
+      }
+    ],
+    "explanation": "In `messages` mode the metadata includes `langgraph_node`, `langgraph_step`, `langgraph_path`, `langgraph_checkpoint_ns` and any model `tags`. Filtering on `langgraph_node` (or on tags) is the documented way to stream from one node.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:messages-stream-filter",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-021",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent graph streams tokens fine on its own. After wrapping it as a node in a parent graph, this loop no longer shows tokens. What does it print?\n\n```python\nouter = (StateGraph(MessagesState)\n         .add_node(\"agent\", inner_agent_graph)\n         .add_edge(START, \"agent\").compile())\n\nfor chunk, md in outer.stream({\"messages\": [(\"user\", \"hi\")]},\n                              stream_mode=\"messages\"):\n    print(md[\"langgraph_node\"], type(chunk).__name__)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "One line: `agent AIMessage`",
+        "why": "Without `subgraphs=True` the inner LLM's token callbacks are dropped, but messages in the node's output are still emitted."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Nothing at all: `messages` mode is ignored for subgraph nodes",
+        "why": "Messages returned by the subgraph node are emitted in full."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Every token as it is generated, each labelled `agent AIMessageChunk`",
+        "why": "That needs `subgraphs=True`; the chunks would then be labelled with the inner node name."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `ValueError` asking for `subgraphs=True`",
+        "why": "No error is raised; tokens are silently missing."
+      }
+    ],
+    "explanation": "A compiled graph used as a node is a subgraph. Token chunks from inside it are only forwarded when the parent stream sets `subgraphs=True`, which also adds a namespace to each chunk. This shows up after wrapping a `create_agent` graph in a parent.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:stream-mode-list-subgraphs",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-022",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A FastAPI service handles `async def chat(req)` by calling `result = graph.invoke(...)`. Under load, other requests stall while any agent runs. What is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use `await graph.ainvoke(...)` with async nodes",
+        "why": "The sync call blocks the event loop thread for the whole run; the async API yields during I/O."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise `recursion_limit` so runs finish faster",
+        "why": "The recursion limit caps steps; it does not change blocking."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Compile the graph inside the handler for every request so each request gets its own instance",
+        "why": "Recompiling adds overhead and does not unblock the loop."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch from `InMemorySaver` to `SqliteSaver`",
+        "why": "The checkpointer does not cause event-loop blocking from a sync `invoke`."
+      }
+    ],
+    "explanation": "Inside an async framework, call the async methods (`ainvoke`, `astream`, `abatch`). With async graphs, also use an async-capable checkpointer such as `InMemorySaver`, `AsyncSqliteSaver` or `AsyncPostgresSaver`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:sync-vs-async-invoke",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-023",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A chat UI shows nothing for eight seconds, then the whole answer. It must show tokens from the `respond` node only, plus a \"searching documents...\" status from the `retrieve` node, without sending internal state to the browser. Which two changes meet every requirement? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Stream with `stream_mode=[\"messages\", \"custom\"]` and forward only `messages` chunks whose metadata says `langgraph_node == \"respond\"`",
+        "why": "Delivers tokens from one node and leaves room for custom events, without serialising state."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "In `retrieve`, call `get_stream_writer()({\"status\": \"searching documents...\"})`",
+        "why": "Custom events carry exactly the payload you choose, which is ideal for status lines."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Stream `values` and send each full state to the browser so it can render the answer",
+        "why": "Leaks internal state and still shows no tokens before `respond` returns."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `graph.invoke(..., stream_mode=\"messages\")` and send the result",
+        "why": "`invoke` collects the chunks and returns them as a list at the end, so the delay remains."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Use `stream_mode=\"debug\"` and forward everything",
+        "why": "Debug output includes full task inputs and state, the opposite of minimal exposure."
+      }
+    ],
+    "explanation": "Token streaming plus status lines is the canonical `messages` + `custom` combination. Filter `messages` by `langgraph_node` (or tags) so internal LLM calls such as classifiers stay off the wire.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:streaming",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-024",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This graph declares `input_schema=In` and `output_schema=Out`. What do the two calls return?\n\n```python\nclass In(TypedDict):  q: str\nclass Out(TypedDict): a: str\nclass All(TypedDict):\n    q: str\n    a: str\n    scratch: str\n\ndef think(s): return {\"scratch\": \"tmp\", \"a\": s[\"q\"].upper()}\n\ng = (StateGraph(All, input_schema=In, output_schema=Out)\n     .add_node(think).add_edge(START, \"think\").compile())\n\nr1 = g.invoke({\"q\": \"hi\"})\nr2 = list(g.stream({\"q\": \"hi\"}, stream_mode=\"values\"))[-1]\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`r1 == {'a': 'HI'}` but `r2 == {'q': 'hi', 'a': 'HI', 'scratch': 'tmp'}`",
+        "why": "The output schema filters `invoke`'s result, but `values` streaming emits the full internal state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both are `{'a': 'HI'}`",
+        "why": "The `values` stream in this version is not filtered by the output schema."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Both include `scratch`, because `output_schema` only affects type hints",
+        "why": "`invoke` does filter to the output schema keys."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`r1` raises, because `think` writes `scratch`, which is not in `In`",
+        "why": "Nodes may write any key of the overall state; the input schema only shapes what the caller passes in."
+      }
+    ],
+    "explanation": "Output schemas are a contract for the final result, not a privacy boundary for streams. If a client must never see `scratch`, stream `messages`/`custom`, or filter `updates` before forwarding, instead of relying on `output_schema`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:input-output-schemas",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-025",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A parent graph has a node `research` that is a compiled subgraph with nodes `search` and `summarise`. Which call renders a diagram that shows `search` and `summarise` inside a `research` cluster?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`graph.get_graph(xray=True).draw_mermaid()`",
+        "why": "`xray` expands subgraph nodes into their internal nodes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`graph.get_graph().draw_mermaid()`",
+        "why": "Without `xray`, the subgraph is drawn as the single node `research`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`graph.get_graph().draw_mermaid(subgraphs=True)`",
+        "why": "`subgraphs=True` is a streaming/`get_state` option, not a drawing option."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`research.get_graph().draw_mermaid()` on the parent",
+        "why": "That draws only the subgraph, not the parent with the subgraph nested inside."
+      }
+    ],
+    "explanation": "`get_graph(xray=...)` accepts `True` or an integer depth. The Mermaid output then contains a `subgraph research ... end` block. In Studio the same structure is shown interactively.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:graph visualisation",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://docs.langchain.com/langsmith/studio"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-026",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Two chat models are configured as `joke_model = model.with_config(tags=[\"joke\"])` and `poem_model = model.with_config(tags=[\"poem\"])`. Both are called inside the same node. What is the most reliable way to stream only the joke tokens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "In `messages` mode, keep chunks whose `metadata[\"tags\"]` contains `\"joke\"`",
+        "why": "User tags on the model invocation are copied into the streamed metadata."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Filter on `metadata[\"langgraph_node\"]`",
+        "why": "Both calls run in the same node, so the node name cannot separate them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Put the two calls in different threads with different `thread_id`s",
+        "why": "Thread ids partition checkpoints, not token streams within one run."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `stream_mode=\"custom\"`; tags are only visible there",
+        "why": "Tags appear in `messages` metadata; `custom` carries only what you write."
+      }
+    ],
+    "explanation": "Use `langgraph_node` to separate nodes and model `tags` to separate several LLM calls inside one node. A `nostream` tag goes further and suppresses that model's token stream.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-027",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nfrom langchain_core.runnables import RunnableConfig\n\nclass S(TypedDict):\n    x: str\n\ndef n(s, config: RunnableConfig):\n    return {\"x\": f\"{config['configurable'].get('user')}|\"\n                 f\"{config.get('tags')}|\"\n                 f\"{config['metadata'].get('langgraph_node')}\"}\n\ng = StateGraph(S).add_node(n).add_edge(START, \"n\").compile()\nprint(g.invoke({\"x\": \"\"}, {\"configurable\": {\"user\": \"u1\"}, \"tags\": [\"prod\"]}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{'x': \"u1|['prod']|n\"}`",
+        "why": "`configurable` values, tags and LangGraph's own metadata are all visible on the node's config."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'x': 'None|None|n'}`",
+        "why": "The config passed to `invoke` is propagated to nodes, so `user` and `tags` are present."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'x': \"u1|None|None\"}`",
+        "why": "Tags propagate, and LangGraph adds `langgraph_node` to the metadata."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `KeyError`, because `configurable` is reserved for `thread_id`",
+        "why": "`configurable` accepts arbitrary user keys alongside `thread_id`."
+      }
+    ],
+    "explanation": "Nodes can accept `config: RunnableConfig`. It holds `configurable` (thread id plus any custom keys), `tags`, and `metadata`, where LangGraph adds keys such as `langgraph_step`, `langgraph_node`, `langgraph_triggers`, `langgraph_path` and `langgraph_checkpoint_ns`. For typed per-run dependencies, prefer `context_schema`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-vs-config",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-028",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each need inside a node with where LangGraph exposes it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`runtime.context`",
+        "why": "Typed per-run context declared via `context_schema`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`runtime.execution_info.thread_id`",
+        "why": "Identity of the thread being executed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`config[\"metadata\"][\"langgraph_step\"]`",
+        "why": "Current super-step counter."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`runtime.stream_writer`",
+        "why": "Writer that emits `custom` stream events."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The tenant id the API layer resolved for this request",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Logging which conversation a retry belongs to",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Deciding to wrap up when the run has taken many steps",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Sending a \"40% done\" progress message to the UI",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Request data such as tenant ids belongs in runtime context. Thread/run identity lives in `execution_info`. The step counter is in config metadata (or use a `RemainingSteps` state key). Progress events go through the stream writer.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:state-vs-context",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-029",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`graph.invoke(inputs, stream_mode=\"updates\")` returns a list of the `updates` chunks instead of the final state.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: with a non-default `stream_mode`, `invoke` collects the chunks of that mode and returns them as a list."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It does change the return value: you get `[{'a': {...}}, {'b': {...}}]`, not the final state dict."
+      }
+    ],
+    "explanation": "`invoke` is built on the same streaming loop. With the default `values` mode it returns the last value (the final state). With another mode it returns the list of chunks. That is useful in tests but means nothing is delivered until the run ends.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-030",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about `version=\"v2\"` in LangGraph 1.2 are accurate? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`invoke(..., version=\"v2\")` returns a `GraphOutput` with `.value` and `.interrupts`",
+        "why": "This separates state from interrupt metadata."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "With several stream modes, chunks are dicts with a `type` key rather than `(mode, data)` tuples",
+        "why": "v2 has one shape for every combination of options."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Subgraph events carry their origin in the `ns` field",
+        "why": "`ns` is `()` at the root and `('node:<task_id>',)` for a subgraph."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "v2 is the default in 1.2, so existing loops that unpack tuples break",
+        "why": "v1 remains the default; v2 is opt-in."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "v2 makes `subgraphs=True` unnecessary because nested events are always included",
+        "why": "You still pass `subgraphs=True`; v2 changes only the shape."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "v2 requires a checkpointer",
+        "why": "It is purely an output format and works without persistence."
+      }
+    ],
+    "explanation": "v2 is an opt-in format. It also coerces `values` output to your Pydantic model or dataclass when the state is one. In v1, interrupts appear as an `__interrupt__` key in the result; in v2 they are on `.interrupts` (dict-style access still works but is deprecated).",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-031",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the chunks yielded by this loop in order.\n\n```python\nclass State(TypedDict):\n    topic: str\n\ndef research(state: State):\n    get_stream_writer()({\"status\": \"searching\"})\n    return {\"topic\": state[\"topic\"] + \"!\"}\n\ngraph = StateGraph(State).add_node(research).add_edge(START, \"research\").compile()\nfor chunk in graph.stream({\"topic\": \"llm\"}, stream_mode=[\"values\", \"custom\"]):\n    print(chunk)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`('values', {'topic': 'llm'})`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`('custom', {'status': 'searching'})`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`('values', {'topic': 'llm!'})`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explanation": "`values` first emits the state after the input step. Custom events are emitted live while the node runs, so the status arrives before the node's result. The final `values` chunk follows once `research` returns.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-032",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph's nodes are all `async def`. A developer runs `graph.invoke(inputs)` in a script. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It raises a `TypeError` pointing you to `ainvoke`/`astream`",
+        "why": "Async-only nodes can only be executed through the async API."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LangGraph runs each coroutine to completion on a background event loop and returns the final state normally",
+        "why": "There is no automatic sync wrapper for async-only nodes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It returns un-awaited coroutine objects in the state",
+        "why": "LangGraph refuses to run the node rather than storing coroutines."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It works, but streaming is disabled",
+        "why": "The call fails; it does not degrade."
+      }
+    ],
+    "explanation": "Sync nodes can run under both APIs, but async nodes need `ainvoke`, `astream` or `abatch`. Use `asyncio.run(graph.ainvoke(...))` in scripts.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:sync-vs-async-invoke",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-033",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are debugging a graph that misroutes in production and want, in one stream, each task's start (with its input), each task's result or error, and the checkpoint written after each step. Which mode gives all of this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`debug`",
+        "why": "`debug` combines `checkpoints` and `tasks` events with extra metadata."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`updates`",
+        "why": "Only per-node deltas; no task inputs, errors or checkpoints."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`values`",
+        "why": "Only the full state per step."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`messages`",
+        "why": "Only LLM tokens and messages."
+      }
+    ],
+    "explanation": "`debug` yields events typed `checkpoint`, `task` and `task_result`. If you only need part of that, `checkpoints` and `tasks` are separate modes. Checkpoint events need a checkpointer: without one, debug output contains only task events.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:debugging-production",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-034",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "To hide an internal summariser's output, a team tags it: `internal = model.with_config(tags=[\"nostream\"])`. The node does `return {\"messages\": [internal.invoke(msgs)]}`. In `stream_mode=\"messages\"` the client still receives the summary. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`nostream` stops tokens, but messages a node returns are still emitted",
+        "why": "Messages written to state by a node are emitted at node end unless they were already streamed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`nostream` only takes effect when the model is called with `.stream()`, and this node calls `.invoke()`",
+        "why": "The tag is checked when the chat model run starts, whichever call style is used."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tags are dropped when a model is used inside a graph",
+        "why": "Tags propagate; `messages` metadata shows user tags."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`nostream` must be passed to `compile()` instead",
+        "why": "It is a run tag on the model invocation, not a compile option."
+      }
+    ],
+    "explanation": "The `messages` handler has two sources: LLM token callbacks (which `nostream` disables) and messages found in a node's returned update. To keep internal text off the wire, keep it out of the streamed message channel (store it in a separate state key) or filter by node or tags on the consumer.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-EXS-035",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "On a finished thread, a developer sends a follow-up like this. The returned messages contain the follow-up but no new assistant reply. Why?\n\n```python\ngraph.invoke(Command(update={\"messages\": [(\"user\", \"follow up\")]}), config)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Command` input resumes from the last checkpoint, where nothing is pending",
+        "why": "A plain input dict restarts from `__start__`; `Command(resume=...)` is the only `Command` meant as graph input."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Command.update` is only valid when returned from nodes, so as graph input it is silently dropped before reaching state",
+        "why": "The update is applied (the follow-up is in state); the graph just doesn't schedule nodes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The thread needs `Command(goto=START)` in addition to `update`",
+        "why": "That is not the documented fix; plain dict input is."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The checkpointer refuses writes to completed threads",
+        "why": "Completed threads accept new input; that is how multi-turn chat works."
+      }
+    ],
+    "explanation": "Use `graph.invoke({\"messages\": [...]}, config)` to continue a conversation. Reserve `Command(resume=..., update=...)` for resuming an interrupt. This bug looks like the graph is stuck.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:command-as-input",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-036",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A parent graph has a node `agent` that is a `create_agent` graph. The UI must render tokens only from the agent's model calls and label them as coming from the agent. Which two choices are required? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pass `subgraphs=True` to the parent's `stream(..., stream_mode=\"messages\")`",
+        "why": "Without it, token chunks from the nested graph are not forwarded."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Use the namespace (`ns` in v2, the first tuple element in v1) or metadata to keep only events from the `agent:<task_id>` subgraph",
+        "why": "The namespace identifies which subgraph produced each chunk."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Compile the agent subgraph with `checkpointer=True`",
+        "why": "Persistence mode does not control streaming."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch to `stream_mode=\"values\"` so subgraph state is included",
+        "why": "`values` carries no tokens."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Set `version=\"v2\"`; it includes subgraph tokens automatically",
+        "why": "v2 changes the shape; `subgraphs=True` is still required."
+      }
+    ],
+    "explanation": "With `subgraphs=True` each chunk carries a namespace such as `('agent:<task_id>',)`, and the metadata `langgraph_node` names the inner node (for example `model`). Event streaming (`stream_events(version=\"v3\")`) exposes the same thing as `stream.subgraphs`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:streaming",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-037",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Without `version=\"v2\"`, what does each iteration yield here?\n\n```python\nfor item in graph.stream(inputs, stream_mode=[\"updates\", \"values\"], subgraphs=True):\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A 3-tuple `(namespace, mode, data)`",
+        "why": "In v1, combining a list of modes with subgraphs gives triples."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A 2-tuple `(mode, data)`",
+        "why": "That is the list-of-modes shape without subgraphs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A 2-tuple `(namespace, data)`",
+        "why": "That is the single-mode shape with subgraphs."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A dict with `type`, `ns` and `data`",
+        "why": "That is the v2 shape."
+      }
+    ],
+    "explanation": "The v1 shape changes with options: raw data, `(mode, data)`, `(ns, data)` or `(ns, mode, data)`. Code that unpacks a fixed tuple breaks when someone adds `subgraphs=True`. This is the main reason to migrate to v2, where the shape is always `{\"type\", \"ns\", \"data\"}`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-038",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A multi-tenant agent needs a tenant id, an authenticated HTTP client and a feature-flag set for each request. The thread must be resumable days later by a different worker. Where should each live?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "All three in runtime context, re-supplied on every call",
+        "why": "Context is per-run and never checkpointed, so non-serialisable clients and secrets stay out of storage and are re-supplied by whoever resumes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "All three in state, so a resumed run on another worker sees them",
+        "why": "The client is not serialisable, and persisting credentials in checkpoints is a security risk."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The tenant id in checkpointed state, and the HTTP client and the feature flags as module-level globals",
+        "why": "Globals are shared across concurrent tenants on the same worker."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "All three passed to `compile()` once per tenant",
+        "why": "`compile()` has no context argument, and compiling per tenant does not scale."
+      }
+    ],
+    "explanation": "Checkpointed state should hold only data the graph's logic needs to resume. Dependencies and request identity are runtime context. On resume (`invoke(Command(resume=...), config, context=...)`) the caller supplies context again. Store business facts the run must remember, such as a validated tenant id used for routing, in state only if they truly need persisting.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-schema-design",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://raw.githubusercontent.com/jkbrooks/context-engineering-takehome/main/00_BASE_PROBLEM.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://schoolofcoreai.com/interview-prep/tools/langgraph-interview-questions",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "Future Research"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-039",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A service runs on Python 3.10. An `async def` node calls `get_stream_writer()` to send progress events, but they never arrive, although `stream_mode` includes `custom`. What is the documented fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Accept a `writer: StreamWriter` parameter and call it",
+        "why": "Before Python 3.11, asyncio tasks cannot carry context, so `get_stream_writer()` does not work in async code."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Wrap the node body in `asyncio.run()`",
+        "why": "Starting a new event loop inside a running one fails, and it does not restore context propagation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch the caller to `stream_mode=\"debug\"`, which captures every event",
+        "why": "Debug mode does not carry custom payloads."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Make the writer global and import it",
+        "why": "There is no global writer; it is bound per run."
+      }
+    ],
+    "explanation": "The same Python < 3.11 limitation means async LLM calls need the node's `config` passed explicitly (`await model.ainvoke(msgs, config)`) for `messages` streaming to work. On 3.11+ context propagates automatically.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:custom-stream-writer",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-040",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many chunks does this loop yield? Type a number.\n\n```python\nclass P(TypedDict):\n    log: Annotated[list[str], operator.add]\n\ndef a(s): return {\"log\": [\"a\"]}\ndef b(s): return {\"log\": [\"b\"]}\ndef c(s): return {\"log\": [\"c\"]}\n\ng = (StateGraph(P).add_node(a).add_node(b).add_node(c)\n     .add_edge(START, \"a\").add_edge(START, \"b\")\n     .add_edge([\"a\", \"b\"], \"c\").compile())\n\nfor chunk in g.stream({\"log\": []}, stream_mode=\"values\"):\n    print(chunk)\n```",
+    "options": [],
+    "accepted": [
+      "3"
+    ],
+    "explanation": "`a` and `b` run in the same super-step, so `values` emits one combined state for that step. The chunks are the input state `{'log': []}`, then `{'log': ['a', 'b']}`, then `{'log': ['a', 'b', 'c']}`. In `updates` mode the same graph yields three chunks too, but `a` and `b` arrive as separate dicts because multiple updates in a step are streamed separately.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-041",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A team on LangGraph 1.2 is weighing `graph.stream_events(input, version=\"v3\")` against `stream_mode` lists. Which statement is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It exposes typed projections, e.g. `stream.messages` and `stream.output`",
+        "why": "Reading one projection does not consume events another projection needs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It removes the need for a checkpointer when resuming interrupts",
+        "why": "The docs still require a checkpointer and a thread id to resume."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It only works against a deployed Agent Server, not on an in-process compiled graph",
+        "why": "It runs in-process on a compiled graph."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is the stable default in 1.2, and the installed library emits no warning",
+        "why": "The docs recommend it for new apps, but the 1.2.16 library still emits a `LangChainBetaWarning` marking the v3 protocol as experimental."
+      }
+    ],
+    "explanation": "Event streaming sits above the stream-mode API: Pregel's raw events (`updates`, `values`, `messages`, `custom`, ...) pass through stream transformers that build projections. The low-level `stream_mode` API remains available when you need raw modes. Check the beta status before standardising on v3.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/event-streaming",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-EXS-042",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "In `stream_mode=\"messages\"`, which of these produce events? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A chat model call inside a node, as token chunks, even when the node calls `model.invoke()`",
+        "why": "Tokens are captured through callbacks regardless of call style."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A node that returns a hand-built `AIMessage(\"static reply\")` in its update",
+        "why": "Messages found in a node's output are emitted when the node finishes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A node that updates only a non-message key such as `{\"count\": 3}`",
+        "why": "No message object, so nothing is emitted in this mode."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Token chunks from an LLM inside a subgraph when the parent stream omits `subgraphs=True`",
+        "why": "Inner token callbacks are dropped without `subgraphs=True`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A chat model call tagged `nostream`, as token chunks",
+        "why": "`nostream` disables that call's token stream."
+      }
+    ],
+    "explanation": "Knowing both sources explains common UI bugs: messages appearing with no tokens (returned or nested messages), or text leaking despite `nostream` (the node returned the message). Messages already streamed are de-duplicated by id at node end.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-EXS-043",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "With `InMemorySaver` attached and `stream_mode=\"debug\"`, a graph `START -> research -> END` emits events. Put these in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `checkpoint` event whose `next` is `['research']`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `task` event for `research`, including its input",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `task_result` event for `research`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `checkpoint` event whose `next` is `[]`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Debug mode interleaves checkpoint events (one per super-step boundary) with task start and result events. The full run starts with an extra checkpoint whose `next` is `['__start__']` for the input step. Without a checkpointer, only the `task`/`task_result` events appear.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-EXS-044",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each streaming symptom with its most likely cause.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`subgraphs=True` missing on the parent stream",
+        "why": "Nested graph tokens are not forwarded."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`\"custom\"` missing from `stream_mode`",
+        "why": "The stream writer becomes a no-op."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The node returns the model's message into `messages` state",
+        "why": "Returned messages are emitted at node end."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Async node on Python 3.10 using `get_stream_writer()`",
+        "why": "Context does not propagate into asyncio tasks before 3.11."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A wrapped `create_agent` node streams no tokens, although the agent alone does",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Progress events from `get_stream_writer()` never show up, with no error",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A model tagged `nostream` still has its full reply appear in `messages` mode",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Custom events work in sync nodes but vanish in one `async def` node",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Each fix maps to a cause: add `subgraphs=True`; add `custom`; keep internal output out of message state or filter it; accept a `writer: StreamWriter` parameter (or upgrade to Python 3.11+).",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:stream-mode-list-subgraphs",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/streaming"
+      ]
+    }
+  },
+  {
+    "id": "LGR-EXS-045",
+    "domain": 1,
+    "skill": "execution-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An endpoint forwards `graph.stream(..., stream_mode=\"values\")` to the browser over SSE. After 40 turns each event is several hundred KB, and internal keys are visible in devtools. What is the best change?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Forward node-filtered `messages` plus `custom` events",
+        "why": "This sends deltas the UI needs instead of re-sending the accumulated state every step."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep `values` but gzip the SSE response and drop unchanged keys on the server",
+        "why": "Compression shrinks bytes but still re-sends all state and still leaks internal keys."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to `debug` for richer client-side rendering",
+        "why": "Debug output is larger and exposes even more internals."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower `recursion_limit` so fewer chunks are produced",
+        "why": "This caps steps and causes `GraphRecursionError` on long runs, without fixing payload size or exposure."
+      }
+    ],
+    "explanation": "`values` re-emits the full state, including the whole message history, after every step, which is fine for debugging but wasteful and leaky as a client protocol. Production UIs usually combine `messages` with `custom`, sometimes with `updates` filtered to specific keys.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/streaming",
+    "source": "interview:streaming",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/",
+        "https://schoolofcoreai.com/interview-prep/tools/langgraph-interview-questions"
+      ]
+    }
+  }
+]
