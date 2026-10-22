@@ -1,4 +1,4 @@
-import { ChartNoAxesColumnIncreasing, Compass, House, MessagesSquare, Route, type LucideIcon } from 'lucide-react';
+import { ChartNoAxesColumnIncreasing, Compass, House, MessagesSquare, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -10,13 +10,12 @@ export interface NavItem {
 }
 
 /**
- * The whole app hangs off five destinations. Everything else (saved
+ * The whole app hangs off four destinations. Everything else (saved
  * questions, certificates, settings, admin) lives one level down, so the
  * top level never grows past what fits on a phone's tab bar.
  */
 export const APP_NAV: NavItem[] = [
   { href: '/dashboard', label: 'Home', icon: House },
-  { href: '/planner', label: 'Plan', icon: Route },
   { href: '/explore', label: 'Explore', icon: Compass, match: ['/exams'] },
   { href: '/interviews', label: 'Interviews', icon: MessagesSquare, badge: 'AI' },
   { href: '/progress', label: 'Progress', icon: ChartNoAxesColumnIncreasing, match: ['/attempt'] },
