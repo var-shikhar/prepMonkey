@@ -1,0 +1,2351 @@
+[
+  {
+    "id": "LLM-ATT-001",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What was the main practical reason transformers displaced RNNs and LSTMs for training language models?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Attention processes all positions of a sequence in parallel; an RNN steps through them one at a time",
+        "why": "Correct. An RNN's hidden state at step t depends on step t-1, so a sequence is inherently sequential. Attention has O(1) sequential operations per layer, which suits GPUs and made very large-scale training practical."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Transformers need far less memory per token than RNNs, especially once sequences become long",
+        "why": "The opposite is closer to true: the attention score matrix grows with the square of sequence length, while an RNN carries a fixed-size state."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "RNNs cannot be trained with backpropagation, so they had to rely on slower reinforcement-style methods",
+        "why": "RNNs are trained with backpropagation through time. Their problem is sequential computation and long gradient paths, not the lack of a training method."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Transformers do not need word embeddings",
+        "why": "Transformers start from a token embedding lookup just as RNN language models do."
+      }
+    ],
+    "explanation": "Recurrence forces position-by-position computation: you cannot compute step 500 until step 499 is done. Self-attention relates all positions to each other in one matrix multiply, so a whole training sequence is processed in parallel. The original paper's Table 1 lists O(1) sequential operations for self-attention against O(n) for a recurrent layer. The cost is quadratic work in sequence length.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-why-transformers-replaced-rnns",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static-pc.glassdoor.de/Interview/Capgemini-GenAI-engineer-Interview-Questions-EI_IE3803.0,9_KO10,24_IP2.htm",
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.novelvista.com/blogs/ai-and-ml/generative-ai-interview-questions",
+        "https://dev.to/jackm_345442a09fb53b/llm-interview-series3-transformers-explained-attention-is-all-you-need-523o"
+      ],
+      "companies": [
+        "Capgemini",
+        "Amazon"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-ATT-002",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In self-attention, each query produces a softmax distribution. What is that distribution taken over?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Over the feature dimensions of the query vector",
+        "why": "The softmax is not over features; it turns one query's scores against the keys into weights that sum to 1."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Over the whole vocabulary, to choose which token comes next",
+        "why": "That is the softmax at the output layer, after the final projection to logits. Attention's softmax is over sequence positions."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Over the scores of that query against every key it is allowed to see",
+        "why": "Correct. Row i of `QK^T` holds query i's score with each key; the softmax over that row gives the weights used to average the value vectors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Over the value vectors, to pick the single largest one to pass on",
+        "why": "Values are averaged with the weights, not selected by a softmax. The weights come from query-key scores."
+      }
+    ],
+    "explanation": "Every token projects its hidden state into a query (what it is looking for), a key (what it offers to be matched on) and a value (what it passes on if matched). For each query, the scores against all visible keys are scaled, softmaxed into weights that sum to 1, and used to take a weighted average of the value vectors. The softmax runs across key positions, one row per query.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-self-attention-qkv",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.it/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP223.htm",
+        "https://www.glassdoor.co.uk/Interview/Layer6-AI-Interview-E6532706-RVW101101754.htm",
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://sebastianraschka.com/faq/docs/self-attention.html"
+      ],
+      "companies": [
+        "Amazon",
+        "Layer6 AI",
+        "TikTok",
+        "Kpit"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-ATT-003",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Without any positional information, a self-attention layer is order-blind: if you shuffle the input tokens, each token's output vector is unchanged, just shuffled to its new place.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. Scores depend only on the content of queries and keys, so permuting the inputs permutes the outputs in the same way. That is why position must be injected separately."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "Plain dot-product attention has no notion of index; nothing in `softmax(QK^T/sqrt(d_k))V` depends on where a token sits unless position is added to the inputs or to the scores."
+      }
+    ],
+    "explanation": "Self-attention without positional encoding is permutation-equivariant. A sentence and its scrambled version would produce the same set of output vectors. The original transformer added sinusoidal positional encodings to the input embeddings; modern models use learned positions, RoPE (rotating queries and keys) or ALiBi (a distance bias on the scores).",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-why-positional-encoding",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://github.com/Devinterview-io/llms-interview-questions",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-004",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each model to its architecture.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Encoder-only (bidirectional attention)",
+        "why": "Every token attends to every other token; suited to classification, tagging and embeddings."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Decoder-only with dense feed-forward layers",
+        "why": "Causal self-attention for left-to-right generation, with one FFN per block that every token uses."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Encoder-decoder",
+        "why": "An encoder reads the input bidirectionally and a decoder generates output while cross-attending to it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Decoder-only with sparse mixture-of-experts layers",
+        "why": "Causal decoder in which a router sends each token to a few expert FFNs per layer."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "BERT",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "GPT-2",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "T5",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Mixtral 8x7B",
+        "answer": "D"
+      }
+    ],
+    "explanation": "BERT is an encoder trained with masked language modelling. GPT-style models are decoder-only and trained on next-token prediction. T5 keeps the original encoder-decoder layout and frames every task as text-to-text. Mixtral 8x7B is a decoder-only model whose feed-forward sub-blocks are replaced by 8 experts, of which a router picks 2 per token at each layer.",
+    "reference": "https://arxiv.org/abs/1810.04805",
+    "source": "interview:llm-encoder-decoder-encdec-variants",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-005",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the causal mask in a GPT-style decoder do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It hides padding tokens so that batches of different lengths can be stacked",
+        "why": "That is a padding mask. A causal mask is about order, and applies even when there is no padding."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It stops position i from attending to any position after i",
+        "why": "Correct. Scores for future positions are set to negative infinity before the softmax, so their weights become zero."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It randomly hides 15% of input tokens so the model learns to fill them in",
+        "why": "That is BERT's masked-language-modelling objective, which belongs to encoder pretraining."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It prevents the model from attending to its own position",
+        "why": "A token may attend to itself and to everything before it. Only later positions are blocked."
+      }
+    ],
+    "explanation": "During training the whole target sequence is fed in at once. Without a mask, the prediction at position i could simply look at the token at position i+1. The causal (look-ahead) mask sets the upper-triangle scores to negative infinity, so each position sees only itself and earlier tokens. This lets one forward pass train every position in parallel while matching the left-to-right conditions of generation.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-causal-mask-decoder",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-masked-multi-head-self-attention",
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.techinterview.org/post/3233476249/mistral-ai-interview-process/",
+        "https://sebastianraschka.com/faq/docs/causal-attention.html",
+        "https://dev.to/jackm_345442a09fb53b/llm-interview-series3-transformers-explained-attention-is-all-you-need-523o"
+      ],
+      "companies": [
+        "Apple",
+        "UiPath",
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-ATT-006",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "The original transformer base model uses `d_model = 512` and 8 attention heads, with the model width split evenly across heads. What is the per-head key dimension `d_k`? Type a number.",
+    "options": [],
+    "accepted": [
+      "64"
+    ],
+    "explanation": "Each head works in a subspace of size `d_model / h = 512 / 8 = 64`, which is the `d_k = d_v = 64` reported in the paper. Because the heads split the width rather than each using the full width, the total compute of multi-head attention is similar to one head at full dimensionality.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-why-multi-head-attention",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://sebastianraschka.com/faq/docs/multi-head-attention.html"
+      ],
+      "companies": [
+        "Amazon",
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-007",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a transformer, what does LayerNorm compute its mean and variance over?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The same feature across all examples in the batch",
+        "why": "That is batch normalisation. LayerNorm does not depend on other examples, which is why it works with any batch size and at inference time."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Every token position in the sequence for one feature",
+        "why": "Normalising across positions would mix information between tokens; LayerNorm keeps tokens independent."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "All the weights of the layer that follows",
+        "why": "LayerNorm normalises activations, not parameters. Weight normalisation is a different technique."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The feature vector of one token, independently of other tokens and examples",
+        "why": "Correct. Each token's d_model-sized vector is normalised on its own, then scaled and shifted by learned per-feature parameters."
+      }
+    ],
+    "explanation": "LayerNorm takes one token's hidden vector, subtracts its mean, divides by its standard deviation (both computed across the d_model features), and applies a learned gain and bias. It does not look across the batch or across positions, so its behaviour is identical in training and inference and does not depend on sequence length or batch size.",
+    "reference": "https://arxiv.org/abs/1607.06450",
+    "source": "interview:llm-residuals-and-layernorm-role",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://dev.to/jackm_345442a09fb53b/llm-interview-series3-transformers-explained-attention-is-all-you-need-523o",
+        "https://www.interviewbit.com/llm-interview-questions-answers/"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-008",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which pairing of pretraining objective and model is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "BERT: masked language modelling plus next-sentence prediction; GPT: next-token prediction",
+        "why": "Correct. BERT predicts randomly masked tokens using context on both sides (plus a sentence-pair task), while GPT predicts each token from the tokens before it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "BERT: next-token prediction; GPT: masked language modelling",
+        "why": "The pairing is reversed. Masked prediction needs bidirectional context, which is BERT's encoder; next-token prediction needs causal attention, which is GPT's decoder."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Both use masked language modelling, but GPT masks more tokens",
+        "why": "GPT does not mask tokens in the input. Its causal mask hides future positions, which is a different mechanism."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "BERT: contrastive learning between sentence pairs; GPT: denoising autoencoding",
+        "why": "Neither describes the original objectives. Denoising span corruption belongs to T5, not GPT."
+      }
+    ],
+    "explanation": "BERT selects 15% of tokens for prediction (80% replaced by `[MASK]`, 10% by a random token, 10% left unchanged) and also trains next-sentence prediction. Because every token sees both sides, BERT is excellent for understanding tasks but has no natural left-to-right generation procedure. GPT trains next-token prediction with a causal mask, which is exactly what autoregressive generation needs.",
+    "reference": "https://arxiv.org/abs/1810.04805",
+    "source": "interview:llm-bert-vs-gpt-objective",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://www.analyticsvidhya.com/blog/2025/08/llm-engineer-interview-questions/",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-009",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Scaled dot-product attention divides `QK^T` by `sqrt(d_k)` before the softmax. What problem does this scaling fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It makes the weights of each row sum to 1",
+        "why": "The softmax already guarantees that. Scaling changes how peaked the distribution is, not its total."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "q·k has variance d_k for unit-variance inputs, so a large d_k saturates the softmax and gradients vanish",
+        "why": "Correct. Dividing by sqrt(d_k) brings the score variance back to about 1, keeping the softmax in a range where it still has useful gradients."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It cancels out the extra parameters that are introduced when the model width is split across several heads",
+        "why": "Splitting into heads does not add parameters; the scale factor is about score variance."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It approximates the cost of attention so it can run in linear time",
+        "why": "Scaling is a constant multiplication and has no effect on the quadratic cost."
+      }
+    ],
+    "explanation": "If the components of q and k are independent with mean 0 and variance 1, their dot product has mean 0 and variance d_k. With d_k = 128 the raw scores have a standard deviation of about 11, so the softmax puts nearly all weight on one key and the gradients for the rest are close to zero. Dividing by sqrt(d_k) restores unit variance. A quick NumPy check shows the variance of q·k is about d_k and about 1 after scaling.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-scaled-dot-product-sqrt-dk",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026"
+      ],
+      "companies": [
+        "UiPath",
+        "Meta"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-010",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A batch of `B` sequences of length `T` goes through multi-head self-attention with `h` heads and model width `d_model` (head size `d_k = d_model / h`). What is the shape of the attention-weight tensor after the softmax?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`(B, T, d_model)`",
+        "why": "That is the shape of the layer's input and output, not of the weights."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`(B, h, T, d_k)`",
+        "why": "That is the shape of the per-head queries, keys or values after the head split."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`(B, h, T, T)`",
+        "why": "Correct. Each head scores every query position against every key position, giving a T x T matrix per head per sequence."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`(B, T, T)`",
+        "why": "That drops the head axis. Each head computes its own attention pattern, so there is one T x T matrix per head."
+      }
+    ],
+    "explanation": "The flow is: project to Q, K, V of shape `(B, T, d_model)`, reshape and transpose to `(B, h, T, d_k)`, compute `Q @ K.transpose(-2, -1)` to get scores of shape `(B, h, T, T)`, softmax over the last axis, multiply by V to get `(B, h, T, d_k)`, transpose back and merge heads to `(B, T, d_model)`, then apply the output projection. The `(B, h, T, T)` tensor is the one that grows quadratically with T.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-mha-tensor-shapes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "Amazon",
+        "Meta"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-011",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about a standard decoder block are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Self-attention is the only sub-layer in which a token's representation receives information from other positions",
+        "why": "Correct. The attention weights combine value vectors from many positions; everything else in the block acts on each position separately."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The feed-forward network applies the same weights to every position independently",
+        "why": "Correct. The paper calls it position-wise: one MLP applied to each token's vector on its own."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LayerNorm averages hidden states across the sequence, which spreads context between tokens",
+        "why": "LayerNorm normalises each token's own feature vector and never looks at other positions."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The feed-forward network attends over the previous layer's outputs",
+        "why": "The FFN has no attention or cross-position terms; it is a per-token MLP."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Residual connections replace the need for attention in deeper layers",
+        "why": "Residuals add a sub-layer's input to its output so signals and gradients flow; they do not move information between positions."
+      }
+    ],
+    "explanation": "A useful mental model: attention moves information between tokens, and the FFN processes each token's vector on its own. Norms and residual adds are per-position plumbing that keep training stable. An interviewer who asks you to walk through the block is checking that you know where cross-token mixing happens.",
+    "source": "interview:llm-explain-transformer-architecture",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/Layer6-AI-Interview-E6532706-RVW92298486.htm",
+        "https://www.glassdoor.com.mx/Entrevista/EXL-Service-Entrevista-E37901-RVW89949167.htm",
+        "https://leetcode.com/discuss/interview-experience/7269633",
+        "https://www.glassdoor.it/Colloquio/Jimmy-Technologies-Colloquio-E6555167-RVW96299007.htm",
+        "https://www.interviewbit.com/llm-interview-questions-answers/"
+      ],
+      "companies": [
+        "Layer6 AI",
+        "EXL Service",
+        "Adobe",
+        "Tiger Analytics",
+        "Accenture"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-012",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In the encoder-decoder attention (cross-attention) of the original transformer decoder, where do the queries, keys and values come from?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Queries, keys and values all come from the encoder output",
+        "why": "Then the decoder's own state would not influence what is retrieved; the queries must come from the decoder."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Queries come from the encoder output; keys and values come from the decoder",
+        "why": "This is reversed. The decoder asks the questions, and the encoder's representation of the input is what gets searched."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Queries, keys and values all come from the previous decoder layer",
+        "why": "That describes the decoder's masked self-attention sub-layer, not cross-attention."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Queries come from the previous decoder layer; keys and values come from the encoder output",
+        "why": "Correct. Each decoder position queries the encoded input, so every output step can look at any input position."
+      }
+    ],
+    "explanation": "Cross-attention lets the generating side read the input. The decoder supplies queries; the encoder's final output supplies keys and values, which stay fixed across all decoding steps. The same pattern appears in modern multimodal models, where text tokens query image features.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-cross-attention",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-013",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps that turn one input token into next-token probabilities in a single-layer, pre-norm, decoder-only model.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Look up the token's embedding vector",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Normalise, apply masked self-attention, and add the result back to the residual stream",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Normalise, apply the feed-forward network, and add the result back to the residual stream",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Apply the final normalisation",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Multiply by the output (unembedding) matrix to get one logit per vocabulary entry",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Apply softmax to turn the logits into probabilities",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "explanation": "The token id indexes the embedding matrix. In a pre-norm block, each sub-layer reads a normalised copy of the residual stream and adds its output back: attention first (the step where other tokens' information arrives), then the FFN. After the last block, a final norm is applied, the vector is projected to vocabulary size to give logits, and a softmax turns those into a probability distribution for the next token.",
+    "source": "interview:llm-one-token-through-decoder-layer",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://www.techinterview.org/post/3233476249/mistral-ai-interview-process/"
+      ],
+      "companies": [
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-014",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "FlashAttention speeds up attention by computing an approximation that skips low-weight entries of the score matrix.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "FlashAttention is exact. It reorganises the same computation into tiles so the full score matrix is never written to slow GPU memory; it does not drop any entries."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. It computes exact attention and gets its speed from fewer reads and writes to high-bandwidth memory, not from approximation."
+      }
+    ],
+    "explanation": "The FlashAttention paper describes an IO-aware exact attention algorithm. It loads blocks of Q, K and V into on-chip SRAM, computes partial softmax results with running statistics, and combines them so the output matches standard attention. Its extra memory is linear in sequence length, while FLOPs stay O(N^2 d). Block-sparse FlashAttention is a separate, approximate variant.",
+    "reference": "https://arxiv.org/abs/2205.14135",
+    "source": "interview:llm-flashattention-what-it-changes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/xAI-Interview-E10404667-RVW99846515.htm",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://sebastianraschka.com/faq/docs/flashattention-why-it-mattered.html"
+      ],
+      "companies": [
+        "xAI",
+        "Meta"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-015",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Where does the original transformer inject its sinusoidal positional encodings?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It adds them to the token embeddings once, at the bottom of the encoder and decoder stacks",
+        "why": "Correct. The encodings have dimension d_model so they can be summed with the embeddings before the first layer."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It rotates the query and key vectors by a position-dependent angle in every layer",
+        "why": "That is RoPE, a later scheme that acts inside each attention layer."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It adds a bias proportional to distance to each attention score",
+        "why": "That is ALiBi, which adds no positional vectors to the embeddings at all."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It concatenates a one-hot position vector to the output of each feed-forward block",
+        "why": "No transformer variant in the paper concatenates positions; the encodings are summed with the input embeddings."
+      }
+    ],
+    "explanation": "The paper adds fixed sine and cosine signals of different frequencies to the input embeddings at the bottom of each stack. The authors chose sinusoids because a fixed offset k makes PE(pos+k) a linear function of PE(pos), which may help the model attend by relative position, and because it might extrapolate to longer sequences. Learned position embeddings gave nearly identical results in their ablation.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-why-positional-encoding",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://github.com/Devinterview-io/llms-interview-questions",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ],
+      "companies": [
+        "UiPath"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-016",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Information has to travel from token 1 to token 1,000 in one layer. What is the maximum path length between them in a self-attention layer versus a recurrent layer?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "O(1) for self-attention; O(log n) for a recurrent layer",
+        "why": "O(log_k n) is the path length for stacked dilated or strided convolutions, not recurrence."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "O(n) for self-attention; O(1) for a recurrent layer",
+        "why": "This is reversed: recurrence passes information step by step, while attention connects positions directly."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "O(1) for self-attention; O(n) for a recurrent layer",
+        "why": "Correct. Any two positions are one attention step apart, while a recurrent layer must pass the signal through every intermediate hidden state."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "O(n) for both, because each must read every token",
+        "why": "Reading all tokens is about total work, not about how many steps separate two specific positions."
+      }
+    ],
+    "explanation": "Short paths between distant positions make long-range dependencies easier to learn, because gradients do not need to survive hundreds of recurrent steps. The original paper's Table 1 compares layer types on three axes: complexity per layer (O(n^2 d) for attention, O(n d^2) for recurrence), sequential operations (O(1) vs O(n)) and maximum path length (O(1) vs O(n)).",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-why-transformers-replaced-rnns",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static-pc.glassdoor.de/Interview/Capgemini-GenAI-engineer-Interview-Questions-EI_IE3803.0,9_KO10,24_IP2.htm",
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.novelvista.com/blogs/ai-and-ml/generative-ai-interview-questions",
+        "https://dev.to/jackm_345442a09fb53b/llm-interview-series3-transformers-explained-attention-is-all-you-need-523o"
+      ],
+      "companies": [
+        "Capgemini",
+        "Amazon"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-ATT-017",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about rotary position embedding (RoPE) are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It rotates query and key vectors by angles that depend on their positions",
+        "why": "Correct. Pairs of dimensions are rotated by position-dependent angles before the dot product."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "After rotation, the query-key dot product depends on positions only through their offset m - n",
+        "why": "Correct. Rotation by angle m on one side and n on the other leaves a dependence on m - n, giving relative-position behaviour."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It adds a learned position vector to the token embedding once, before the first layer",
+        "why": "That is learned absolute position embedding. RoPE is applied multiplicatively inside attention."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It rotates the value vectors as well, so outputs carry position",
+        "why": "The RoFormer formulation applies the rotation to queries and keys only."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It needs a separate learned parameter for every position up to the maximum context",
+        "why": "RoPE angles come from fixed frequencies theta_i = 10000^(-2(i-1)/d); there is no per-position table to learn."
+      }
+    ],
+    "explanation": "RoPE splits each query and key into 2-D pairs and rotates pair i by an angle proportional to position times a fixed frequency. Because rotations compose, the score between positions m and n depends on m - n. It encodes absolute position yet behaves relatively, adds no learned parameters, and the paper shows a decay of dependency with distance. Most open decoder models use it.",
+    "reference": "https://arxiv.org/abs/2104.09864",
+    "source": "interview:llm-rope-vs-learned-absolute",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/rope-vs-absolute-positional-embeddings.html",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://arxiv.org/abs/2104.09864"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-018",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "Mistral 7B uses grouped-query attention with 32 query heads and 8 key/value heads. How many query heads share each key/value head? Type a number.",
+    "options": [],
+    "accepted": [
+      "4"
+    ],
+    "explanation": "With grouped-query attention, query heads are split into groups and each group shares one key head and one value head: 32 / 8 = 4 query heads per KV head. The Mistral 7B paper lists `n_heads = 32` and `n_kv_heads = 8` with `head_dim = 128`. Each query head still computes its own attention pattern; only K and V are shared.",
+    "reference": "https://arxiv.org/abs/2310.06825",
+    "source": "interview:llm-mqa-vs-gqa-vs-mha",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/grouped-query-attention.html",
+        "https://arxiv.org/abs/2305.13245"
+      ],
+      "companies": [
+        "Meta",
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-019",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "A decoder has `h` query heads. Match each attention variant to how many key/value heads it keeps per layer, or where its keys and values come from.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`h` key/value heads, one per query head",
+        "why": "Standard multi-head attention."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "One key/value head shared by all query heads",
+        "why": "Multi-query attention."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`g` key/value heads, with 1 < g < h",
+        "why": "Grouped-query attention."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Keys and values computed from another sequence's representations",
+        "why": "Cross-attention."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Multi-head attention (MHA)",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Multi-query attention (MQA)",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Grouped-query attention (GQA)",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A translation decoder reading the encoder output",
+        "answer": "D"
+      }
+    ],
+    "explanation": "MHA gives every query head its own K and V. MQA shares a single K/V head across all query heads, which shrinks the KV cache by a factor of h but can cost quality. GQA sits in between with g groups; the GQA paper notes GQA-1 is MQA and GQA-H is MHA. Cross-attention is different in kind: its keys and values come from another sequence, such as the encoder output.",
+    "reference": "https://arxiv.org/abs/2305.13245",
+    "source": "interview:llm-implement-kv-cache-and-gqa",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-multi-head-attention-with-a-kv-cache-and-cached-grouped-query-attention",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch"
+      ],
+      "companies": [
+        "Amazon",
+        "Meta"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-020",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A from-scratch attention layer fills masked scores with `-inf`. On a batch with heavy padding, the loss becomes `nan`. Padded query rows have every key masked. What is happening?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The scores overflow because they were never divided by `sqrt(d_k)`, so the exponentials become infinite",
+        "why": "Missing scaling makes the softmax peaky but does not, on its own, produce NaN in a max-subtracted softmax."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "An all-`-inf` row gives 0 / 0 in the softmax, so it returns NaN, which then spreads through backprop",
+        "why": "Correct. With every entry masked there is no finite value to normalise by; even the max-subtracted softmax computes `-inf - (-inf)`, which is NaN."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`-inf` scores are rounded to zero by float16, so padded keys get full weight",
+        "why": "IEEE float16 represents infinity; the issue is the all-masked row, not rounding."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The causal mask and padding mask were applied in the wrong order",
+        "why": "Adding masks is commutative; order does not matter. The trouble is a row with nothing left unmasked."
+      }
+    ],
+    "explanation": "Running NumPy's max-subtracted softmax on `[-inf, -inf, -inf]` returns `[nan, nan, nan]`. Common fixes: fill with a large finite negative number (such as the dtype's minimum) so the row becomes a harmless uniform distribution, then zero out padded query positions or exclude them from the loss; or detect fully masked rows and set their output to zero. Fused attention kernels handle this case internally.",
+    "source": "interview:llm-attention-softmax-stability-masked-rows",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-021",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate writes this causal attention step. What is wrong with it?\n\n```python\nweights = softmax(scores, axis=-1)   # scores: (T, T)\nweights = weights * np.tril(np.ones((T, T)))\nout = weights @ V\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing; multiplying by the lower triangle after softmax is the standard way to apply a causal mask",
+        "why": "Zeroing entries after softmax leaves rows that no longer sum to 1, so it is not equivalent to masking before softmax."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`np.tril` keeps the future positions and removes the past",
+        "why": "`tril` keeps the lower triangle (j <= i), which is the correct set to keep; the problem is when the mask is applied."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The mask is applied after the softmax, so each row's remaining weights no longer sum to 1",
+        "why": "Correct. Future scores still shaped the normalisation. The fix is to set future scores to -inf (or a large negative) before the softmax."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The softmax should be taken over axis 0, the query axis",
+        "why": "Weights are normalised per query across keys, which is the last axis here."
+      }
+    ],
+    "explanation": "Masking must happen on the scores, before normalisation. In a NumPy run of this exact code the row sums came out as 0.074, 0.642, 0.562 and 1.0: only the last row, which has nothing to hide, is a valid distribution. Early tokens get outputs scaled down by an arbitrary factor. Setting masked scores to -inf before the softmax gives correctly normalised weights over the allowed keys.",
+    "source": "interview:llm-implement-multi-head-attention",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/xAI-Interview-E10404667-RVW99846515.htm",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://prachub.com/interview-questions/implement-masked-multi-head-self-attention",
+        "https://www.1point3acres.com/interview/thread/1159880",
+        "https://static-pc.glassdoor.fr/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP202.htm"
+      ],
+      "companies": [
+        "xAI",
+        "Meta",
+        "Apple",
+        "Genesys",
+        "Mistral AI",
+        "Amazon"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-022",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A causal mask is built like this. What does the resulting attention do?\n\n```python\nmask = np.tril(np.ones((T, T)))\nscores[mask == 1] = -np.inf\nweights = softmax(scores, axis=-1)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It is correct: each token attends to itself and earlier tokens",
+        "why": "The code blocks the positions where `mask == 1`, which is the lower triangle including the diagonal: exactly what should be kept."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Each token attends only to strictly later tokens, and the last row is entirely masked, so it becomes NaN",
+        "why": "Correct. The lower triangle and diagonal are blocked, leaving only future keys; the final query has no future keys, so its row is all -inf."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Each token attends only to itself, because the diagonal is the only unmasked entry",
+        "why": "The diagonal is inside `tril`, so it is masked too."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The mask has no effect, because boolean indexing returns a copy",
+        "why": "Assigning through a boolean index on the left-hand side writes in place in NumPy."
+      }
+    ],
+    "explanation": "The triangle is inverted. The usual pattern blocks the strict upper triangle, for example `scores[np.triu(np.ones((T, T)), k=1) == 1] = -np.inf`. Running the buggy version for T = 4 gives rows that attend only forward and a last row of NaN. A related bug is filling masked scores with 0 instead of a large negative value: a zero score still gets weight after the softmax.",
+    "source": "interview:llm-causal-mask-decoder",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-masked-multi-head-self-attention",
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.techinterview.org/post/3233476249/mistral-ai-interview-process/",
+        "https://sebastianraschka.com/faq/docs/causal-attention.html",
+        "https://dev.to/jackm_345442a09fb53b/llm-interview-series3-transformers-explained-attention-is-all-you-need-523o"
+      ],
+      "companies": [
+        "Apple",
+        "UiPath",
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-023",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You double the context length from 4K to 8K tokens in a decoder-only model. Roughly how do the per-layer FLOPs of the attention score computation (`QK^T` and weights times V) and of the feed-forward network change?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both double",
+        "why": "The FFN cost doubles because it runs once per token, but the score computation pairs every token with every other token."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Score computation about 4x; FFN about 2x",
+        "why": "Correct. The score matrix is T x T, so its work scales with T^2; the FFN is applied per token, so it scales with T."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Score computation about 2x; FFN about 4x",
+        "why": "This is reversed. FFN work is linear in the number of tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both about 4x",
+        "why": "Only the parts that pair positions are quadratic. Projections and the FFN are per-token and linear in T."
+      }
+    ],
+    "explanation": "Attention's per-layer complexity is O(n^2 d) for the score and weighted-sum steps, while the Q/K/V/output projections and the FFN are O(n d^2), linear in sequence length. At short contexts the linear terms dominate total FLOPs; as context grows, the quadratic term takes over. The T x T score tensor is also the memory problem that FlashAttention avoids storing.",
+    "source": "interview:llm-attention-quadratic-cost",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/xAI-Interview-E10404667-RVW99846515.htm",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "xAI",
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-024",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With `d_model = 4096`, a team compares one attention head of size 4096 against 32 heads of size 128. How do the Q/K/V/output projection parameter counts compare, and what do the 32 heads gain?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "32 heads have 32 times more projection parameters, which is where their extra power comes from",
+        "why": "The projections are still d_model x d_model in total; heads are slices of the same matrices."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "32 heads have fewer parameters because each head's matrices are 128 x 128",
+        "why": "Each head projects from the full 4096-dimensional input to 128 dimensions, so per-head matrices are 4096 x 128, and 32 of them make 4096 x 4096."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The parameter counts are the same; the 32 heads can each learn a different attention pattern over different subspaces",
+        "why": "Correct. Splitting the width costs no extra parameters, and one softmax per head lets different heads attend to different positions for different reasons."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The parameter counts are the same, so the two layouts compute mathematically identical outputs for every possible input",
+        "why": "One wide head produces a single attention pattern per query; 32 heads produce 32 patterns, so the function class differs."
+      }
+    ],
+    "explanation": "Both layouts use four d_model x d_model matrices (about 67M parameters at d_model = 4096). The paper notes that multi-head attention costs about as much as single-head attention at full width, and that it lets the model attend jointly to information from different representation subspaces. With one head, a single averaged pattern has to serve every purpose.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-why-multi-head-attention",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://prachub.com/interview-questions/llm-fundamentals-transformer-internals-beam-search-decoding-and-lora-fine-tuning",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://sebastianraschka.com/faq/docs/multi-head-attention.html"
+      ],
+      "companies": [
+        "Amazon",
+        "UiPath"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-025",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the feed-forward block are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "With a classic two-matrix FFN and `d_ff = 4 * d_model`, the FFN has about twice the parameters of the attention projections in that layer",
+        "why": "Correct. The FFN has 2 x d x 4d = 8d^2 weights, against 4d^2 for the Q, K, V and output projections in standard multi-head attention."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "SwiGLU uses three weight matrices, so the hidden size is often cut to about two-thirds to keep the parameter count unchanged",
+        "why": "Correct. The GLU-variants paper reduces d_ff by a factor of 2/3 (3072 to 2048 in its experiments) for exactly this reason."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The FFN mixes information between token positions using a small convolution",
+        "why": "The transformer FFN is position-wise: the same MLP is applied to each token separately."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "SwiGLU replaces attention in modern models because it is cheaper",
+        "why": "SwiGLU replaces the FFN's activation and structure; attention is still there."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Attention projections hold most of a dense transformer's parameters",
+        "why": "In a standard dense layer the FFN holds about two-thirds of the per-layer weights."
+      }
+    ],
+    "explanation": "The FFN is where most per-layer parameters live. SwiGLU computes `(Swish(xW) * xV) W2`, a gated variant with three matrices; to match the parameter budget of a 4x two-matrix FFN, the hidden size is scaled by 2/3. A quick check: 3 x 4096 x (2/3 x 16384) is close to 2 x 4096 x 16384.",
+    "reference": "https://arxiv.org/abs/2002.05202",
+    "source": "interview:llm-ffn-block-role-swiglu",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://dev.to/jackm_345442a09fb53b/llm-interview-series3-transformers-explained-attention-is-all-you-need-523o",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-026",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Which pseudo-code is a pre-norm transformer block?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`x = norm(x + attn(x)); x = norm(x + ffn(x))`",
+        "why": "This is post-norm, the layout of the original transformer: normalisation comes after the residual add."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`x = x + attn(norm(x)); x = x + ffn(norm(x))`",
+        "why": "Correct. Each sub-layer reads a normalised copy, and its output is added to an un-normalised residual stream."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`x = attn(norm(x)); x = ffn(norm(x))`",
+        "why": "This drops the residual connections, which deep stacks need for signal and gradient flow."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`x = norm(attn(x) + ffn(x))`",
+        "why": "This runs attention and FFN in parallel and normalises the sum; it is neither standard pre-norm nor post-norm."
+      }
+    ],
+    "explanation": "Post-norm applies LayerNorm after adding the residual, as in the original paper. Xiong et al. showed that post-norm has large expected gradients near the output at initialisation, which is why it needs learning-rate warm-up. Pre-norm keeps the residual path an identity, gradients stay well-behaved, and it trains stably without warm-up. Most current LLMs use pre-norm, usually with RMSNorm.",
+    "reference": "https://arxiv.org/abs/2002.04745",
+    "source": "interview:llm-pre-norm-vs-post-norm-rmsnorm",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://sebastianraschka.com/faq/docs/rmsnorm-vs-layernorm.html",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-027",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "RMSNorm differs from LayerNorm by dropping the mean subtraction (re-centring): it divides each token's vector by its root mean square and applies a learned gain.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. The RMSNorm paper argues re-centring is unnecessary and keeps only re-scaling by the root mean square, which saves computation."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "This is RMSNorm's definition. The authors report 7% to 64% lower running time than LayerNorm with comparable quality."
+      }
+    ],
+    "explanation": "LayerNorm computes a mean and a variance, centres, scales, then applies gain and bias. RMSNorm skips the mean and the bias: `x / sqrt(mean(x^2) + eps) * g`. It keeps re-scaling invariance, is cheaper, and is the norm used in many open decoder models (Llama 2 lists pre-normalisation with RMSNorm).",
+    "reference": "https://arxiv.org/abs/1910.07467",
+    "source": "interview:llm-pre-norm-vs-post-norm-rmsnorm",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://sebastianraschka.com/faq/docs/rmsnorm-vs-layernorm.html",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-028",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A RoPE model was pretrained at 4K context. You run it at 16K with no changes, and quality collapses past 4K. Which fix matches Position Interpolation?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Divide position indices by 4 so 16K positions map into the trained 0-4K range, then fine-tune briefly",
+        "why": "Correct. Position Interpolation linearly down-scales positions to fit the original window, and the paper reports that within 1,000 fine-tuning steps LLaMA models handle up to 32K."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Replace RoPE with learned absolute embeddings for positions 4K-16K and keep the rest",
+        "why": "Mixing schemes would give the model position signals it has never seen; nothing in the PI method does this."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Increase `d_k` so there are more rotation frequencies",
+        "why": "Head size is fixed by the trained weights; changing it means retraining."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Shrink the input with a sliding window of 4K so the model never sees larger positions",
+        "why": "That avoids long positions instead of extending the window: tokens further back are invisible to direct attention."
+      }
+    ],
+    "explanation": "Without changes, positions beyond 4K produce rotation angles the model never trained on, and attention scores behave unpredictably. Position Interpolation scales indices by L_train / L_target, so every position lands inside the trained range; the paper bounds interpolation error at least about 600 times below extrapolation error. NTK-aware scaling and YaRN refine this by treating RoPE frequencies differently.",
+    "reference": "https://arxiv.org/abs/2306.15595",
+    "source": "interview:llm-extend-context-beyond-training-length",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-029",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each positional scheme to how it works.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Fixed sinusoids added to the input embeddings",
+        "why": "The original transformer's scheme."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A trained vector for each position index, added to the input embeddings",
+        "why": "Learned absolute position embeddings."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Queries and keys rotated by position-dependent angles inside every attention layer",
+        "why": "Rotary position embedding (RoPE)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No position vectors; a penalty proportional to query-key distance added to the attention scores",
+        "why": "Attention with Linear Biases (ALiBi)."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Original transformer (2017)",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "BERT and GPT-2",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "RoFormer and most current open decoder models",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "ALiBi",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Sinusoidal and learned absolute encodings are added to the embeddings once. Learned tables cannot represent positions beyond their size. RoPE rotates q and k so scores depend on relative offset. ALiBi adds no positional embeddings and instead biases scores by distance; its paper reports a 1.3B model trained at length 1024 extrapolating to 2048 and matching a sinusoidal model trained at 2048.",
+    "reference": "https://arxiv.org/abs/2108.12409",
+    "source": "interview:llm-rope-vs-learned-absolute",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/rope-vs-absolute-positional-embeddings.html",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://arxiv.org/abs/2104.09864"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-030",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Which statement about FlashAttention is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It makes attention linear in sequence length in both FLOPs and memory",
+        "why": "FLOPs are still O(N^2 d); only the extra memory and the HBM traffic are reduced."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It approximates the softmax with a kernel feature map, so the full T x T score matrix never has to be formed",
+        "why": "That describes linear-attention approximations. FlashAttention computes exact softmax attention."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It reduces the number of key/value heads to shrink memory traffic",
+        "why": "That is MQA or GQA. FlashAttention works with any head layout."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It never writes the T x T score matrix to GPU HBM: extra memory is linear in T, FLOPs stay quadratic",
+        "why": "Correct. Tiling plus running softmax statistics produce the exact output block by block in on-chip SRAM."
+      }
+    ],
+    "explanation": "Standard attention writes the scores and probabilities to HBM and reads them back, which costs Theta(Nd + N^2) HBM accesses. FlashAttention tiles Q, K and V into SRAM-sized blocks, keeps the running row max and normaliser, and rescales partial results, giving Theta(N^2 d^2 / M) HBM accesses for SRAM size M and O(N) extra memory. The arithmetic is still quadratic, so very long contexts remain expensive.",
+    "reference": "https://arxiv.org/abs/2205.14135",
+    "source": "interview:llm-flashattention-what-it-changes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/xAI-Interview-E10404667-RVW99846515.htm",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://sebastianraschka.com/faq/docs/flashattention-why-it-mattered.html"
+      ],
+      "companies": [
+        "xAI",
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-031",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about grouped-query attention (GQA) match the GQA paper? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "GQA with one group is multi-query attention, and GQA with as many groups as heads is multi-head attention",
+        "why": "Correct. GQA interpolates between the two by choosing the number of key/value groups."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "An existing multi-head checkpoint can be converted by mean-pooling key and value heads within each group and then uptraining on a small fraction (5%) of the original compute",
+        "why": "Correct. The paper found mean pooling better than keeping one head or random initialisation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "GQA reduces the number of query heads, which cuts the FLOPs of `QK^T` by the group factor",
+        "why": "Query heads are unchanged, so each still computes a full score matrix. GQA shrinks K and V, which mainly saves memory and bandwidth."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The paper applies GQA mainly to encoder self-attention, where memory bandwidth is the bottleneck",
+        "why": "The paper does not apply GQA to the encoder, because encoder states are computed in parallel and bandwidth is not the main limit there."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "GQA gives exactly the quality of multi-query attention at the speed of multi-head attention",
+        "why": "It is the other way round: quality close to multi-head attention at a speed close to multi-query attention."
+      }
+    ],
+    "explanation": "The GQA paper reports that uptrained GQA reaches quality close to MHA at a speed comparable to MQA, and uses 8 groups as a middle ground. Its benefit is fewer K/V heads to store and read during decoding; the number of attention patterns per layer, one per query head, is unchanged.",
+    "reference": "https://arxiv.org/abs/2305.13245",
+    "source": "interview:llm-mqa-vs-gqa-vs-mha",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/grouped-query-attention.html",
+        "https://arxiv.org/abs/2305.13245"
+      ],
+      "companies": [
+        "Meta",
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-032",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Decoder-only models dominate general chat. For which job does an encoder-decoder model still have a clear structural advantage?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Open-ended multi-turn chat, where the conversation keeps growing and each new turn depends on all earlier ones",
+        "why": "Each turn would have to be re-encoded as part of the input; decoder-only models handle a growing conversation naturally."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Translating a fixed document, where the full input is read bidirectionally before output starts",
+        "why": "Correct. The encoder builds a representation of the full source with attention in both directions, and the decoder cross-attends to it at every step."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Producing token-level labels for a sentence, such as named-entity tags",
+        "why": "An encoder-only model is the natural fit for tagging, since no output sequence has to be generated."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Generating code completions from a cursor position",
+        "why": "Completion is left-to-right continuation, which is what decoder-only models are built for."
+      }
+    ],
+    "explanation": "Encoder-decoder models separate understanding a fixed input from generating an output. The encoder sees the entire input with bidirectional attention, and cross-attention lets every decoding step consult it. That suits translation, summarisation and other input-to-output tasks. Decoder-only models are simpler to scale and use one architecture for everything, which is why general-purpose LLMs went that way.",
+    "source": "interview:llm-encoder-decoder-still-useful",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-033",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps of one head of masked scaled dot-product attention.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Project the inputs into Q, K and V",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Compute the scores `Q @ K^T`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Divide the scores by `sqrt(d_k)`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set disallowed positions to `-inf` (or a large negative number)",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Take the softmax across keys for each query",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Multiply the weights by V",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "explanation": "The order matters at two points that interviewers probe. Scaling happens before the softmax, because it changes how peaked the distribution is. Masking happens on the scores before the softmax, so masked positions get exactly zero weight and each row still sums to 1. After the heads, outputs are concatenated and passed through the output projection.",
+    "reference": "https://arxiv.org/abs/1706.03762",
+    "source": "interview:llm-implement-multi-head-attention",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/xAI-Interview-E10404667-RVW99846515.htm",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://prachub.com/interview-questions/implement-masked-multi-head-self-attention",
+        "https://www.1point3acres.com/interview/thread/1159880",
+        "https://static-pc.glassdoor.fr/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP202.htm"
+      ],
+      "companies": [
+        "xAI",
+        "Meta",
+        "Apple",
+        "Genesys",
+        "Mistral AI",
+        "Amazon"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-ATT-034",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "One Mistral 7B layer has `dim = 4096`, a SwiGLU FFN with `hidden_dim = 14336` (three matrices), and GQA with 32 query heads and 8 KV heads of size 128. Ignoring norms and biases, roughly how do the FFN's parameters compare with the attention projections' parameters?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The FFN has about 2x the attention parameters",
+        "why": "2x holds for a classic two-matrix 4x FFN with full multi-head attention. Here SwiGLU and GQA both shift the ratio."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The FFN has about 4.2x the attention parameters",
+        "why": "Correct. FFN: 3 x 4096 x 14336, about 176M. Attention: Wq and Wo are 4096 x 4096 each, Wk and Wv are 4096 x 1024 each, about 42M in total."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "They are roughly equal, because GQA and SwiGLU cancel out",
+        "why": "GQA shrinks attention and SwiGLU with a wide hidden size enlarges the FFN, so both push the ratio up."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The attention projections have about 3x the FFN parameters",
+        "why": "Attention is the smaller part of a modern decoder layer, especially with GQA."
+      }
+    ],
+    "explanation": "Working it out: FFN = 3 x 4096 x 14336 = 176,160,768. Attention = 2 x 4096^2 (Q and output) + 2 x 4096 x 1024 (K and V for 8 heads x 128) = 41,943,040. The ratio is 4.2. This is why, in dense models, FFN parameters dominate both the parameter count and the per-token FLOPs at moderate context lengths.",
+    "reference": "https://arxiv.org/abs/2310.06825",
+    "source": "interview:llm-ffn-block-role-swiglu",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://dev.to/jackm_345442a09fb53b/llm-interview-series3-transformers-explained-attention-is-all-you-need-523o",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-035",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "In the FlashAttention paper's GPT-2 medium benchmark, FlashAttention performs more FLOPs than standard attention (75.2 vs 66.6 GFLOPs) yet runs several times faster. What explains this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It recomputes blocks in the backward pass rather than storing them, and runtime is bound by memory traffic, not arithmetic",
+        "why": "Correct. HBM reads and writes fell from 40.3 GB to 4.4 GB; trading a few extra FLOPs for far fewer memory accesses is a net win."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It runs attention in lower numerical precision than the baseline, so each floating-point operation costs less and extra FLOPs are nearly free",
+        "why": "The comparison is about IO, not precision; both can run in the same dtype."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It skips the softmax for masked tokens, which removes most of the work",
+        "why": "Even with causal masking, the speedup reported here comes from fewer memory accesses, and the FLOP count actually rose."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It caches attention weights across training steps",
+        "why": "Attention weights depend on each batch's inputs; nothing is cached across steps."
+      }
+    ],
+    "explanation": "Attention on GPUs is often memory-bound: moving the T x T matrices between HBM and the compute units takes longer than the arithmetic. FlashAttention saves only the output and the softmax statistics (row max and normaliser) from the forward pass, and rebuilds attention blocks on-chip during the backward pass. The paper reports 7.3 ms against 41.7 ms for that benchmark.",
+    "reference": "https://arxiv.org/abs/2205.14135",
+    "source": "interview:llm-flashattention-what-it-changes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/xAI-Interview-E10404667-RVW99846515.htm",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://sebastianraschka.com/faq/docs/flashattention-why-it-mattered.html"
+      ],
+      "companies": [
+        "xAI",
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-036",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing a 70B-class decoder that will be served with tensor parallelism across 8 GPUs. Decoding is memory-bandwidth bound, and quality must stay close to full multi-head attention. Which attention choice fits every constraint best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Multi-head attention, because any sharing of K/V heads costs too much quality",
+        "why": "MHA has the largest KV cache and the most memory traffic per decoded token, which is the stated bottleneck."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Multi-query attention, because one K/V head minimises cache size",
+        "why": "MQA can lose quality, and under tensor parallelism its single K/V head is replicated on every partition, so part of the saving is wasted."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Grouped-query attention with 8 KV heads, one per tensor-parallel shard",
+        "why": "Correct. GQA keeps quality close to MHA, cuts K/V traffic by the group factor, and 8 KV heads divide evenly across 8 shards with no replication."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Remove attention from half the layers to save bandwidth",
+        "why": "That changes the architecture's capacity drastically and is not a standard answer to KV bandwidth."
+      }
+    ],
+    "explanation": "The GQA paper makes two relevant points: uptrained GQA reaches quality close to MHA at speed close to MQA, and standard sharding replicates MQA's single K/V head across partitions, which GQA avoids. Large open models picked GQA for these reasons; the Llama 2 paper reports GQA for its 34B and 70B models. (KV-cache size arithmetic is covered in the inference topics.)",
+    "reference": "https://arxiv.org/abs/2305.13245",
+    "source": "interview:llm-mqa-vs-gqa-vs-mha",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://sebastianraschka.com/faq/docs/grouped-query-attention.html",
+        "https://arxiv.org/abs/2305.13245"
+      ],
+      "companies": [
+        "Meta",
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-ATT-037",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about extending a RoPE model's context are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Plain Position Interpolation stretches every RoPE dimension by the same factor, which blurs high-frequency components that encode fine local position",
+        "why": "Correct. The YaRN paper identifies this loss of high-frequency information as PI's weakness as the scale factor grows."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "NTK-aware scaling changes the RoPE base so that high frequencies are scaled less and low frequencies more",
+        "why": "Correct. Raising the base spreads the interpolation unevenly across dimensions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "YaRN requires retraining the model from scratch at the target length",
+        "why": "YaRN is a fine-tuning-efficient method; the paper claims it needs 10x fewer tokens and 2.5x fewer steps than earlier methods."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Position Interpolation works by letting position indices run beyond the trained range",
+        "why": "That is extrapolation. PI scales indices down so they stay inside the trained range."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "ALiBi models extend context by adjusting the RoPE base frequency",
+        "why": "ALiBi does not use RoPE at all; it biases attention scores by distance."
+      }
+    ],
+    "explanation": "Linear interpolation treats all frequencies alike, so the fastest-rotating dimensions, which carry local word-order detail, become crowded together. NTK-aware interpolation changes the base to protect high frequencies; YaRN adds a per-dimension ramp (NTK-by-parts) and an attention temperature. Dynamic scaling recomputes the scale factor from the current length at inference, and the YaRN paper reports it working without fine-tuning.",
+    "reference": "https://arxiv.org/abs/2309.00071",
+    "source": "interview:llm-extend-context-beyond-training-length",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-038",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You train a mixture-of-experts model without the auxiliary load-balancing loss. After a few thousand steps, two of the 8 experts receive most tokens, and many tokens overflow those experts' capacity. What is the consequence, and what does the Switch Transformer loss do about it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing important; the router learns the best experts, and unused experts can be pruned with no loss",
+        "why": "Collapse wastes capacity and causes overflow; the idle experts are parameters you paid for but never trained."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Overflowing tokens skip the expert and go on via the residual; the loss alpha * N * sum(f_i * P_i) is lowest for uniform routing",
+        "why": "Correct. f_i is the fraction of tokens sent to expert i and P_i is the mean router probability for i; pushing them towards 1/N spreads load."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Overflowing tokens are queued and processed by the same expert at the next training step, so the only real cost is extra latency and memory",
+        "why": "Switch Transformer drops the expert computation for overflowing tokens; it does not queue them."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The router's softmax becomes uniform, so every expert receives identical tokens",
+        "why": "Collapse is the opposite of uniform routing: a few experts get most tokens."
+      }
+    ],
+    "explanation": "Routers tend to reinforce early winners: favoured experts train more and become favoured further. Switch Transformer adds alpha * N * sum_i f_i P_i with alpha = 10^-2. f_i is a non-differentiable count; P_i carries the gradient. Expert capacity is (tokens per batch / experts) x capacity factor; tokens beyond it skip the expert and continue via the residual.",
+    "reference": "https://arxiv.org/abs/2101.03961",
+    "source": "interview:llm-mixture-of-experts",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476249/mistral-ai-interview-process/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-039",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "fill",
+    "select": 1,
+    "stem": "A Switch-style top-1 MoE layer has 8 experts, processes 4,096 tokens per batch, and uses a capacity factor of 1.25. How many tokens can each expert process per batch? Type a number.",
+    "options": [],
+    "accepted": [
+      "640"
+    ],
+    "explanation": "Expert capacity = (tokens per batch / number of experts) x capacity factor = (4096 / 8) x 1.25 = 512 x 1.25 = 640. A capacity factor above 1 leaves headroom for uneven routing, at the cost of padded, wasted compute when routing is balanced. Tokens routed to a full expert are dropped from that expert and continue via the residual connection.",
+    "reference": "https://arxiv.org/abs/2101.03961",
+    "source": "interview:llm-mixture-of-experts",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476249/mistral-ai-interview-process/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-040",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are writing a fused attention kernel. Which practices keep the softmax numerically safe? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Subtract each row's maximum score before exponentiating",
+        "why": "Correct. Softmax is unchanged by a constant shift, and the largest exponent becomes exp(0) = 1, so nothing overflows."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Use a large finite negative value for masked scores and explicitly zero or ignore outputs for query rows that have no valid keys",
+        "why": "Correct. A finite fill avoids `-inf - (-inf) = NaN` on fully masked rows, and zeroing those rows stops a meaningless uniform average from leaking into the loss."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Fill masked positions with 0 so they do not disturb the softmax",
+        "why": "A score of 0 still has weight exp(0) relative to others; masked keys would still receive attention."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add a small epsilon to the probabilities after the softmax",
+        "why": "Adding epsilon afterwards does not prevent overflow inside exp, and it breaks the sum-to-1 property."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Apply the `1/sqrt(d_k)` scaling after the softmax instead of before",
+        "why": "Scaling after normalisation does not control saturation; the scale must be applied to the scores."
+      }
+    ],
+    "explanation": "Without max subtraction, scores like 1000 and 1001 overflow exp and give NaN; with it, the result is [0.269, 0.731]. Masked entries need a value that makes their exponent effectively zero without creating NaN on all-masked rows. Production kernels track the running max (the same trick FlashAttention uses for tiling) and treat fully masked rows explicitly.",
+    "source": "interview:llm-attention-softmax-stability-masked-rows",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-041",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "During training and prefill, a decoder applies a causal mask. During incremental decoding with a KV cache, a single new token is processed per step. Why does that step not need a causal mask?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The KV cache stores the attention weights from earlier steps, so no new query-key scores need to be computed for the new token",
+        "why": "The cache stores keys and values; the new query still computes fresh scores against them."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Causal masking is only needed for encoder models",
+        "why": "Encoders use bidirectional attention with no causal mask. The causal mask belongs to decoders."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The single new query sits at the last position, so every cached key is in the past and there is nothing to hide",
+        "why": "Correct. With one query at the last position, every key that exists is allowed, so the mask would block nothing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Positional encodings already prevent attending to the future",
+        "why": "Position information tells the model where tokens are; it does not stop attention to later tokens."
+      }
+    ],
+    "explanation": "With a KV cache, step t computes q_t, k_t and v_t for the new token, appends k_t and v_t to the cache, and attends with a 1 x t score row. Every cached key belongs to a position at or before t, so the causal constraint holds automatically. A mask is still needed for padding in batched decoding and whenever several new tokens are processed at once, as in prefill or speculative verification.",
+    "source": "interview:llm-implement-kv-cache-and-gqa",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/implement-multi-head-attention-with-a-kv-cache-and-cached-grouped-query-attention",
+        "https://prachub.com/interview-questions/implement-the-forward-pass-of-multi-head-attention-from-scratch"
+      ],
+      "companies": [
+        "Amazon",
+        "Meta"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-042",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Mistral 7B uses sliding-window attention with W = 4096 over 32 layers, plus a rolling KV buffer of size W. A product team concludes it can recall any detail from 100K tokens back as reliably as from 2K tokens back. What is wrong with that conclusion?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing is wrong: the theoretical span of about 131K tokens means every earlier token is attended to directly in each layer",
+        "why": "The span is reached by stacking layers; only the last W tokens are attended directly in any one layer."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The rolling buffer stores the full sequence, so memory, not recall, is the limit",
+        "why": "The rolling buffer keeps only W positions, which is exactly why cache memory stops growing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The window limits only the first layer; later layers use full attention",
+        "why": "The window applies in every layer; that is how the receptive field grows by W per layer."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Tokens beyond W reach the output only indirectly, relayed through hidden states across layers, so details can be diluted",
+        "why": "Correct. A token 100K back can influence the output only through a chain of hidden states across about 25 layers, not by direct attention."
+      }
+    ],
+    "explanation": "With window W, layer k's receptive field is about W x k tokens, so 32 layers reach about 131K in theory. Each layer still attends directly to only the last W positions, and anything older survives only as it has been folded into intermediate hidden states. The rolling buffer caps the cache at W entries (an 8x saving at 32K in the paper). Theoretical span and reliable recall are different things.",
+    "reference": "https://arxiv.org/abs/2310.06825",
+    "source": "interview:llm-sparse-local-sliding-window-attention",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://sebastianraschka.com/faq/docs/sliding-window-attention.html",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-ATT-043",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps of a Mixtral-style top-2 MoE feed-forward sub-layer for one token.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compute router logits for all 8 experts from the token's hidden state",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep the 2 largest logits",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Apply softmax over just those 2 logits to get gate weights",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run the token through the 2 selected expert FFNs",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Sum the expert outputs weighted by their gate values",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Add the result to the residual stream",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "explanation": "Mixtral's router is a linear layer that scores each expert; the top-K (K = 2) logits are softmaxed to give gates, and the output is the gate-weighted sum of the chosen SwiGLU experts. Only 2 of 8 experts run per token, so active parameters are 13B out of 47B. Memory is still set by all 47B, since any expert may be selected.",
+    "reference": "https://arxiv.org/abs/2401.04088",
+    "source": "interview:llm-mixture-of-experts",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476249/mistral-ai-interview-process/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-044",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which changes reduce the attention score FLOPs of a decoder at long sequence length T? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Sliding-window attention with window W much smaller than T",
+        "why": "Correct. Each query scores only W keys, so the cost becomes about T x W instead of T^2."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A sparse attention pattern in which each query attends to a fixed subset of positions",
+        "why": "Correct. Restricting which keys each query scores removes most of the T x T work."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switching from multi-head attention to grouped-query attention",
+        "why": "Every query head still scores all keys; GQA reduces K/V storage and bandwidth, not the number of query-key scores."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switching to FlashAttention",
+        "why": "FlashAttention is exact, with the same O(T^2 d) FLOPs; it saves memory traffic and memory."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Replacing LayerNorm with RMSNorm",
+        "why": "RMSNorm is a per-token cost and has nothing to do with the quadratic term."
+      }
+    ],
+    "explanation": "Distinguish three different costs: score FLOPs (reduced only by computing fewer query-key pairs, as in windowed or sparse attention), memory traffic and score storage (FlashAttention), and KV-cache size (MQA/GQA, sliding-window buffers). Interviewers often probe whether you know which technique attacks which cost.",
+    "source": "interview:llm-sparse-local-sliding-window-attention",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://sebastianraschka.com/faq/docs/sliding-window-attention.html",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-ATT-045",
+    "domain": 1,
+    "skill": "transformer-attention",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A team plans to serve Mixtral 8x7B (top-2 of 8 experts) on GPUs sized for a 13B dense model, reasoning that only 13B parameters are active per token. What is the flaw?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Active parameters per token are really 47B, because all 8 experts run on every token and the router only weights their outputs",
+        "why": "Only the 2 selected experts run per token; the active count really is about 13B."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Any expert may be chosen by some token, so all ~47B parameters must sit in memory: memory follows total parameters",
+        "why": "Correct. The Mixtral paper notes serving memory is proportional to the sparse parameter count, 47B."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The router adds about 34B parameters of its own",
+        "why": "The router is one small linear layer per MoE block; most of the 47B is in the experts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "MoE models cannot be served on GPUs at all",
+        "why": "They are served routinely; the issue is sizing memory for the total parameters."
+      }
+    ],
+    "explanation": "MoE decouples per-token compute (about 13B active parameters in Mixtral) from parameter count (47B, since attention and other non-expert weights are shared and only the FFNs are replicated as experts). Compute per token resembles a 13B dense model, but all experts must be in memory because routing differs token by token. Load imbalance across devices is a further serving concern.",
+    "reference": "https://arxiv.org/abs/2401.04088",
+    "source": "interview:llm-mixture-of-experts",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476249/mistral-ai-interview-process/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 4
+  }
+]

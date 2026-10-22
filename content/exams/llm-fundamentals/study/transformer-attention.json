@@ -1,0 +1,49 @@
+{
+  "transformer-attention": {
+    "summary": "A transformer block moves information between tokens with attention and processes each token on its own with a feed-forward network, wrapped in residual connections and normalisation. Know the shapes, why scores are scaled and masked, how heads, positions and norms are arranged in modern decoders, and which tricks (GQA, FlashAttention, sliding windows, MoE) attack which cost.",
+    "points": [
+      "Scaled dot-product attention is `softmax(QK^T / sqrt(d_k)) V`. With unit-variance components a q·k dot product has variance d_k, so dividing by sqrt(d_k) keeps the softmax out of saturation, where gradients vanish.",
+      "Each query's softmax runs across keys. For B sequences of length T with h heads, scores are `(B, h, T, T)` and the layer output is `(B, T, d_model)`. Splitting d_model across heads (original base: 512 / 8 = 64) costs no extra projection parameters.",
+      "Masks go on the scores before the softmax: the causal mask sets j > i to -inf (or a large negative number). An all-masked row gives NaN; use a finite fill and zero out padded query rows. During single-token decoding with a KV cache no causal mask is needed.",
+      "Attention is the only sub-layer that mixes positions; the FFN is position-wise. With a classic 4x FFN, it holds about 2x the attention projection parameters. SwiGLU uses three matrices, with hidden size scaled by about 2/3 to keep parameters equal.",
+      "Encoder-only (BERT: masked LM with 15% of tokens selected, plus next-sentence prediction), decoder-only (GPT: next-token prediction with causal mask), encoder-decoder (T5; cross-attention takes queries from the decoder and keys and values from the encoder output).",
+      "Self-attention: O(n^2 d) work, O(1) sequential steps and O(1) path length between any two tokens; a recurrent layer: O(n d^2), O(n) and O(n). Parallel training was the decisive advantage over RNNs.",
+      "Positions: the original model adds sinusoids to the input embeddings; BERT and GPT-2 learn absolute position embeddings; RoPE rotates q and k so scores depend on the offset m - n; ALiBi adds a distance-proportional bias to scores and extrapolates to longer inputs.",
+      "Context extension for RoPE: Position Interpolation scales indices into the trained range (up to 32K within 1,000 fine-tuning steps on LLaMA); NTK-aware scaling changes the RoPE base so high frequencies are scaled less; YaRN adds per-dimension ramps and an attention temperature.",
+      "Post-norm (original) is `norm(x + f(x))` and needs warm-up; pre-norm is `x + f(norm(x))` and trains stably. RMSNorm drops LayerNorm's mean-centring and bias and divides by the root mean square.",
+      "MHA has h K/V heads, MQA one, GQA g groups (GQA-1 = MQA, GQA-H = MHA). GQA uptrained from MHA with 5% of compute reaches near-MHA quality at near-MQA speed. Mistral 7B: 32 query heads, 8 KV heads.",
+      "FlashAttention is exact and IO-aware: it tiles Q, K, V into on-chip SRAM, keeps running softmax statistics and never writes the T x T matrix to HBM. Extra memory is O(T) while FLOPs stay O(T^2 d). Sliding-window or sparse attention is what cuts score FLOPs.",
+      "MoE replaces the FFN with experts and a router. Mixtral picks the top 2 of 8 experts per token (13B active of 47B total, memory sized for 47B). Switch Transformer adds the load-balancing loss alpha * N * sum(f_i P_i); capacity = tokens / experts x capacity factor, and overflow tokens skip the expert via the residual."
+    ],
+    "traps": [
+      "Masking after the softmax (multiplying by a triangle) leaves rows that do not sum to 1; mask the scores before normalising, and use -inf or a large negative, never 0.",
+      "`tril` marks the positions to keep; using it to choose positions to block inverts the mask and NaNs the last row.",
+      "FlashAttention does not make attention linear in compute, and GQA does not reduce `QK^T` FLOPs; each attacks memory, not score arithmetic.",
+      "An MoE's active parameter count sets per-token compute, not GPU memory; every expert must be resident.",
+      "Sliding-window models have a theoretical span of about W x layers, but tokens beyond W reach the output only indirectly; span is not reliable recall.",
+      "LayerNorm normalises each token's features, not across the batch or across positions."
+    ],
+    "docs": [
+      {
+        "title": "Attention Is All You Need (Vaswani et al.)",
+        "url": "https://arxiv.org/abs/1706.03762"
+      },
+      {
+        "title": "GQA: Training Generalized Multi-Query Transformer Models",
+        "url": "https://arxiv.org/abs/2305.13245"
+      },
+      {
+        "title": "RoFormer: Rotary Position Embedding",
+        "url": "https://arxiv.org/abs/2104.09864"
+      },
+      {
+        "title": "FlashAttention: Fast and Memory-Efficient Exact Attention",
+        "url": "https://arxiv.org/abs/2205.14135"
+      },
+      {
+        "title": "Mixtral of Experts",
+        "url": "https://arxiv.org/abs/2401.04088"
+      }
+    ]
+  }
+}

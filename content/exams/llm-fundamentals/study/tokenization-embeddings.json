@@ -1,0 +1,49 @@
+{
+  "tokenization-embeddings": {
+    "summary": "Models read token ids from a learned subword vocabulary, not words or letters, which explains token counts, cost, multilingual fragmentation and letter-counting failures. Embeddings start as a lookup table, become contextual inside the transformer, and, after contrastive training, become sentence vectors whose similarity metric and normalisation you must handle correctly.",
+    "points": [
+      "BPE starts from base symbols and repeatedly merges the most frequent adjacent pair, then applies merges in learned order at inference. Byte-level BPE (GPT-2, RoBERTa) starts from 256 bytes, so it never needs an unknown token; GPT-2's vocabulary is 50,257.",
+      "WordPiece (BERT, 30K vocabulary) scores pairs by freq(pair) / (freq(a) x freq(b)), marks word-internal pieces with `##`, and tokenises by longest match; an unmatched word becomes `[UNK]`. Unigram (T5, ALBERT, XLNet) starts large, prunes by loss, and picks the most probable segmentation with Viterbi.",
+      "The Hugging Face pipeline is normalization (Unicode, lowercase, accents), pre-tokenization (word-like splits; GPT-2 keeps spaces as `Ġ`, SentencePiece uses `▁` and is reversible), model, then post-processing (special tokens such as `[CLS] ... [SEP]`).",
+      "Token counts depend on the tokenizer. With GPT-2's tokenizer, `This is a test.` is 5 tokens while its Hindi equivalent is 27: Devanagari characters are 3 UTF-8 bytes each and get few merges in a mostly English vocabulary.",
+      "Numbers: GPT-2 chunks digits inconsistently (`123|45|678`); Llama 2 splits every number into individual digits and uses byte fallback for unknown characters. Leading spaces and case change token ids.",
+      "Larger vocabularies shorten sequences but add a d_model-sized row to the embedding and output matrices per entry (32K to 128K at d = 4096 adds about 786M parameters untied) and spread training signal over rarer tokens.",
+      "An embedding layer equals one-hot times a V x d matrix, implemented as an index lookup. Weight tying reuses that matrix for the output logits, saving V x d parameters (GPT-2 config ties by default); Press and Wolf showed it also lowers perplexity.",
+      "Chat models need their own template: role and end-of-turn control tokens. Use `apply_chat_template` with `add_generation_prompt=True`; if you render with `tokenize=False` then tokenise, pass `add_special_tokens=False` to avoid a duplicate BOS.",
+      "Static vectors (Word2Vec, GloVe) give one vector per word; transformer hidden states are contextual. Raw BERT CLS or mean vectors scored below averaged GloVe on STS in the SBERT paper, so use models trained for embeddings.",
+      "Sentence-embedding models are bi-encoders trained contrastively: `MultipleNegativesRankingLoss` (InfoNCE) uses other in-batch positives as negatives, and scale = 1 / temperature (default 20). Bigger batches give more negatives. A cross-encoder over all pairs of 10,000 sentences takes about 65 hours, a bi-encoder about 5 seconds.",
+      "Cosine ignores length; dot product rewards large norms; for unit vectors |a - b|^2 = 2 - 2cos, so dot, cosine and Euclidean rank identically. Use dot on normalised vectors because it is cheaper.",
+      "Matryoshka training makes leading dimensions usable on their own (up to 14x smaller at equal accuracy in the paper). Truncation saves storage and search cost, not forward-pass cost; renormalise after truncating."
+    ],
+    "traps": [
+      "Tokens are not words, and characters / 4 is only an English rule of thumb; count with the target model's own tokenizer, including template tokens.",
+      "Letter counting and string reversal fail because the model sees token ids; route character-level work to code.",
+      "Adding tokens and calling `resize_token_embeddings` gives untrained rows; the model needs training on the new language before they help.",
+      "Setting pad = EOS and masking labels by pad id also masks the real EOS, so the model never learns to stop.",
+      "Vectors from different embedding models (or versions) are not comparable; switching models means re-embedding the corpus.",
+      "Mined hard negatives are often unlabelled positives; false negatives teach the model to push correct answers away."
+    ],
+    "docs": [
+      {
+        "title": "Hugging Face LLM Course: Byte-Pair Encoding tokenization",
+        "url": "https://huggingface.co/learn/llm-course/chapter6/5"
+      },
+      {
+        "title": "Hugging Face Tokenizers: the tokenization pipeline",
+        "url": "https://huggingface.co/docs/tokenizers/pipeline"
+      },
+      {
+        "title": "Transformers docs: Chat templates",
+        "url": "https://huggingface.co/docs/transformers/main/en/chat_templating"
+      },
+      {
+        "title": "Sentence-BERT (Reimers and Gurevych)",
+        "url": "https://arxiv.org/abs/1908.10084"
+      },
+      {
+        "title": "Sentence Transformers: loss reference",
+        "url": "https://sbert.net/docs/package_reference/sentence_transformer/losses.html"
+      }
+    ]
+  }
+}
