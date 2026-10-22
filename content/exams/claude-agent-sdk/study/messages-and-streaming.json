@@ -1,0 +1,35 @@
+{
+  "messages-and-streaming": {
+    "summary": "An Agent SDK run is a stream of typed messages: an init system message, one assistant message per completed content block, user messages carrying tool results, optional raw stream events, and a result message that ends each turn. Know which message carries what (session ID, usage, cost, structured output, subagent attribution), which fields are cumulative or estimated, and how errors surface, so you can build UIs and cost meters that are correct.",
+    "points": [
+      "Core types: `SystemMessage` (subtype `init` with session metadata; `compact_boundary` after compaction), `AssistantMessage`, `UserMessage` (tool results and any input you stream in), `StreamEvent` (only with partial messages on) and `ResultMessage`. Python narrows with `isinstance`; TypeScript narrows on `message.type` and keeps blocks at `message.message.content`.",
+      "Claude Code emits an `AssistantMessage` as each non-empty content block completes, so a response with text plus a tool call yields two messages with one block each and the same API message ID (`message.message.id` in TypeScript, `message_id` in Python).",
+      "`includePartialMessages` / `include_partial_messages` adds raw Claude API events (`message_start`, `content_block_start`, `content_block_delta`, `content_block_stop`, `message_delta`, `message_stop`). Text arrives as `text_delta`; tool input arrives as `input_json_delta` fragments that you join and parse at `content_block_stop`. Each complete `AssistantMessage` arrives just before its block's `content_block_stop`.",
+      "The init message lists `tools`, `mcp_servers` (with status), `model`, `cwd`, `permissionMode`, slash commands, skills and plugins. Read the session ID from `ResultMessage.session_id` in both SDKs; TypeScript also has it on the init message, while Python nests it in `SystemMessage.data[\"session_id\"]`.",
+      "Result subtypes: `success`, `error_max_turns`, `error_max_budget_usd`, `error_during_execution`, `error_max_structured_output_retries`. Only `success` has `result`; error arms have `errors`. Every result carries `session_id`, `num_turns`, `usage` and `total_cost_usd`. On `success`, `is_error: true` means a refusal (`stop_reason: \"refusal\"`), an unavailable deferred tool, or an API error (see `terminal_reason`, `api_error_status`).",
+      "Accounting scopes: `usage` is the main loop only (and per turn in streaming input mode); `total_cost_usd` and `modelUsage` / `model_usage` include subagents and internal calls and are running totals across turns. Per-step `output_tokens` on assistant messages is a `message_start` placeholder, so read output tokens from the result or from `message_delta` events.",
+      "Resumed or forked sessions restore the totals saved in the transcript (Claude Code v2.1.277+), so the first result already includes earlier spend: take differences, do not sum. `/clear`, `/reset` and `/new` restart the totals (TypeScript emits `SDKConversationResetMessage`), and `maxBudgetUsd` counts only the current call's spend.",
+      "All cost fields are client-side estimates from a bundled price table; bill from the Usage and Cost API or Console. On `error_max_budget_usd`, `usage` omits the response that crossed the cap; after a crash, the final `error_during_execution` result may be zeroed.",
+      "Structured output: pass `outputFormat` / `output_format` with `{ type: \"json_schema\", schema }` (draft-07; use `z.toJSONSchema(s, { target: \"draft-7\" })`). Claude Code adds a `StructuredOutput` tool whose failed attempts get `is_error: true` results; read validated data only from `structured_output` on a `success` result.",
+      "Subagent attribution: messages produced inside a subagent carry `parent_tool_use_id` (the Agent tool call) and, in TypeScript, `agent_id`. By default only a subagent's `tool_use` and `tool_result` blocks are forwarded; `forwardSubagentText` adds its text and thinking. Stream events are main-session only.",
+      "Errors: `AssistantMessage.error` categories include `rate_limit` (429), `overloaded` (529), `authentication_failed`, `billing_error`, `max_output_tokens`; Python's Literal is a subset, so treat unlisted strings as `unknown`. Claude Code retries retryable API errors itself and reports progress with `system` / `api_retry` messages (`attempt`, `max_retries`, `retry_delay_ms`, `error_status`).",
+      "A few trailing system events (such as `prompt_suggestion`) can follow a result, so iterate to the end. A cut stream still ends with `message_stop`; a tool call block left open at that point has incomplete input."
+    ],
+    "traps": [
+      "Summing `total_cost_usd` across the results of a streaming input session or a resumed session double-counts; read the latest result instead.",
+      "Using `usage` for whole-run tokens undercounts as soon as subagents run; use `modelUsage`.",
+      "Counting usage from every assistant message double-counts parallel blocks that share a message ID, and their `output_tokens` are placeholders anyway.",
+      "Treating `subtype: \"success\"` as enough: check `is_error`, `stop_reason`, and that `structured_output` is actually present.",
+      "Expecting subagent token deltas in stream events: their `parent_tool_use_id` is always null.",
+      "Reading the answer from a `StructuredOutput` tool call's input instead of the result's validated `structured_output`.",
+      "Reading `message.content` on a TypeScript assistant message, or `message.session_id` on a Python init `SystemMessage`."
+    ],
+    "docs": [
+      { "title": "Agent SDK: How the agent loop works", "url": "https://code.claude.com/docs/en/agent-sdk/agent-loop" },
+      { "title": "Agent SDK: Stream responses in real-time", "url": "https://code.claude.com/docs/en/agent-sdk/streaming-output" },
+      { "title": "Agent SDK: Track cost and usage", "url": "https://code.claude.com/docs/en/agent-sdk/cost-tracking" },
+      { "title": "Agent SDK: Get structured output from agents", "url": "https://code.claude.com/docs/en/agent-sdk/structured-outputs" },
+      { "title": "Agent SDK: TypeScript reference (Message types)", "url": "https://code.claude.com/docs/en/agent-sdk/typescript" }
+    ]
+  }
+}
