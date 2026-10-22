@@ -1,0 +1,2155 @@
+[
+  {
+    "id": "LCH-VEC-001",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In LangChain, what is the key difference between a retriever and a vector store?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It only has to return `Document`s for a query; it need not store anything",
+        "why": "This is the documented definition: a retriever is more general than a vector store and only needs to return documents."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A retriever is a vector store that has an embedding model attached to it",
+        "why": "Many retrievers (BM25, web search, a custom keyword lookup) use no embeddings or vector index at all."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A vector store returns raw vectors, while a retriever converts those vectors back into text",
+        "why": "`similarity_search` on a vector store already returns `Document` objects, not raw vectors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retrievers can only be built from a vector store with `as_retriever()`",
+        "why": "`as_retriever()` is one way to get a retriever, but custom `BaseRetriever` subclasses and integrations such as BM25 are retrievers too."
+      }
+    ],
+    "explanation": "A vector store stores embeddings and searches them. A retriever is the narrower interface \"query in, list of `Document`s out\". Every vector store can be turned into a retriever with `as_retriever()`, but a retriever can also wrap BM25, an API or a SQL lookup. Interviewers want to hear that the retriever is the abstraction the chain depends on, which is why the backend can be swapped.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/retrievers",
+    "source": "interview:lc-what-is-retriever",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://docs.langchain.com/oss/python/langchain/retrieval"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-002",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What do `embed_documents` and `embed_query` return on a LangChain `Embeddings` object?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both return a single `list[float]`; `embed_documents` averages the texts into one vector",
+        "why": "Averaging would destroy per-document search. Each input text gets its own vector."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`embed_documents` gives one vector per text; `embed_query` gives a single vector",
+        "why": "Those are the signatures on the base interface: a batch of texts in, a list of vectors out; one query in, one vector out."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`embed_documents` returns `Document` objects with a vector in metadata; `embed_query` returns a NumPy array",
+        "why": "Both methods work on plain strings and return plain Python lists of floats."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both return `list[list[float]]`, because the query is always wrapped as a batch of one",
+        "why": "`embed_query` takes a single string and returns a single vector."
+      }
+    ],
+    "explanation": "`Embeddings` has two abstract methods: `embed_documents(texts: list[str]) -> list[list[float]]` and `embed_query(text: str) -> list[float]`. They are separate so that a provider can embed queries and documents differently (some models use different instructions or input types for each), even though many providers treat them the same.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/text_embedding",
+    "source": "interview:lc-embeddings-interface",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://reference.langchain.com/python/langchain-core/embeddings/embeddings/Embeddings/embed_query",
+        "https://docs.langchain.com/oss/python/langchain/knowledge-base"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-003",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A LangChain vector store object (for example `InMemoryVectorStore`) is itself a Runnable, so you can put it directly into an LCEL chain with `|`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Vector stores do not subclass `Runnable`; you must convert one with `as_retriever()` first."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: vector stores are not Runnables. `vectorstore.as_retriever()` returns a `VectorStoreRetriever`, which is a Runnable with `invoke`, `batch` and `ainvoke`."
+      }
+    ],
+    "explanation": "The docs point this out explicitly: vector stores are not Runnables, but retrievers are. That is why RAG chains use `vectorstore.as_retriever()` (or a custom retriever) in the `context` slot. `isinstance(InMemoryVectorStore(emb), Runnable)` is `False`, while the retriever it produces is a Runnable.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-what-is-vectorstore",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/Infosys-AI-Engineer-Interview-Questions-EI_IE7927.0,7_KO8,19.htm",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ],
+      "companies": [
+        "Infosys"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-004",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "order",
+    "select": 1,
+    "stem": "You are asked to build a RAG app over your resume PDF in a live coding round. Put the steps in the order they run, from first to last.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Load the PDF into `Document` objects with a document loader",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Split the documents into chunks with a text splitter",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Embed the chunks and add them to a vector store",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "At question time, retrieve the most similar chunks for the user's query",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Pass the question and retrieved chunks to the chat model to generate the answer",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Indexing happens offline: load, split, then embed and store (`vector_store.add_documents(chunks)` embeds as it writes). Retrieval and generation happen per question: the retriever embeds the query, finds similar chunks, and the model answers from them. Interviewers often ask you to name each stage and the component that does it.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/rag",
+    "source": "interview:lc-minimal-rag-coding",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://ansumanbhujabal.medium.com/most-basic-rag-implementation-for-begginers-interviewer-asked-for-genai-intern-role-6a864fecc533",
+        "https://www.jointaro.com/interviews/companies/ibm/experiences/ai-engineer-bengaluru-february-1-2025-no-offer-positive-c881d31a/",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "IBM"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-005",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many documents does `vector_store.similarity_search(\"refund policy\")` return by default, assuming the store holds plenty of documents? Type a number.",
+    "options": [],
+    "accepted": [
+      "4"
+    ],
+    "explanation": "`similarity_search(query, k=4, **kwargs)` defaults to `k=4`, and `as_retriever()` with no `search_kwargs` also returns up to 4 documents. Pass `k` (or `search_kwargs={\"k\": ...}` on a retriever) to change it.",
+    "reference": "https://reference.langchain.com/python/langchain-core/vectorstores/base/VectorStoreRetriever",
+    "roleLevel": 1
+  },
+  {
+    "id": "LCH-VEC-006",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each RAG building block with the job it does.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Embedding model",
+        "why": "Turns text into a vector of numbers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Vector store",
+        "why": "Stores vectors and runs similarity search over them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Retriever",
+        "why": "A Runnable that takes a query and returns Documents."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Reranker",
+        "why": "Re-scores a set of candidate documents against the query."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Converts \"How do I reset my password?\" into a 1,536-dimensional list of floats",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Holds a million chunk vectors and finds the 20 nearest to a query vector",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Is placed in the `context` slot of an LCEL chain and called with `invoke(question)`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Takes 20 fetched chunks and keeps the 5 that best answer the question",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Keep the roles separate: the embedding model only produces vectors, the vector store only stores and searches them, the retriever is the Runnable interface the chain calls, and a reranker (often a cross-encoder, wrapped in a `ContextualCompressionRetriever`) refines what was fetched.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "roleLevel": 1
+  },
+  {
+    "id": "LCH-VEC-007",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You prototype with `InMemoryVectorStore(embeddings)` and add 500 chunks. What happens to them when the Python process restarts?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "They are kept in a local SQLite file next to the script",
+        "why": "`InMemoryVectorStore` keeps everything in a Python dict; it writes nothing to disk on its own."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "They are kept until you call `delete()`, because the store is persisted automatically",
+        "why": "Nothing is persisted automatically; deletion is not needed for the data to disappear."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "They are lost, unless you saved them with `dump(path)` and reload with `load`",
+        "why": "The store lives in process memory. `dump` and `load` write and read a JSON file if you need to keep it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "They are lost, and there is no way to save an `InMemoryVectorStore`",
+        "why": "The class does provide `dump(path)` and a `load(path, embedding)` class method."
+      }
+    ],
+    "explanation": "`InMemoryVectorStore` (in `langchain_core`) stores vectors in a dict and computes cosine similarity with NumPy. It is great for tutorials and tests, but the data vanishes with the process. For a single server use a persistent store such as Chroma with `persist_directory`; for production multi-user systems use a database-backed store such as PGVector or a managed service.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-vectorstore-choice",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://t.me/s/geekycod?after=557",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-008",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "With default settings, what does `vector_store.as_retriever().invoke(\"What is our leave policy?\")` return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A single string with the best chunk's text",
+        "why": "Retrievers return documents, not a formatted string; formatting is a separate step in the chain."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A list of `(Document, score)` tuples sorted by score",
+        "why": "Scores come from `similarity_search_with_score`; a retriever returns only the documents."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "All documents whose similarity is above 0.5",
+        "why": "A threshold only applies with `search_type=\"similarity_score_threshold\"` and an explicit `score_threshold`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A `list[Document]` of up to 4 similar chunks",
+        "why": "The default `search_type` is `\"similarity\"` and the underlying search defaults to `k=4`."
+      }
+    ],
+    "explanation": "`as_retriever()` creates a `VectorStoreRetriever` with `search_type=\"similarity\"` and empty `search_kwargs`, so it calls `similarity_search(query)` with its default `k=4`. The result is a list of `Document`s, which you usually format into a string before putting it in a prompt.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-as-retriever-search-kwargs",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+        "https://reference.langchain.com/python/langchain-core/vectorstores/base/VectorStoreRetriever/search_kwargs"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-009",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your index was built with embedding model A. A teammate changes the app to embed queries with model B, which happens to produce vectors of the same length. What do you expect?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A dimension-mismatch error on the first query",
+        "why": "The lengths match, so nothing fails; that is what makes this bug dangerous."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "No error, but retrieval quality silently collapses",
+        "why": "Similarity between vectors from different models is meaningless, so the store silently returns poor matches."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Results stay the same, because cosine similarity normalises the vectors",
+        "why": "Normalising only fixes length; it cannot align two different embedding spaces."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "LangChain detects the change and re-embeds the stored documents with model B",
+        "why": "Vector stores store whatever vectors you gave them; nothing re-embeds automatically."
+      }
+    ],
+    "explanation": "Documents and queries must be embedded by the same model (and the same settings). With different dimensions you at least get an error; with equal dimensions you get silently wrong results. Recovery means re-embedding the corpus with the new model into a fresh index, or reverting the query model.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/text_embedding",
+    "source": "interview:lc-same-embedding-model",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://ansumanbhujabal.medium.com/most-basic-rag-implementation-for-begginers-interviewer-asked-for-genai-intern-role-6a864fecc533",
+        "https://www.reddit.com/r/LocalLLaMA/comments/1r69w5y/rag_failure_in_production_our_vector_store_served/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-010",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In `max_marginal_relevance_search(query, k=4, fetch_k=20, lambda_mult=0.5)`, what happens if you lower `lambda_mult` towards 0?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Results get more diverse but slightly less relevant",
+        "why": "`lambda_mult` weights relevance against redundancy; 0 means maximum diversity, 1 means minimum diversity."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Fewer documents come back, because 0 acts as a stricter score threshold",
+        "why": "MMR still returns `k` documents (if available); `lambda_mult` only changes which ones."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The search fetches fewer candidates before reranking",
+        "why": "The candidate pool size is controlled by `fetch_k`, not `lambda_mult`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The result becomes identical to plain similarity search",
+        "why": "That happens near `lambda_mult=1`, where diversity has no weight."
+      }
+    ],
+    "explanation": "MMR first fetches `fetch_k` candidates by similarity, then greedily picks `k` of them, scoring each by `lambda_mult * relevance - (1 - lambda_mult) * similarity to already picked documents`. Lower values favour diversity, which helps when near-duplicate chunks crowd the top results.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-mmr",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://vn.linkedin.com/in/thphat19",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-011",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The store holds 500 chunks. How many documents does this retriever return per query?\n\n```python\nretriever = vector_store.as_retriever(\n    search_type=\"mmr\",\n    search_kwargs={\"k\": 3, \"fetch_k\": 20},\n)\ndocs = retriever.invoke(\"how do I rotate API keys?\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "20, because `fetch_k` is the number returned",
+        "why": "`fetch_k` is the size of the candidate pool MMR chooses from, not the output size."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "23, the candidates plus the final picks",
+        "why": "The two settings are not added; the final picks are a subset of the candidates."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "3",
+        "why": "MMR fetches 20 candidates and returns the `k=3` that best balance relevance and diversity."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "4, because retrievers ignore `k` and use the default",
+        "why": "`search_kwargs` are passed straight to the search method, so `k=3` is honoured."
+      }
+    ],
+    "explanation": "`search_kwargs` are forwarded to the search method chosen by `search_type`. For `\"mmr\"`, `fetch_k` controls how many candidates are fetched and `k` controls how many are returned. Running this against an `InMemoryVectorStore` returns exactly 3 documents.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-as-retriever-search-kwargs",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+        "https://reference.langchain.com/python/langchain-core/vectorstores/base/VectorStoreRetriever/search_kwargs"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-012",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which chain correctly answers a question passed as a plain string, as in `chain.invoke(\"Where is Paris?\")`? `format_docs` joins `page_content` values with blank lines, and the prompt uses `{context}` and `{question}`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`retriever | format_docs | prompt | model | StrOutputParser()`",
+        "why": "The prompt receives a single string, not a dict with `context` and `question`, so it raises a `TypeError` asking for a mapping."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{\"context\": retriever | format_docs, \"question\": itemgetter(\"question\")} | prompt | model | StrOutputParser()`",
+        "why": "`itemgetter(\"question\")` expects a dict input; on a plain string it raises `TypeError: string indices must be integers`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{\"context\": retriever | format_docs, \"question\": RunnablePassthrough()} | prompt | model | StrOutputParser()`",
+        "why": "The dict becomes a `RunnableParallel`: the string goes to the retriever for context and passes through unchanged as the question."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{\"context\": retriever, \"question\": RunnablePassthrough()} | prompt | model | StrOutputParser()`",
+        "why": "This runs, but the prompt gets the Python repr of the `Document` list (ids, metadata and all) instead of clean text."
+      }
+    ],
+    "explanation": "The standard LCEL RAG pattern fans the question out in parallel: one branch retrieves and formats context, the other passes the question through. Every option here was run with a fake chat model: only the passthrough version with a formatter gives the prompt clean context and the original question. The `itemgetter` version is correct only when the chain is invoked with a dict such as `{\"question\": ...}`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "source": "interview:lc-rag-chain-lcel",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-013",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many documents are in the store after this runs?\n\n```python\nvs = InMemoryVectorStore(embeddings)\nvs.add_documents(\n    [Document(page_content=\"alpha\"), Document(page_content=\"beta\"),\n     Document(page_content=\"gamma\")],\n    ids=[\"a\", \"b\", \"c\"],\n)\nvs.add_documents([Document(page_content=\"beta v2\")], ids=[\"b\"])\nvs.add_documents([Document(page_content=\"delta\")])\nvs.delete(ids=[\"a\"])\nprint(len(vs.store))\n```\n\nType a number.",
+    "options": [],
+    "accepted": [
+      "3"
+    ],
+    "explanation": "Adding with an existing id replaces that entry (an upsert), so `b` is overwritten rather than duplicated: 3 documents. The document added without an id gets a generated UUID: 4. Deleting `a` leaves 3. Stable ids are what make re-ingestion idempotent; without them every re-add creates duplicates.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/vectorstores",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-VEC-014",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A colleague runs an old tutorial and gets `KeyError: 'input'` from this code. What is the fix?\n\n```python\nfrom langchain_classic.chains import create_retrieval_chain\nfrom langchain_classic.chains.combine_documents import create_stuff_documents_chain\n\nqa = create_stuff_documents_chain(model, prompt)  # prompt uses {context} and {input}\nrag = create_retrieval_chain(retriever, qa)\nrag.invoke({\"question\": \"What is the SLA?\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Install `langchain-community`, because `create_retrieval_chain` moved there",
+        "why": "The import already works from `langchain_classic`; the error is about the input key, not a missing package."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Invoke with `{\"input\": ...}`; the result is a dict with `input`, `context` and `answer` keys",
+        "why": "`create_retrieval_chain` reads the question from `input` and returns the retrieved docs under `context` and the reply under `answer`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Rename `{input}` to `{question}` in the prompt so the keys line up",
+        "why": "The retrieval step itself reads `input`, so changing only the prompt still raises the same error."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass `input_key=\"question\"` to `create_retrieval_chain`",
+        "why": "The function takes only the retriever and the combine-documents chain; it has no `input_key` parameter."
+      }
+    ],
+    "explanation": "`create_retrieval_chain` and `create_stuff_documents_chain` are legacy helpers that now live in `langchain-classic`. They expect `{\"input\": ...}` and return `{\"input\", \"context\", \"answer\"}`. In LangChain 1.x, new code usually writes the same flow in LCEL or as an agent with a retriever tool, which makes the keys explicit.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/chains/retrieval/create_retrieval_chain",
+    "source": "interview:lc-legacy-retrieval-chains",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-015",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A FAISS index saved with `save_local(\"idx\")` fails to reload with `FAISS.load_local(\"idx\", embeddings)` and an error mentioning `allow_dangerous_deserialization`. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The embeddings object has a different dimension from the saved index",
+        "why": "A dimension mismatch is a different failure; this error is raised before any vectors are compared."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "FAISS indexes can only be reloaded on the machine that created them",
+        "why": "The files are portable; the check is about trusting the file, not about the machine."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`load_local` is deprecated in favour of `from_documents`",
+        "why": "`from_documents` builds a new index from scratch; `load_local` is still the way to reload a saved one."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Loading unpickles data, so it needs an explicit opt-in for trusted files",
+        "why": "Unpickling can run arbitrary code, so LangChain makes you opt in explicitly."
+      }
+    ],
+    "explanation": "FAISS (in `langchain-community`) is an in-process library: `save_local` writes the FAISS index plus a pickled docstore and id map. Because a tampered pickle can run arbitrary code, `load_local` raises a `ValueError` unless you set `allow_dangerous_deserialization=True`, which you should only do for files you created yourself. This is one reason FAISS suits prototypes and single-node apps, while multi-user systems usually use a database or managed store.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/vectorstores",
+    "source": "interview:lc-vectorstore-choice",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://t.me/s/geekycod?after=557",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-016",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Two embedding models wrapped in `CacheBackedEmbeddings.from_bytes_store(...)` share one byte store and neither sets a `namespace`. A text embedded by the first model can then be served from the cache when the second model embeds the same text.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: without a namespace the cache key is derived only from the text, so both models read and write the same keys."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "The key is a hash of the text plus the namespace prefix; with an empty namespace, the second model hits the first model's entry."
+      }
+    ],
+    "explanation": "The docs recommend setting `namespace` (for example to the model name) to avoid collisions between models. Running two counting embedders against one `InMemoryByteStore` confirms it: with no namespace, the second model never computes a vector for text the first model already cached. Remember too that query embeddings are not cached unless you set `query_embedding_cache`.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/text_embedding",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-VEC-017",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You subclass `BaseRetriever` to search an internal API. Which method must you implement, and how do callers use the retriever in LangChain 1.x?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Implement `get_relevant_documents(query)`; callers call it directly",
+        "why": "`get_relevant_documents` is not available on retrievers in langchain-core 1.x; calling it raises `AttributeError`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Implement `invoke(input, config)`; callers use `invoke`",
+        "why": "`invoke` is provided by `BaseRetriever` and handles callbacks and tracing; you override the hook it calls."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Implement `_get_relevant_documents`; callers use `invoke` or `ainvoke`",
+        "why": "`_get_relevant_documents` is the single abstract method, and the Runnable methods wrap it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Implement both `_get_relevant_documents` and `_aget_relevant_documents`, or instantiation fails",
+        "why": "Only the sync hook is abstract; the async one is optional and defaults to running the sync one in an executor."
+      }
+    ],
+    "explanation": "`BaseRetriever` is a Runnable with one abstract method, `_get_relevant_documents`. Overriding `_aget_relevant_documents` is optional and only worth it when you have a native async client. Instantiating a subclass without the sync hook fails with `TypeError: Can't instantiate abstract class`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/retrievers/BaseRetriever",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-VEC-018",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about LangChain's vector store abstraction are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Stores share methods such as `add_documents`, `delete` and `similarity_search`, so the chain code does not change when you swap backends",
+        "why": "That shared interface is what lets you move from `InMemoryVectorStore` to Chroma or PGVector."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`as_retriever()` wraps any vector store in a Runnable retriever that plugs into chains and agents",
+        "why": "Every vector store can be turned into a `VectorStoreRetriever`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The `filter` argument uses the same syntax in every vector store",
+        "why": "The docs warn that metadata filtering support varies; `InMemoryVectorStore` takes a callable while Chroma and PGVector take dicts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`similarity_search_with_score` always returns a similarity where higher means more relevant",
+        "why": "Scores are store-specific; some stores return a distance where lower is better."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Every vector store persists to disk by default",
+        "why": "`InMemoryVectorStore` and Chroma without `persist_directory` keep data only in memory."
+      }
+    ],
+    "explanation": "The common interface (`add_documents`, `delete`, `similarity_search`, `as_retriever`) is what makes stores swappable. What is not portable: filter syntax, score semantics and persistence defaults. Interviewers like candidates who know where the abstraction leaks.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/vectorstores",
+    "source": "interview:lc-what-is-vectorstore",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/Infosys-AI-Engineer-Interview-Questions-EI_IE7927.0,7_KO8,19.htm",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ],
+      "companies": [
+        "Infosys"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-019",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your RAG bot keeps answering from the wrong chunks. Which two changes are most likely to improve the retrieved context? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Add a keyword retriever (BM25) alongside the vector retriever to catch exact terms such as product codes",
+        "why": "Hybrid search recovers matches that dense embeddings miss, such as identifiers and rare jargon."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Fetch more candidates (for example 20) and rerank them down to the best 4 before building the prompt",
+        "why": "A reranker scores each query and document pair directly, which usually orders candidates better than vector similarity alone."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Raise the chat model's temperature so it explores more of the context",
+        "why": "Temperature only affects generation; it cannot change which chunks were retrieved."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch to a larger chat model while keeping retrieval unchanged",
+        "why": "A stronger generator cannot answer from chunks that were never retrieved."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Set `k=1` so only the single best chunk is sent",
+        "why": "Shrinking `k` lowers recall; if the top hit is wrong, the right chunk is now guaranteed to be missing."
+      }
+    ],
+    "explanation": "Fix retrieval problems at the retrieval layer, and measure each change on a labelled set of questions (recall at k, answer correctness). Typical levers in order: check chunking and metadata, add hybrid search, add reranking, try query rewriting (multi-query), then tune `k` and filters. Model-side settings do not fix a bad context.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "source": "interview:lc-improve-retrieval",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.ie/Interview/EPAM-Systems-Interview-E15544-RVW102905190.htm",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "EPAM"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-020",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "`EnsembleRetriever(retrievers=[r1, r2], weights=[0.5, 0.5])` uses its default constant `c=60`. `r1` returns documents `a, b, c` in that order and `r2` returns `c, d, b`. Which document does the ensemble rank first? Type its letter.",
+    "options": [],
+    "accepted": [
+      "c",
+      "C",
+      "\"c\"",
+      "'c'"
+    ],
+    "explanation": "Weighted reciprocal rank fusion scores each document as the sum of `weight / (rank + c)` across lists. `a`: 0.5/61. `b`: 0.5/62 + 0.5/63. `c`: 0.5/63 + 0.5/61, which is the highest. `d`: 0.5/62. The fused order is `c, b, a, d`, which matches running the ensemble with two fixed retrievers. Documents found by both retrievers win, and duplicates are merged (by `page_content`, or by `id_key` if set).",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/ensemble/EnsembleRetriever",
+    "source": "interview:lc-ensemble-bm25-hybrid",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.aced.io/experiences/handshake-senior-ai-engineer-interview-5759be",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/retrieval.md",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Handshake"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-021",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Support agents search a knowledge base with queries like \"error E-4021 on checkout\". Dense retrieval returns generic checkout articles and misses the one page that mentions E-4021. Which change targets this failure best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch the retriever to MMR so results are more diverse",
+        "why": "Diversity spreads results across topics, but the embedding still does not treat the code as important."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Combine a `BM25Retriever` with the vector retriever in an `EnsembleRetriever`",
+        "why": "BM25 matches the exact token `E-4021`, and rank fusion blends it with semantic results."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Raise `k` from 4 to 50 on the vector retriever",
+        "why": "The right page may still rank below 50 semantically similar pages, and the prompt fills with noise."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Re-embed the corpus with a larger embedding model",
+        "why": "Bigger dense models still tend to blur rare identifiers; it is costly and does not target the problem."
+      }
+    ],
+    "explanation": "Dense embeddings capture meaning but are weak on exact identifiers, part numbers and rare jargon. Hybrid search adds a lexical retriever: `BM25Retriever` (in `langchain-community`, requires the `rank_bm25` package) plus the vector retriever inside an `EnsembleRetriever`, which merges the lists with weighted reciprocal rank fusion. Tune `weights` on a labelled query set.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/ensemble/EnsembleRetriever",
+    "source": "interview:lc-ensemble-bm25-hybrid",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.aced.io/experiences/handshake-senior-ai-engineer-interview-5759be",
+        "http://chatbotaiassist.com/2025/05/19/50-langchain-interview-questions-and-answers/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/retrieval.md",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Handshake"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-022",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You switch a retriever to MMR to remove near-duplicate chunks, but the results are exactly the same set as before. The code is below. What is the cause?\n\n```python\nretriever = vector_store.as_retriever(\n    search_type=\"mmr\",\n    search_kwargs={\"k\": 4, \"fetch_k\": 4, \"lambda_mult\": 0.2},\n)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`lambda_mult=0.2` is too low; it must be above 0.5 for diversity to apply",
+        "why": "Low values mean more diversity, not less; 0.2 strongly favours diversity."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The vector store does not support MMR, so LangChain silently falls back to similarity",
+        "why": "Unsupported search types raise errors; here MMR does run."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "With `fetch_k` equal to `k`, MMR must pick all four candidates, so only their order can change",
+        "why": "MMR chooses `k` documents from `fetch_k` candidates; with no spare candidates there is nothing to swap in."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`search_kwargs` are ignored when `search_type` is `\"mmr\"`",
+        "why": "They are forwarded to `max_marginal_relevance_search`, which is why `k` and `fetch_k` matter."
+      }
+    ],
+    "explanation": "MMR can only add diversity if the candidate pool is larger than the output. The default `fetch_k` is 20; a common choice is several times `k`. Running this against `InMemoryVectorStore` with `fetch_k=4` returns the same ids as plain similarity search, while `fetch_k=14` replaces the duplicates.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-mmr",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://vn.linkedin.com/in/thphat19",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-023",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `MultiQueryRetriever` built with `from_llm(retriever=base, llm=model)` serves one user question. What work does it do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It calls the LLM once per rewritten query, then returns every document from every search, including duplicates",
+        "why": "The rewrites come from a single LLM call, and the results are de-duplicated."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "One LLM call writes rephrasings, each is searched, and the unique union is returned",
+        "why": "That is the documented behaviour; the default prompt asks for three alternative questions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "One LLM call scores each retrieved document, and only the top-ranked ones are kept",
+        "why": "Scoring documents is reranking or compression, not query rewriting."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It runs the original question against several different vector stores in parallel",
+        "why": "It uses one base retriever; the variety comes from the rewritten queries."
+      }
+    ],
+    "explanation": "`MultiQueryRetriever` (in `langchain-classic`) improves recall for vaguely worded questions by searching from several angles. The cost is an extra LLM call and several searches per question, and the merged set can be larger than `k`. With `include_original=True` it also searches the original question. Results are merged as a unique union, not ranked.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/multi_query/MultiQueryRetriever",
+    "source": "interview:lc-multiquery-retriever",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://python.langchain.com/v0.2/api_reference/langchain/retrievers/langchain.retrievers.multi_query.MultiQueryRetriever.html"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-024",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `ParentDocumentRetriever` has `search_kwargs={\"k\": 4}`, but for some questions it returns only one document. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The docstore evicts parents when more than one is requested",
+        "why": "`InMemoryStore` and similar docstores do not evict; `mget` returns every id asked for."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`k` is ignored by `ParentDocumentRetriever`; it always returns one parent",
+        "why": "`search_kwargs` are passed to the child-chunk search, so `k` is used."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "All 4 child hits came from one parent, and parents are de-duplicated",
+        "why": "The retriever collects unique parent ids from the child hits, then fetches those parents from the docstore."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The child splitter produced chunks too large to match the query",
+        "why": "Chunk size affects which children match, but it cannot explain hits collapsing to one result."
+      }
+    ],
+    "explanation": "The retriever embeds small child chunks in the vector store and keeps whole parents in a separate docstore, linking them through the `doc_id` metadata key. At query time it searches children with `search_kwargs`, collects unique parent ids in order, and returns those parents. So `k` limits child hits, not parents. Running it with one long document and `k=4` returns exactly one parent.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/parent_document_retriever",
+    "source": "interview:lc-parent-document-retriever",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rrl35s/companies_want_genai_architects_but_interview_for/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://reference.langchain.com/python/langchain-classic/retrievers/parent_document_retriever"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-025",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Why is a cross-encoder reranker used to reorder a small set of fetched candidates, instead of replacing the vector index?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It must score every query-document pair, so nothing is precomputed",
+        "why": "Its accuracy comes from reading the pair jointly, which also makes it a per-query cost."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It produces vectors of a different dimension that most vector stores cannot index",
+        "why": "A cross-encoder outputs a relevance score per pair, not a vector to index."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It only supports English, so it is limited to the final step",
+        "why": "Language coverage depends on the model; it is not why rerankers sit at the end."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "LangChain does not allow a compressor to wrap a vector store directly",
+        "why": "Compressors wrap retrievers by design, but that is an API detail, not the reason for the pattern."
+      }
+    ],
+    "explanation": "Bi-encoders (embedding models) embed documents once, offline, so search is cheap. Cross-encoders read the query and document together, which ranks better but costs one model call per pair. The usual pattern is fetch many (say 20 to 50) with a cheap retriever, then rerank and keep a few, for example `ContextualCompressionRetriever(base_compressor=CrossEncoderReranker(model=..., top_n=3), base_retriever=...)` or a hosted reranker such as Cohere's.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/contextual_compression/ContextualCompressionRetriever",
+    "source": "interview:lc-compression-rerank",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://vn.linkedin.com/in/thphat19",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://docs.langchain.com/oss/python/integrations/retrievers"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-026",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Each document in an HR knowledge base has a `department` field in its metadata. You must restrict retrieval to the current user's department. Which two statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pass the filter through the retriever, for example `as_retriever(search_kwargs={\"k\": 4, \"filter\": ...})`, so the search itself is restricted",
+        "why": "Filtering inside the search means out-of-scope chunks are never returned."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The filter format depends on the store: `InMemoryVectorStore` takes a function of a `Document`, while PGVector accepts dict operators such as `$eq` and `$in`",
+        "why": "Filter support and syntax vary between vector stores, so check each integration."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add \"only use documents from the user's department\" to the system prompt",
+        "why": "The model still sees other departments' chunks; a prompt instruction is not access control."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retrieve with `k=4` and then drop the other departments' documents in Python",
+        "why": "This post-filter can leave you with zero documents even when relevant in-department chunks exist further down."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Store each department's documents under a different embedding model",
+        "why": "Mixing models breaks similarity; it does not isolate anything reliably."
+      }
+    ],
+    "explanation": "Metadata filters belong in the search call. For `InMemoryVectorStore` the filter is a callable such as `lambda doc: doc.metadata[\"department\"] == dept`; Chroma takes dicts such as `{\"source\": \"news\"}`; PGVector supports `$eq`, `$ne`, `$in`, `$between`, `$like`, `$and`, `$or` and more. Post-filtering after a small `k` silently loses recall.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/vectorstores/pgvector",
+    "source": "interview:lc-metadata-filtering",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/handshake-senior-ai-engineer-interview-5759be",
+        "https://prachub.com/interview-questions/enforce-tenant-and-session-isolation-in-an-agent-rag-system",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Handshake",
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-027",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This code builds without complaint but raises `NotImplementedError` on the first `invoke`. What is wrong?\n\n```python\nvs = InMemoryVectorStore(embeddings)\nvs.add_texts([\"alpha\", \"beta\"])\nretriever = vs.as_retriever(\n    search_type=\"similarity_score_threshold\",\n    search_kwargs={\"score_threshold\": 0.5},\n)\nretriever.invoke(\"alpha\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`score_threshold` must be passed as `invoke(query, score_threshold=0.5)`, not in `search_kwargs`",
+        "why": "`search_kwargs` is the right place; leaving it out fails earlier, at construction, with a validation error."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "This store has no relevance-score function, so threshold search is unsupported",
+        "why": "The threshold mode depends on normalised relevance scores, which `InMemoryVectorStore` does not provide."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`0.5` is outside the allowed range, which is 0 to 100",
+        "why": "The validator expects a float between 0 and 1, so 0.5 is valid."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`similarity_score_threshold` is not an allowed `search_type`",
+        "why": "It is one of the three allowed values; an unknown type fails at construction with a clear message."
+      }
+    ],
+    "explanation": "`similarity_score_threshold` calls `similarity_search_with_relevance_scores`, which needs the store to supply a function that maps its raw score to 0 to 1. `InMemoryVectorStore` does not, so it raises `NotImplementedError` at query time. Options: filter `similarity_search_with_score` results yourself (cosine similarity for this store), or use a store that supports relevance scores.",
+    "reference": "https://reference.langchain.com/python/langchain-core/vectorstores/base/VectorStoreRetriever",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-VEC-028",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order what a `ParentDocumentRetriever` does when it is invoked with a query, from first to last.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Embed the query with the vector store's embedding model",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Search the vector store for the most similar child chunks using `search_kwargs`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Read the parent id (`doc_id` by default) from each child chunk's metadata, keeping unique ids in order",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Fetch those parent documents from the docstore with `mget`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Return the parent documents instead of the child chunks",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Children are small for precise matching; parents are large for context. Only children live in the vector store, and each carries the parent id in metadata (`id_key`, default `doc_id`). The retriever turns child hits into unique parent ids, then reads the parents from the docstore, so you need both a vector store and a docstore.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/parent_document_retriever",
+    "source": "interview:lc-parent-document-retriever",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rrl35s/companies_want_genai_architects_but_interview_for/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://reference.langchain.com/python/langchain-classic/retrievers/parent_document_retriever"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-029",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `index()` cleanup mode with what it deletes during a run.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`cleanup=None`",
+        "why": "No automatic deletion at all."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`cleanup=\"incremental\"`",
+        "why": "Cleans up per source id during indexing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`cleanup=\"full\"`",
+        "why": "Cleans up everything not returned, after indexing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`cleanup=\"scoped_full\"`",
+        "why": "Full-style cleanup limited to seen source ids."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Only adds and skips; stale versions of changed documents stay in the store",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Deletes old versions of documents whose source ids appear in this batch, as it goes",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Deletes every previously indexed document that the loader did not return in this run",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "After the run, deletes non-updated documents, but only for source ids seen in this run",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The indexing API (`langchain_core.indexing.index` with a record manager) hashes each document, skips unchanged ones and cleans up according to the mode. `incremental` and `scoped_full` need `source_id_key`. `full` assumes the loader returns the whole dataset, so a partial load deletes the rest. `scoped_full` suits loaders that cannot return everything at once.",
+    "reference": "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+    "source": "interview:lc-indexing-api",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-030",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are building an internal FAQ bot that must answer within a tight, predictable latency budget, and every question needs the knowledge base. Which design fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An agent with a retriever tool, so the model decides when and how often to search",
+        "why": "Agentic RAG adds flexibility but makes the number of model calls and the latency variable."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A two-step chain that always retrieves, then makes one model call with the retrieved context",
+        "why": "Retrieval always happens before generation, so the call count is fixed and latency is predictable."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A hybrid design with query rewriting, retrieval grading and answer validation loops",
+        "why": "The validation loops add quality checks, but they also add variable latency."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No retrieval; put the whole FAQ in the system prompt on every call",
+        "why": "This may work for a tiny FAQ but scales poorly in cost and context, and it is not a retrieval design."
+      }
+    ],
+    "explanation": "The docs compare three RAG architectures: two-step (high control, low flexibility, fast), agentic (low control, high flexibility, variable latency) and hybrid (medium on both, with validation steps). Choose agentic RAG when the model must decide whether to search, search several sources or iterate; choose two-step when every query needs retrieval and latency must be bounded.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "source": "interview:lc-agentic-rag",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://docs.langchain.com/oss/python/langchain/retrieval"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-031",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Calling `index([], record_manager, vector_store, cleanup=\"incremental\", source_id_key=\"source\")` with an empty document list deletes every document previously indexed through that record manager.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Incremental cleanup only touches source ids seen in the current run; with no documents, no source ids are seen."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: nothing is deleted. Incremental mode removes stale versions only for source ids present in this batch. The same call with `cleanup=\"full\"` would delete everything."
+      }
+    ],
+    "explanation": "This was run with `InMemoryRecordManager` and `InMemoryVectorStore`: the empty incremental run reported `num_deleted: 0`, while an empty `cleanup=\"full\"` run deleted every document. That asymmetry is why a failing loader that yields nothing is harmless in incremental mode but destructive in full mode.",
+    "reference": "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+    "source": "interview:lc-indexing-api",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-032",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You want a self-query retriever to turn \"red dresses under 50 dollars\" into a semantic query plus a metadata filter. Which inputs must you provide when calling `SelfQueryRetriever.from_llm`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "An LLM, the store, a content description and metadata field descriptions",
+        "why": "The LLM can only write valid filters for fields it has been told about, and the vector store must have a filter translator."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only the vector store; the retriever infers the metadata schema by sampling stored documents",
+        "why": "It does not inspect stored documents; you describe the fields yourself, for example with `AttributeInfo`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A BM25 index and a reranker, because self-query is a hybrid search technique",
+        "why": "Self-query is query construction (query plus filter), not lexical hybrid search."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A list of example queries with their expected filters, which is required for it to work",
+        "why": "Examples can help prompt quality, but they are not a required argument."
+      }
+    ],
+    "explanation": "`SelfQueryRetriever.from_llm(llm, vectorstore, document_contents, metadata_field_info, ...)` builds a query-constructor chain that outputs a query string plus a structured filter, then translates the filter into the store's syntax. Risks: the LLM can invent fields or wrong operators, and it needs the `lark` package for parsing. It lives in `langchain-classic`.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/self_query/base/SelfQueryRetriever",
+    "source": "interview:lc-self-query-retriever",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-033",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You expose a retriever to an agent with the snippet below. What does the agent's `ToolMessage` contain when the tool runs?\n\n```python\nfrom langchain_core.tools import create_retriever_tool\n\nkb_tool = create_retriever_tool(\n    retriever,\n    \"kb_search\",\n    \"Search the internal knowledge base.\",\n    response_format=\"content_and_artifact\",\n)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The list of `Document` objects as the content, so the model sees their metadata",
+        "why": "The content is a string; the `Document` objects go in a separate field."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only the documents' ids, which the agent must look up with a second tool",
+        "why": "The tool returns the text of the documents, not just ids."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The documents' text as `content`, and the `Document` list as `artifact`",
+        "why": "With `content_and_artifact`, the model sees the formatted text while your code can read the raw documents."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A JSON string of each document's `page_content` and `metadata`",
+        "why": "Formatting uses `document_prompt` (page content by default) and `document_separator`, not JSON."
+      }
+    ],
+    "explanation": "`create_retriever_tool` returns a `StructuredTool` with a single `query` argument. It formats each document with `document_prompt` and joins them with `document_separator` (default `\\n\\n`). With `response_format=\"content_and_artifact\"`, the `ToolMessage.artifact` holds the `Document` list, which is handy for showing citations without sending metadata to the model. With the default `\"content\"`, `artifact` is `None`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/tools/retriever/create_retriever_tool",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-VEC-034",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A live RAG service will move to a newer embedding model. Which cut-over plan is safe?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Start embedding new documents with the new model into the existing index, and re-embed the old ones gradually",
+        "why": "During the migration the index holds vectors from two spaces, so every query is compared against incompatible vectors."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Re-run `index()` with `force_update=True` on the live store using the new model",
+        "why": "Documents are rewritten in place one batch at a time, so queries during the run see a mix of old and new vectors."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Build and evaluate a separate index, then switch retriever and query model together",
+        "why": "Each index stays internally consistent, and you can roll back by switching back."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Keep the old index and embed only queries with the new model, because queries matter most",
+        "why": "Queries and documents must come from the same model, or similarity is meaningless."
+      }
+    ],
+    "explanation": "Vectors from different embedding models are not comparable, even when they have the same dimension. Treat a model change like a schema migration: re-embed everything into a new collection (with a new `CacheBackedEmbeddings` namespace if you cache), compare retrieval metrics, then flip the retriever and query model in one release. Keep the old index until the new one is proven.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/text_embedding",
+    "source": "interview:lc-embedding-migration",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LocalLLaMA/comments/1r69w5y/rag_failure_in_production_our_vector_store_served/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-035",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Many tenants share one vector store. Which retrieval design gives the strongest guarantee that tenant A's chunks never reach tenant B's answer?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use a `SelfQueryRetriever` so the LLM adds a `tenant_id` filter it reads from the user's question",
+        "why": "The filter is chosen by the model from user-controlled text, so a prompt injection or a mistake can drop or change it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Tell the model in the system prompt to ignore documents from other tenants",
+        "why": "The other tenant's text has already been retrieved and shown to the model, which is the leak."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Retrieve with a large `k` and remove other tenants' documents after the model answers",
+        "why": "By then the model has already read, and possibly quoted, the other tenant's data."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A per-request server-side filter (or collection) from the authenticated session",
+        "why": "The restriction is enforced inside the search by code the user cannot influence."
+      }
+    ],
+    "explanation": "Isolation must happen in the retrieval call, using identity from authentication, never from the prompt or the model. Options: a server-side metadata filter in `search_kwargs`, a separate collection or namespace per tenant, or database-level controls. Back it with tests that query across tenants and expect zero hits. Separate stores per tenant also make deletion and auditing simpler.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/vectorstores",
+    "source": "interview:lc-permission-aware-retrieval",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/enforce-tenant-and-session-isolation-in-an-agent-rag-system",
+        "https://www.hellointerview.com/community/questions/rag-system-design/cmoaemvhf1emv09adwqq9wk3f",
+        "https://www.glassdoor.fr/Entretien/Capgemini-Entretien-E3803-RVW101720117.htm"
+      ],
+      "companies": [
+        "Qualified Health",
+        "Atlassian",
+        "Capgemini"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-036",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A nightly job ingests documents from a wiki where pages are edited and deleted. The vector store must stay in sync without duplicates. Which two approaches achieve that? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use `index()` with a record manager, `source_id_key=\"source\"` and `cleanup=\"incremental\"` (or `\"full\"` when the loader returns the whole wiki)",
+        "why": "The record manager skips unchanged chunks, replaces changed ones and removes stale versions."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Give each chunk a stable id derived from the page and chunk position, and `add_documents(..., ids=...)` after deleting ids of removed pages",
+        "why": "Re-adding with the same ids upserts instead of duplicating, as long as you also delete what no longer exists."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Call `add_documents(chunks)` every night without ids, since the store de-duplicates identical text",
+        "why": "Without ids each call gets fresh UUIDs, so the same text is stored again every night."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap the embeddings in `CacheBackedEmbeddings` so repeated chunks are not stored twice",
+        "why": "The cache avoids re-computing vectors; it does nothing to stop the store keeping duplicate entries."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Run `index(..., cleanup=\"full\")` with a loader that only returns pages edited today",
+        "why": "Full cleanup deletes everything the loader did not return, so all unedited pages would disappear."
+      }
+    ],
+    "explanation": "Two sound patterns: the indexing API, which records a hash per chunk in a record manager and cleans up per mode, or deterministic ids with explicit deletes. Both runs were checked with `InMemoryVectorStore`: adding the same document twice without ids gives two entries, and the record-manager run skips unchanged content on a re-run.",
+    "reference": "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+    "source": "interview:lc-enterprise-docqa-design",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://fr.glassdoor.ca/Entretien/Capgemini-Entretien-E3803-RVW95903382.htm",
+        "https://www.glassdoor.ie/Interview/EPAM-Systems-Interview-E15544-RVW102905190.htm",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "Capgemini",
+        "EPAM",
+        "LangChain"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-037",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "After switching the nightly sync to `index(changed_docs, record_manager, vector_store, cleanup=\"full\", source_id_key=\"source\")`, where the loader returns only files changed since yesterday, users report that most answers now say \"I don't know\". What happened?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Full cleanup deleted everything this run did not return",
+        "why": "`full` assumes the loader returns the entire dataset; anything missing is treated as deleted upstream."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The record manager skipped the changed files because their hashes were cached",
+        "why": "Changed content has a new hash, so it is added, not skipped."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`source_id_key` is not allowed with `full`, so every document was indexed without a source",
+        "why": "`source_id_key` is optional for `full` but allowed; it is required for `incremental` and `scoped_full`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The default SHA-1 key encoder produced collisions that overwrote documents",
+        "why": "SHA-1 is discouraged for collision resistance, but accidental collisions would not wipe most of an index."
+      }
+    ],
+    "explanation": "With a partial loader, use `incremental` (cleans up per source id seen) or `scoped_full`. Running `index()` with `cleanup=\"full\"` and only one source's documents deletes the other sources' documents, which matches this incident. Also consider a non-SHA-1 `key_encoder` for new indexes; the docstring warns against SHA-1.",
+    "reference": "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+    "source": "interview:lc-indexing-api",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-038",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Retrieval over a million documents is expensive. You wrap the embedding model in `CacheBackedEmbeddings.from_bytes_store(model, store, namespace=model_name)` with default settings. Which cost does this actually remove?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The embedding call for each incoming user query",
+        "why": "Query embeddings are not cached by default; you need `query_embedding_cache`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Re-embedding chunks whose text has not changed when you re-ingest the corpus",
+        "why": "Document embeddings are keyed by a hash of the text, so unchanged chunks are read from the store."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The chat model's input tokens spent on retrieved context",
+        "why": "The cache stores vectors; it does not change what is sent to the generator."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Vector search latency in the vector store",
+        "why": "The store still searches the same vectors; the cache only sits in front of the embedding model."
+      }
+    ],
+    "explanation": "`CacheBackedEmbeddings` caches `embed_documents` results by text hash (prefixed with the namespace). It saves money on re-indexing and repeated ingestion. To cut other costs: enable `query_embedding_cache` for repeated queries, use metadata filters to shrink the search space, tune `k` and the reranker budget, and cache final answers separately.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/text_embedding",
+    "source": "interview:lc-retrieval-cost-scale",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-039",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "A user invokes their right to deletion for an uploaded contract. Your LangChain system has a vector store, a semantic answer cache and persisted chat histories. Which three actions are needed? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Delete the contract's chunks from the vector store by id (for example with `vector_store.delete(ids=[...])`), using ids you tracked at ingest",
+        "why": "Without recorded ids you cannot target the chunks; tracking them (or using a record manager) makes this possible."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Invalidate cached answers that were generated from that contract",
+        "why": "A cache can keep serving text derived from the deleted document."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Find and redact or delete stored chat histories that quote the contract",
+        "why": "Past model answers in persisted threads are copies of the data too."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Re-embed the remaining corpus so the deleted vectors no longer influence similarity",
+        "why": "Vectors are independent; removing some does not change the others."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Lower `k` so the deleted contract is less likely to be retrieved",
+        "why": "That is not deletion; the data is still stored and retrievable."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Rotate the embedding model so old vectors become unreadable",
+        "why": "Old vectors still exist and still map to text in the store."
+      }
+    ],
+    "explanation": "Deletion has to follow every derived copy: vectors, the original text in any docstore (for example a parent docstore), answer caches, chat histories and traces. Design for it at ingest: keep a mapping from source document to chunk ids, which the indexing API's record manager or stable ids give you.",
+    "reference": "https://docs.langchain.com/oss/python/integrations/vectorstores",
+    "source": "interview:lc-right-to-delete",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://prachub.com/interview-questions/reconcile-rag-document-expiry-chat-history-and-cold-audits"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-040",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the stages of a production retrieval pipeline for one user question, from first to last.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rewrite the question into several search queries (multi-query)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run lexical (BM25) and dense retrieval for each query, fetching a generous candidate pool",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Fuse the candidate lists with reciprocal rank fusion and drop duplicates",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rerank the fused candidates with a cross-encoder and keep the top few",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Format the kept chunks into the prompt and call the chat model",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Query transformation comes before search, fusion merges lists from different retrievers, and the expensive reranker runs on a small fused set right before generation. In LangChain terms: a `MultiQueryRetriever` over an `EnsembleRetriever`, wrapped in a `ContextualCompressionRetriever` with a reranker, feeding an LCEL chain or a retriever tool.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/contextual_compression/ContextualCompressionRetriever",
+    "source": "interview:lc-compression-rerank",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://vn.linkedin.com/in/thphat19",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://docs.langchain.com/oss/python/integrations/retrievers"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-041",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your `ParentDocumentRetriever` uses only a `child_splitter`. Answers are accurate, but some prompts exceed the model's context window because a matched parent is an entire 80-page manual. What is the best fix that keeps the precise child matching?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Make the child chunks larger so fewer of them match",
+        "why": "Larger children reduce matching precision and do not shrink the parents."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Add a `parent_splitter`, so parents are mid-sized sections and children are split from those",
+        "why": "Then the retriever returns a section, not the whole file, while matching still uses small children."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `search_kwargs={\"k\": 1}` so only one parent is returned",
+        "why": "One 80-page parent is still too large for the context window."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Store the parents in the vector store instead of the docstore",
+        "why": "That turns it back into plain large-chunk retrieval and loses precise matching."
+      }
+    ],
+    "explanation": "Without a `parent_splitter`, the parent is the whole raw document. With one, each document is first split into parents of a manageable size, and each parent is split into children for embedding. That gives three granularities: file, section (returned) and snippet (matched).",
+    "reference": "https://reference.langchain.com/python/langchain-classic/retrievers/parent_document_retriever",
+    "source": "interview:lc-parent-document-retriever",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rrl35s/companies_want_genai_architects_but_interview_for/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://reference.langchain.com/python/langchain-classic/retrievers/parent_document_retriever"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-042",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A design for an enterprise policy Q&A bot: a loader for the policy share, a recursive splitter, a hosted embedding model, PGVector, a hybrid BM25 plus dense retriever, a cross-encoder reranker and an evaluation set of 200 labelled questions. Ingestion is a one-off script that calls `PGVector.from_documents(...)`. Policies are revised weekly. What is the most serious gap?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "There is no MMR step, so answers may quote near-duplicate chunks",
+        "why": "Duplicate context wastes tokens, but it rarely produces wrong answers the way outdated policies do."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "There is no self-query retriever to turn questions into metadata filters",
+        "why": "Self-query is an optional refinement; its absence does not make answers wrong."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "There is no update path, so revised policies are never re-indexed and old versions are never removed",
+        "why": "After the first revision the bot answers from outdated text, and re-running the script would add duplicates."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The chunk overlap is not specified, so context may be cut mid-sentence",
+        "why": "Overlap is a tuning detail; a default value works acceptably."
+      }
+    ],
+    "explanation": "Interviewers expect a document Q&A design to cover the lifecycle, not just the query path: scheduled re-ingestion with the indexing API (record manager, `source_id_key`, incremental cleanup) or stable ids with upserts and deletes, plus re-running the evaluation set after each change. Retrieval quality features matter less than serving current content.",
+    "reference": "https://reference.langchain.com/python/langchain-core/indexing/api/index",
+    "source": "interview:lc-enterprise-docqa-design",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://fr.glassdoor.ca/Entretien/Capgemini-Entretien-E3803-RVW95903382.htm",
+        "https://www.glassdoor.ie/Interview/EPAM-Systems-Interview-E15544-RVW102905190.htm",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.techinterview.org/companies/langchain/"
+      ],
+      "companies": [
+        "Capgemini",
+        "EPAM",
+        "LangChain"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-043",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each retrieval failure with the LangChain retriever that most directly addresses it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`MultiQueryRetriever`",
+        "why": "Rewrites one question into several searches."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`EnsembleRetriever` with `BM25Retriever`",
+        "why": "Fuses lexical and dense rankings."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`ParentDocumentRetriever`",
+        "why": "Matches small chunks, returns larger parents."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ContextualCompressionRetriever` with a reranker",
+        "why": "Re-scores candidates and keeps the best."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Users phrase questions vaguely, and the wording of a single query decides which chunks are found",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Queries containing SKU codes miss the one page that mentions the code",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The right chunk is found, but it is too short for the model to answer from",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The top 20 hits include the answer, but it is ranked 14th and gets cut off at `k=4`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Diagnose before reaching for a fancier retriever: query wording problems call for query transformation, exact-term misses for hybrid search, missing surrounding context for parent-child chunking, and right-but-badly-ranked results for reranking. Measure each change on the same evaluation set.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/retrieval",
+    "source": "interview:lc-improve-retrieval",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.ie/Interview/EPAM-Systems-Interview-E15544-RVW102905190.htm",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "EPAM"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-044",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You move a working prototype from `InMemoryVectorStore` to FAISS with default settings and keep the rule \"discard results with `similarity_search_with_score` score below 0.8\". Recall collapses. Which two statements explain it? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`InMemoryVectorStore` returns cosine similarity, where higher is better",
+        "why": "Its score is computed with cosine similarity, so 1.0 is a perfect match."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "FAISS defaults to Euclidean (L2) distance, where lower is better, so the old rule keeps the worst matches",
+        "why": "The default `distance_strategy` is `EUCLIDEAN_DISTANCE`, so the score direction is reversed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "FAISS returns scores as percentages from 0 to 100",
+        "why": "FAISS returns raw distances, not percentages."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Scores from `similarity_search_with_score` are normalised to 0 to 1 by the `VectorStore` base class",
+        "why": "Raw scores are store-specific; normalised scores come only from `similarity_search_with_relevance_scores`, where a store supports it."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "FAISS needs `allow_dangerous_deserialization=True` before it returns scores",
+        "why": "That flag only affects `load_local`; it has nothing to do with scoring."
+      }
+    ],
+    "explanation": "Raw scores are not portable between stores: some return similarity, others distance, with different ranges. Use `similarity_search_with_relevance_scores` or `search_type=\"similarity_score_threshold\"` where the store provides a relevance function, and recalibrate thresholds on real queries after any change of store, metric or embedding model.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/knowledge-base",
+    "source": "interview:lc-vectorstore-choice",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://t.me/s/geekycod?after=557",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "LCH-VEC-045",
+    "domain": 3,
+    "skill": "embeddings-vectorstores",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your custom `BaseRetriever` implements only `_get_relevant_documents`, using a blocking HTTP client, and it is called with `await retriever.ainvoke(q)` inside an async FastAPI app. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`ainvoke` works: by default the sync method runs in a thread pool executor, so the event loop is not blocked",
+        "why": "`BaseRetriever` supplies an async default that wraps the sync hook with `run_in_executor`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Implementing `_aget_relevant_documents` with an async HTTP client avoids the thread hop and scales better under high concurrency",
+        "why": "A native async implementation does not use up executor threads for each in-flight request."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`ainvoke` raises `NotImplementedError` until `_aget_relevant_documents` is defined",
+        "why": "The async hook is optional; there is a working default."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The blocking call runs directly on the event loop thread and stalls every other request",
+        "why": "The default async path offloads the sync call to an executor thread."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "You must override `ainvoke` itself to support async callers",
+        "why": "Override the underscore hook; the public Runnable methods handle callbacks and config."
+      }
+    ],
+    "explanation": "Running a sync-only retriever through `ainvoke` executes the sync method on an executor thread (not the main thread). That is correct but uses a thread per concurrent call. For high-throughput async services, add `_aget_relevant_documents` backed by an async client.",
+    "reference": "https://reference.langchain.com/python/langchain-core/retrievers/BaseRetriever",
+    "roleLevel": 4
+  }
+]
