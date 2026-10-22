@@ -1,0 +1,34 @@
+{
+  "hooks": {
+    "summary": "Hooks are code the harness runs at fixed points in the agent loop, so unlike CLAUDE.md or prompts they always run. Know the events and which ones can block, how matchers and exit codes work, where each JSON output field goes, and how SDK callbacks differ from settings-file command hooks.",
+    "points": [
+      "Configuration nests three levels under `hooks`: event name, then matcher groups, then handlers. In settings files a handler is `command`, `http`, `mcp_tool`, `prompt` or `agent`. In the Agent SDK it is an in-process callback: `hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [fn], timeout }] }` (`HookMatcher` in Python). The SDK also runs settings-file hooks from whichever `settingSources` are loaded (all of them by default; `[]` loads none).",
+      "Matchers: `*`, `\"\"` or no matcher matches everything. A matcher made only of letters, digits, `_`, `-`, spaces, `,` and `|` is an exact name or list of names (`Edit|Write`). Any other character makes it an unanchored JS regex (`Edit.*` also matches `NotebookEdit`; use `^Edit$`). Matchers are case-sensitive and test the tool name, not arguments. MCP tools need `mcp__server__.*`. `Stop`, `UserPromptSubmit` and `PostToolBatch` have no matcher support.",
+      "The handler's `if` field filters by tool arguments with permission-rule syntax (`Bash(git *)`, `Edit(*.ts)`), only on tool events. It is best-effort for Bash, so enforce hard allow and deny rules with the permission system.",
+      "Exit codes: 0 means success (JSON on stdout applies), 2 means blocking error (stderr becomes the reason), and any other code is a non-blocking error, so the action goes ahead. Valid JSON with exit 1 still decides; exit 2 blocks even if the JSON says `allow`.",
+      "Events that can block on exit 2 include `PreToolUse`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `PreCompact` and `PostToolBatch`. `PostToolUse` only shows stderr to Claude (the tool already ran), `SessionStart` shows it to the user only, `Notification` ignores it, and `PermissionRequest` ignores exit 2 entirely (use `decision.behavior`).",
+      "PreToolUse returns `hookSpecificOutput.permissionDecision`: `allow`, `deny`, `ask` or `defer` (defer only in `-p` mode, with a single tool call in the turn). Precedence across hooks is deny > defer > ask > allow. A hook deny holds in every mode, including bypassPermissions; a hook allow never skips deny or ask rules.",
+      "`updatedInput` replaces the whole tool input, so spread the original fields. Permission rules are evaluated against the rewritten input. Pair it with `allow` to auto-approve or `ask` to show it to the user; `defer` ignores it. If several hooks rewrite input, the last to finish wins.",
+      "Output channels: `additionalContext` goes to Claude as a system reminder, `systemMessage` goes to the user, `permissionDecisionReason` goes to Claude on deny, and `continue: false` plus `stopReason` stops processing. Strings are capped at 10,000 characters; longer text is saved to a file and Claude gets a path plus a 2,000-character preview.",
+      "PostToolUse can add `additionalContext`, `decision: \"block\"` with a reason, or `updatedToolOutput` (it must match the tool's output shape, for example Bash's `{stdout, stderr, interrupted, isImage}`). The tool has already run, so redaction only changes what Claude sees. Use `PostToolBatch` (TypeScript callbacks or settings files) to inject context once per batch of parallel calls.",
+      "Stop hooks: exit 2 or `decision: \"block\"` keeps Claude working. Check `stop_hook_active` to avoid loops. Claude Code overrides after 8 consecutive continuations, but the count resets whenever Claude calls a tool. `SubagentStop` uses the same format and keeps the subagent running; for parent-side context use `PostToolUse` on the `Agent` tool.",
+      "SDK specifics: callbacks get `(input, toolUseID, { signal })`, and returning `{}` changes nothing. Async output (`async: true`, `async_` in Python) cannot block or add context. Python uses `continue_` and `async_`, and its `HookEvent` lacks SessionStart, SessionEnd, PostToolBatch and other TypeScript-only events, so use settings-file hooks there. `matcher` timeouts are in seconds.",
+      "Timeouts and failures: an SDK PreToolUse callback that times out blocks the call, while a command hook that times out fails open unless `onFailure: \"block\"` is set (v2.1.295+). A hook that can't start is a non-blocking error by default. `-p` and SDK sessions run repository hooks without the workspace trust dialog."
+    ],
+    "traps": [
+      "Using `exit 1` for a policy hook: it is a non-blocking error, so the tool call still runs.",
+      "Putting `permissionDecision` or `additionalContext` at the top level instead of inside `hookSpecificOutput`: the JSON parses, but the fields are silently ignored. A shell profile that echoes before the JSON has the same effect.",
+      "Returning `updatedInput` with only the changed field, which drops every other argument the tool needs.",
+      "Writing a matcher like `mcp__github` (exact match, matches nothing) or `.env` (matchers never see file paths).",
+      "A Stop hook that blocks on a condition Claude cannot fix: it loops, and tool calls keep resetting the 8-continuation cap.",
+      "Expecting `systemMessage` to reach the model, or stderr from an exit-0 hook to reach Claude: neither does.",
+      "Relying on `canUseTool` or a PermissionRequest hook for an invariant: calls that rules or modes approve never reach them, while PreToolUse runs for every call."
+    ],
+    "docs": [
+      { "title": "Agent SDK: Intercept and control agent behavior with hooks", "url": "https://code.claude.com/docs/en/agent-sdk/hooks" },
+      { "title": "Claude Code: Hooks reference", "url": "https://code.claude.com/docs/en/hooks" },
+      { "title": "Claude Code: Automate actions with hooks", "url": "https://code.claude.com/docs/en/hooks-guide" },
+      { "title": "Agent SDK: Configure permissions", "url": "https://code.claude.com/docs/en/agent-sdk/permissions" }
+    ]
+  }
+}

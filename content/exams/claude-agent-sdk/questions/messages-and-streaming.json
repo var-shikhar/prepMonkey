@@ -1,0 +1,2073 @@
+[
+  {
+    "id": "CSK-MSG-001",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript chat UI built on the Agent SDK only shows Claude's text once each block is complete. Which option makes `query()` also yield token-level updates as Claude generates them?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`includePartialMessages: true`",
+        "why": "This makes the SDK also yield `stream_event` messages that wrap the raw Claude API streaming events, such as `content_block_delta` with `text_delta` chunks."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`streaming: true`",
+        "why": "There is no `streaming` option. Streaming *input* (an async iterable prompt) is a different feature and does not add token deltas to the output."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`outputFormat: { type: 'stream' }`",
+        "why": "`outputFormat` only accepts `type: 'json_schema'` and is for structured output, not streaming."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`forwardSubagentText: true`",
+        "why": "That forwards subagents' text and thinking blocks as complete messages; it does not add token-level deltas for the main session."
+      }
+    ],
+    "explanation": "By default the SDK yields one complete `AssistantMessage` per content block after Claude finishes it. Setting `includePartialMessages` (Python: `include_partial_messages=True`) adds `StreamEvent` / `SDKPartialAssistantMessage` messages carrying raw API events, and your code accumulates the `text_delta` chunks itself.",
+    "reference": "Agent SDK docs: Stream responses in real-time",
+    "source": "interview:partial-messages-streaming",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/streaming-output",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-MSG-002",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "In the Python Agent SDK, which `ClaudeAgentOptions` field takes `{\"type\": \"json_schema\", \"schema\": ...}` so the agent returns validated JSON? Type the field name.",
+    "options": [],
+    "accepted": [
+      "output_format",
+      "output_format=",
+      "ClaudeAgentOptions.output_format"
+    ],
+    "explanation": "Python uses `output_format` and TypeScript uses `outputFormat`. Both take an object with `type: \"json_schema\"` and a JSON Schema in `schema`. When the run finishes, the validated object is on the result message's `structured_output` field.",
+    "reference": "Agent SDK docs: Get structured output from agents",
+    "source": "interview:structured-output-json-schema",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/479",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-MSG-003",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Every result message carries the agent's final text in its `result` field, including a result whose `subtype` is `error_max_turns`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Only the `success` variant has `result`. The `error_*` variants carry an `errors` list instead, so reading `result` there gives `undefined` (or `None` in Python)."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `result` exists only on `subtype: \"success\"`. Check the subtype before reading it."
+      }
+    ],
+    "explanation": "The result subtypes are `success`, `error_max_turns`, `error_max_budget_usd`, `error_during_execution` and `error_max_structured_output_retries`. All of them carry `session_id`, `num_turns`, `usage` and `total_cost_usd`, so you can still resume and account for cost after an error, but only `success` has the final `result` text.",
+    "reference": "Agent SDK docs: How the agent loop works (Handle the result)",
+    "source": "interview:result-message-usage-cost",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking",
+        "https://code.claude.com/docs/en/headless"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-MSG-004",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "This TypeScript loop never prints anything, although Claude clearly answers. What is wrong?\n\n```ts\nfor await (const message of query({ prompt: \"Summarize this project\" })) {\n  if (message.type === \"assistant\") {\n    for (const block of message.content ?? []) {\n      if (block.type === \"text\") console.log(block.text);\n    }\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Assistant messages have `type: \"assistant_message\"`, so the first check never matches",
+        "why": "The discriminator value is `\"assistant\"`; the check itself is fine."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The blocks are at `message.message.content`; the SDK wraps the API message",
+        "why": "`SDKAssistantMessage.message` is the Messages API `BetaMessage`; its `content` array holds the text and tool_use blocks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Text only arrives in `stream_event` messages unless `includePartialMessages` is turned off explicitly",
+        "why": "Partial messages are off by default, and complete assistant messages are always yielded either way."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Text blocks have `type: \"output_text\"`, so the inner check never matches",
+        "why": "Claude's text blocks have `type: \"text\"`, the same as in the Messages API."
+      }
+    ],
+    "explanation": "In TypeScript you narrow on the `type` string. `SDKAssistantMessage` and `SDKUserMessage` wrap the API message, so blocks live at `message.message.content`. In Python the `AssistantMessage` dataclass exposes `content` directly and you narrow with `isinstance`.",
+    "reference": "Agent SDK docs: How the agent loop works (Handle messages)",
+    "source": "interview:sdk-message-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-MSG-005",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each Agent SDK message type with what it tells your application.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`SystemMessage` with subtype `init`",
+        "why": "Session metadata at the start of the run."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`AssistantMessage`",
+        "why": "One content block of Claude's response."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`UserMessage`",
+        "why": "Tool results sent back to Claude."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ResultMessage`",
+        "why": "End of the loop, with outcome, usage and cost."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Which model, tools, MCP servers and permission mode this session is using",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Claude just finished a text block or requested a tool call",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The output of the `Bash` command Claude ran is going back to the model",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The run is over: did it succeed or hit a limit, and what did it cost?",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The five core types are `SystemMessage`, `AssistantMessage`, `UserMessage`, `StreamEvent` (only with partial messages on) and `ResultMessage`. The init system message carries session metadata, assistant messages carry one content block each, user messages carry tool results (and any input you stream in), and the result message ends the loop with subtype, usage, cost and session ID.",
+    "reference": "Agent SDK docs: How the agent loop works (Message types)",
+    "source": "interview:sdk-message-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-006",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A query runs with an `outputFormat` JSON schema. Where should your code read the validated object from?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "From the `result` string, after calling `JSON.parse` on it",
+        "why": "`result` holds the final assistant text; the validated object is delivered separately so you do not have to parse prose."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "From the `input` of the last `tool_use` block in the stream",
+        "why": "The agent does return its answer through a tool call, but that input may be a failed attempt; the docs say to read the validated value from the result."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "From `structured_output` on the result message",
+        "why": "The SDK validates the agent's output against your schema and puts the validated value on the result message's `structured_output` field."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "From a dedicated `structured_output` message that follows the result",
+        "why": "There is no separate message type for it; it is a field on the result message."
+      }
+    ],
+    "explanation": "With `outputFormat` (TypeScript) or `output_format` (Python), the agent can use any tools it needs and then returns JSON that the SDK validates, re-prompting on mismatch. Check `subtype === \"success\"` and that `structured_output` is present before using it.",
+    "reference": "Agent SDK docs: Get structured output from agents",
+    "source": "interview:structured-output-json-schema",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/479",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-MSG-007",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "After a `query()` call finishes, which field gives the estimated total cost of that call in US dollars?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`usage.cost_usd` on the last assistant message",
+        "why": "Assistant messages carry token counts in `usage`, not a dollar figure."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`total_cost_usd` on the result message",
+        "why": "The result message carries the cumulative estimated cost for the call, on success and error results alike."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`cost` on the init system message",
+        "why": "The init message is emitted before any model calls, so it cannot know the cost."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`billing.amount` on the session object",
+        "why": "There is no such field; cost comes from the result message."
+      }
+    ],
+    "explanation": "`total_cost_usd` is on every result message (typed optional in Python, so check for `None`). It is a client-side estimate computed from a bundled price table, so use it for budgeting and insight, not billing. For a per-model breakdown read `modelUsage` (`model_usage` in Python).",
+    "reference": "Agent SDK docs: Track cost and usage",
+    "source": "interview:result-message-usage-cost",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking",
+        "https://code.claude.com/docs/en/headless"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-MSG-008",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your agent dashboard wants to show which MCP servers connected and which tools Claude can use, before Claude does anything. Which message gives you that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The first `AssistantMessage`, whose `content` lists the available tools",
+        "why": "Assistant messages hold Claude's text and tool calls, not the session's tool inventory."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The result message, whose `permission_denials` lists every tool",
+        "why": "`permission_denials` lists tool calls that were denied, and it only arrives at the end."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The system message with subtype `init`, which lists the tools and MCP server status",
+        "why": "The init message is session metadata emitted at the start of the run, including each MCP server's connection status."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `stream_event` with type `message_start`, which is only available when partial messages are on",
+        "why": "`message_start` is a raw API event for one model response; it carries no tool or MCP inventory."
+      }
+    ],
+    "explanation": "The init `SystemMessage` (TypeScript `SDKSystemMessage`) describes the session: model, working directory, tools, MCP servers with status, slash commands, skills, plugins and permission mode. In Python these fields are in `SystemMessage.data`; in TypeScript they are top-level fields.",
+    "reference": "Agent SDK docs: TypeScript reference (SDKSystemMessage)",
+    "source": "interview:sdk-message-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-009",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Partial messages are off. Claude replies with one response that contains a short text block followed by a `Read` tool call. How do the assistant messages for that response arrive?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "One `AssistantMessage` whose `content` holds both blocks, sent when the response completes",
+        "why": "The SDK does not wait to bundle a response; it emits each non-empty block as soon as that block completes."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Two `AssistantMessage` objects, one per block, sharing the same API message ID",
+        "why": "Each message carries only its own block, and both have the same `message.message.id` (Python: `message_id`)."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "One `AssistantMessage` for the text, while the tool call arrives as a `UserMessage`",
+        "why": "The tool call is part of Claude's response, so it is an assistant message; the `UserMessage` carries the tool's result later."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Two `AssistantMessage` objects with different message IDs, one per API request",
+        "why": "Both blocks come from a single API response, so they share one ID."
+      }
+    ],
+    "explanation": "Claude Code emits an `AssistantMessage` as each non-empty content block completes. A response with a text block and a tool call therefore yields two messages with one block each and the same message ID. This matters for cost tracking: deduplicate per-step usage by message ID.",
+    "reference": "Agent SDK docs: Stream responses in real-time (Message flow)",
+    "source": "interview:assistant-message-granularity",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-010",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about Agent SDK result messages are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Error results such as `error_max_turns` still carry `session_id`, `num_turns`, `usage` and `total_cost_usd`",
+        "why": "All result subtypes carry these, so you can resume and account for cost after an error."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Hitting `maxBudgetUsd` ends the run with subtype `error_max_budget_usd`",
+        "why": "That is the dedicated subtype for the budget cap, just as `error_max_turns` is for the turn cap."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A run that hits the turn cap ends with subtype `success` and `is_error: true`",
+        "why": "The turn cap has its own subtype, `error_max_turns`. `success` with `is_error: true` is used for cases such as refusals and API errors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Error results carry the partial answer in `result` so you can show it to the user",
+        "why": "`result` exists only on `success`; error results carry an `errors` list."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Exactly one result message is emitted per `query()` call, even in streaming input mode",
+        "why": "In streaming input mode one call carries many user turns, and each turn emits its own result."
+      }
+    ],
+    "explanation": "Check `subtype` first: `success`, `error_max_turns`, `error_max_budget_usd`, `error_during_execution` or `error_max_structured_output_retries`. Every variant carries `session_id`, `num_turns`, `usage` and `total_cost_usd`. In streaming input mode you get one result per turn.",
+    "reference": "Agent SDK docs: How the agent loop works (Handle the result)",
+    "source": "interview:result-message-usage-cost",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking",
+        "https://code.claude.com/docs/en/headless"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-011",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A long-running Python agent should log a line whenever the SDK compacts the conversation history. How does that event show up in the message stream?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "As a `ResultMessage` with subtype `compacted`, after which the loop restarts with the summary",
+        "why": "Compaction does not end the loop, and there is no `compacted` result subtype."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "As an `AssistantMessage` whose content is the summary text",
+        "why": "The summary replaces old history inside the session; it is not delivered as an assistant reply."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "As a `SystemMessage` with subtype `compact_boundary` (its own type in TypeScript)",
+        "why": "The SDK marks compaction with a system message; in TypeScript its `compact_metadata` says whether it was `manual` or `auto` and how many tokens there were before."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only as a `stream_event`, so it is invisible unless partial messages are on",
+        "why": "The compact boundary is a regular message, delivered with or without partial messages."
+      }
+    ],
+    "explanation": "When the context window nears its limit, the SDK summarizes older history and emits a message with `type: \"system\"` and `subtype: \"compact_boundary\"`. Python delivers it as a `SystemMessage`; TypeScript has a dedicated `SDKCompactBoundaryMessage` with `compact_metadata.trigger` and `pre_tokens`. Use a `PreCompact` hook if you need to act before compaction happens.",
+    "reference": "Agent SDK docs: How the agent loop works (Automatic compaction)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-012",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "In the TypeScript Agent SDK, with `includePartialMessages: true`, what is the value of the `type` field on the messages that wrap raw Claude API streaming events? Type the exact string.",
+    "options": [],
+    "accepted": [
+      "stream_event",
+      "\"stream_event\"",
+      "'stream_event'"
+    ],
+    "explanation": "TypeScript calls these `SDKPartialAssistantMessage`, with `type: 'stream_event'` and the raw API event in `event`. Python calls the class `StreamEvent`, imported from `claude_agent_sdk.types`. Both contain raw events, not accumulated text.",
+    "reference": "Agent SDK docs: Stream responses in real-time (StreamEvent reference)",
+    "source": "interview:partial-messages-streaming",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/streaming-output",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-013",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "With partial messages on, you want to show a tool's arguments as Claude writes them. Which events give you the tool input, and how should you use them?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`content_block_delta` events with `text_delta`; each one is a complete JSON object you can parse right away",
+        "why": "`text_delta` carries prose. Tool input comes in a different delta type, and individual chunks are not valid JSON."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`input_json_delta` deltas; append each `partial_json` and parse at `content_block_stop`",
+        "why": "Tool input streams as JSON fragments. `content_block_start` gives the tool name, and the block is complete at `content_block_stop`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`message_delta` events, whose `input` field grows with each event",
+        "why": "`message_delta` carries message-level updates such as stop reason and usage, not tool input."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`tool_progress` events, which carry the partially written arguments",
+        "why": "Tool progress messages report elapsed time for tools that are already running; they do not carry the arguments."
+      }
+    ],
+    "explanation": "A streamed tool call is `content_block_start` (a `tool_use` block with the tool name), then `content_block_delta` events with `delta.type === \"input_json_delta\"` whose `partial_json` strings you concatenate, then `content_block_stop`. Only parse once the block is complete.",
+    "reference": "Agent SDK docs: Stream responses in real-time (Stream tool calls)",
+    "source": "interview:partial-messages-streaming",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/streaming-output",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-014",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript service builds its output schema with `z.toJSONSchema(Invoice)` and passes it to `outputFormat`. The run fails at startup with a schema error, although the Zod schema is simple. What is the most likely fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Wrap the schema in `{ type: \"object\", properties: { result: ... } }`, because the SDK requires the root object to have a single `result` key",
+        "why": "Any object schema works at the root; the SDK has no requirement for a `result` key."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pass the Zod object itself, since `outputFormat.schema` accepts Zod types directly",
+        "why": "`schema` takes a JSON Schema object (`Record<string, unknown>`), not a Zod type."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Call `z.toJSONSchema(Invoice, { target: \"draft-7\" })`, because the SDK validates with draft-07 and Zod emits draft 2020-12 by default",
+        "why": "The SDK rejects schemas that declare a newer draft, and Zod's default output declares 2020-12 in `$schema`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Remove `outputFormat` and ask for JSON in the system prompt, since schemas only work without tools",
+        "why": "Structured output is designed to work after multi-turn tool use, and prompt-only JSON loses validation."
+      }
+    ],
+    "explanation": "The SDK validates schemas against JSON Schema draft-07, so a schema that declares a newer version is rejected. An invalid schema fails the run at startup with an error naming the problem (before v2.1.205 it was silently ignored). With Zod, convert with `target: \"draft-7\"`; with Pydantic, `.model_json_schema()` works.",
+    "reference": "Agent SDK docs: Get structured output from agents (Zod and Pydantic)",
+    "source": "interview:structured-output-json-schema",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/479",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-015",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "With partial messages on, a `stream_event` message whose `parent_tool_use_id` is non-null contains token deltas from a subagent, so you can stream each subagent's text into its own panel.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Stream events are emitted for the main session only, so their `parent_tool_use_id` is always null."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: subagent token deltas are not forwarded. Attribute subagent output using complete messages, which carry `parent_tool_use_id`."
+      }
+    ],
+    "explanation": "`parent_tool_use_id` on `StreamEvent` / `SDKPartialAssistantMessage` is always `None` / `null`. To show subagent output, use complete assistant and user messages, whose `parent_tool_use_id` names the Agent tool call that started the subagent, and set `forwardSubagentText` if you need their text and thinking blocks too.",
+    "reference": "Agent SDK docs: Stream responses in real-time (StreamEvent reference)",
+    "source": "interview:parent-tool-use-id",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/subagents",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-016",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your TypeScript host sees an assistant message with `error: \"overloaded\"`, and later another with `error: \"rate_limit\"`. What is the difference?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`overloaded` means the API returned 529 because the service is at capacity; `rate_limit` means a 429 against your own quota",
+        "why": "The TypeScript reference draws exactly this line, so the remedies differ: wait out capacity, or reduce or spread your own traffic."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`overloaded` means your context window is full; `rate_limit` means the API returned 529",
+        "why": "A full context is handled by compaction, and 529 is the overloaded case, not the rate limit case."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "They are aliases; newer CLIs send `overloaded` where older ones sent `rate_limit`",
+        "why": "Both values exist side by side in `SDKAssistantMessageError` with different meanings."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`overloaded` comes from running too many parallel tool calls at once; `rate_limit` comes from spawning too many subagents",
+        "why": "Both come from the API's HTTP response, not from how many tools or subagents the agent runs."
+      }
+    ],
+    "explanation": "`SDKAssistantMessageError` includes `rate_limit` (429 against your quota), `overloaded` (529, server at capacity), `authentication_failed`, `billing_error`, `invalid_request`, `model_not_found`, `server_error`, `max_output_tokens` and others. Claude Code retries retryable API errors itself and emits `system` / `api_retry` messages while it does.",
+    "reference": "Agent SDK docs: TypeScript reference (SDKAssistantMessage)",
+    "source": "interview:sdk-error-handling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/troubleshooting",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-017",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each usage field from an Agent SDK run with what it counts.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`cache_read_input_tokens`",
+        "why": "Prompt tokens served from an existing cache entry."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`cache_creation_input_tokens`",
+        "why": "Prompt tokens written to a new cache entry."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`input_tokens`",
+        "why": "Uncached prompt tokens of the main loop."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`modelUsage` / `model_usage`",
+        "why": "Per-model totals, including subagents."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Tokens billed at a reduced rate because the same prefix was cached earlier",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Tokens billed at a higher rate than normal input because they were stored for reuse",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Prompt tokens that were neither read from nor written to the cache",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A map that shows how much a Haiku subagent and the Opus main agent each cost",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The SDK uses prompt caching automatically. Cache writes cost more than normal input and cache reads cost less, so track `cache_creation_input_tokens` and `cache_read_input_tokens` separately from `input_tokens`. `modelUsage` maps each model to its tokens and `costUSD`, covering the main loop, subagents and internal calls such as compaction.",
+    "reference": "Agent SDK docs: Track cost and usage (Track cache tokens)",
+    "source": "interview:sdk-prompt-caching",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-018",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Partial messages are on. Put the checks your loop makes, for each message, to print Claude's text as it streams in the order the docs give them.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Check that the message is a stream event (`StreamEvent` / `type === \"stream_event\"`)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Read the raw API event from the message's `event` field",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Check that the event's `type` is `content_block_delta`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Check that `delta.type` is `text_delta`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Write `delta.text` to the output without a newline",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Partial messages arrive mixed with the normal assistant, user and result messages, so you first pick out stream events, then look at the wrapped API event, then keep only `content_block_delta` events whose delta is a `text_delta`. Other deltas, such as `input_json_delta`, carry tool input rather than text.",
+    "reference": "Agent SDK docs: Stream responses in real-time (Enable streaming output)",
+    "source": "interview:partial-messages-streaming",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/streaming-output",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-MSG-019",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Claude delegates work to a subagent through the Agent tool. Which messages in the stream can carry a non-null `parent_tool_use_id` pointing at that Agent tool call? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Assistant messages that the subagent produces, such as its own tool calls",
+        "why": "Messages produced inside a subagent's context carry the ID of the tool call that started it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "User messages carrying the results of the subagent's own tool calls",
+        "why": "The subagent's tool results also belong to its context, so they carry the same parent ID."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`stream_event` messages with the subagent's token deltas",
+        "why": "Stream events are emitted for the main session only, and their `parent_tool_use_id` is always null."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The final result message of the whole `query()` call",
+        "why": "The result message describes the whole run and has no `parent_tool_use_id` field."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The init system message, which lists the subagents",
+        "why": "The init message is session metadata; it lists agent names but carries no parent tool ID."
+      }
+    ],
+    "explanation": "Messages from the main conversation carry `null` in `parent_tool_use_id`. Messages from a subagent carry the ID of the Agent `tool_use` block that started it, so you can group them under that call. In TypeScript they also carry `agent_id`, which stays stable when the subagent is resumed.",
+    "reference": "Agent SDK docs: Subagents (Detect subagent invocation)",
+    "source": "interview:parent-tool-use-id",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/subagents",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-020",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After adding `outputFormat` to a query, your UI's step list shows a tool called `StructuredOutput` that nobody on the team defined, sometimes two or three times in one run. What is going on, and what should the UI do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A plugin injected the tool; remove plugins from the session, or add `StructuredOutput` to `disallowedTools`",
+        "why": "Claude Code itself adds the tool when you set `outputFormat`; blocking it would stop structured output from working."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Claude Code adds it so the agent can return its answer; repeats are retries after failed validation, so hide them",
+        "why": "The tool appears in the init `tools` list. A call whose object fails the schema gets an `is_error: true` result, and the agent calls it again."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is a subagent the SDK spawns to format JSON; hide every message whose `parent_tool_use_id` is set",
+        "why": "No subagent is involved; the main agent calls the tool, so `parent_tool_use_id` does not identify these calls."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It means the schema is invalid and the SDK is falling back to free text; fix the schema until the tool disappears from the stream",
+        "why": "An invalid schema fails the run at startup. The tool is the normal mechanism for every structured output run."
+      }
+    ],
+    "explanation": "When you set `outputFormat` / `output_format`, the stream carries a `StructuredOutput` tool call (a `tool_use` block whose input is the object for your schema) and a `tool_result` reading `Structured output provided successfully`. A failed attempt gets `is_error: true` and the agent tries again. Read the data from the result's `structured_output`. To hide the mechanism, skip `tool_use` blocks named `StructuredOutput` and match their `tool_result` blocks by `tool_use_id`, since results carry no tool name.",
+    "reference": "Agent SDK docs: Get structured output (Recognize the StructuredOutput tool call)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-021",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Partial messages are on. Claude's response starts with a text block. Put these items in the order your loop receives them for that first block.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Stream event `message_start`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Stream event `content_block_start` for the text block",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Stream events `content_block_delta` carrying `text_delta` chunks",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An `AssistantMessage` holding the complete text block",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Stream event `content_block_stop` for the text block",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "The docs' message-flow listing shows that each complete `AssistantMessage` arrives just before that block's `content_block_stop` event. After the last block come `message_delta` (stop reason and usage) and `message_stop`; then the tools run, the next response streams, and finally the `ResultMessage` arrives. If you render from both stream events and complete messages, expect the complete block before its `content_block_stop` so you do not draw it twice.",
+    "reference": "Agent SDK docs: Stream responses in real-time (Message flow)",
+    "source": "interview:partial-messages-streaming",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/streaming-output",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-022",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python service treats `ResultMessage.subtype == \"success\"` as \"the agent did its job\". An audit finds some of those results have `is_error=True`. What do they mean, and how should the service tell the cases apart?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "They mean a tool returned an error mid-run but the agent recovered; they are safe to treat as success",
+        "why": "Tool errors during the run do not set `is_error` on a success result. `is_error=True` marks a turn that ended in an error state."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The turn ended in an error state, such as a refusal or an API error; branch on `stop_reason` and `api_error_status`",
+        "why": "On `success`, `is_error=True` covers a refusal (`stop_reason == \"refusal\"`), a deferred tool that was unavailable on resume, or an error reported in place of a model response."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "They mean structured output validation failed once and then succeeded on a retry, so you can read `structured_output` as usual",
+        "why": "Validation retries do not set `is_error`. Exhausted retries end with the `error_max_structured_output_retries` subtype instead."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "They mark results emitted after a `/clear`; drop them because they are duplicates",
+        "why": "A `/clear` starts a new running total and session ID; it does not mark results as errors."
+      }
+    ],
+    "explanation": "`is_error` is always true on the `error_*` subtypes. On `success` it is true in three cases that `stop_reason` separates: `\"refusal\"` (read the refusal in `result` or the preceding assistant message), `\"tool_deferred_unavailable\"`, or any other value, meaning Claude Code reported an error in place of a model response. For that last case, read `terminal_reason`, `result` and `api_error_status`.",
+    "reference": "Agent SDK docs: Python reference (ResultMessage)",
+    "source": "interview:sdk-error-handling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/troubleshooting",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-023",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A cost dashboard sums `usage.output_tokens` from every main-loop assistant message (deduplicated by message ID). The totals are far below what the result messages report, and responses with long answers show almost no output tokens. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Per-step `output_tokens` is a placeholder from `message_start`; read output tokens from the result's `usage` or `modelUsage`",
+        "why": "Assistant messages are built from the usage reported when the response began. The real count arrives at the end and is added to the result message."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Output tokens are counted only on the final text-only assistant message, so tool-calling steps report zero",
+        "why": "Every assistant message from a response carries the same placeholder; the final step is not special."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Deduplicating by message ID drops the steps with the most output; sum every assistant message instead",
+        "why": "Messages from one response share an ID and identical usage, so summing all of them double-counts rather than fixing the gap."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Cached output is excluded from `output_tokens`, so add `cache_read_input_tokens` to each step's figure to get the real output count",
+        "why": "Cache reads are input tokens. Output tokens are never cached."
+      }
+    ],
+    "explanation": "The deduplicated per-step values are accurate for input and cache tokens, but per-step `output_tokens` is only what the API had reported at `message_start`. Read output tokens from the result's `usage` or per model from `modelUsage`. To watch the count grow live, turn on partial messages and read `usage` from each `message_delta` stream event.",
+    "reference": "Agent SDK docs: Track cost and usage (Read output tokens from the result message)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-024",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An agent delegates most of its work to subagents. Which statements about the result message's accounting fields are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`usage` counts only the top-level agent loop, so it undercounts once subagents run",
+        "why": "The docs label `usage` main-loop only; subagent and auxiliary calls are excluded."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`modelUsage` (`model_usage` in Python) includes subagent requests, broken down by model",
+        "why": "It covers every model call through the query pipeline: main loop, subagents and internal calls such as compaction."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`total_cost_usd` excludes subagents, so you must add each subagent's own result to it",
+        "why": "`total_cost_usd` includes subagent requests, and subagents do not emit their own result messages to your loop."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`usage` and `modelUsage` always agree, because both are summed from the same assistant messages",
+        "why": "They have different scopes: `usage` is main loop only, while `modelUsage` covers the whole tree."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Subagent spend is reported only in a separate per-subagent result message",
+        "why": "There is no per-subagent result message in the parent stream; subagent spend is folded into `total_cost_usd` and `modelUsage`."
+      }
+    ],
+    "explanation": "For whole-tree accounting use `modelUsage` / `model_usage` or `total_cost_usd`; `usage` covers the main loop only (and in streaming input mode only the current turn). `modelUsage` excludes helper calls outside the query pipeline, such as the permission classifier and token-count probes, and all of these values are estimates.",
+    "reference": "Agent SDK docs: Track cost and usage (Get the total cost of a query)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-025",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A run with `outputFormat` ends with `subtype: \"success\"`, but `structured_output` is `undefined`. The code stores whatever is there, and empty records reach the database. What should the code do, and what should you check first?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Treat it as success and parse `result` as JSON, since the agent put the object there instead",
+        "why": "`result` is the final text and is not validated against your schema; parsing it bypasses the guarantee you wanted."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retry the identical query in a loop until `structured_output` appears, since this is a transient fault",
+        "why": "If the cause is a refusal or a schema no output can satisfy, the same request will fail the same way."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Treat it as a failure; check `stop_reason` for `\"refusal\"`, then look for schema constraints that contradict each other",
+        "why": "The troubleshooting guide lists a declined request and an unsatisfiable schema (for example `minLength` greater than `maxLength`) as the causes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Treat it as a failure, and raise the SDK's structured output retry limit so that validation keeps trying for longer next time",
+        "why": "No `Options` field sets the retry count, and exhausted retries end with `error_max_structured_output_retries`, not `success`."
+      }
+    ],
+    "explanation": "Use validated data only when `subtype === \"success\"` and `structured_output` is present; handle everything else as a failure. A `success` result without structured output usually means Claude declined (`stop_reason === \"refusal\"`) or the schema cannot be satisfied. If you find no contradiction, simplify the schema until outputs validate and add constraints back one at a time.",
+    "reference": "Agent SDK docs: Troubleshooting (structured_output is None but the result says success)",
+    "source": "interview:structured-output-json-schema",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/479",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-026",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You render each subagent's work as a collapsible nested transcript, grouped by `parent_tool_use_id`. The groups show the subagent's tool calls and results, but none of its explanations or reasoning. What change fixes this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Turn on `includePartialMessages` and group the stream events by `parent_tool_use_id`",
+        "why": "Stream events are emitted for the main session only, with `parent_tool_use_id` always null."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Read the subagent's text from the `tool_use_result` of the Agent call and split it into steps",
+        "why": "That gives you the subagent's final report, not its step-by-step text and thinking."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Set `forwardSubagentText: true` so the subagents' text and thinking blocks are forwarded",
+        "why": "By default Claude Code emits only a foreground subagent's `tool_use` and `tool_result` blocks after its first message."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `includeHookEvents: true`, because subagent text is delivered through `SubagentStop` hook messages",
+        "why": "Hook lifecycle events report hooks running; they do not carry the subagent's conversation."
+      }
+    ],
+    "explanation": "Without `forwardSubagentText`, a foreground subagent appears as its first user message (the prompt that drives it) followed by its tool calls and tool results, which is enough for a progress counter. With the option on, its text and thinking blocks are forwarded too, at every nesting depth, each carrying the ID of the Agent or Skill tool call that started that run.",
+    "reference": "Agent SDK docs: TypeScript reference (Options: forwardSubagentText)",
+    "source": "interview:parent-tool-use-id",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/subagents",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-027",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In streaming input mode, one `query()` call emits a result message per user turn. To get the call's total estimated cost (with no `/clear` sent), you should add up `total_cost_usd` from every result.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Each result already carries the running total for the call so far, so summing counts earlier turns again and again."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: read `total_cost_usd` (and `modelUsage`) from the latest result instead of summing across results."
+      }
+    ],
+    "explanation": "In streaming input mode `total_cost_usd` and `modelUsage` are running totals for the whole call (plus any spend restored on resume), while `usage` covers only the current turn's main loop. The totals reset only when your app sends `/clear`, `/reset` or `/new`.",
+    "reference": "Agent SDK docs: Track cost and usage (Track costs in streaming input mode)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-028",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "The agent keeps producing objects that fail your `outputFormat` schema until it runs out of attempts. Type the `subtype` of the result message that ends the run.",
+    "options": [],
+    "accepted": [
+      "error_max_structured_output_retries",
+      "\"error_max_structured_output_retries\""
+    ],
+    "explanation": "`error_max_structured_output_retries` means no valid output remained after several attempts. It can also follow a model fallback that retracted an already-completed output with no successful retry, so check the result's `errors` list to tell the two causes apart before debugging your schema.",
+    "reference": "Agent SDK docs: Get structured output (Error handling)",
+    "source": "interview:structured-output-json-schema",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/479",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-029",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your UI renders tool calls live from stream events. When a user interrupts mid-response, the UI sometimes shows a tool call with half-written arguments as \"ready\". On a current SDK, how do you detect that case from the stream?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A cut tool call still gets `content_block_stop`, followed by an `error` event naming the block",
+        "why": "A cut tool call is the one block type that does not get its `content_block_stop`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The stream simply ends with no `message_stop`, so any open block at the end of the turn is incomplete",
+        "why": "On current versions a cut stream still delivers `message_stop` before the turn ends; ending without it was the old behaviour."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`message_stop` arrives while the tool call's block is still open, with no `content_block_stop` for it",
+        "why": "A cut text or thinking block gets its `content_block_stop`; a cut tool call does not."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `input_json_delta` chunks of a cut call carry `partial: true`, which you check before rendering",
+        "why": "Delta events have no such flag; you detect incompleteness from the missing `content_block_stop`."
+      }
+    ],
+    "explanation": "If a stream is cut off by an interrupt or a dropped connection, you still receive that message's `message_stop`. Text and thinking blocks are closed with `content_block_stop`, but a cut tool call is not, so an open tool block at `message_stop` has incomplete input. Before Claude Code v2.1.290 (bundled from TypeScript SDK v0.3.290 and Python SDK v0.2.164), a cut stream could end without `message_stop`.",
+    "reference": "Agent SDK docs: Stream responses in real-time (Handle a stream that's cut off)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-030",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Product wants a banner like \"Claude is busy, retrying (attempt 2 of 10) in 4s\" while the agent waits out API errors. Which message should the UI listen for?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A result message with subtype `error_during_execution`, which the SDK repeats once for every retry attempt",
+        "why": "A result ends the turn. Retries happen inside the turn, before any result."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A system message with subtype `api_retry`, carrying `attempt`, `max_retries` and `retry_delay_ms`",
+        "why": "Claude Code emits it before each retry of a retryable API error, along with an `error` category such as `overloaded` or `rate_limit`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `stream_event` with type `error`, which only arrives when partial messages are on",
+        "why": "Retry progress is reported by its own system message, delivered whether or not partial messages are on."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An assistant message with `error` set, whose `content` holds the attempt count",
+        "why": "Assistant messages may carry an `error` category, but not attempt numbers or delays."
+      }
+    ],
+    "explanation": "When an API request fails with a retryable error, Claude Code emits a `system` / `api_retry` message before retrying. Its fields are `attempt` (from 1), `max_retries`, `retry_delay_ms`, `error_status` (or `null` when no HTTP response arrived) and `error`. TypeScript types it as `SDKAPIRetryMessage`.",
+    "reference": "Claude Code docs: Run Claude Code programmatically (Handle API retries)",
+    "source": "interview:sdk-error-handling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/troubleshooting",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-031",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This TypeScript code fails to compile with `Property 'result' does not exist on type 'SDKResultMessage'`. What is the right fix?\n\n```ts\nfor await (const message of query({ prompt })) {\n  if (message.type === \"result\") {\n    console.log(message.result);\n  }\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Cast to `any`, because the SDK's type definitions lag behind the runtime",
+        "why": "The types are accurate: error results really have no `result`. Casting hides a real bug."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Read `message.message.content` instead, because the result text lives on the nested Messages API message",
+        "why": "Result messages do not wrap an API message; that nesting applies to assistant and user messages."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Change the check to `message.type === \"success\"`",
+        "why": "`success` is a value of `subtype`, not of `type`, so this check would never match."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Narrow on `message.subtype === \"success\"` before reading `result`; handle error subtypes separately",
+        "why": "`SDKResultMessage` is a union. Only the success arm has `result`; the error arms have `errors`."
+      }
+    ],
+    "explanation": "`SDKResultMessage = SDKResultSuccess | SDKResultError`. Narrowing on `subtype === \"success\"` gives you `result` and `structured_output`, while the error arm (`error_max_turns`, `error_max_budget_usd`, `error_during_execution`, `error_max_structured_output_retries`) gives you `errors: string[]`. The compiler is pointing at the same bug the docs warn about.",
+    "reference": "Agent SDK docs: TypeScript reference (SDKResultMessage)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-MSG-032",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are building a timeline that shows each tool call with its outcome, from complete messages only. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A `tool_result` block carries only the `tool_use_id` of its call, so keep a map from each `tool_use` block's `id` to its name and input",
+        "why": "Results do not repeat the tool name; you join them to calls by ID."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "In TypeScript, a user message carrying a `tool_result` has `tool_use_result`, the tool's structured output object rather than the text sent to the model",
+        "why": "Its shape depends on the tool, so it is typed `unknown`; the docs list the built-in output types."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tool results arrive as assistant messages, right after the `tool_use` block they answer",
+        "why": "Tool results go back to Claude, so they arrive as user messages."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A subagent's tool calls are never emitted unless `forwardSubagentText` is on",
+        "why": "By default a subagent's `tool_use` and `tool_result` blocks are emitted; the option adds its text and thinking."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Each tool result also arrives as a `stream_event`, so the timeline needs partial messages on",
+        "why": "Tool results are complete user messages; stream events only carry the model's streamed output."
+      }
+    ],
+    "explanation": "Claude's `tool_use` blocks arrive in assistant messages and the matching `tool_result` blocks arrive in user messages; pair them by `tool_use_id`. `tool_use_result` gives you structured data to render from (for example `AgentOutput` for the Agent tool) instead of parsing the text Claude saw.",
+    "reference": "Agent SDK docs: TypeScript reference (SDKUserMessage)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-033",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You need the session ID of a `query()` run so a later request can resume it. Which ways of reading it are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`session_id` on the result message, in either SDK, on success and error results alike",
+        "why": "Every result carries `session_id`, so you can resume even after an error such as hitting the turn cap."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "In TypeScript, `session_id` on the init system message, as soon as the run starts",
+        "why": "TypeScript exposes it as a top-level field on `SDKSystemMessage`, which arrives before any model output."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "In Python, `message.session_id` on the init `SystemMessage`",
+        "why": "Python's `SystemMessage` has only `subtype` and `data`; the init session ID is at `message.data[\"session_id\"]`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`message.message.id` on the first assistant message",
+        "why": "That is the API message ID of one model response, not the session ID."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`options.sessionId` after the loop finishes, because the SDK writes it back into your options object",
+        "why": "The SDK does not mutate your options; the ID comes from the messages."
+      }
+    ],
+    "explanation": "Capture the ID from `ResultMessage.session_id` (both SDKs), which is present on every result. If you need it earlier, TypeScript has it directly on the init `SystemMessage`, while Python nests it in `SystemMessage.data`. In Python, `ClaudeSDKClient` tracks the session across calls for you.",
+    "reference": "Agent SDK docs: Session management (Capture the session ID)",
+    "source": "interview:session-id-from-init",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/sessions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-034",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A support app runs one `query()` per user request and resumes the same session each time with `resume`. Yesterday's call ended with `total_cost_usd: 0.40`. Today's resumed call ends with `total_cost_usd: 0.65`. The process exited normally both times, on a current SDK. What did today's call cost, and how should per-request metering work?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "$0.65; each `query()` call reports only its own spend, so add the per-call totals together to get the session cost",
+        "why": "That was true before Claude Code v2.1.277. Resumed calls now restore the session's saved totals."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "About $0.25; resumed results include the session's earlier spend, so meter each request as a difference",
+        "why": "Claude Code saves totals to the transcript on a normal exit and restores them on resume, so the first result already carries the earlier turns."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "$1.05; resumed calls report the earlier total and today's spend separately, so add both",
+        "why": "Results carry one running total, not separate figures to add together."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It cannot be known from the results, because `total_cost_usd` resets to zero on resume",
+        "why": "Totals reset on `/clear`, `/reset` or `/new`, not on resume; on resume they continue from the saved figure."
+      }
+    ],
+    "explanation": "Independent calls report only their own spend; calls that resume or fork a session continue from the total its transcript saved. Read the latest result for the session total, and take differences for per-request figures; summing double-counts. `maxBudgetUsd` still counts only the spend since this call started. All of these are client-side estimates.",
+    "reference": "Agent SDK docs: Track cost and usage (Accumulate costs across multiple calls)",
+    "source": "interview:cost-cumulative-on-resume",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/469",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-035",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "One streaming input `query()` call produced these results in order: turn 1 `total_cost_usd: 0.10`, turn 2 `0.30`, then your app sent `/clear` and that turn's result showed `0.02` with a new `session_id`, then turn 4 showed `0.12`. What is the call's total estimated cost?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "$0.12, because the latest result always holds the running total for the whole call",
+        "why": "The running total starts over at each `/clear`, so the latest result covers only the turns since the reset."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "$0.54, the sum of all four results",
+        "why": "Each result supersedes the ones before it within the same reset segment, so summing counts turns more than once."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "$0.42, the last result before the `/clear` plus the final result",
+        "why": "Add the last result from before each `/clear` to the call's final result; every other result is superseded."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "$0.44, the last result before the `/clear` plus the `/clear` turn plus the final result",
+        "why": "The `/clear` turn's own result is already included in the later results of that segment."
+      }
+    ],
+    "explanation": "In streaming input mode `total_cost_usd` and `modelUsage` are running totals that reset only when your app sends `/clear`, `/reset` or `/new`. The `/clear` turn's result covers only what ran since the reset and carries a new `session_id`; later results keep counting from there. TypeScript also emits an `SDKConversationResetMessage` at each reset (Python: `ConversationResetMessage`).",
+    "reference": "Agent SDK docs: Track cost and usage (Track costs in streaming input mode)",
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-MSG-036",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A single-shot run ends with a final `error_during_execution` result after the Claude Code process crashed, and its `total_cost_usd`, `usage` and `modelUsage` are all zero. What can you recover, and how? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Sum `usage` from the assistant messages, counting each API message ID once, to recover the main loop's input and cache tokens",
+        "why": "This is the documented fallback when no earlier result exists, as in a single-shot call."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Output tokens, USD cost and subagent usage cannot be recovered from those assistant messages",
+        "why": "Per-step `output_tokens` is a placeholder and subagent usage is not in the main loop's messages, so the fallback is partial."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Resume the session; the first result of the resumed call will report the crashed run's exact spend",
+        "why": "Totals are saved to the transcript when the process exits normally, which a crash is not."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Read the earlier result from this run, which holds the running total up to the crash",
+        "why": "A single-shot call has no earlier result; that recovery step applies to streaming input mode after the first turn."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Treat the zeroes as accurate: a crashed run is not charged",
+        "why": "Tokens consumed before the crash were still used; the zeroed result simply could not report them."
+      }
+    ],
+    "explanation": "After a crash, Claude Code emits a final `error_during_execution` result (with `stop_reason` null) and exits; its cost fields may be zeroed. In streaming input mode, use the previous turn's result if one exists and was not the `/clear` itself. Otherwise sum the assistant messages' `usage` after the last result, counting each response once: that recovers main-loop input and cache tokens only.",
+    "reference": "Agent SDK docs: Track cost and usage (Recover totals after a session crash)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-037",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A metering job records the tokens of each run from the result's `usage`. For runs that end with `error_max_budget_usd`, finance sees that the recorded tokens do not explain the dollars in `total_cost_usd`. What is happening?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`total_cost_usd` includes the 1.1x data residency multiplier, but `usage` never records which region served the request",
+        "why": "The residency multiplier is applied per response on every kind of run, so it cannot explain a gap that appears only on budget-capped runs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Budget-capped runs bill a fixed cancellation fee that appears in the cost but not in the tokens",
+        "why": "There is no cancellation fee; the gap comes from what each field includes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`total_cost_usd` is rounded up to the cap on budget errors, while `usage` stays exact",
+        "why": "The cost can pass the cap, but it is not rounded to it."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`usage` omits the response that crossed the budget, while `total_cost_usd` and `modelUsage` include it",
+        "why": "The docs call out this case and recommend accounting from `total_cost_usd` or `modelUsage` rather than `usage`."
+      }
+    ],
+    "explanation": "Both success and error results carry cost fields, but on some error results `usage` reports less than the call spent: on `error_max_budget_usd` it omits the response that crossed the budget, and after a session crash every field may be zeroed. `usage` also excludes subagents. `modelUsage` gives per-model tokens and cost for the whole tree.",
+    "reference": "Agent SDK docs: Track cost and usage (Track costs on failed conversations)",
+    "source": "interview:result-message-usage-cost",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking",
+        "https://code.claude.com/docs/en/headless"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-038",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A SaaS team plans to invoice each customer by summing `total_cost_usd` from that customer's agent runs. As the reviewer, what do you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Approve it; the field is computed by the API and matches the invoice to the cent",
+        "why": "The value is computed locally by the SDK from a bundled price table, not returned by the API."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Use it only for budgeting and live caps; bill from the Usage and Cost API or Console data",
+        "why": "The docs warn not to bill end users or trigger financial decisions from these estimated fields."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Approve it, but sum `usage.input_tokens` and `usage.output_tokens` and multiply by list price instead",
+        "why": "`usage` is main-loop only and per-step output counts are placeholders, so this is less accurate, not more."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Approve it, but pin the SDK version so the price table cannot drift",
+        "why": "A pinned price table still drifts when prices change, cannot know some billing rules, and may not recognize newer models."
+      }
+    ],
+    "explanation": "`total_cost_usd` and `costUSD` are client-side estimates computed from a price table bundled at build time (or a `modelPricing` table). They drift when pricing changes, when the SDK does not recognize a model, or when billing rules apply that the client cannot model. For authoritative numbers use the Usage and Cost API or the Console.",
+    "reference": "Agent SDK docs: Track cost and usage",
+    "source": "interview:result-message-usage-cost",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking",
+        "https://code.claude.com/docs/en/headless"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-039",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each cost-tracking symptom with its most likely cause.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Messages from one API response share an ID and identical usage",
+        "why": "Parallel blocks were counted once per message."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Per-step `output_tokens` is a placeholder",
+        "why": "Assistant messages carry the `message_start` count."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Totals are restored from the saved transcript",
+        "why": "Resumed calls continue from the session's total."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`usage` covers only the main agent loop",
+        "why": "Subagent tokens are excluded from it."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Input tokens summed from assistant messages double whenever Claude calls several tools at once",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Output tokens summed from assistant messages are tiny compared with the result's figure",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The first result of today's resumed call already shows yesterday's spend",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Runs that delegate to subagents show far fewer tokens in `usage` than in `modelUsage`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Deduplicate per-step usage by message ID; read output tokens from the result; take differences between results of a resumed session instead of summing; and use `modelUsage` or `total_cost_usd` for whole-tree accounting, because `usage` excludes subagents.",
+    "reference": "Agent SDK docs: Track cost and usage",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-040",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An API-key-authenticated service starts many short agent sessions against the same large system prompt and context. Sessions are often 10 to 20 minutes apart, and `cache_read_input_tokens` is usually zero on the first request of a session. What is the most targeted change?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add `cache_control` breakpoints to the system prompt through `systemPrompt`",
+        "why": "The SDK applies prompt caching automatically, and `systemPrompt` takes text or a preset, not `cache_control` markers; nothing here changes the TTL."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Set `ENABLE_PROMPT_CACHING_1H=1` in the environment or `options.env`, accepting pricier cache writes",
+        "why": "API-key sessions get a 5-minute TTL by default, so the cache expires between sessions spaced further apart."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep one session open forever with streaming input so the cache never cools",
+        "why": "A long-lived session does not stop the TTL from expiring during idle gaps, and it grows the context for every user."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `includePartialMessages: true`, because streamed requests keep their prompt cache entries for longer",
+        "why": "Streaming output does not change the cache TTL."
+      }
+    ],
+    "explanation": "The SDK uses prompt caching automatically. With an API key, and on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry or Claude Platform on AWS, your own turns default to a 5-minute TTL. `ENABLE_PROMPT_CACHING_1H` requests a 1-hour TTL on cache writes; for finer control, `CLAUDE_CODE_PROMPT_CACHE_TTL` sets the main conversation and `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL` sets everything else, each taking `5m` or `1h`.",
+    "reference": "Agent SDK docs: Track cost and usage (Extend the prompt cache TTL to one hour)",
+    "source": "interview:sdk-prompt-caching",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.net/blog/prompt-caching-architectures-interview",
+        "https://code.claude.com/docs/en/agent-sdk/cost-tracking"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-041",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A form-filling agent uses `outputFormat` and `includePartialMessages`. Product wants fields to appear on screen as the agent writes them, but only validated data may be saved. Which design meets both requirements?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Parse the `text_delta` chunks as JSON while they stream and save the object once it parses",
+        "why": "The JSON does not stream as text; it streams as tool input, and parsing successfully is not the same as passing your schema."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Save the input of the first `StructuredOutput` tool call when its `content_block_stop` arrives, since the stream is final by then",
+        "why": "That attempt may fail validation and be followed by another call; only the result carries validated data."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Turn off `outputFormat` while streaming and validate the final text with your own schema check",
+        "why": "This throws away the SDK's validation and retry loop, which is what you wanted to keep."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Preview from the `StructuredOutput` call's `input_json_delta` chunks, reset on an `is_error` result, save only `structured_output`",
+        "why": "Streamed chunks are unvalidated; a failed attempt gets an error tool_result and is retried; validated data arrives only on the result."
+      }
+    ],
+    "explanation": "With partial messages on, structured output streams as a `StructuredOutput` tool call's unvalidated `input_json_delta` chunks, and only the validated value reaches `ResultMessage.structured_output`. One query can contain several attempts, because a mismatch gets a `tool_result` with `is_error: true` and the agent calls the tool again.",
+    "reference": "Agent SDK docs: Stream responses in real-time (Known limitations)",
+    "source": "interview:structured-output-json-schema",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/479",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-MSG-042",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A query with `outputFormat` set produces one invalid object before a valid one. Put these stream items in the order they arrive.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The init system message, whose `tools` list includes `StructuredOutput`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `tool_use` block named `StructuredOutput` with an object that does not match the schema",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `tool_result` with `is_error: true` for that call",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A second `StructuredOutput` `tool_use` block with a valid object",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A `tool_result` reading `Structured output provided successfully`",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "The result message with `subtype: \"success\"` and `structured_output` set",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "explanation": "Claude Code adds the `StructuredOutput` tool to the session, so it is listed at init. The agent returns its answer by calling the tool. A mismatch produces an error tool result and another call; a match produces the success tool result. The validated value is then delivered on the result message, which is the only place to read it from.",
+    "reference": "Agent SDK docs: Get structured output (Recognize the StructuredOutput tool call)",
+    "source": "interview:structured-output-json-schema",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/479",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-MSG-043",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python host maps `AssistantMessage.error` to user-facing text with a `match` statement that has one `case` per value of the SDK's `AssistantMessageError` Literal and raises on anything else. In production it raises on `\"max_output_tokens\"`. What is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Upgrade the SDK; the CLI only emits values listed in the installed Literal",
+        "why": "The docs say the CLI can emit values that the Python Literal does not list, and the SDK passes them through."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Catch the exception and drop the message, since unknown errors are always harmless",
+        "why": "Dropping errors hides real failures such as a truncated response."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Add a fallback that handles any unlisted string like `\"unknown\"`, and add cases for values you care about",
+        "why": "The Python Literal is a subset; the TypeScript `SDKAssistantMessageError` type lists the full set the CLI can emit."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `include_partial_messages=True`, because error strings are only normalized to the Literal when streaming output",
+        "why": "Streaming output has no effect on which error strings arrive."
+      }
+    ],
+    "explanation": "Python's `AssistantMessageError` lists `authentication_failed`, `billing_error`, `rate_limit`, `invalid_request`, `server_error` and `unknown`, but the CLI can also send values such as `max_output_tokens` or `overloaded`, and the SDK passes them through unmodified. Treat strings outside the list as `unknown`, and code against the TypeScript type's full list where you need specific handling.",
+    "reference": "Agent SDK docs: Python reference (AssistantMessageError)",
+    "source": "interview:sdk-error-handling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/troubleshooting",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-044",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A job runner restarts every failed agent run from scratch, up to three times, regardless of why it failed. Costs spike and some jobs never succeed. Which revised policy is best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keep restarting from scratch, but double `maxTurns` and `maxBudgetUsd` on each retry so the run eventually fits",
+        "why": "Raising caps blindly turns a runaway task into a more expensive runaway, and it does nothing for credential or billing errors."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Branch on the cause: resume `error_max_turns` or budget results by `session_id` after a deliberate decision, surface auth and billing errors, and let Claude Code's own `api_retry` handle transient overloads",
+        "why": "Restarting repeats work already paid for, and some errors cannot succeed on retry."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Treat any result with non-empty `errors` as transient and retry immediately without delay",
+        "why": "Errors such as `authentication_failed` or `billing_error` are not transient, and immediate retries make overloads worse."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retry only `error_during_execution`, and treat every other error subtype as success because it has a `session_id`",
+        "why": "Having a `session_id` lets you resume; it does not mean the task finished."
+      }
+    ],
+    "explanation": "Cap results (`error_max_turns`, `error_max_budget_usd`) still carry `session_id`, so you can resume and keep the context and spend so far, ideally after a person or policy approves more budget. Credential, billing and model-not-found errors need a fix, not a retry. Retryable API errors are already retried by Claude Code, which reports progress with `api_retry` messages.",
+    "reference": "Agent SDK docs: How the agent loop works (Handle the result)",
+    "source": "interview:sdk-error-handling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/troubleshooting",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-MSG-045",
+    "domain": 1,
+    "skill": "messages-and-streaming",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are building a live cost meter for a streaming input chat session in which Claude often uses subagents. Which design choices are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "After each turn, show `total_cost_usd` (or the sum of `modelUsage` costs) from the latest result instead of adding results up",
+        "why": "In streaming input mode these are running totals for the call, so summing counts earlier turns again."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Label the figure as an estimate and reconcile billing from the Usage and Cost API",
+        "why": "The SDK computes these figures client-side from a price table, so they can drift from real billing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add each result's `usage` tokens multiplied by list price, because `usage` is per-turn",
+        "why": "`usage` is per-turn but excludes subagents, so this undercounts exactly the sessions you care about."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Update the meter from each assistant message's `output_tokens` for a smooth live count",
+        "why": "Per-step `output_tokens` is a placeholder; for a live count read `usage` from `message_delta` stream events."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Count totals restored from a resumed session against `maxBudgetUsd` so the cap matches the meter",
+        "why": "`maxBudgetUsd` counts only this call's own spend; restored totals do not count against it."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Reset the meter whenever a result arrives with a new `uuid`, since each result starts a new total",
+        "why": "Every message has its own `uuid`. Totals reset on `/clear`, which you can detect from the conversation reset message or a new `session_id`."
+      }
+    ],
+    "explanation": "Read whole-tree running totals from the latest result (`total_cost_usd`, `modelUsage`), handle resets at `/clear`, and remember the values are estimates. `usage` is per-turn and main-loop only. Per-step output counts are placeholders. `maxBudgetUsd` and the restored session totals measure different things.",
+    "reference": "Agent SDK docs: Track cost and usage (Track costs in streaming input mode)",
+    "roleLevel": 5
+  }
+]

@@ -1,0 +1,2012 @@
+[
+  {
+    "id": "CSK-SUB-001",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your main agent delegates \"find every caller of `parseToken`\" to a subagent, which reads 40 files along the way. What ends up in the main agent's conversation?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Every tool call and file read the subagent made, threaded into the parent's history",
+        "why": "That is the opposite of context isolation: intermediate tool calls and results stay inside the subagent's own conversation."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The subagent's final message, returned as the Agent tool's result",
+        "why": "Only the subagent's final report comes back to the parent, which is what keeps the main context small."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Nothing, until the parent reads the subagent's transcript file from disk",
+        "why": "The parent receives the report directly as the tool result; the transcript file is there for resume, not for delivery."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A compacted summary of all 40 files, written by the harness rather than by the subagent",
+        "why": "No harness summary is generated. The subagent writes its own final message, and the harness only scans it for instruction-shaped patterns."
+      }
+    ],
+    "explanation": "A subagent is a separate agent instance with its own conversation. Whatever it reads stays in its context, and only its final message returns to the parent as the Agent tool result. Interviewers ask this to check that you know why subagents save context, and the flip side: the parent only knows what the subagent chose to report.",
+    "reference": "Agent SDK docs: Subagents in the SDK",
+    "roleLevel": 2,
+    "source": "interview:subagent-basics",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://institute.sfeir.com/en/claude-code/claude-code-resources/interview/",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-002",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In the Agent SDK, each `query()` call starts a new session unless you pass `resume` or `continue` (`continue_conversation` in Python).",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: a plain `query()` call has no memory of earlier calls. You opt in to an existing session with `resume`, `continue`, or by using one `ClaudeSDKClient` in Python."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "The SDK does not reuse the previous session on its own; the docs say each `query()` call starts a new session by default."
+      }
+    ],
+    "explanation": "Sessions are written to disk automatically, but a new `query()` call does not pick one up unless you ask. Use `continue` for the most recent session in the directory, `resume` with a stored session ID for a specific one, or Python's `ClaudeSDKClient`, which keeps one session across `client.query()` calls.",
+    "reference": "Agent SDK docs: Work with sessions",
+    "roleLevel": 1,
+    "source": "interview:resume-continue-session-id",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/sessions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-003",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which fields must every `AgentDefinition` passed in the `agents` option set?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`name`, `description` and `prompt`",
+        "why": "The name is the key of the `agents` object, not a field. `name` is required only in the frontmatter of a filesystem agent file."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`prompt` and `tools`",
+        "why": "`tools` is optional; leaving it out gives the subagent every tool available to subagents."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`description` and `prompt`",
+        "why": "These two are required: the description tells Claude when to delegate, and the prompt is the subagent's system prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`description`, `prompt` and `model`",
+        "why": "`model` is optional; without it Claude Code follows the subagent model order and usually ends at the main model."
+      }
+    ],
+    "explanation": "An `AgentDefinition` needs only `description` and `prompt`. Everything else (`tools`, `disallowedTools`, `model`, `skills`, `mcpServers`, `maxTurns`, `background`, `effort`, `permissionMode` and more) is optional. The `agents` object key is the agent's name. A weak description is the usual reason Claude never picks a subagent.",
+    "reference": "Agent SDK docs: Subagents in the SDK (AgentDefinition configuration)",
+    "roleLevel": 2,
+    "source": "interview:agent-definition-fields",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/subagents",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-004",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each TypeScript `query()` option with what it does to sessions.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`continue: true`",
+        "why": "Picks up the most recent session in the current directory, with no ID needed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`resume: id`",
+        "why": "Loads the history of one specific session by its ID."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`resume: id` with `forkSession: true`",
+        "why": "Starts a new session with a copy of the history and leaves the original unchanged."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`persistSession: false`",
+        "why": "Keeps the session in memory only, so nothing is written to disk and it cannot be resumed."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A single-user desktop tool reopens yesterday's last conversation after a restart",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A multi-user web app reopens the conversation stored against user 42",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Try an OAuth2 design from an earlier analysis while keeping the JWT thread intact",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A stateless classification job that must leave no transcript on disk",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Continue and resume both add to an existing session; continue finds the newest session in the directory, while resume needs an ID you stored. A fork copies the history into a new session ID. `persistSession: false` is TypeScript only; in Python, set `CLAUDE_CODE_SKIP_PROMPT_HISTORY` through the `env` option instead.",
+    "reference": "Agent SDK docs: Work with sessions",
+    "roleLevel": 2,
+    "source": "interview:resume-continue-session-id",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/sessions",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-005",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent edited `config.ts` in session S. You later run `query()` with `resume: S`. What state is `config.ts` in when the resumed session starts?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Restored to how it was when session S began, because resume replays the session from its first snapshot",
+        "why": "Resume restores the conversation only. Reverting files is a separate feature: file checkpointing with `rewindFiles()`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Whatever is on disk now, edits included; the session stores the conversation, not the files",
+        "why": "Sessions persist the conversation history. The files on disk are whatever they currently are."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Locked read-only until Claude reads it again in the resumed session",
+        "why": "Resume does not lock files. Claude knows about the edit from history, but the file itself is untouched."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rolled back only when the session was started with `enableFileCheckpointing`",
+        "why": "Checkpointing never rolls back on resume by itself; you must call `rewindFiles()` with a checkpoint UUID."
+      }
+    ],
+    "explanation": "The sessions guide is explicit: sessions persist the conversation, not the filesystem. Forks work the same way, so a forked agent's edits are real and visible to every session in that directory. To snapshot and revert edits, use file checkpointing; for anything else, use git.",
+    "reference": "Agent SDK docs: Work with sessions",
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-SUB-006",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In the TypeScript Agent SDK, how do you define custom subagents in code, and through which tool does Claude invoke them?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The `agents` option, a map of name to `AgentDefinition`; Claude calls the `Agent` tool",
+        "why": "Programmatic definitions go in `agents`, and Claude delegates by calling the `Agent` tool with a `subagent_type`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The `subagents` option, an array of definitions; Claude calls the `Delegate` tool",
+        "why": "There is no `subagents` option and no `Delegate` tool; the option is `agents` and the tool is `Agent`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `createSubagent()` call per agent before `query()`; Claude calls `SendMessage` to start one",
+        "why": "No such factory exists. `SendMessage` resumes or messages an existing agent; it does not spawn a new one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Markdown files only, since the SDK has no programmatic definition; Claude calls the `Skill` tool",
+        "why": "Filesystem agents in `.claude/agents/` are an alternative, but the docs recommend the programmatic `agents` option for SDK apps. `Skill` loads skills, not subagents."
+      }
+    ],
+    "explanation": "Subagents can be defined programmatically through `agents`, as markdown files in `.claude/agents/`, or used through the built-in `general-purpose` agent. When names collide, the programmatic definition wins. Claude delegates through the `Agent` tool, which was named `Task` before Claude Code v2.1.63.",
+    "reference": "Agent SDK docs: Subagents in the SDK",
+    "roleLevel": 1,
+    "source": "interview:agent-definition-fields",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-007",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A regular (non-fork) subagent starts with the parent's conversation history, so it already knows the file paths and decisions discussed earlier.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Only a fork inherits the conversation. A regular subagent starts with a fresh context."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the only thing passed from parent to subagent is the Agent tool's prompt string, so paths, errors and decisions must be written into it."
+      }
+    ],
+    "explanation": "A non-fork subagent gets its own system prompt, the delegation prompt, CLAUDE.md (unless `omitClaudeMd` is set) and its tool definitions, but none of the parent's history or tool results. Forks are the exception: they copy the whole conversation. This is why a vague delegation prompt produces a subagent that searches the wrong place.",
+    "reference": "Agent SDK docs: Subagents in the SDK (What subagents inherit)",
+    "roleLevel": 1,
+    "source": "interview:subagent-basics",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-008",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "With no custom configuration, where does an Agent SDK session's transcript live on disk?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "In `.claude/sessions/<session-id>.json` inside the project's working directory",
+        "why": "Transcripts are not written into the project tree; they live under the user's config directory."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Nowhere locally; sessions are stored on Anthropic's servers and fetched by ID on resume",
+        "why": "Sessions are local files. Resuming on another host needs a `SessionStore` or a copied file."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "In the system temp folder, cleared when the SDK process exits",
+        "why": "Only a run resumed from a `SessionStore` uses a temporary config directory. Normal sessions persist."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "In `~/.claude/projects/<encoded-cwd>/<session-id>.jsonl`, or under `$CLAUDE_CONFIG_DIR/projects/` when set",
+        "why": "This is the documented layout: one JSONL file per session, grouped by an encoding of the working directory."
+      }
+    ],
+    "explanation": "Claude Code writes one JSONL transcript per session under `~/.claude/projects/`, in a folder named after the working directory with every non-alphanumeric character replaced by `-`. `CLAUDE_CONFIG_DIR` moves the root. Because the file is local, resuming on a different machine needs a session store or a copy of the file.",
+    "reference": "Agent SDK docs: Work with sessions (Resume by ID)",
+    "roleLevel": 2,
+    "source": "interview:session-storage-mirroring",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://code.claude.com/docs/en/sessions",
+        "https://code.claude.com/docs/en/agent-sdk/session-storage"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-009",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your Python dashboard should show when a subagent starts and which streamed messages come from inside it. Detection must keep working across SDK versions. Which checks are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Treat a `ToolUseBlock` whose `name` is either `\"Agent\"` or `\"Task\"` as a subagent launch",
+        "why": "Current versions emit `Agent` in `tool_use` blocks; before Claude Code v2.1.63 they emitted `Task`, so match both."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Treat a message with a non-empty `parent_tool_use_id` as coming from inside a subagent",
+        "why": "Messages produced inside a subagent's context carry `parent_tool_use_id`, which links them to the Agent call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Match only `\"Task\"`, because that is the name in the `system:init` tools list",
+        "why": "The init list shows `Task`, but `tool_use` blocks now say `Agent`, so this check misses every current launch."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Read `agent_id` from each Python message to see which subagent produced it",
+        "why": "`agent_id` on assistant and user messages is documented for the TypeScript SDK (v0.3.292 and later), not Python."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Wait for a result message whose subtype is `subagent_success`",
+        "why": "No such subtype exists. Result messages describe the whole query, not individual subagents."
+      }
+    ],
+    "explanation": "The tool was renamed from `Task` to `Agent` in Claude Code v2.1.63, but the init message's tools list still calls it `Task`. Robust detection matches both names in `tool_use` blocks and uses `parent_tool_use_id` to attribute messages. This rename is a common reason dashboards (and allow lists copied from old posts) stop seeing subagents.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Detect subagent invocation)",
+    "roleLevel": 3,
+    "source": "interview:subagents-not-spawned",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-010",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python job must store the session ID so a later request can resume it, even when the run ends in `error_max_turns`. Where should it read the ID?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "From `message.session_id` on the first `AssistantMessage`, which is the only message that carries it",
+        "why": "The documented places are the result message and the init system message, not the first assistant message."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "From the newest file name under `~/.claude/projects/`, since the SDK does not expose the ID",
+        "why": "The SDK does expose it, and with concurrent jobs the newest file may belong to a different run."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "From `session_id` on the `ResultMessage`, which every result carries, success or error",
+        "why": "The result message always includes `session_id`. In Python, the init `SystemMessage` has it only inside `data`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "From the `ResultMessage` only when `subtype == \"success\"`; error runs cannot be resumed",
+        "why": "Error results carry the ID too, and resuming after `error_max_turns` with a higher limit is a documented use."
+      }
+    ],
+    "explanation": "Read `session_id` from the result message; it is present on every result regardless of subtype. In TypeScript it is also a direct field on the init system message, and in Python it sits in `SystemMessage.data`. A single-shot `query()` raises after yielding an error result, so capture the ID inside the loop before the exception.",
+    "reference": "Agent SDK docs: Work with sessions (Capture the session ID)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-SUB-011",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "An agent runs with working directory `/srv/app_v2`. Under `~/.claude/projects/`, what is the name of the folder that holds its session transcripts? Type the folder name.",
+    "options": [],
+    "accepted": [
+      "-srv-app-v2"
+    ],
+    "explanation": "Claude Code replaces every non-alphanumeric character in the absolute working directory with `-`. The slashes and the underscore all become dashes, so `/srv/app_v2` becomes `-srv-app-v2`. Names longer than 200 characters are truncated and get a hash appended. This matters when you copy a transcript to another host, or when a `SessionStore` key does not match because the run used a different `cwd`.",
+    "reference": "Agent SDK docs: Work with sessions (Resume by ID)",
+    "roleLevel": 3,
+    "source": "interview:session-storage-mirroring",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://code.claude.com/docs/en/sessions",
+        "https://github.com/anthropics/claude-agent-sdk-python/issues/1320"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-012",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "On current SDK releases (Claude Code v2.1.219 or later), how many layers of subagents can nest below the main agent by default before the bottom layer loses the `Agent` tool? Type a number.",
+    "options": [],
+    "accepted": [
+      "3",
+      "three"
+    ],
+    "explanation": "By default a subagent can spawn its own subagents, up to three layers below the main conversation. `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` changes this, and `1` turns nesting off. Older guides that say \"subagents can never spawn subagents\" are out of date. To stop one particular subagent from spawning, leave `Agent` out of its `tools` or put it in `disallowedTools`.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Cap subagent depth, concurrency, and spend)",
+    "roleLevel": 3,
+    "source": "interview:nested-subagents",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/sub-agents",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-013",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "A custom subagent (not a fork, no `omitClaudeMd`) is spawned in an SDK app that loads project settings. What is in its context when it starts? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Its own system prompt from `AgentDefinition.prompt`",
+        "why": "The definition's prompt becomes the subagent's system prompt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The prompt string Claude passed in the Agent tool call",
+        "why": "The delegation prompt is the only content passed from parent to subagent."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The project CLAUDE.md",
+        "why": "Project CLAUDE.md loads for custom subagents (via `settingSources`) unless the definition sets `omitClaudeMd`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The parent's earlier tool results, so it does not need to re-read files",
+        "why": "Parent history and tool results are not passed; only a fork inherits them."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The parent's system prompt, prepended to its own",
+        "why": "The docs list the parent's system prompt as something the subagent does not receive."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Skills the parent has already loaded in the conversation",
+        "why": "Skill content reaches a subagent only when it is listed in the definition's `skills` field."
+      }
+    ],
+    "explanation": "A non-fork subagent starts fresh: its own prompt, the delegation prompt, CLAUDE.md and tool definitions (inherited, or the subset in `tools`). It does not get parent history, the parent's system prompt or skills loaded earlier. Interviewers use this to see whether you write self-contained delegation prompts.",
+    "reference": "Agent SDK docs: Subagents in the SDK (What subagents inherit)",
+    "roleLevel": 2,
+    "source": "interview:subagent-basics",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-014",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You define a `doc-reviewer` subagent with `tools: [\"Read\", \"Grep\"]`. During a run it decides it would like to edit a typo. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The SDK raises a permission prompt through `canUseTool`, and the edit runs if you approve",
+        "why": "A tool left out of `tools` is not in the subagent's session, so there is nothing to approve."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It cannot: `Edit` is not in its session at all, so it works without it, with no prompt or error",
+        "why": "The `tools` list is an allowlist. Omitted tools are simply absent from the subagent's tool set."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It calls `Edit` and gets an error result, because the parent's tools are still listed but blocked",
+        "why": "The parent's other tools are not listed for this subagent; they are removed, not blocked with an error."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It asks the parent to make the edit through `AskUserQuestion`",
+        "why": "`AskUserQuestion` is removed from every subagent, even when listed, and that is not how parents and subagents talk anyway."
+      }
+    ],
+    "explanation": "Omitting `tools` gives a subagent every tool available to subagents; listing tools gives it only those. A missing tool does not produce a permission prompt or an error, it just is not there. That is tool scoping. Permission modes and rules still apply to the tools it does have.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Tool restrictions)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-SUB-015",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Session S holds a long analysis of an auth module. You run `query({ prompt: \"Try OAuth2 instead\", options: { resume: S, forkSession: true } })`. Which statement is true afterwards?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "S now ends with the OAuth2 exchange, and a backup of its earlier history is saved under a brand-new session ID",
+        "why": "Reversed: the original S is untouched, and the new turns go to the fork's new ID."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The fork shares S's ID, and the two branches are told apart by message UUIDs",
+        "why": "A fork gets its own session ID, which you read from the init or result message."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Any files the fork edits are written to a copy, so S's working tree stays clean",
+        "why": "Forking branches the conversation, not the filesystem. The fork's edits are real and visible to every session in that directory."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "There are two independent sessions: S unchanged, and a fork with a new ID that starts with S's history",
+        "why": "This is what `forkSession` does; you can resume either one separately."
+      }
+    ],
+    "explanation": "`forkSession: true` (`fork_session=True` in Python), used with `resume`, copies the history into a new session ID and leaves the original alone. Capture the fork's ID from the init message (TypeScript) or the result message. Forks do not branch files; pair them with git worktrees or file checkpointing if the branches will edit code.",
+    "reference": "Agent SDK docs: Work with sessions (Fork to explore alternatives)",
+    "roleLevel": 2,
+    "source": "interview:fork-session",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/sessions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-016",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "A custom `endpoint-finder` subagent catalogued your API in one `query()` call. You want it, with its full history, to answer a follow-up in a later call. Put the steps in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Read `session_id` from the messages of the first query",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Parse `agentId: <id>` from the text of the Agent tool result",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Start a second `query()` with `resume` set to that session ID and the same `agents` definitions",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "In that query's prompt, ask Claude to resume the agent with that agent ID and answer the follow-up",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The subagent's transcript belongs to the parent session, so you must resume that session; a new `query()` without `resume` cannot see it. Pass the same `agents` definition again, and name the agent ID in the prompt so Claude resumes that instance. The built-in Explore and Plan agents are one-shot and return no `agentId`, so use a custom agent or `general-purpose` when you need this.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Resume subagents)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-SUB-017",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "With `enableFileCheckpointing: true`, which of these file changes made by the main agent can `rewindFiles()` undo?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A file the `Write` tool created and another the `Edit` tool modified",
+        "why": "Checkpointing backs up files before Write, Edit and NotebookEdit change them; a rewind deletes created files and restores modified ones."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A config file rewritten by `sed -i` through the `Bash` tool",
+        "why": "Bash changes are not captured by checkpointing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `build/` directory created with `mkdir`",
+        "why": "Creating, moving or deleting directories is not undone, and this one was made through Bash too."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A row the agent inserted into a remote Postgres database through an MCP server tool",
+        "why": "Only local files changed by the file-editing tools are tracked; remote systems are out of scope."
+      }
+    ],
+    "explanation": "File checkpointing tracks only the Write, Edit and NotebookEdit tools. Bash edits, directory operations, remote or network files and most subagent edits are not covered, and the conversation is not rewound either. It is a convenience for local edits, not a replacement for git or for idempotent external side effects.",
+    "reference": "Agent SDK docs: Rewind file changes with checkpointing",
+    "roleLevel": 2,
+    "source": "interview:file-checkpointing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/",
+        "https://code.claude.com/docs/en/agent-sdk/file-checkpointing"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-018",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your code tries to resume the subagent that did yesterday's codebase search so it can continue, but the Agent tool result contained no `agentId`. The search was done by the built-in `Explore` agent. What is going on?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `agentId` is only printed when `includePartialMessages` is enabled",
+        "why": "Partial messages are about streaming deltas; they do not control whether an agent ID is returned."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Explore (like Plan) is one-shot and returns no agent ID; use `general-purpose` or a custom agent for resumable work",
+        "why": "The docs state that Explore and Plan cannot be resumed for this reason."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The ID was removed by the subagent output scan because it looked like an instruction",
+        "why": "The scan only escapes control tags and turn markers and adds a marker line; it never removes text."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Agent IDs expire after one hour, so yesterday's agent can no longer be addressed",
+        "why": "Subagent transcripts follow `cleanupPeriodDays` (30 days by default), not a one-hour expiry."
+      }
+    ],
+    "explanation": "When a resumable subagent finishes, the Agent tool result includes `agentId: <id>`. The built-in Explore and Plan agents are one-shot and return none. If a workflow needs follow-ups with the same context, delegate to `general-purpose` or your own `AgentDefinition`.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Resume subagents)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-SUB-019",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Unless `forkSession` is also set, the `sessionId` option (a custom UUID for the session) cannot be combined with `resume` or `continue`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: the option docs say `sessionId` cannot be used with `continue` or `resume` unless `forkSession` is set, in which case it names the forked session."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "Resuming keeps the existing session's ID, so giving it a different custom ID only makes sense when a fork creates a new session."
+      }
+    ],
+    "explanation": "`sessionId` (`session_id` in Python) must be a valid UUID. On a fresh session it lets you choose the ID up front. With `resume` or `continue` it is rejected, except together with `forkSession`, where it sets the ID of the new fork.",
+    "reference": "Agent SDK docs: TypeScript reference (Options)",
+    "roleLevel": 3,
+    "source": "interview:resume-continue-session-id",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/sessions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-020",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Nesting is on at the default depth. A `researcher` subagent should keep spawning helpers, but a `security-reviewer` subagent must never spawn subagents of its own. Which changes achieve exactly that? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Give `security-reviewer` an explicit `tools` list that does not include `Agent`",
+        "why": "The `tools` allowlist decides its tool set, so without `Agent` it cannot delegate."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Add `Agent` to `security-reviewer`'s `disallowedTools`",
+        "why": "The docs name this as the other way to keep one subagent from spawning while nesting stays on."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` in `env`",
+        "why": "That turns nesting off for every subagent, so `researcher` loses its helpers too."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put `Agent(researcher)` in `security-reviewer`'s `tools` so it can only spawn that type",
+        "why": "This allows spawning rather than blocking it, and the type list in parentheses is ignored inside a subagent definition anyway."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Set `permissionMode: \"plan\"` on `security-reviewer`",
+        "why": "Plan mode stops edits but does not remove the `Agent` tool, and depending on the parent's mode the setting may not even apply."
+      }
+    ],
+    "explanation": "Subagents can nest up to three layers by default. The depth variable is global; per-agent control is done by leaving `Agent` out of `tools` or listing it in `disallowedTools`. The `Agent(type)` allowlist syntax only applies to an agent running as the main thread.",
+    "reference": "Claude Code docs: Create custom subagents (Let subagents spawn their own subagents)",
+    "roleLevel": 3,
+    "source": "interview:nested-subagents",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/sub-agents",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-021",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In an SDK app, the main agent spawns a `test-runner` subagent and the Agent tool result says `status: \"async_launched\"`. Your product needs the test report folded into the same answer. The `test-runner` definition sets no `background` field. What is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `background: true` on the `test-runner` definition so it reports back sooner",
+        "why": "That does the opposite: it keeps the agent in the background even when Claude would wait."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add `run_in_background: false` to the `AgentDefinition`",
+        "why": "`run_in_background` is a parameter Claude sets on the Agent tool call, not an `AgentDefinition` field."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Tell Claude in the prompt to run the test-runner and wait for its report",
+        "why": "Subagents start in the background by default; asking Claude to wait makes the call block and return `status: \"completed\"`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise `maxTurns` on the main query so the background agent has time to finish",
+        "why": "More turns do not change whether the Agent call blocks; Claude may still answer before the report arrives."
+      }
+    ],
+    "explanation": "By default a subagent Claude spawns runs in the background, and its report arrives in a later turn. Claude waits when its next step needs the report, and you can make that explicit in the prompt. The `background: true` field forces an agent to stay in the background. Interviewers use this to check you know the background default and how results reach the parent.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Choose whether Claude waits for subagents)",
+    "roleLevel": 4,
+    "source": "interview:fork-background-subagents",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/514",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-022",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A session ran with `enableFileCheckpointing: true`. You rewind to the first user message's checkpoint. Which changes are still in place after the rewind? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A lockfile regenerated by `npm install` run through `Bash`",
+        "why": "Bash changes are never captured, so the rewind leaves them alone."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A `scripts/` directory the agent created",
+        "why": "Creating, moving or deleting directories is not undone by a rewind."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A new file written by a background subagent, which the main conversation never touched",
+        "why": "Subagent edits are not tracked; a rewind reverts them only in files the main conversation had already edited."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A new `utils.ts` the main agent created with `Write`",
+        "why": "A rewind deletes files Claude Code created through the tracked tools."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Changes the main agent made to `auth.ts` with `Edit`",
+        "why": "Files changed with Edit are restored to their content at the checkpoint."
+      }
+    ],
+    "explanation": "Checkpointing covers Write, Edit and NotebookEdit in the main conversation. A foreground skill with `context: fork` is the one subagent case that is tracked. Bash side effects, directory operations, remote files and other subagent edits stay, so use git for anything beyond simple local edits. The conversation is not rewound either.",
+    "reference": "Agent SDK docs: Rewind file changes with checkpointing (Limitations)",
+    "roleLevel": 3,
+    "source": "interview:file-checkpointing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/",
+        "https://code.claude.com/docs/en/agent-sdk/file-checkpointing"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-023",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript service runs a checkpointed `query()`, loops over every message until the stream ends, stores the first user message UUID, then calls `response.rewindFiles(uuid)`. It fails with \"ProcessTransport is not ready for writing\". What is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pass `{ dryRun: true }` first so the transport is warmed up before the real rewind",
+        "why": "`dryRun` previews the changes; it cannot reopen a connection that has already closed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use the session ID instead of the user message UUID as the rewind target",
+        "why": "`rewindFiles` takes a user message UUID; the error is about the closed connection, not the argument."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add `persistSession: false` so the checkpoint stays in memory after the loop ends",
+        "why": "This stops the session being written to disk, so a later resume becomes impossible; it does not keep the process open."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Resume the session with an empty prompt and checkpointing enabled, then call `rewindFiles` inside that loop",
+        "why": "The CLI process closes when iteration ends; the documented pattern opens a new connection by resuming and rewinds from inside it."
+      }
+    ],
+    "explanation": "`rewindFiles()` is a control call on a live query. Once the loop finishes, the connection to the CLI is gone. You can rewind during the stream, or resume the session with `prompt: \"\"` and `enableFileCheckpointing: true` and call `rewindFiles` from inside the response loop. Without checkpointing on the resumed session you get \"File rewinding is not enabled\" instead.",
+    "reference": "Agent SDK docs: Rewind file changes with checkpointing (Troubleshooting)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-SUB-024",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A Python app enables `enable_file_checkpointing=True`, but `message.uuid` is `None` on every `UserMessage`, so it has no checkpoint to rewind to. Which key must it add to `extra_args` (with the value `None`)? Type the key.",
+    "options": [],
+    "accepted": [
+      "replay-user-messages",
+      "--replay-user-messages"
+    ],
+    "explanation": "Checkpoint UUIDs are the UUIDs of user messages, and those only appear in the stream when the CLI replays user messages. Set `extra_args={\"replay-user-messages\": None}` in Python or `extraArgs: { 'replay-user-messages': null }` in TypeScript next to the checkpointing flag.",
+    "reference": "Agent SDK docs: Rewind file changes with checkpointing",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-SUB-025",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Workers mirror transcripts to S3 through a `SessionStore`. A session created by a worker with `cwd: /work/job-123` is resumed by another worker, using the same store and session ID but `cwd: /work/job-456`. The agent behaves as if it has no history. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "S3 is eventually consistent, so the second worker read an empty object list",
+        "why": "Possible in theory, but it does not explain a consistent miss when the only difference is the working directory."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`resume` ignores the store and reads only local transcript files, so the store must be loaded by hand first",
+        "why": "With a store attached, the SDK calls `load` on the store before spawning the subprocess."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The store key's `projectKey` encodes the working directory, so a different `cwd` looks up a different key",
+        "why": "The docs say to resume from a working directory matching the original run's for exactly this reason."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The adapter has no `listSessions`, which `resume` needs to find a session by ID",
+        "why": "`listSessions` is needed for `continue: true` and for listing; `resume` with an ID calls `load`."
+      }
+    ],
+    "explanation": "`SessionKey` is `{ projectKey, sessionId, subpath? }`, and `projectKey` is a filesystem-safe encoding of the working directory. Give every worker the same logical `cwd` (for example a fixed mount point) or, in TypeScript, set `CLAUDE_CODE_PROJECT_DIR_NAME` beside `CLAUDE_CONFIG_DIR` so keys do not depend on a per-job path. When the store has nothing for that key, `resume` falls back to the local filesystem, where there is nothing either.",
+    "reference": "Agent SDK docs: Persist sessions to external storage",
+    "roleLevel": 4,
+    "source": "interview:session-storage-mirroring",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/session-storage",
+        "https://github.com/anthropics/claude-agent-sdk-python/issues/1320",
+        "https://code.claude.com/docs/en/sessions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-026",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A team wants two things on a serverless platform: sessions that any instance can resume, and an \"undo the agent's edits\" button. They pass `sessionStore` and `enableFileCheckpointing: true` together, and the SDK throws at startup. Which plan meets both needs?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keep both options and set `sessionStoreFlush` to its most eager value so backups are flushed too",
+        "why": "Flush mode controls transcript batches; checkpoint backups are written to local disk and never mirrored, which is why the combination is rejected."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Keep the store for transcripts, drop SDK checkpointing, and implement undo with git (for example a commit or worktree per run)",
+        "why": "The store and checkpointing cannot be combined, and checkpoints would not survive a move to another instance anyway; git gives portable undo."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Drop the store and copy `~/.claude/projects` to S3 after each run, so checkpoints travel too",
+        "why": "This throws away the supported mirror, and checkpoints are tied to the session and local backups; copying folders by hand is fragile."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add `persistSession: false` so the store becomes the only copy and checkpointing can use it",
+        "why": "`persistSession: false` also conflicts with a store, because the mirror is built on the local writes."
+      }
+    ],
+    "explanation": "A `SessionStore` mirrors the local transcript writes. Two options conflict with it and make the SDK throw: `persistSession: false`, which removes the local writes, and file checkpointing, whose backups go straight to local disk and are not mirrored. On ephemeral, multi-instance hosts, undo belongs in version control.",
+    "reference": "Agent SDK docs: Persist sessions to external storage (Dual-write architecture)",
+    "roleLevel": 4,
+    "source": "interview:session-storage-mirroring",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/session-storage",
+        "https://code.claude.com/docs/en/agent-sdk/file-checkpointing"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-027",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A support bot serves many users from one container, and all users share the same `cwd`. Each follow-up message calls `query()` with `continue: true`. Users report replies that reference other people's tickets. What should change?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to `forkSession: true` on every follow-up so each reply gets its own branch",
+        "why": "A fork still has to start from some session, and with `continue` it would still be the wrong user's newest one."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Store each user's session ID and pass it to `resume`; `continue` grabs whichever session in the directory is newest",
+        "why": "`continue` is meant for apps that run one conversation at a time; multi-user apps must track IDs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep `continue: true` but wrap every `query()` call in a mutex so that only one user's request is ever served at a time",
+        "why": "Serialising calls does not help: the newest session is still whoever spoke last, not this user."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `persistSession: false` so sessions cannot leak between users",
+        "why": "Then nothing is saved, so follow-ups lose all context; the real bug is how the session is chosen."
+      }
+    ],
+    "explanation": "`continue` resumes the most recent session in the current directory, which is fine for a single-user CLI and wrong as soon as conversations interleave. Multi-user apps keep a map from user or thread to session ID and pass it to `resume`. Interviewers ask this to see whether you can tell convenience options apart from options that are safe in production.",
+    "reference": "Agent SDK docs: Work with sessions (Continue, resume, and fork)",
+    "roleLevel": 3,
+    "source": "interview:resume-continue-session-id",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/sessions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-028",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each subagent requirement with the `AgentDefinition` field that meets it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`disallowedTools: [\"mcp__github\"]`",
+        "why": "Removes every tool from the named MCP server while keeping the rest of the inherited pool."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`model: \"haiku\"`",
+        "why": "Runs this subagent on a cheaper, faster model than the main agent."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`skills: [\"sql-style\"]`",
+        "why": "Preloads the named skill's content into the subagent's context at startup."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`maxTurns: 15`",
+        "why": "Caps the subagent's agentic turns; at the cap its output is marked partial and it can be resumed."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A local log analyser must inherit all tools except anything from the GitHub server",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A high-volume file triage agent should cost less than the main model",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A migration writer must follow the team's SQL conventions without discovering them at runtime",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A research agent must stop after a bounded number of round-trips but be able to continue later",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`disallowedTools` accepts server-level MCP entries (`mcp__server`, `mcp__server__*`, `mcp__*`). `model` takes an alias, a full ID or `inherit`. `skills` injects full skill content, while other skills stay invocable through the Skill tool. `maxTurns` bounds a subagent, and since Claude Code v2.1.246 the output is marked partial so Claude knows to resume.",
+    "reference": "Agent SDK docs: Subagents in the SDK (AgentDefinition configuration)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-SUB-029",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "After a long analysis session S, you want to try two candidate fixes from the same starting point, in parallel, and compare the resulting diffs. Which setup is sound?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Resume S twice at once, in the same directory, with a different prompt for each fix",
+        "why": "Both runs would append to the same session and edit the same files, so neither history nor diff stays separate."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Fork S twice in the same directory; forks keep separate copies of any files they go on to edit",
+        "why": "Forks branch the conversation only. Their edits land in the same working tree and overwrite each other."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Fork S twice with `forkSession: true`, giving each fork its own git worktree as its `cwd`",
+        "why": "Each fork gets its own history and its own copy of the code, so the two diffs stay independent and S is unchanged."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Start two fresh sessions and paste S's final answer into both prompts",
+        "why": "This works, but it throws away the files and reasoning already in S's context, which forking keeps at no extra cost."
+      }
+    ],
+    "explanation": "Forking is the tool for \"try another approach without losing the original\", but it does not isolate files. Combine session forks with separate worktrees (or checkouts) when the branches will edit code. Resume lookups search beyond the current project directory on Claude Code v2.1.223 and later, so a fork can run from a worktree path.",
+    "reference": "Agent SDK docs: Work with sessions (Fork to explore alternatives)",
+    "roleLevel": 3,
+    "source": "interview:fork-session",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/sessions",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/507"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-030",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "On Claude Code v2.1.251 or later, several sources can name a subagent's model. Order them from highest to lowest precedence.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `model` parameter Claude passes on that Agent tool call",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The `model` field in the subagent's definition",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The `CLAUDE_CODE_SUBAGENT_MODEL` environment variable",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The main conversation's model",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The per-invocation parameter wins, then the definition's `model` (where `inherit` means the main model), then `CLAUDE_CODE_SUBAGENT_MODEL` as a default, then the main model. Before v2.1.251 the environment variable came first. To force one model onto every subagent, also set `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`. Forks always use the parent's model.",
+    "reference": "Claude Code docs: Create custom subagents (Choose a model)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-SUB-031",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A compliance-report subagent produces a carefully worded table, but the final `result` your app shows users is a loose paraphrase of it. How do you get the subagent's table through unchanged?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Tell the main agent, in the `query()` prompt or `systemPrompt`, to include the subagent's report verbatim",
+        "why": "The parent receives the full report but may summarise it; the docs recommend an explicit instruction to keep it verbatim."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set `background: true` on the subagent so its report bypasses the parent and becomes the query's final result",
+        "why": "Background agents still report to the parent; they never write the query's result directly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Raise the parent's `maxTurns`, since the paraphrase means it ran out of turns",
+        "why": "A paraphrase is a choice the parent makes, not a symptom of the turn limit."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Turn off the subagent output scan, which rewrites reports before the parent reads them",
+        "why": "The scan never removes or rewords text; it only escapes control tags and turn markers and may add a marker line."
+      }
+    ],
+    "explanation": "Only the subagent's final message reaches the parent, and the parent then writes its own answer. If downstream code needs the exact text, either say so in the parent's instructions or read the Agent tool result from the message stream yourself. This is a common debugging question once teams put subagents into user-facing flows.",
+    "reference": "Agent SDK docs: Subagents in the SDK (What subagents inherit)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-SUB-032",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A repo-wide audit on Opus 5 sometimes fans out into a large tree of subagents and a surprising bill. Which controls actually bound depth, concurrency and spend? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` set through the `env` option",
+        "why": "Caps how many layers of subagents can nest below the main agent."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` set through the `env` option",
+        "why": "Caps how many subagents run at once; extra spawns get `Concurrent subagent limit reached`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`maxBudgetUsd` (`max_budget_usd` in Python) on the query",
+        "why": "Counts subagent spend too; at the cap it refuses new spawns, stops background subagents and ends with `error_max_budget_usd`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A line in the prompt telling Claude to use at most two subagents",
+        "why": "Prompt guidance only steers Claude; the docs say to set the enforced limits as well."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A `maxSubagents` field on each `AgentDefinition`",
+        "why": "No such field exists; the limits are the two environment variables and the budget option."
+      }
+    ],
+    "explanation": "Each subagent makes its own API requests, which count toward the query's `total_cost_usd`, and subagents can nest. The enforced controls are the depth and concurrency variables (defaults 3 and 20) and the spend cap. Remember that the TypeScript `env` option replaces the subprocess environment, so spread `process.env` into it; Python merges it.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Cap subagent depth, concurrency, and spend)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-SUB-033",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A stateless Python service classifies documents with one `query()` per request. Security wants no transcript written to disk. A teammate ports `persistSession: false` from the TypeScript version. What should the Python service do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pass `persist_session=False` in `ClaudeAgentOptions`",
+        "why": "The sessions guide marks `persistSession: false` as TypeScript only; Python has no equivalent option."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Set `CLAUDE_CODE_SKIP_PROMPT_HISTORY` in the `env` option to suppress transcript writes",
+        "why": "This is the documented Python route to the same goal."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Attach an `InMemorySessionStore` so transcripts live only in process memory and never touch the disk",
+        "why": "A store is a mirror: the subprocess still writes locally first, so this adds a copy rather than removing one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Delete the session file in a `finally` block after each request",
+        "why": "This works only after the fact and leaves files around after crashes; the docs offer a way to avoid the writes."
+      }
+    ],
+    "explanation": "In TypeScript, `persistSession: false` keeps the session in memory only. The Python SDK has no such option; the sessions guide points to `CLAUDE_CODE_SKIP_PROMPT_HISTORY` in `env`. In both languages a `SessionStore` sits on top of local writes and cannot be used to avoid them.",
+    "reference": "Agent SDK docs: Work with sessions (Choose an approach)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-SUB-034",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your chat UI has an \"edit and retry\" button. It resumes with `resumeSessionAt` set to the last entry of the turn being kept and `resumeDropsTurn` set to the prompt UUID of the turn being discarded. Sometimes the run ends with an error whose message starts with `Resume rejected by --resume-drops-turn:`. How should the UI handle it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Retry the same request with exponential backoff, since the transcript may still be flushing",
+        "why": "The refusal is deterministic, so the same fork request will fail every time."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Drop `resumeDropsTurn` and retry, so the CLI truncates at `resumeSessionAt` without validating the discarded range",
+        "why": "That turns off the guard and silently discards entries the UI never saw, such as a queued message."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `resumeSessionAt` to the last assistant message UUID of the turn instead",
+        "why": "Choosing an earlier point usually leaves kept-turn entries in the discarded range, which the validator also refuses."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Treat it as \"cannot truncate safely\": clear the pending fork target and resume plainly, keeping the history",
+        "why": "The option docs say to map the refusal to a rewind-recovery path and not to retry."
+      }
+    ],
+    "explanation": "`resumeDropsTurn` asks the CLI to check that everything after the fork point belongs to the turn you meant to drop. If the range contains anything else, such as a message queued mid-turn or a task notification, the resume is refused. TypeScript reports this as an `error_during_execution` result; Python raises a `ProcessError` with the same message text. Retrying cannot succeed. The pair only works in print/headless and SDK runs.",
+    "reference": "Agent SDK docs: TypeScript reference (Options: resumeSessionAt, resumeDropsTurn)",
+    "roleLevel": 4,
+    "source": "interview:resume-session-at",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-035",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent uses `outputFormat: { type: 'json_schema', ... }`. To branch from the end of turn 3, you resume with `resumeSessionAt` set to turn 3's last assistant message UUID and `resumeDropsTurn` set to turn 4's prompt UUID. The resume is refused every time. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`resumeSessionAt` only accepts user message UUIDs, never assistant ones",
+        "why": "It accepts any chain-entry UUID; the assistant UUID is the usual choice for plain turns."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "With structured output, turn 3 ends on a tool result carrier and a `structured_output` attachment after the last assistant message",
+        "why": "Forking at the assistant UUID puts the kept turn's own payload in the discarded range, so the validator refuses by design."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Structured-output sessions cannot be resumed at all, only restarted",
+        "why": "They can be resumed and truncated; the fork point just has to be the kept turn's last entry."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`resumeDropsTurn` must name turn 3's prompt, the turn whose end you fork from",
+        "why": "It names the prompt of the turn being discarded, which here is turn 4."
+      }
+    ],
+    "explanation": "The general rule is to fork at the kept turn's last chain entry, whatever its type. End-turn tool sessions (structured output, or MCP tools marked `claude/endTurn`) end on a successful tool result carrier followed by a `structured_output` attachment that holds the real output. Fork at that attachment (or at the carrier when there is no attachment), and the refusal goes away.",
+    "reference": "Agent SDK docs: TypeScript reference (Options: resumeDropsTurn)",
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-SUB-036",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A query runs with `resume: id` and a `sessionStore` that holds that session. Put what the SDK does in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Calls the store's `load()` for that session, before any subprocess exists",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Writes the returned transcript into a temporary config directory",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Runs the Claude Code subprocess with `CLAUDE_CONFIG_DIR` pointing at that directory, mirroring new entries to `append()`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Deletes the temporary directory, and the local transcript with it, when the run ends",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "On a store-backed resume, the store is read first, the transcript is materialised into a temporary config directory, the run proceeds with dual writes, and the temporary directory is removed at the end. That leaves the store as the only durable copy, so a dropped `append` batch (reported as a `mirror_error` system message) has no surviving local copy. If the store has nothing for the session, `resume` falls back to local files instead.",
+    "reference": "Agent SDK docs: Persist sessions to external storage (Resume from the store)",
+    "roleLevel": 4,
+    "source": "interview:session-storage-mirroring",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/session-storage",
+        "https://github.com/anthropics/claude-agent-sdk-python/issues/1387"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-037",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are reviewing a Postgres `SessionStore` adapter before it goes to production. Which requirements must it meet? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`append()` deduplicates by `entry.uuid`, because a retried batch can re-deliver entries that already landed",
+        "why": "The SDK retries failed appends up to three attempts in total, so duplicates are possible."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Implement `listSubkeys()` if subagent transcripts must come back on resume",
+        "why": "Without it, resume restores only the main transcript."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Deleting the main key cascades to every subkey of that session and removes its summary entry",
+        "why": "This is the documented contract for `delete`, so a deleted session disappears completely."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return entries byte-identical to what was appended, so JSONB columns cannot be used",
+        "why": "`load` must return entries that are deep-equal, not byte-equal, so key-reordering JSON types are fine."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Skip retention logic, because the SDK prunes old sessions from the store using `cleanupPeriodDays`",
+        "why": "The SDK never deletes from your store; `cleanupPeriodDays` only sweeps local transcripts."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Implement `forkSession` as a database-level copy of the source rows",
+        "why": "A fork rewrites session IDs and remaps message UUIDs, so the SDK deliberately does not use a raw copy."
+      }
+    ],
+    "explanation": "The store contract is `append` and `load`, plus optional `listSessions`, `listSessionSummaries`, `delete` and `listSubkeys`. Adapters must cope with retried batches, return entries in order and deep-equal, cascade deletes, and handle their own retention. The SDK ships a conformance suite for checking these rules.",
+    "reference": "Agent SDK docs: Persist sessions to external storage",
+    "roleLevel": 5,
+    "source": "interview:session-storage-mirroring",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/session-storage"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-038",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `clarifier` subagent is defined with `tools: [\"Read\", \"Grep\", \"AskUserQuestion\"]` so it can ask the user about ambiguous requirements. It never asks anything; it just guesses. Why, and what is the better design?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`AskUserQuestion` only works in `plan` mode; set `permissionMode: \"plan\"` on the subagent",
+        "why": "Plan mode is unrelated. The tool is removed from every subagent whatever its mode."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Background subagents lose `AskUserQuestion`; set `background: false` and it will work in the foreground",
+        "why": "The removal applies to every subagent, foreground or background."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The tool needs a `canUseTool` callback in the parent; register one and approve it",
+        "why": "The tool is not in the subagent's tool set at all, so no permission check ever happens."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Claude Code removes `AskUserQuestion` from every subagent; have it return open questions in its report for the main agent to ask",
+        "why": "It is on the list of tools stripped from subagents even when listed; only the main agent talks to the user."
+      }
+    ],
+    "explanation": "Subagents cannot ask follow-up questions of the user. `AskUserQuestion`, `EnterPlanMode`, `Workflow` and a few others are removed from every subagent, and background subagents get a further reduced built-in set. This is a real trade-off of delegation: design subagents to report uncertainty back instead of guessing.",
+    "reference": "Claude Code docs: Create custom subagents (Available tools)",
+    "roleLevel": 3,
+    "source": "interview:subagent-tradeoffs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://agentswarms.fyi/interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-039",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The main session runs in `default` mode. An `AgentDefinition` for a `deployer` subagent sets `permissionMode: \"bypassPermissions\"` so deploy scripts run without prompts. On current Claude Code, which mode does `deployer` run in?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`bypassPermissions`, because a subagent's own `permissionMode` always takes precedence over the parent's mode",
+        "why": "A subagent runs in bypass only when the main conversation does."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`dontAsk`, the closest non-interactive mode the parent allows",
+        "why": "There is no such downgrade; the subagent keeps the parent's mode."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`default`, because a subagent cannot raise itself to `bypassPermissions` when the parent is not in it",
+        "why": "From v2.1.267, setting `bypassPermissions` on a subagent under a `default`, `dontAsk` or `plan` parent keeps the parent's mode."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Spawning fails with a configuration error naming the subagent",
+        "why": "No error is raised; the field is simply not applied."
+      }
+    ],
+    "explanation": "Under a `default`, `dontAsk` or `plan` parent, a subagent's `permissionMode` normally applies, but `bypassPermissions` is the exception and the subagent keeps the parent's mode. Under a `bypassPermissions`, `acceptEdits` or auto parent, the subagent inherits that mode and its own setting is ignored. So a subagent's `permissionMode` can narrow behaviour under a strict parent but never escalate to bypass. If deploys must run unattended, allow the specific commands with rules.",
+    "reference": "Claude Code docs: Create custom subagents (Permission modes)",
+    "roleLevel": 4,
+    "source": "interview:subagent-permission-inheritance",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-040",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A query with `maxBudgetUsd: 5` has three background subagents still running when spend reaches the cap. What does the SDK do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Lets the background subagents finish, then ends the query once they report",
+        "why": "The cap does not wait for them; running background subagents are stopped."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Refuses new spawns, stops the running background subagents, and ends with `error_max_budget_usd`",
+        "why": "These are the three ways the spend cap is enforced when subagents are involved."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ends the main query with `success`, while the background subagents keep running until they finish",
+        "why": "The result subtype is `error_max_budget_usd`, and background subagents are stopped rather than orphaned."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only blocks the main agent; subagents have budgets of their own and are not counted",
+        "why": "Subagent requests count toward the query's spend and its `total_cost_usd`."
+      }
+    ],
+    "explanation": "The spend cap covers the whole tree. When it is reached, new Agent calls get `Budget limit reached`, running background subagents are stopped, and the query ends with `error_max_budget_usd`, possibly a little over the cap. A single-shot `query()` raises after yielding that result, so catch it, keep the `session_id`, and resume with a higher cap if the work should continue.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Cap subagent depth, concurrency, and spend)",
+    "roleLevel": 4,
+    "source": "interview:fork-background-subagents",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/514",
+        "https://github.com/anthropics/claude-code/issues/103116",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-041",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript orchestrator runs four SDK agents at once on one repository, each fixing a different issue on its own branch. Project hooks and permission rules must come from the trusted main checkout, not from whatever each branch contains. Which setup fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "One git worktree per agent as its `cwd`, with `projectConfigRoot` pointing at the trusted main checkout",
+        "why": "Worktrees isolate file edits, and `projectConfigRoot` makes project settings, hooks and `.claude` trees load from the trusted checkout."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "One shared `cwd` with `forkSession: true` per agent, so each agent edits its own branch of the code",
+        "why": "Forks branch the conversation only; four agents in one directory still overwrite each other's files."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "One worktree per agent as its `cwd`, with no other settings, because each worktree carries the project config",
+        "why": "Edits are isolated, but each agent then loads hooks and permissions from its own branch, which breaks the trust requirement."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "One shared `cwd` with `enableFileCheckpointing` on each agent, rewinding any agent that touches another's files",
+        "why": "Checkpoints do not prevent collisions, and rewinding one agent can erase another's work in the same files."
+      }
+    ],
+    "explanation": "Parallel agents need separate working trees; sessions and forks do not branch files. `projectConfigRoot` (an absolute path to the trusted checkout that `cwd` is a worktree of) makes project settings, hooks, `.mcp.json`, the `.claude` config trees and `CLAUDE_PROJECT_DIR` come from there instead of from the branch. Inside one session, a subagent can get the same isolation with `isolation: worktree`.",
+    "reference": "Agent SDK docs: TypeScript reference (Options: projectConfigRoot)",
+    "roleLevel": 5,
+    "source": "interview:parallel-agents-worktrees",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/typescript",
+        "https://code.claude.com/docs/en/workflows",
+        "https://code.claude.com/docs/en/agent-view"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-042",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "A multi-step migration agent runs in a queue worker that can be killed at any moment, sometimes before the first result message. After a restart the job must pick up its conversation and must not repeat payments or emails. Which design choices are right? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Generate a UUID per job, pass it as `sessionId` when starting, and store it with the job before calling `query()`",
+        "why": "You know the session ID before any output, so even a crash in the first turn can be resumed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Make side-effecting tools idempotent, keyed on a job and step ID, so a replayed call is a no-op",
+        "why": "Resume restores the conversation, not the outside world; idempotency stops repeated side effects."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "On restart, call `query()` with `resume` set to the stored ID",
+        "why": "This reloads the full history so the agent continues instead of starting over."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "On restart, use `continue: true` so the worker picks up the job without tracking IDs",
+        "why": "With many jobs per host, `continue` picks the newest session in the directory, which may be another job's."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Enable file checkpointing and rewind on restart to undo the half-finished step's payments",
+        "why": "Checkpointing restores local files changed by Write and Edit, never external calls such as payments."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "On restart, fork the session so the half-finished step is discarded automatically",
+        "why": "A fork copies the full history, half-finished step included, and undoes no side effects."
+      }
+    ],
+    "explanation": "To survive crashes, make the session ID durable before any work starts. Choosing your own `sessionId` UUID does that; capturing it from the init message is the alternative. Resume with that ID on restart. Because resuming replays context and not effects, gate irreversible steps behind idempotency keys or human approval. Interviewers want both halves: conversation recovery and side-effect safety.",
+    "reference": "Agent SDK docs: Work with sessions",
+    "roleLevel": 4,
+    "source": "interview:resume-after-crash",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/sessions"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-043",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A data-privacy review says no subagent may ever receive the full conversation (it contains customer records), but your named subagents, which get only a task prompt, must keep working and behave as before. Since SDK releases bundling Claude Code v2.1.302, Claude can start forks with nothing configured. What is the most targeted fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add `\"Agent\"` to `disallowedTools`",
+        "why": "That blocks every subagent, not only forks, so the named subagents stop working."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Add `\"Agent(fork)\"` to `disallowedTools`",
+        "why": "This deny rule blocks only the fork subagent type; other subagents still run as before."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Remove `fork` from the `agents` option",
+        "why": "Forks are built in and are never defined in `agents`, so there is nothing to remove."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `CLAUDE_CODE_FORK_SUBAGENT=0` in `env`",
+        "why": "This stops forks, but it also turns fork mode off, which changes how nested subagents run (they start in the background), so behaviour does not stay the same."
+      }
+    ],
+    "explanation": "A fork copies the conversation so far, along with the parent's system prompt, tools and model, and shares its prompt cache. That is cheap for context-heavy side tasks but defeats input isolation. The SDK docs show `disallowedTools: [\"Agent(fork)\"]` as the way to deny only forks. Turning fork mode off is broader: in `-p` and SDK runs, a spawning subagent then stops waiting for its nested subagents.",
+    "reference": "Agent SDK docs: Subagents in the SDK (Forked subagents)",
+    "roleLevel": 4,
+    "source": "interview:fork-background-subagents",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md",
+        "https://code.claude.com/docs/en/agent-sdk/subagents"
+      ]
+    }
+  },
+  {
+    "id": "CSK-SUB-044",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "To stop a `release-helper` subagent from pushing, a teammate adds `disallowedTools: [\"Bash(git push *)\"]` to its definition. Now the subagent cannot even run `git status` or the tests. What should they do instead?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Write the entry as `Bash(git push:*)`, which is the specifier form `disallowedTools` understands",
+        "why": "The problem is not syntax: any specifier in a subagent's `disallowedTools` still removes the whole tool."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "List `Bash(git status)` and `Bash(npm test)` in the subagent's `tools` to add those commands back",
+        "why": "`disallowedTools` is applied first and removes Bash from the pool, so listing it in `tools` cannot bring it back."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Remove the entry and add a `Bash(git push *)` deny rule to `permissions.deny` in settings",
+        "why": "A permission deny rule blocks only matching commands and applies to the main conversation and to subagents."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `permissionMode: \"plan\"` on the subagent so it can run read-only commands but not push",
+        "why": "Plan mode blocks edits and changes much more than pushes, and depending on the parent's mode it may not even apply."
+      }
+    ],
+    "explanation": "In a subagent definition, `tools` and `disallowedTools` choose whole tools. An entry with a specifier still removes the entire tool, and a tool listed in both fields is removed. To block specific commands while keeping the tool, use a permission rule: a `Bash(git push *)` entry in `permissions.deny` applies to subagents too. In other words, use tool scoping to decide which tools a subagent has and permission rules to decide what each tool may do.",
+    "reference": "Claude Code docs: Create custom subagents (Restrict which tools a subagent can use)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-SUB-045",
+    "domain": 2,
+    "skill": "subagents-and-sessions",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each error from a session or checkpoint workflow with its cause.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "File checkpointing was not enabled on the original session that made the edits",
+        "why": "No backups exist for that message, so there is nothing to restore."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The session doing the rewind did not enable checkpointing (or bare `claude -p` ran without the env variable)",
+        "why": "The rewinding process itself must have checkpointing switched on."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`rewindFiles()` was called after the message loop finished and the CLI connection closed",
+        "why": "Rewind is a control call on a live query."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The range a truncating resume would discard contains entries other than the turn being dropped",
+        "why": "For example, a message queued mid-turn that the caller never saw."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "\"No file checkpoint found for this message\"",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "\"File rewinding is not enabled\"",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "\"ProcessTransport is not ready for writing\"",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "\"Resume rejected by --resume-drops-turn: ...\"",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Checkpointing must be on for the run that edits the files and for the run that rewinds. The SDK sets `CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING` internally only when the option is on. Rewinding after the stream needs a resumed query opened with an empty prompt. The drops-turn refusal is deterministic, so recover by resuming plainly instead of retrying.",
+    "reference": "Agent SDK docs: Rewind file changes with checkpointing (Troubleshooting)",
+    "roleLevel": 4
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "custom-tools-mcp": {
+    "summary": "Every tool you add to an Agent SDK agent is an MCP tool. Either you write it in-process with `tool()` / `@tool` and `createSdkMcpServer()` / `create_sdk_mcp_server()`, or you connect a stdio, HTTP or SSE server through `mcpServers`. Interviewers probe four things: the result shape and how errors reach Claude, the `mcp__<server>__<tool>` name that every allow rule needs, reading connection status from the init message, and scaling with tool search.",
+    "points": [
+      "Defining a tool takes a name, a description, an input schema and an async handler. TypeScript uses `tool(name, desc, zodShape, handler, extras?)`, with `.describe()` on fields. Python uses `@tool(name, desc, schema, annotations=...)` with a dict like `{'lat': float}` (every key required), `Annotated[float, 'desc']`, a TypedDict or a full JSON Schema. Wrap the tools with `createSdkMcpServer({ name, version, tools })` and pass the result under a key in `mcpServers`.",
+      "SDK servers (`type: 'sdk'`) run inside your process, with no extra deployable and direct access to your app's state and credentials. The other configs are stdio (`command`, `args`, `env`), `type: 'http'` (streamable HTTP; `.mcp.json` also accepts `streamable-http`) and `type: 'sse'`, each with `url` and `headers`.",
+      "Handlers return `{ content: [...] }`, with `text`, `image` (raw base64 `data` plus `mimeType`, no URL), `audio`, `resource` or `resource_link` blocks, plus optional `structuredContent` and `isError`. Python uses `is_error`; the Python decorator forwards only `content` and `is_error`, so `isError` and `structuredContent` are silently dropped there.",
+      "A handler that throws does not end the query: the in-process server returns an error result with the raw message and the loop continues. Catch the error and return `isError: true` with an actionable message when the raw text is not enough.",
+      "Tool names are `mcp__<server key>__<tool>`, where the key is the one used in `mcpServers` and `.` or spaces become `_`. Plugin servers become `mcp__plugin_<plugin>_<server>__<tool>`. Allow rules need the full name or an anchored glob such as `mcp__crm__*`; unanchored `mcp__*` in an allow list approves nothing.",
+      "`acceptEdits` never approves MCP tools. Use `allowedTools` rather than `bypassPermissions`. `tools: []` removes every built-in while leaving MCP tools available. `strictMcpConfig` / `strict_mcp_config` loads only the servers you pass, ignoring `.mcp.json`, user settings, plugins and claude.ai connectors.",
+      "`.mcp.json` loads only when the `project` setting source is on (it is by default). It expands `${VAR}` and `${VAR:-default}` in `command`, `args`, `env`, `url` and `headers`, but credential variables such as `ANTHROPIC_API_KEY` and `NPM_TOKEN` read as empty in a remote server's `url` and `headers`.",
+      "The init message's `mcp_servers` gives each server's `status`: `connected`, `failed`, `needs-auth`, `pending` or `disabled`. Its `tools` array lists the `mcp__` tools available at that moment. Connection failures never throw. For live status use `mcpServerStatus()` (Python: `ClaudeSDKClient.get_mcp_status()`); to retry use `reconnectMcpServer()` / `reconnect_mcp_server()`, and to switch a server off or on use `toggleMcpServer()`.",
+      "The SDK runs no interactive OAuth. A server with no usable sign-in reports `needs-auth`; complete OAuth in your app and pass `Authorization: Bearer <token>` in `headers`.",
+      "Tool search is on by default and also defers SDK tools: Claude sees names and loads up to five full schemas per search. `ENABLE_TOOL_SEARCH` takes unset/`true`, `auto` (activates at 10% of the context window), `auto:N` or `false`. In TypeScript, `alwaysLoad: true` on `tool()` extras or on a server keeps schemas upfront, and `searchHint` improves matching.",
+      "There are two timeouts. `MCP_TIMEOUT` (30 seconds by default) limits connection. `MCP_TOOL_TIMEOUT` limits each call, and a per-server `timeout` in milliseconds overrides it (values below 1000 are ignored; progress notifications do not extend it). Results above 25,000 tokens (`MAX_MCP_OUTPUT_TOKENS`) or 50,000 characters are saved to a file and Claude gets the path.",
+      "TypeScript `setMcpServers()` replaces only the servers it added plus in-process SDK servers. Stdio, HTTP and SSE servers from the options, settings-file servers and plugin servers keep running. `onElicitation` answers server input requests; without it (and without a hook) they are declined."
+    ],
+    "traps": [
+      "Putting the bare tool name (`get_weather`) in `allowedTools`: it never matches, and in a `query()` with no callback every call lands in `permission_denials`.",
+      "Returning `'isError': True` from a Python handler: the decorator reads only `is_error`, so the failure reaches Claude as a success.",
+      "Treating `pending` in the init message as a failure: it can mean still connecting, served from the tool-list cache, or a deadline at the boundary. Check for `failed` and `needs-auth`.",
+      "Expecting `readOnlyHint` or `destructiveHint` to enforce anything: for SDK tools only `readOnlyHint` changes behaviour (parallel batching), and none of them stops the handler.",
+      "Confusing `MCP_TIMEOUT` (connection) with `MCP_TOOL_TIMEOUT` and per-server `timeout` (call duration), or passing seconds where milliseconds are expected.",
+      "Letting the model supply security context, such as a tenant ID, as a tool argument instead of closing over it in a per-request in-process server.",
+      "Moving a Python MCP server that uses elicitation, sampling or progress in-process: those server-to-client messages are not forwarded yet."
+    ],
+    "docs": [
+      { "title": "Give Claude custom tools", "url": "https://code.claude.com/docs/en/agent-sdk/custom-tools" },
+      { "title": "Connect to external tools with MCP", "url": "https://code.claude.com/docs/en/agent-sdk/mcp" },
+      { "title": "Scale to many tools with tool search", "url": "https://code.claude.com/docs/en/agent-sdk/tool-search" },
+      { "title": "Agent SDK reference - TypeScript", "url": "https://code.claude.com/docs/en/agent-sdk/typescript" },
+      { "title": "Connect Claude Code to tools via MCP", "url": "https://code.claude.com/docs/en/mcp" }
+    ]
+  }
+}

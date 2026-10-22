@@ -1,0 +1,36 @@
+{
+  "subagents-and-sessions": {
+    "summary": "Subagents are separate agent instances that Claude spawns through the `Agent` tool to keep context clean, run work in parallel and apply narrower tools or models. Sessions are the JSONL conversation history Claude Code writes to disk, which you can continue, resume, fork or mirror to your own store. Know what a subagent inherits and returns, how background, fork and nested subagents behave, how to pick up a session reliably across restarts and hosts, and what file checkpointing can and cannot undo.",
+    "points": [
+      "Define subagents with the `agents` option: a map of name to `AgentDefinition`. Only `description` and `prompt` are required. Optional fields include `tools`, `disallowedTools`, `model` (an alias, a full ID or `inherit`), `skills`, `mcpServers`, `maxTurns`, `background`, `effort`, `permissionMode` and `memory`. TypeScript adds `omitClaudeMd` and `autoCompactWindow`. Programmatic agents override `.claude/agents/` files with the same name, and the built-in `general-purpose` agent is always available unless `CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1` is set.",
+      "Claude delegates through the `Agent` tool (called `Task` before Claude Code v2.1.63, and still `Task` in the `system:init` tools list), so match both names when detecting launches. Messages from inside a subagent carry `parent_tool_use_id`; TypeScript messages also carry `agent_id`.",
+      "A non-fork subagent starts fresh. It gets its own prompt, the Agent tool's prompt string, CLAUDE.md (unless `omitClaudeMd`), tool definitions and the parent's thinking setting. It does not get the parent's history, system prompt or loaded skills. Only its final message returns to the parent, which may paraphrase it.",
+      "Tool scoping: if `tools` is omitted, the subagent gets every tool available to subagents. A listed set means only those tools, and a missing tool simply is not there (no prompt, no error). `disallowedTools` is applied first and removes whole tools even when an entry has a specifier. `AskUserQuestion`, `EnterPlanMode`, `Workflow` and a few others are removed from every subagent, and background subagents keep only a reduced built-in set.",
+      "Subagents start in the background by default: the Agent result is `status: \"async_launched\"` and the report arrives in a later turn. Claude waits (`status: \"completed\"`) when its next step needs the report or when the prompt asks it to. `background: true` keeps an agent in the background.",
+      "Nesting is on by default, up to 3 layers (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, where `1` means no nesting). At most 20 subagents run at once (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`). `maxBudgetUsd` counts subagent spend; at the cap it refuses spawns, stops background subagents and ends with `error_max_budget_usd`. Pass the env variables through `env`; TypeScript's `env` replaces the environment, so spread `process.env`.",
+      "Forks (`subagent_type: \"fork\"`, which Claude can start with nothing configured since Claude Code v2.1.302) copy the whole conversation, system prompt, tools and model, and share the parent's prompt cache. Deny them alone with `disallowedTools: [\"Agent(fork)\"]`.",
+      "A subagent's `permissionMode` is ignored under a `bypassPermissions`, `acceptEdits` or auto parent, which the subagent inherits. Under a `default`, `dontAsk` or `plan` parent it applies, except that `bypassPermissions` is never granted to a subagent of a non-bypass parent.",
+      "Model order for a subagent: the per-call `model` parameter, then the definition's `model`, then `CLAUDE_CODE_SUBAGENT_MODEL`, then the main model (Claude Code v2.1.251 and later). Resume a subagent by resuming the parent session and naming the `agentId` from the Agent result. Explore and Plan are one-shot and return no `agentId`.",
+      "Sessions are stored at `~/.claude/projects/<encoded-cwd>/<session-id>.jsonl`, where every non-alphanumeric character of the cwd becomes `-`. Read the ID from the result message (always present) or the init message. `continue` picks the newest session in the directory; `resume` takes an ID; `forkSession` with `resume` makes a new ID and leaves the original alone. A custom `sessionId` UUID cannot be combined with `resume` or `continue` unless `forkSession` is also set. `persistSession: false` is TypeScript only; Python sets `CLAUDE_CODE_SKIP_PROMPT_HISTORY` in `env`.",
+      "`resumeSessionAt` truncates a resume at any chain-entry UUID. `resumeDropsTurn` (the prompt UUID of the turn being dropped) makes the CLI refuse when the discarded range holds anything else. The refusal is deterministic, so resume plainly instead of retrying. With structured output, fork at the kept turn's last entry (the `structured_output` attachment), not at the last assistant UUID.",
+      "A `SessionStore` (`append` and `load` required; `listSessions`, `listSessionSummaries`, `delete` and `listSubkeys` optional) mirrors local writes. Keys include `projectKey`, derived from the cwd, so resume from a matching cwd. It cannot be combined with `persistSession: false` or with file checkpointing. File checkpointing (`enableFileCheckpointing` plus the `replay-user-messages` extra arg) restores only Write, Edit and NotebookEdit changes. To rewind after the stream ends, resume with an empty prompt and checkpointing on, then call `rewindFiles` inside the loop."
+    ],
+    "traps": [
+      "Resuming or forking a session restores the conversation only. Files stay as they are on disk, and two forks in one directory overwrite each other's edits; use git worktrees.",
+      "`continue: true` in a multi-user service resumes whichever session in the directory is newest, which is often someone else's. Store IDs and use `resume`.",
+      "Rewind does not undo Bash edits, directory operations, remote changes or most subagent edits, and it never rewinds the conversation.",
+      "Older posts say subagents can never spawn subagents. Current releases allow 3 layers by default; to stop one subagent, leave `Agent` out of its `tools`.",
+      "A subagent cannot ask the user anything: `AskUserQuestion` is stripped even if listed. Have it report open questions instead of guessing.",
+      "`disallowedTools: [\"Bash(git push *)\"]` in a subagent removes all of Bash. Block single commands with a `permissions.deny` rule.",
+      "A `SessionStore` miss after moving to a new host is usually a different `cwd` changing `projectKey`, not a storage bug.",
+      "Retrying a refused `resumeDropsTurn` resume fails forever; it is a deterministic refusal, not a transient error."
+    ],
+    "docs": [
+      { "title": "Subagents in the SDK", "url": "https://code.claude.com/docs/en/agent-sdk/subagents" },
+      { "title": "Work with sessions", "url": "https://code.claude.com/docs/en/agent-sdk/sessions" },
+      { "title": "Persist sessions to external storage", "url": "https://code.claude.com/docs/en/agent-sdk/session-storage" },
+      { "title": "Rewind file changes with checkpointing", "url": "https://code.claude.com/docs/en/agent-sdk/file-checkpointing" },
+      { "title": "Create custom subagents (Claude Code)", "url": "https://code.claude.com/docs/en/sub-agents" }
+    ]
+  }
+}

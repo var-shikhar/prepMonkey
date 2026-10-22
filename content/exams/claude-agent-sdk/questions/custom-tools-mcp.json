@@ -1,0 +1,2010 @@
+[
+  {
+    "id": "CSK-CTM-001",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In the Python Agent SDK, which pair of helpers defines a custom tool and packages it so it can be passed to `ClaudeAgentOptions(mcp_servers=...)` without running a separate server process?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`@tool(...)` on an async handler, then `create_sdk_mcp_server(name=..., tools=[...])`",
+        "why": "The decorator turns the handler into an `SdkMcpTool`, and the factory wraps the tools in an in-process server config of type `sdk`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`@function_tool` on the handler, then `Agent(name=..., tools=[...])`",
+        "why": "That is another vendor's agents API. The Claude Agent SDK has no `function_tool` decorator or `Agent` class for this."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`tool(...)` around the handler, then `createSdkMcpServer({ name, tools })`",
+        "why": "Those are the TypeScript names. Python uses the `@tool` decorator and `create_sdk_mcp_server`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`@tool(...)` on the handler, then the function object itself listed in `allowed_tools`",
+        "why": "`allowed_tools` holds permission rule strings. A tool only reaches Claude through a server registered in `mcp_servers`."
+      }
+    ],
+    "explanation": "Custom tools in the Agent SDK are MCP tools served by an in-process (SDK) MCP server. In Python you write `@tool(name, description, input_schema)` and `create_sdk_mcp_server(name, version, tools)`; in TypeScript you use `tool()` and `createSdkMcpServer()`. The returned config goes under a key in `mcp_servers` / `mcpServers`, and Claude sees each tool as `mcp__<key>__<tool>`.",
+    "reference": "Agent SDK docs: Give Claude custom tools",
+    "source": "interview:in-process-mcp-tool",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-CTM-002",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript agent passes `mcpServers: { weather: weatherServer }`, and the server has a tool named `get_temperature`. Which name do you put in `allowedTools` so the tool runs without a permission prompt?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`mcp__weather__tools__get_temperature`",
+        "why": "There is no `tools` segment. The name has exactly three parts: `mcp`, the server key and the tool name."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`mcp_weather_get_temperature`",
+        "why": "The separators are double underscores, not single ones."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`mcp__weather__get_temperature`",
+        "why": "MCP tools are named `mcp__<server key>__<tool name>`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`get_temperature`",
+        "why": "The bare tool name is not what Claude Code calls the tool, so an allow rule for it never matches."
+      }
+    ],
+    "explanation": "Every MCP tool, including in-process SDK tools, is exposed as `mcp__{server_name}__{tool_name}`, where `{server_name}` is the key you used in `mcpServers`. Characters such as `.` and spaces in the key become `_`, so a key of `my.server` gives `mcp__my_server__list_issues`. To approve every tool on one server, use `mcp__weather__*`.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Tool naming convention)",
+    "source": "interview:mcp-tool-naming",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-CTM-003",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A server created with `createSdkMcpServer()` runs as a separate child process that Claude Code talks to over stdio.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "That describes a stdio server you configure with `command` and `args`, not an SDK server."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: an SDK MCP server runs inside your application's process, and the SDK connects it to Claude Code over an in-memory MCP transport."
+      }
+    ],
+    "explanation": "SDK MCP servers run in-process, so their handlers can use your application's state, connections and credentials directly, with no extra process to deploy. Use stdio servers for tools that ship as a command (for example `npx some-mcp-server`), and HTTP or SSE servers for remote ones.",
+    "reference": "Agent SDK docs: Give Claude custom tools",
+    "source": "interview:in-process-mcp-tool",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.ksred.com/the-claude-agent-sdk-what-it-is-and-why-its-worth-understanding/",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-CTM-004",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "An entry in `mcpServers` carries a `type` field. What value of `type` marks an in-process server created by `createSdkMcpServer()` or `create_sdk_mcp_server()`? Type the value only.",
+    "options": [],
+    "accepted": [
+      "sdk",
+      "'sdk'",
+      "\"sdk\""
+    ],
+    "explanation": "The SDK server config has `type: 'sdk'`, a `name`, and a live server `instance`. The other types are `stdio` (optional on the config, so `command` alone is enough), `sse` and `http`. Because the instance is a live object, an SDK server can only be passed in code, never written into `.mcp.json`.",
+    "reference": "Agent SDK docs: TypeScript reference (McpSdkServerConfig)",
+    "source": "interview:in-process-mcp-tool",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-005",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What must a custom tool handler return for Claude to receive a result?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A plain string, which the SDK wraps in a text block for you",
+        "why": "The handler must return an MCP result object; a bare string is not one."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An object with a `result` string and an optional `error` string for failures",
+        "why": "Those are not MCP result fields. The required field is `content`, and failures use `isError`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An API `tool_result` block carrying the `tool_use_id` and `content`",
+        "why": "Claude Code builds the `tool_result` and fills in the id. Your handler returns the MCP result shape."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "An object whose `content` is an array of blocks such as a text block",
+        "why": "`content` is the one required field; each block has a `type` such as `text`, `image` or `resource`."
+      }
+    ],
+    "explanation": "A handler returns an MCP `CallToolResult`: `content` (required, an array of `text`, `image`, `audio`, `resource` or `resource_link` blocks), plus optional `structuredContent` and `isError` (`is_error` in Python). For example: `return { content: [{ type: 'text', text: 'Temperature: 61F' }] }`.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Create a custom tool)",
+    "source": "interview:tool-result-shape",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-CTM-006",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each server you were handed with the `mcpServers` entry that fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{ command: 'npx', args: [...] }`",
+        "why": "A stdio server: Claude Code launches a local process and talks to it over stdin and stdout."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{ type: 'http', url: '...' }`",
+        "why": "The streamable HTTP transport for remote servers."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{ type: 'sse', url: '...', headers: {...} }`",
+        "why": "The older Server-Sent Events transport, for remote servers that only offer it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The object returned by `createSdkMcpServer()`",
+        "why": "An in-process server for tools defined in your own code."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Its README says to run `npx -y @modelcontextprotocol/server-filesystem /data`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A hosted server whose docs give `https://api.example.com/mcp` and say it speaks streamable HTTP",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A legacy hosted endpoint at `https://api.example.com/mcp/sse` that only supports Server-Sent Events",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Three functions in your own codebase that query your orders database",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The docs' rule of thumb: a command to run means stdio, a URL means HTTP or SSE, and tools you write in code mean an SDK MCP server. In `.mcp.json`, `streamable-http` is accepted as an alias for `http`, but the SDK's typed config only declares `http`, so use `http` for servers you pass in code.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Transport types)",
+    "source": "interview:mcp-transports",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-007",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a TypeScript `tool()` definition, how do you give the `latitude` argument a description that Claude can read?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Declare the field as `Annotated<number, 'Latitude coordinate'>`",
+        "why": "`Annotated[float, '...']` is the Python dict-schema pattern; TypeScript has no such runtime type."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Chain `.describe('Latitude coordinate')` on the Zod field",
+        "why": "The description is carried into the JSON Schema that Claude reads."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Write a JSDoc comment above the field in the schema object",
+        "why": "Comments are gone at runtime, so they never reach the JSON Schema sent to Claude."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass `{ annotations: { latitude: 'Latitude coordinate' } }` as extras",
+        "why": "Annotations are tool-level behaviour hints such as `readOnlyHint`, not field descriptions."
+      }
+    ],
+    "explanation": "The TypeScript input schema is a Zod raw shape, and `.describe()` on a field becomes that property's `description` in the JSON Schema. In Python the equivalent is `{'latitude': Annotated[float, 'Latitude coordinate']}` in the dict schema, or a `description` key in a full JSON Schema. Good field and tool descriptions are how Claude decides when and how to call the tool.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Create a custom tool)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-008",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which tool annotation lets Claude Code run a custom tool's calls in parallel with other calls of the same kind?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`idempotentHint: true`",
+        "why": "It says repeated calls with the same arguments are safe; for SDK tools it is informational and does not enable parallel calls."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`openWorldHint: false`",
+        "why": "It says the tool stays inside your process; it is informational only."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`readOnlyHint: true`",
+        "why": "A tool that does not modify its environment can be batched with other read-only calls."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`destructiveHint: false`",
+        "why": "Informational only; parallel batching keys off `readOnlyHint`."
+      }
+    ],
+    "explanation": "Annotations are optional metadata passed as the fifth argument of `tool()` (`{ annotations: {...} }`) or the `annotations=` keyword of `@tool`. Only `readOnlyHint` changes behaviour here: it controls whether the tool can run in parallel with other read-only tools. The defaults are `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: false` and `openWorldHint: true`. They are hints, not enforcement.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Add tool annotations)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-009",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript tool handler throws `new Error('ECONNREFUSED 10.0.0.5:5432')` and nothing catches it. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `query()` iterator throws, and the session ends with an `error_during_execution` result",
+        "why": "A handler error does not stop the agent loop; the in-process server catches it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The server turns it into an error result with the raw message; the loop continues",
+        "why": "The in-process MCP server converts uncaught exceptions into error results."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The SDK retries the handler up to three times before reporting anything to Claude",
+        "why": "There is no automatic handler retry. Claude may choose to call the tool again after reading the error."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Claude receives an empty successful result, because handler exceptions are swallowed",
+        "why": "The failure is reported as an error result with the exception message, not hidden."
+      }
+    ],
+    "explanation": "How you report an error decides what Claude reads, not whether the query fails. An uncaught exception reaches Claude as the raw message. Catch it and return `{ content: [{ type: 'text', text: 'Orders DB unreachable; try again or use cached_orders' }], isError: true }` (Python: `is_error: True`) when the raw text is not enough for Claude to act on. Either way Claude can retry, try another tool or explain the failure.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Handle errors)",
+    "source": "interview:tool-result-shape",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-010",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A forecast tool needs an optional `hours` argument that defaults to 12. Which two definitions let Claude leave it out? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "TypeScript: `hours: z.number().int().optional()` in the shape, and `args.hours ?? 12` in the handler",
+        "why": "`.optional()` keeps the field out of the schema's required list, and the handler applies the default."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Python: a full JSON Schema dict with `hours` in `properties` but not in `required`, read with `args.get('hours', 12)`",
+        "why": "Requiredness comes from the `required` array, so leaving `hours` out of it makes it optional."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Python: the simple dict schema `{'latitude': float, 'longitude': float, 'hours': int}`",
+        "why": "The simple dict schema marks every key as required."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Python: a JSON Schema that keeps `hours` in `required` but adds `'optional': True` inside its property",
+        "why": "JSON Schema has no `optional` keyword; while `hours` is in `required`, Claude must send it."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "TypeScript: `hours: z.number()` plus `{ annotations: { idempotentHint: true } }` as extras",
+        "why": "Annotations describe behaviour; they do not change the input schema."
+      }
+    ],
+    "explanation": "Declare the parameter optional in the schema and apply the default in the handler. In TypeScript that means `.optional()` on the Zod field. Python's simple dict schema requires every key (`{'a': float}` becomes `required: ['a']`), so use the full JSON Schema form, or a TypedDict with optional keys, and read the value with `args.get()`.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Make a parameter optional)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-011",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent sets `permissionMode: 'acceptEdits'` so that the custom `mcp__crm__update_contact` tool runs without approval, but its calls still go to `canUseTool`. What is the narrowest fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to `bypassPermissions`, because it is the only mode that can run MCP tools",
+        "why": "It does auto-approve MCP tools, but it also drops most other safety prompts. And it is not the only way."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Mark the tool `readOnlyHint: true` so `acceptEdits` treats it as a safe edit",
+        "why": "Annotations do not feed the permission flow, and the tool is not read-only anyway."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Add `mcp__crm__update_contact`, or `mcp__crm__*`, to `allowedTools`",
+        "why": "An allow rule pre-approves exactly that tool or server and nothing else."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `strictMcpConfig: true` so that servers passed in code count as trusted",
+        "why": "`strictMcpConfig` controls which servers load, not whether their calls are approved."
+      }
+    ],
+    "explanation": "`acceptEdits` auto-approves file edits and filesystem Bash commands only; it never approves MCP tools. The docs recommend `allowedTools` over permission modes for MCP access: a server wildcard such as `mcp__crm__*` grants exactly that server, while `bypassPermissions` is far broader than needed.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Allow MCP tools)",
+    "source": "interview:custom-tool-not-called",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-012",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your repo has a `.mcp.json` at its root. Its servers loaded with default `query()` options, but after you set `settingSources: ['user']` they are gone. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Any explicit `settingSources` value also switches on `strictMcpConfig`",
+        "why": "They are separate options. Strict mode is only on when you set it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`.mcp.json` servers load only through `ClaudeSDKClient`, never through `query()`",
+        "why": "Both entry points load it. It loaded under the default options, which proves `query()` reads it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`.mcp.json` loads only with the `project` source on; add `'project'` or use `mcpServers`",
+        "why": "The project setting source is on by default, so it loaded before. Your explicit list left it out."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "User settings outrank project files, so the empty user server list replaced the project servers",
+        "why": "Server lists from different scopes are not overwritten by an empty list. The file simply was not read."
+      }
+    ],
+    "explanation": "MCP servers come either from code (`mcpServers`) or from config files that the setting sources load. The project's `.mcp.json` is picked up when the `project` setting source is enabled, which it is for default `query()` options. If you set `settingSources` explicitly, include `'project'` for this file to load.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Add a server from a config file)",
+    "source": "interview:mcp-servers-option-strict",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/mcp",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-013",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If a stdio MCP server in `mcpServers` cannot start (for example, its `npx` package does not exist), `query()` throws before it yields any message.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "MCP connection failures do not throw; the run carries on without that server's tools."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the init message reports the server's status, for example `failed`, and Claude may fall back to built-in tools."
+      }
+    ],
+    "explanation": "Check the `mcp_servers` array of the `system`/`init` message for `failed` or `needs-auth` before trusting the result, because Claude can quietly work around a missing server. Servers still `pending` at init need a later check through `mcpServerStatus()` (TypeScript) or `ClaudeSDKClient.get_mcp_status()` (Python).",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Error handling)",
+    "source": "interview:mcp-debugging",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-014",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two tell you which MCP tools a running TypeScript session actually has? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Filter the `tools` array of the `system`/`init` message for names starting with `mcp__`",
+        "why": "It lists the tools of each server that had connected when init was sent, plus servers with a cached tool list."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `supportedCommands()` on the query object",
+        "why": "That returns the session's slash commands, not its tools."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Call `await q.mcpServerStatus()` and read `tools` on each connected server's entry",
+        "why": "Each status entry carries the server's tool list once it is connected, and you can call it at any time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Read `permission_denials` on the final result message",
+        "why": "That records tool calls that were denied, not which tools exist."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Read `parent_tool_use_id` on each assistant message",
+        "why": "That links a subagent's messages to the tool call that spawned it; it says nothing about available tools."
+      }
+    ],
+    "explanation": "The init message is a snapshot: a server that connects after it is sent is missing from its `tools` array. For a live view, call `mcpServerStatus()` in TypeScript or `ClaudeSDKClient.get_mcp_status()` in Python; each entry has `name`, `status`, and `tools` once the server is connected.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Discover available tools)",
+    "source": "interview:mcp-debugging",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/typescript",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-015",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A remote HTTP MCP server answers with an authorization challenge, and Claude Code finds no sign-in it can use for that server. The SDK does not run an interactive OAuth flow. Which `status` string does the server report? Type it exactly.",
+    "options": [],
+    "accepted": [
+      "needs-auth",
+      "'needs-auth'",
+      "\"needs-auth\""
+    ],
+    "explanation": "The statuses are `connected`, `failed`, `needs-auth`, `pending` and `disabled`. `needs-auth` means there is no usable sign-in: pass a token in `headers`, or sign in from an interactive Claude Code session on the same machine before the run. (A server reports `failed` instead when Claude Code cannot read its credential store.) The run continues without that server's tools either way.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (OAuth2 authentication)",
+    "source": "interview:mcp-auth",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-016",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent must be able to call only your three in-process CRM tools: no Bash, Read, Edit or any other built-in should even be visible to Claude. Which configuration does that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`allowedTools: ['mcp__crm__*']` on its own, with every other option left at its default",
+        "why": "`allowedTools` only pre-approves. Built-ins you leave out remain available and go through the permission flow."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`disallowedTools: ['*']` together with `allowedTools: ['mcp__crm__*']`",
+        "why": "A `*` deny glob matches every tool, your MCP tools included, so the CRM tools are removed as well."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`tools: []` with the server in `mcpServers` and `allowedTools: ['mcp__crm__*']`",
+        "why": "An empty `tools` list removes every built-in from context, leaves MCP tools alone, and the wildcard approves the CRM tools."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`permissionMode: 'dontAsk'` together with `allowedTools: ['mcp__crm__*']`",
+        "why": "`dontAsk` only denies calls that are not approved; the built-ins stay in Claude's context and Claude may still try them."
+      }
+    ],
+    "explanation": "There are two layers. Availability (is the tool in Claude's context) is set by `tools` and by bare-name `disallowedTools` entries. Permission (is a call approved) is set by `allowedTools` and scoped rules. `tools: []` removes every built-in while leaving MCP tools untouched, so Claude can only use your MCP tools.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Configure allowed tools)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-017",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps for wiring a new in-process `refund_order` tool into a TypeScript agent in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Define the tool with `tool('refund_order', description, zodShape, handler)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Wrap it with `createSdkMcpServer({ name: 'billing', tools: [refundOrder] })`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pass the server under a key in the options, as in `mcpServers: { billing: server }`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add `mcp__billing__refund_order` to `allowedTools`, using the same key",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Run once and confirm `mcp__billing__refund_order` appears in the init message's `tools` list",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "The tool has to exist before a server can hold it, and the server has to be registered under a key before you can write the fully qualified name, because that name is built from the key: `mcp__<key>__<tool>`. Checking the init message's `tools` list is the quickest proof that the server connected and the tool is visible.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Call a custom tool)",
+    "source": "interview:in-process-mcp-tool",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-CTM-018",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool fetches a PNG chart from an internal URL and must show it to Claude as an image. What should the handler return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{ content: [{ type: 'image', url: 'https://internal/chart.png' }] }`",
+        "why": "Image blocks have no URL field; the bytes travel inline."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{ content: [{ type: 'image', data: 'data:image/png;base64,iVBOR...', mimeType: 'image/png' }] }`",
+        "why": "`data` must be raw base64, without the `data:image/...;base64,` prefix."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{ content: [{ type: 'image', data: buf.toString('base64'), mimeType: 'image/png' }] }`",
+        "why": "Fetch the bytes in the handler, base64-encode them, and set the required `mimeType`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{ content: [{ type: 'text', text: buf.toString('base64') }] }`",
+        "why": "Claude would get a long base64 string as text, not visual input."
+      }
+    ],
+    "explanation": "An image block carries base64 bytes in `data` and needs a `mimeType`. PNG, JPEG, GIF and WebP reach Claude as visual input; any other image type is saved to disk and Claude gets the file path as text. To return something that lives at a URL, fetch it in the handler first.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Return images and resources)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-019",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each requirement for an SDK agent with the option that meets it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`strictMcpConfig: true`",
+        "why": "Loads only the servers passed in `mcpServers`, ignoring `.mcp.json`, user settings, plugin servers and claude.ai connectors."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`tools: []`",
+        "why": "Removes every built-in tool from Claude's context and leaves MCP tools alone."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`allowedTools: ['mcp__crm__*']`",
+        "why": "Pre-approves every tool on the `crm` server."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`disallowedTools: ['mcp__*']`",
+        "why": "A deny glob that matches every MCP tool on every server."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Ignore the repository's `.mcp.json` and any plugin-provided servers",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Leave Claude with only your MCP tools and no built-ins",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Run every tool from the `crm` server without a prompt",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Block MCP tools from all servers for a run that may only use built-ins",
+        "answer": "D"
+      }
+    ],
+    "explanation": "These four options work on different things. `strictMcpConfig` decides which servers load. `tools` decides which built-ins are visible. `allowedTools` approves calls. `disallowedTools` removes or denies tools. Deny rules accept unanchored globs such as `mcp__*`, but allow globs must start with a literal `mcp__<server>__` prefix, so `mcp__*` in `allowedTools` would approve nothing.",
+    "reference": "Agent SDK docs: Configure permissions; TypeScript reference (Options)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-020",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python `@tool` handler for an order lookup returns this when the order does not exist:\n\n```python\nreturn {\n    'content': [{'type': 'text', 'text': 'Order 4411 not found'}],\n    'isError': True,\n}\n```\n\nThe tool result reaches Claude as a success, not an error. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The Python decorator reads only the snake_case key `is_error`, so `isError` is ignored",
+        "why": "The SDK builds the MCP result from `content` and `is_error`; with no `is_error`, the flag defaults to false."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An error result must also set `structuredContent`, otherwise Claude Code drops the error flag",
+        "why": "`structuredContent` is unrelated to the error flag, and the Python decorator does not forward it anyway."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "In-process tools cannot report errors at all; only external MCP servers can",
+        "why": "In-process tools report errors with `is_error` in Python or `isError` in TypeScript."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The text block must start with `Error:` before Claude Code will set the flag",
+        "why": "Claude Code never inspects the text to decide; the boolean field decides."
+      }
+    ],
+    "explanation": "Python uses `is_error` and TypeScript uses `isError`. The installed Python SDK builds the result as `{'content': ..., 'isError': result.get('is_error', False)}`, so a camelCase key in a Python handler is silently ignored. Claude then treats 'not found' as ordinary data rather than a failed call.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Handle errors)",
+    "source": "interview:tool-result-shape",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-021",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python `@tool` handler returns a text summary in `content` and the raw figures in `structuredContent`. Claude only ever sees the summary. What is going on, and what fixes it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`structuredContent` is forwarded only when `content` is empty, so drop the text block",
+        "why": "The Python decorator never forwards it, whatever `content` holds."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Python needs the snake_case key `structured_content`; rename it and it will arrive",
+        "why": "The decorator forwards only `content` and `is_error`, so the snake_case spelling is dropped too."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "No MCP tool's `structuredContent` ever reaches Claude; the field exists only for the host application to read",
+        "why": "With a TypeScript in-process tool, Claude receives the JSON in place of the text blocks."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The `@tool` decorator forwards only `content` and `is_error`; run a standalone MCP server to return it",
+        "why": "This is a documented Python limitation, and a standalone server returns the full MCP result."
+      }
+    ],
+    "explanation": "When `structuredContent` is set on a result that reaches Claude Code, Claude receives the JSON plus any image or resource blocks, and the text blocks are not forwarded because they are assumed to duplicate the data. The Python in-process path drops `structuredContent`, so from Python either return the data as text or serve the tool from a standalone MCP server.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Return structured data)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-022",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python service sets `mcp_servers={'inventory': inventory_server}` and `allowed_tools=['check_stock']`, with no `can_use_tool` callback. The init message lists `mcp__inventory__check_stock`, but every call ends up in the result's `permission_denials`. What fixes it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rename the tool to `inventory_check_stock` so that the bare name is unique",
+        "why": "Uniqueness is not the issue. The allow rule has to match the name Claude Code uses, which always has the `mcp__inventory__` prefix."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "List the full name `mcp__inventory__check_stock`, or `mcp__inventory__*`, in `allowed_tools`",
+        "why": "Allow rules match the fully qualified MCP name, so the bare name never matched."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Use `allowed_tools=['mcp__*']` so that every MCP tool is approved at once",
+        "why": "Allow globs need a literal `mcp__<server>__` prefix; an unanchored `mcp__*` is ignored."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `strict_mcp_config=True`, which auto-approves the tools of servers that are passed in code",
+        "why": "Strict mode only limits which servers load; it approves nothing."
+      }
+    ],
+    "explanation": "This is the most common reason a registered tool never runs. The tool shows up (availability is fine), but no allow rule matches it. A `query()` with no permission callback cannot prompt anyone, so the calls are denied and recorded in `permission_denials`. Always write `mcp__<server key>__<tool>` or the server wildcard `mcp__<server key>__*`.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Tools not being called)",
+    "source": "interview:custom-tool-not-called",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools",
+        "https://code.claude.com/docs/en/agent-sdk/permissions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-023",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript SDK server defines four tools. Three appear as `mcp__shop__...` in the init message, but `apply_coupon` never does, and Node prints a process warning with code `CLAUDE_SDK_MCP_TOOL_SCHEMA_UNCONVERTIBLE`. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The name contains an underscore, and MCP tool names may use only letters and digits",
+        "why": "Underscores are normal in tool names, and the other three tools use them too."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`apply_coupon` is missing from `allowedTools`, so Claude Code hides it from Claude's context window",
+        "why": "`allowedTools` affects permission, not whether a tool is listed."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Its Zod input schema could not be converted to JSON Schema, so the server left just that tool out",
+        "why": "The warning code says exactly that, and the server's other tools still load."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "In-process servers are capped at three tools, so the fourth one is dropped",
+        "why": "There is no such cap. A server holds as many tools as its `tools` array lists."
+      }
+    ],
+    "explanation": "When a tool's input schema cannot be converted to JSON Schema, `createSdkMcpServer()` leaves that tool out of its tool list and emits this warning naming the tool and server. Before TypeScript Agent SDK v0.3.286, one bad schema made the server's whole tool listing fail silently, so none of its tools reached Claude. Simplify the schema or fix the Zod setup and the tool comes back.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (A tool is missing from an SDK MCP server)",
+    "source": "interview:custom-tool-not-called",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/491",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/473",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-024",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "In the `system`/`init` message, an HTTP server that you passed in `mcpServers` shows `status: 'pending'`. Which three are legitimate explanations? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It had not finished connecting when the init message was sent",
+        "why": "Pending can simply mean the connection is still in progress."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Claude Code served its tool list from a cache saved by an earlier connection and will connect on the first call",
+        "why": "With the MCP discovery cache on, cached tools are usable from turn one while the server still reads `pending`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Its connection deadline expired right around the time init was emitted",
+        "why": "Such a server can read `pending` or `failed`, depending on timing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The SDK is waiting for the user to finish OAuth in a browser window it opened",
+        "why": "The SDK never opens a browser or runs an interactive OAuth flow."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Your code turned it off earlier with `toggleMcpServer(name, false)`",
+        "why": "A server you turn off reports `disabled`."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "The server rejected the bearer token in `headers`",
+        "why": "An authorization problem surfaces as `needs-auth` or `failed`."
+      }
+    ],
+    "explanation": "Do not treat `pending` as a failure on its own. It can mean still connecting, served from the tool-list cache with a connection on first use, or a deadline that expired at the boundary. Check for `failed` and `needs-auth` to find unusable servers, and poll `mcpServerStatus()` or `get_mcp_status()` later for anything still pending.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Error handling)",
+    "source": "interview:mcp-debugging",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/mcp",
+        "https://code.claude.com/docs/en/agent-sdk/python"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-025",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A team commits `.mcp.json` with a remote HTTP server that needs a bearer token. The token must never be committed, yet Claude Code must send it. Which `headers` entry works?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`\"Authorization\": \"Bearer ${NPM_TOKEN}\"`, reusing the token the CI job already exports",
+        "why": "In a remote server's `url` and `headers`, credential variables such as `NPM_TOKEN` read as empty, so the server gets `Bearer ` and rejects it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`\"Authorization\": \"Bearer ${CRM_API_TOKEN}\"`, with `CRM_API_TOKEN` set in the environment",
+        "why": "`${VAR}` is expanded at runtime in `headers`, so the secret stays out of the file."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An `env` block `{ \"CRM_API_TOKEN\": \"...\" }` on the HTTP server entry instead of headers",
+        "why": "`env` is for stdio processes, and writing the value there would commit the secret anyway."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No header; put the token in `CLAUDE.md` and tell Claude to include it in tool arguments",
+        "why": "That commits the secret, puts it in the model's context, and does not authenticate the connection."
+      }
+    ],
+    "explanation": "`.mcp.json` supports `${VAR}` and `${VAR:-default}` in `command`, `args`, `env`, `url` and `headers`. To protect your own credentials, Claude Code reads its own and the cloud provider's credentials, plus names such as `NPM_TOKEN` and `HTTPS_PROXY`, as empty in a remote server's `url` and `headers`. Copy such a value into a variable with your own name if a server really needs it.",
+    "reference": "Claude Code docs: MCP (Environment variable expansion in .mcp.json)",
+    "source": "interview:mcp-auth",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/mcp",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-026",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A headless SDK job uses a remote MCP server that requires OAuth. In production the server shows `needs-auth`, and the agent carries on without its tools. What is the supported fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `permissionMode: 'bypassPermissions'` so the SDK skips the server's authorization challenge",
+        "why": "Permission modes govern tool calls. They have nothing to do with authenticating to a server."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Run the OAuth flow in your own application and pass the access token in the server's `headers`",
+        "why": "The SDK does not run interactive OAuth; it sends whatever bearer token you configure."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Raise `MCP_TIMEOUT` so the SDK has time to finish the browser consent flow",
+        "why": "There is no browser flow to wait for, so a longer timeout changes nothing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `strictMcpConfig: true`, which makes the SDK request a token at startup",
+        "why": "Strict mode only limits which server configs load."
+      }
+    ],
+    "explanation": "When a server sends an authorization challenge and Claude Code has no token, the SDK reports `needs-auth` (or `failed` if the credential store is unreadable) and the run continues without that server. Do the OAuth flow in your app and set `headers: { Authorization: 'Bearer ' + accessToken }`. On a developer machine you can instead sign in once from an interactive Claude Code session before running.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (OAuth2 authentication)",
+    "source": "interview:mcp-auth",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-027",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A custom `export_logs` tool sometimes returns about 60,000 tokens of plain text. With default settings, which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Claude Code saves the output to a file and replaces the result with an error naming the path, so the agent can read it in parts",
+        "why": "That is the documented behaviour for a successful, image-free result above the 25,000-token default."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The result is cut to its first 25,000 tokens and passed to Claude as an ordinary success",
+        "why": "The output is not truncated in place; it goes to a file and Claude is told where."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Raising `MAX_MCP_OUTPUT_TOKENS` lifts the token limit, but text over 50,000 characters is still saved to a file unless the tool declares a larger `anthropic/maxResultSizeChars`",
+        "why": "The character threshold is separate from the token limit."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The query ends with an `error_max_turns` result",
+        "why": "Output size has nothing to do with the turn limit."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Raising `MCP_TOOL_TIMEOUT` lets the full result through",
+        "why": "That limits how long a call may run, not how large its result may be."
+      }
+    ],
+    "explanation": "The SDK applies Claude Code's MCP output limits: a warning above 10,000 tokens, and a default cap of 25,000 tokens, past which the output is saved to a file. Text results over 50,000 characters are also saved to a file whatever the token count, unless the tool declares `anthropic/maxResultSizeChars` (up to 500,000). In Python you can set it with `ToolAnnotations(maxResultSizeChars=N)`. Paginating or summarising in the handler is often the better design.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Tool output exceeds maximum allowed tokens)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-028",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Marking a custom tool `readOnlyHint: true` makes Claude Code stop the handler from writing to disk or calling mutating APIs.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Annotations are metadata. Nothing inspects or sandboxes what your handler does."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the hint only allows parallel batching with other read-only calls. A handler marked read-only can still write."
+      }
+    ],
+    "explanation": "Keep annotations accurate to the handler. A wrong `readOnlyHint` is dangerous: Claude Code may run that tool in parallel with other read-only calls, which can race if it actually mutates state. Enforcement belongs in the handler itself, in permission rules, in `canUseTool`, or in hooks.",
+    "reference": "Agent SDK docs: Give Claude custom tools (Add tool annotations)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-029",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each observation from `mcpServerStatus()` or the init message with the status the server reports.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`connected`",
+        "why": "The handshake finished; `serverInfo` and `tools` are filled in."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`failed`",
+        "why": "The connection failed; the `error` field explains why."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`needs-auth`",
+        "why": "There is no sign-in Claude Code can use for the server."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`disabled`",
+        "why": "The server is configured but switched off."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The entry has `serverInfo` with a name and version, and a `tools` list",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The entry has an `error` saying the `npx` package could not be found",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The remote server sent an authorization challenge and Claude Code has no token for it",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Earlier in the session your code called `toggleMcpServer('crm', false)`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`McpServerStatus.status` is one of `connected`, `failed`, `needs-auth`, `pending` and `disabled`. `serverInfo` and `tools` are present once connected, and `error` once failed. Common causes of `failed` are missing environment variables, a package that is not installed, a bad connection string, and network problems.",
+    "reference": "Agent SDK docs: TypeScript reference (McpServerStatus); Connect to external tools with MCP (Troubleshooting)",
+    "source": "interview:mcp-debugging",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-CTM-030",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Tool search is on (the default). Logs show Claude making a `ToolSearch` call before its first use of `mcp__orders__lookup_order`, a tool used in nearly every conversation. In TypeScript, how do you keep that one tool's full schema in the initial prompt while the server's 40 other tools stay deferred?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `ENABLE_TOOL_SEARCH: 'false'` in the `env` option",
+        "why": "That turns tool search off, so all 41 schemas load on every turn."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pass `alwaysLoad: true` to `createSdkMcpServer()` for the orders server",
+        "why": "The server-level flag applies to every tool on that server."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Pass `{ alwaysLoad: true }` in the extras argument of `tool()` for that one tool",
+        "why": "The per-tool flag keeps only that schema upfront; the rest stay deferred."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add `mcp__orders__lookup_order` to `allowedTools`",
+        "why": "That approves calls; it does not change whether the schema is deferred."
+      }
+    ],
+    "explanation": "Tool search defers SDK MCP tools too: Claude sees names in a compact list and loads full schemas on demand, at the cost of one round trip per search. `tool()` takes `extras: { annotations, searchHint, alwaysLoad }`. `alwaysLoad: true` keeps that tool's schema in the first prompt, and `searchHint` adds a one-line phrase to the deferred list. The server-level `alwaysLoad` is OR'd with the per-tool flag.",
+    "reference": "Agent SDK docs: TypeScript reference (tool()); Scale to many tools with tool search",
+    "source": "interview:mcp-tool-search",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/tool-search",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-031",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "Which `ENABLE_TOOL_SEARCH` value keeps tool search off, loading definitions upfront, until the definitions it could defer reach 10% of the model's context window, and then switches it on? Type the value.",
+    "options": [],
+    "accepted": [
+      "auto",
+      "'auto'",
+      "\"auto\""
+    ],
+    "explanation": "The values are: unset or `true` (on, the default, with fallbacks for unsupported models and deployments), `auto` (on once deferrable definitions reach 10% of the context window), `auto:N` (a custom percentage, so `auto:5` switches on sooner), and `false` (off, with every definition sent on every turn). Set it through the `env` option. In TypeScript `env` replaces the subprocess environment, so spread `...process.env`.",
+    "reference": "Agent SDK docs: Scale to many tools with tool search (Configure tool search)",
+    "source": "interview:mcp-tool-search",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/tool-search"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-032",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Claude decides to use your in-process `lookup_order` tool on the `orders` server. Put what happens in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Claude emits a `tool_use` block named `mcp__orders__lookup_order` with its arguments",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Claude Code runs the permission flow for that name: hooks, rules, mode, then `canUseTool` if still unresolved",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The in-process server checks the arguments against the tool's input schema and calls your handler",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The handler's `content` goes back to Claude as the `tool_result` for that call",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Permissions are checked on the fully qualified name before your code runs, which is why allow rules must use `mcp__<server>__<tool>`. Only an approved call reaches the server. The SDK server validates the arguments (invalid ones come back to Claude as an error result), runs the handler, and Claude Code turns its `content` into the `tool_result` block.",
+    "reference": "Agent SDK docs: Configure permissions; Give Claude custom tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-033",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "A `query()` passes one stdio server in `mcpServers` and has no cached tool list (default settings). Put the start of the session in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Claude Code starts connecting the configured MCP servers as the session starts",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The first turn waits for the stdio server to connect, up to `MCP_TIMEOUT` (30 seconds by default)",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Claude Code emits the `system`/`init` message with each server's status",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Claude's first turn runs with the connected server's tools available",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Claude Code starts connecting servers when the session starts and sends the init message once the first-turn wait, if any, ends. That is why a stdio server that connected within the wait shows `connected` at init. If it misses the `MCP_TIMEOUT` deadline, the connection fails and the run continues without it. `CLAUDE_CODE_MCP_STARTUP_WAIT_MS` can replace that wait for stdio, HTTP and SSE servers in `options.mcpServers`.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Connection timing)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-034",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript in-process `generate_report` tool can legitimately run for 8 minutes. The process sets `MCP_TOOL_TIMEOUT=60000` so that calls to every other server are capped at one minute, and the report calls are being cut off. Which change fixes the report tool without loosening that cap for other servers?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise `MCP_TOOL_TIMEOUT` to `600000` for the whole process",
+        "why": "The report tool would work, but every server would lose its one-minute cap, which breaks the stated constraint."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set `MCP_TIMEOUT=600000` in the `env` option",
+        "why": "`MCP_TIMEOUT` limits how long a server may take to connect, not how long a tool call may run."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Send MCP progress notifications from the handler every 30 seconds to extend the deadline",
+        "why": "The per-call limit is a hard wall-clock limit; progress notifications do not extend it."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Pass `timeout: 600_000` to `createSdkMcpServer()` for the reports server",
+        "why": "The per-server timeout, in milliseconds, overrides `MCP_TOOL_TIMEOUT` for this server only."
+      }
+    ],
+    "explanation": "There are two different clocks. `MCP_TIMEOUT` covers connection (30 seconds by default). `MCP_TOOL_TIMEOUT` covers each tool call, and a per-server `timeout` overrides it. For SDK servers, values below 1000 ms are ignored, so `timeout: 600` meant as seconds silently falls back to the global limit. The value applies when the server is first registered. Remote and stdio configs accept the same `timeout` field.",
+    "reference": "Agent SDK docs: TypeScript reference (createSdkMcpServer); Connect to external tools with MCP (Connection timeouts)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-035",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your SaaS backend runs one `query()` per user request, and the agent needs a `get_invoice` capability backed by your billing API. Constraints: the billing credential must stay inside your backend process (not in the Claude Code subprocess environment, and never in a tool argument); every call must be scoped to the requesting tenant; and you will not ship another deployable. Which approach meets all three?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A stdio MCP server bundled with the app and listed in `mcpServers`, with the credential passed through its `env` field",
+        "why": "The credential ends up in a child process's environment, and tenant scope would have to arrive as an argument Claude supplies."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "An in-process tool whose handler closes over the request's tenant and uses your backend's existing client",
+        "why": "The handler runs in your process with your state; Claude sees only the schema and the result."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `Bash(curl *)` allow rule, with the billing token exported to the subprocess through the `env` option",
+        "why": "The token sits in the Claude Code environment, where any Bash command can read it, and tenant scoping relies on what Claude types."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A remote HTTP MCP server in front of the billing API, with the credential sent in `headers`",
+        "why": "It is a new service to deploy, and per-tenant scope still has to travel some other way."
+      }
+    ],
+    "explanation": "SDK MCP servers run inside your application, so a handler can use your existing DB or API clients, config and per-request context directly, with no IPC and no extra process. Building the tool per request with the tenant captured in a closure keeps tenant selection out of the model's hands, so a prompt injection cannot redirect it.",
+    "reference": "Agent SDK docs: Give Claude custom tools",
+    "source": "interview:tool-exposure-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://agentswarms.fyi/interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-036",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "An agent connects five MCP servers that expose about 200 tools. Tool search is on (the default), but Claude often fails to find the right tool. Which two changes improve discovery? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Give tools specific names and keyword-rich descriptions, with the searchable words near the start",
+        "why": "Search matches names and descriptions; `search_slack_messages` with 'Search Slack messages by keyword, channel, or date range' surfaces for more queries than `query_slack`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set `alwaysLoad: true` on every server so Claude can see all the schemas",
+        "why": "That loads all 200 schemas every turn; selection accuracy drops past roughly 30 to 50 loaded tools, and the context cost returns."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Append a short list of the available tool categories to the `claude_code` preset system prompt",
+        "why": "This tells the agent what kinds of tools exist to search for."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `ENABLE_TOOL_SEARCH=false` so that nothing has to be searched for",
+        "why": "Same problem: every definition goes into context on every turn."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Make every description longer than 16,000 characters, packed with usage examples",
+        "why": "Descriptions are cut at a limit, and search reads only the part within the shorter 4,096-character limit."
+      }
+    ],
+    "explanation": "Tool search keeps definitions out of context and loads up to five relevant tools per search, which helps both context size (50 tools can cost 10 to 20K tokens) and selection accuracy. It only works if tools are findable: specific names, front-loaded keywords, and a system-prompt hint about categories. Below about 10 small tools, loading everything upfront is usually faster.",
+    "reference": "Agent SDK docs: Scale to many tools with tool search (Optimize tool discovery)",
+    "source": "interview:mcp-tool-search",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/tool-search",
+        "https://code.claude.com/docs/en/mcp"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-037",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript agent behind your web app uses a remote MCP server that sometimes sends an elicitation request asking the user to pick a workspace. Those requests are always declined and the tool call fails. No hooks are configured. What is missing?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `canUseTool` callback that forwards the question to the user",
+        "why": "`canUseTool` answers permission checks for Claude's tool calls, not input requests that a server sends."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "An `onElicitation` callback that relays the request to the user and returns `{ action: 'accept', content }`",
+        "why": "Without it, and without an Elicitation hook, the SDK declines elicitation requests automatically."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`permissionMode: 'default'` so that server prompts are routed to a person",
+        "why": "Permission modes do not affect how server elicitation requests are handled."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`includePartialMessages: true` so the request streams to the UI as it arrives",
+        "why": "That streams partial assistant output; it does not answer a server's request."
+      }
+    ],
+    "explanation": "`onElicitation(request, { signal })` runs when an MCP server asks for user input (form fields or URL-based auth) and no hook handled it first. It must resolve with an `ElicitationResult` such as `{ action: 'accept', content: {...} }`. If it is omitted, unhandled requests are declined. Use the `Elicitation` hook instead when you want policy-based auto-answers.",
+    "reference": "Agent SDK docs: TypeScript reference (Options: onElicitation)",
+    "source": "interview:mcp-elicitation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/typescript",
+        "https://code.claude.com/docs/en/agent-sdk/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/user-input"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-038",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A session starts with `mcpServers: { fs: stdioFsServer, notes: notesSdkServer }`, where `notesSdkServer` comes from `createSdkMcpServer()`. Mid-session, outside a cloud session, you call `await q.setMcpServers({ crm: crmHttpServer })`. What is the state afterwards?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`crm` is added, and both `fs` and `notes` are disconnected, because the call replaces every server",
+        "why": "It replaces only the servers this method manages; a stdio server from the `mcpServers` option keeps running."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`crm` is added; `notes` is disconnected and listed in `removed`; `fs` keeps running",
+        "why": "`setMcpServers` manages its own earlier additions and in-process SDK servers, so `notes` goes and `fs` stays."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`crm` is added and nothing is removed, because `setMcpServers` only ever adds servers",
+        "why": "Servers it manages that the call does not name are disconnected."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`crm` is added; `fs` is removed as a replaced process server, and `notes` stays because in-process servers cannot be removed",
+        "why": "That is backwards: in-process servers are managed by this call, and option-level stdio servers are not."
+      }
+    ],
+    "explanation": "`setMcpServers()` replaces the set it manages: servers added through it, plus in-process SDK servers. Stdio, HTTP and SSE servers from the `mcpServers` option, servers from settings files, and plugin servers keep running and do not appear in `removed`. To keep an SDK server, name it again in the call. The result reports `added`, `removed` and per-server `errors`.",
+    "reference": "Agent SDK docs: TypeScript reference (McpSetServersResult)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-039",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your agent saw the remote server `jira` as `connected` at init. Twenty minutes later `mcpServerStatus()` reports `jira` as `pending`, though nothing in your configuration changed. What is the right reading and response?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`pending` after `connected` means the token expired; abort and restart the query with a fresh token",
+        "why": "An auth problem shows as `needs-auth` once reconnection gives up; `pending` here means a reconnect is under way."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The cached tool list expired; call `setMcpServers({})` to clear the cache and force a reconnect",
+        "why": "That call removes dynamically added and in-process servers; it is not a cache reset."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The connection dropped and Claude Code is reconnecting; if it ends `failed`, retry with `reconnectMcpServer('jira')`",
+        "why": "Mid-session drops move a remote server back to `pending`, and after five failed attempts it reports `failed` or `needs-auth`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The session was compacted, which disconnects MCP servers until the session is resumed",
+        "why": "Compaction does not disconnect servers; this is the reconnect cycle."
+      }
+    ],
+    "explanation": "Status is live. A remote server whose connection drops goes back to `pending` while Claude Code reconnects. After five failed attempts it reports `failed`, or `needs-auth` if it needs authorising again. A `failed` HTTP or SSE server can still return to `connected` through background retries after a transient error. Call `reconnectMcpServer()` (Python: `ClaudeSDKClient.reconnect_mcp_server()`) to retry yourself.",
+    "reference": "Agent SDK docs: Connect to external tools with MCP (Error handling)",
+    "source": "interview:mcp-debugging",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/typescript",
+        "https://code.claude.com/docs/en/agent-sdk/mcp"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-040",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A vendor's MCP server marks its `grant_access` tool with `_meta['anthropic/requiresUserInteraction']: true`. Your SDK app lists `mcp__vendor__grant_access` in `allowedTools`. Which two statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Calls still reach your `canUseTool` callback, which may approve them after showing a person",
+        "why": "Flagged tools always fall through to the callback, and an SDK app is expected to show them to a user."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The `allowedTools` entry auto-approves the calls, because allow rules are checked before the callback",
+        "why": "No allow rule auto-approves a tool flagged as requiring user interaction."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "In `dontAsk` mode the calls are denied",
+        "why": "`dontAsk` never prompts, so a tool that must be approved by a person is denied."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`bypassPermissions` auto-approves the calls",
+        "why": "The prompt is shown even in `bypassPermissions`, `acceptEdits` and `auto`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "With `--permission-prompt-tool`, an `allow` from the prompt tool runs the call",
+        "why": "That `allow` is converted to a deny, because no person answered."
+      }
+    ],
+    "explanation": "The annotation exists for consent steps where auto-approval would mean no human ever agreed. Claude Code shows the prompt on every call, offers no 'don't ask again', and ignores matching allow rules. In the SDK the request goes to `canUseTool`. Other tools on the same server keep their normal permission behaviour.",
+    "reference": "Claude Code docs: MCP (Require approval for a specific tool); Agent SDK docs: Configure permissions",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-CTM-041",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A team moves their Python MCP server in-process. It is an `mcp.server.Server` whose tools send elicitation requests and progress notifications, and they pass it as `McpSdkServerConfig(type='sdk', name='ops', instance=server)`. The tools run, but the elicitation never reaches the user. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Only servers built with `create_sdk_mcp_server` are served in-process; a hand-built `Server` has its handlers ignored",
+        "why": "Any `mcp.server.Server` instance is served, and the requests it handles (tools, resources, prompts) all reach it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The in-memory transport does not yet forward server-to-client requests and notifications, elicitation included",
+        "why": "Sampling, elicitation, roots, logging and progress from an in-process Python server are not forwarded yet."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Elicitation needs `permission_mode='default'`; any other mode suppresses it",
+        "why": "Permission modes govern Claude's tool calls, not requests a server sends."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The server must be approved with `mcp__ops__*` before it is allowed to elicit",
+        "why": "Allow rules approve tool calls; they do not enable server-to-client requests."
+      }
+    ],
+    "explanation": "The Python SDK serves the instance over an in-memory MCP transport with one `Server.run` per query. Client-bound traffic such as sampling, elicitation, roots, logging and progress is not forwarded, and on mcp 1.x its tools are not cancelled when Claude Code abandons a call. Keep a server that depends on elicitation as a stdio or HTTP server, where Claude Code acts as a full MCP client.",
+    "reference": "Agent SDK Python package: McpSdkServerConfig docstring (claude-agent-sdk 0.2.172)",
+    "source": "interview:mcp-elicitation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/user-input"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-CTM-042",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An SDK app loads a plugin named `my-plugin` that bundles an MCP server keyed `database-tools` with a `query` tool. An allow rule for `mcp__database-tools__query` never matches. What is the tool's full name?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`mcp__my-plugin__database-tools__query`",
+        "why": "The plugin and server names are joined with a single underscore after a `plugin_` prefix, not added as an extra segment."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`mcp__plugin_my-plugin_database-tools__query`",
+        "why": "Plugin servers use the form `mcp__plugin_<plugin>_<server>__<tool>`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`mcp__plugin__my-plugin__database-tools__query`",
+        "why": "Double underscores separate only the `mcp`, server and tool parts; the plugin-scoped server name uses single underscores."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`plugin__my-plugin__mcp__database-tools__query`",
+        "why": "Every MCP tool name starts with `mcp__`."
+      }
+    ],
+    "explanation": "For a server that a plugin provides, the server segment is plugin-scoped: `plugin_<plugin-name>_<server-name>`, with characters outside `A-Z`, `a-z`, `0-9`, `_` and `-` replaced by `_`. Read the real names from the init message's `tools` list before writing allow rules or hook matchers.",
+    "reference": "Claude Code docs: MCP (Plugin-provided MCP servers); Agent SDK docs: Connect to external tools with MCP",
+    "source": "interview:mcp-tool-naming",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/agent-sdk/mcp",
+        "https://code.claude.com/docs/en/mcp"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-CTM-043",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are designing the tools for a CRM agent. Reads should run unattended, and deletes must always reach a person through `canUseTool`. Which two design choices support this? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Separate narrow tools such as `get_contact` and `delete_contact`, so `allowedTools` can approve `mcp__crm__get_contact` and leave deletes to the callback",
+        "why": "Permission rules work on tool names, so one tool per action gives each action its own policy."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "One generic `crm_request(method, path, body)` tool approved with `mcp__crm__*`, whose description says never to delete without asking",
+        "why": "Rules cannot tell a GET from a DELETE inside one tool, and a description is a request to the model, not enforcement."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Mark the read tools `readOnlyHint: true`, accurately, so their calls can run in parallel",
+        "why": "It speeds up the unattended reads; it is a hint, so it must match what the handler really does."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Mark `delete_contact` with `destructiveHint: true` so Claude Code prompts on every call, even under `mcp__crm__*`",
+        "why": "For SDK tools `destructiveHint` is informational; an allow rule covering the tool still approves it."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Have `delete_contact` return `isError: true` on its first call so that Claude asks the user before retrying",
+        "why": "That is a nudge to the model; no person is guaranteed to see or approve anything."
+      }
+    ],
+    "explanation": "Design tools around the permission boundary you need. Narrow, clearly named tools let you approve reads (`mcp__crm__get_*` works as an anchored allow glob) while destructive calls fall through to `canUseTool` or a hook. Accurate `readOnlyHint` values buy parallelism. Neither annotations nor descriptions are security controls.",
+    "reference": "Agent SDK docs: Give Claude custom tools; Configure permissions",
+    "source": "interview:tool-exposure-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/ai-agent-developer-interview-questions",
+        "https://agentswarms.fyi/interview-questions",
+        "https://code.claude.com/docs/en/agent-sdk/custom-tools"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-CTM-044",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "One Node process serves many tenants at once, and each request runs its own `query()`. Tool handlers must touch only the requesting tenant's data, and a prompt injection must not be able to switch tenants. Which design holds up?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "One shared server; before each `query()` set a module-level `currentTenant` that the handlers read",
+        "why": "Concurrent requests overwrite the variable, so one tenant's call can read another tenant's value."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "One shared server whose tools take a `tenantId` argument that the system prompt tells Claude to fill in",
+        "why": "The tenant becomes model-chosen input, which is exactly what a prompt injection can change."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A fresh `createSdkMcpServer()` per request, with handlers closing over that request's tenant ID",
+        "why": "Each query gets tools bound to its own tenant in code; the model never chooses it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A stdio server per tenant started at boot, all listed in every query and picked by allow rules",
+        "why": "Every query could still reach every tenant's server, and you run one process per tenant."
+      }
+    ],
+    "explanation": "In-process tools are ordinary closures, so the cleanest isolation is to build the server per request and capture trusted context, such as tenant and user, from your auth layer. Never take security-relevant identifiers from tool arguments the model fills in. Pair this with per-request isolation of the agent itself (covered under production hosting).",
+    "reference": "Agent SDK docs: Give Claude custom tools; Secure deployment",
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-CTM-045",
+    "domain": 2,
+    "skill": "custom-tools-mcp",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your SDK agent runs inside customer repositories. Security requires that only the MCP servers your code passes may load: not the repo's `.mcp.json`, not user settings, not plugin servers, not claude.ai connectors. The project's CLAUDE.md and project settings must still load. Which option meets this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`settingSources: ['user']`, so that the project source (and its `.mcp.json`) is skipped",
+        "why": "This drops the project CLAUDE.md and settings you must keep, and it still loads user-level servers."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`strictMcpConfig: true`, with your servers passed in `mcpServers`",
+        "why": "It uses only the servers you pass and ignores every other MCP source, without touching setting sources."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`disallowedTools: ['mcp__*']`, so that tools from other servers are blocked",
+        "why": "The glob matches every MCP tool, yours included, and the other servers still start."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`allowedTools` listing only your own server's tools",
+        "why": "The other servers still load, and their tools reach Claude and go through the permission flow."
+      }
+    ],
+    "explanation": "`strictMcpConfig` (Python `strict_mcp_config`, CLI `--strict-mcp-config`) limits MCP to the servers in `mcpServers`, plus servers declared by agent definitions you pass explicitly. It ignores project `.mcp.json`, user settings, plugin-provided servers and claude.ai connectors. Setting sources stay independent, so CLAUDE.md and project settings still load.",
+    "reference": "Agent SDK docs: TypeScript reference (Options: strictMcpConfig)",
+    "source": "interview:mcp-servers-option-strict",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/mcp",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/agent-sdk/typescript"
+      ]
+    },
+    "roleLevel": 4
+  }
+]

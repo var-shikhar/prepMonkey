@@ -1,0 +1,2026 @@
+[
+  {
+    "id": "CSK-HKS-001",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team wants every file Claude edits to be run through Prettier, with no exceptions. Which mechanism guarantees that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A line in `CLAUDE.md` saying \"Always run Prettier on every file you edit\"",
+        "why": "CLAUDE.md is guidance the model usually follows, not code that runs; Claude can forget or skip it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A `PostToolUse` hook on `Edit|Write` that runs Prettier on that file",
+        "why": "Hooks are code the harness runs at a lifecycle point, so the formatter runs after every matching edit regardless of what the model decides."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A skill named `format` whose description says to use it after edits",
+        "why": "Skills load when Claude judges them relevant; that is still a model decision, not a guarantee."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An allow rule `Bash(npx prettier *)` so Claude can format without prompts",
+        "why": "An allow rule removes a prompt but never makes Claude run the command in the first place."
+      }
+    ],
+    "explanation": "The common interview framing: CLAUDE.md, skills and prompts are advisory, while hooks are deterministic. Anything that must happen every time (formatting, audit logging, blocking a command) belongs in a hook, because the harness runs it, not the model.",
+    "reference": "Claude Code docs: Automate actions with hooks",
+    "source": "interview:hooks-vs-claude-md",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://institute.sfeir.com/en/claude-code/claude-code-resources/interview/",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/hooks-guide"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-HKS-002",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "On macOS or Linux, with no `onFailure` set, a `PreToolUse` command hook that prints nothing and exits with code 1 blocks the tool call.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Exit 1 is only a non-blocking error; the tool call goes ahead and a hook-error notice appears."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: only exit code 2 (or a JSON deny) blocks. Any other non-zero code is a non-blocking error."
+      }
+    ],
+    "explanation": "Claude Code treats exit 0 as success, exit 2 as a blocking error, and every other exit code as a non-blocking error, so the action continues. The docs warn about this explicitly: even though 1 is the usual Unix failure code, a policy hook must use `exit 2` (or a JSON decision) to block.",
+    "reference": "Claude Code docs: Hooks reference (Exit code output)",
+    "source": "interview:hook-exit-codes-json",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-HKS-003",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Which hook event fires after Claude creates a tool call but before the tool runs, and can block the call? Type the event name exactly.",
+    "options": [],
+    "accepted": [
+      "PreToolUse",
+      "pretooluse"
+    ],
+    "explanation": "`PreToolUse` runs before every tool call and can allow, deny, ask or defer it, or rewrite its input. `PostToolUse` runs after a tool has already succeeded and cannot undo it.",
+    "reference": "Claude Code docs: Hooks reference (PreToolUse)",
+    "source": "interview:hook-events-blocking",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-HKS-004",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You wrote a hook that blocks `git push --force` and want every teammate who clones the repository to get it automatically. Where should it go?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`.claude/settings.local.json` in the repository",
+        "why": "The local settings file is for personal overrides and is gitignored when Claude Code writes to it, so teammates never get it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`~/.claude/settings.json` on your own machine",
+        "why": "User settings apply to all of your projects, but only on your machine; nobody else receives them."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`.claude/settings.json` in the repository, committed to git",
+        "why": "Project settings are meant to be committed, so the hook travels with the repository."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The repository's `CLAUDE.md`, under a `## Hooks` heading with the JSON",
+        "why": "CLAUDE.md is loaded as instructions for the model; hook configuration is not read from it."
+      }
+    ],
+    "explanation": "Hooks live in settings JSON. User settings (`~/.claude/settings.json`) cover all your projects, project settings (`.claude/settings.json`) are shared through git, local settings (`.claude/settings.local.json`) are personal, and managed policy settings are organisation-wide. Plugins, skills and subagent frontmatter can also carry hooks.",
+    "reference": "Claude Code docs: Hooks reference (Hook locations)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-005",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each requirement with the hook event that fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`PostToolUse`",
+        "why": "Runs after a tool call succeeds."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Notification`",
+        "why": "Runs when Claude Code sends a notification, such as a permission prompt waiting."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`SessionStart`",
+        "why": "Runs when a session starts or resumes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Stop`",
+        "why": "Runs when Claude finishes responding."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Append every file Claude has written or edited to an audit log",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Post to Slack when Claude is waiting on a permission decision",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Load the current branch name and open issue into context when work begins",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Check that the test suite passes before Claude hands control back",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Requirement-to-event mapping is a common screening question. Audit trails of completed edits use `PostToolUse` (matcher `Edit|Write`). Alerts when Claude is waiting for input use `Notification`. Loading branch or issue context at the start uses `SessionStart`. A last check before Claude hands back control uses `Stop`.",
+    "reference": "Claude Code docs: Automate actions with hooks",
+    "source": "interview:hooks-audit-notification",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks-guide",
+        "https://code.claude.com/docs/en/agent-sdk/hooks",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-HKS-006",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In the TypeScript Agent SDK, which `options` value registers `checkBash` as a hook that runs before every Bash tool call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [checkBash] }] }`",
+        "why": "Event name as the key, then an array of matchers, each with an optional pattern and an array of callbacks."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`hooks: [{ event: 'PreToolUse', tool: 'Bash', callback: checkBash }]`",
+        "why": "`hooks` is an object keyed by event name, not a flat array of descriptors."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`preToolUse: { Bash: checkBash }` as a top-level option",
+        "why": "There is no per-event top-level option; everything goes under `hooks`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`hooks: { PreToolUse: { Bash: checkBash } }`, keyed by tool name",
+        "why": "The value for an event is an array of matcher objects; the tool name goes in `matcher`."
+      }
+    ],
+    "explanation": "SDK hooks mirror the settings-file structure: event name, then matcher groups, then handlers. The difference is that the handler is an in-process callback instead of a shell command. The Python equivalent is `hooks={\"PreToolUse\": [HookMatcher(matcher=\"Bash\", hooks=[check_bash])]}`.",
+    "reference": "Agent SDK docs: Intercept and control agent behavior with hooks (Configure hooks)",
+    "source": "interview:sdk-hooks-vs-settings-hooks",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/hooks",
+        "https://code.claude.com/docs/en/hooks"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-007",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the levels of a hook definition in `settings.json` in order, from the outermost to the innermost.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The top-level `hooks` object",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The hook event name, such as `PreToolUse`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A matcher group, such as `{ \"matcher\": \"Bash\", \"hooks\": [...] }`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A hook handler, such as `{ \"type\": \"command\", \"command\": \"...\" }`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Hook configuration has three levels of nesting under `hooks`: the event, a matcher group that filters when it fires, and one or more handlers (command, http, mcp_tool, prompt or agent) that run when the matcher matches.",
+    "reference": "Claude Code docs: Hooks reference (Configuration)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-008",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript `PreToolUse` hook callback returns `{}` for a Bash call. What happens to that call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It is approved, and the user is never prompted for it",
+        "why": "An empty result carries no `permissionDecision`, so it approves nothing; prompts still appear if the rules require them."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is blocked, because the hook did not return `allow`",
+        "why": "Hooks do not need to opt calls in; returning nothing is the normal \"no opinion\" result."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It continues unchanged through the normal permission evaluation",
+        "why": "With no decision and no `updatedInput`, the call proceeds exactly as if the hook had not run."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The SDK raises a validation error because `hookSpecificOutput` is missing",
+        "why": "Every field of the output is optional; `{}` is the documented way to change nothing."
+      }
+    ],
+    "explanation": "Returning `{}` (or exiting 0 with no output from a command hook) means the hook has no decision. The call still goes through deny rules, ask rules, the permission mode, allow rules and `canUseTool`. A hook can deny on its own, but staying silent does not approve.",
+    "reference": "Claude Code docs: Hooks reference (How a hook resolves)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-009",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You want a `PreToolUse` hook to fire for the `Edit` and `Write` tools only, not for `Read` or `NotebookEdit`. Which matcher does that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Edit.*|Write.*`",
+        "why": "This contains `.` and `*`, so it is an unanchored regular expression, and `Edit.*` also matches inside `NotebookEdit`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`edit|write`",
+        "why": "Matchers are case-sensitive, so this matches neither tool."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`Edit|Write`",
+        "why": "Only letters and `|`, so it is compared as a list of exact tool names: `Edit` or `Write`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`*Edit*,*Write*`",
+        "why": "This leaves the exact-match path and is not a valid regular expression either, so it never matches the intended tools."
+      }
+    ],
+    "explanation": "A matcher made only of letters, digits, `_`, `-`, spaces, `,` and `|` is an exact name or a list of exact names. Any other character turns it into an unanchored JavaScript regex, so `Edit.*` matches `NotebookEdit`; use `^Edit$` when a regex must match the whole name. `*`, `\"\"` or no matcher means match all.",
+    "reference": "Claude Code docs: Hooks reference (Matcher patterns)",
+    "source": "interview:hook-matchers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-010",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `PreToolUse` hook with matcher `mcp__github` never fires, although Claude calls `mcp__github__create_issue` often. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "MCP tools do not fire `PreToolUse`; they fire `PermissionRequest` instead",
+        "why": "MCP tools appear as ordinary tools in all tool events, including `PreToolUse`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`mcp__github` has only exact-match characters, so it is compared to the whole tool name; use `mcp__github__.*`",
+        "why": "Without a regex character the matcher must equal the full name, and no tool is called just `mcp__github`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Matchers are tested against the MCP server's display name, so it should be `GitHub`",
+        "why": "For tool events the matcher is tested against `tool_name`, which uses the `mcp__<server>__<tool>` form."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The double underscore is a reserved sequence in matchers and must be escaped, to match literally, as `mcp\\_\\_github`",
+        "why": "Underscores are ordinary exact-match characters; nothing needs escaping."
+      }
+    ],
+    "explanation": "MCP tools are named `mcp__<server>__<tool>`. To match every tool from a server you need the `.*` suffix, which moves the matcher onto the regex path. Plugin-bundled servers use a scoped segment such as `mcp__plugin_<plugin>_<server>__<tool>`, so a matcher written against the bare server key misses those too.",
+    "reference": "Claude Code docs: Hooks reference (Match MCP tools)",
+    "source": "interview:hook-matchers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-011",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Adding `\"matcher\": \"Bash\"` to a `Stop` hook makes it run only when Claude's turn used the Bash tool.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "`Stop` has no matcher support, so the field is ignored and the hook runs on every stop."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `Stop` ignores matchers. A matcher added to an event without matcher support is silently ignored."
+      }
+    ],
+    "explanation": "Matchers filter different fields per event: the tool name for tool events, the start source for `SessionStart`, the notification type for `Notification`, the agent type for `SubagentStart`/`SubagentStop`. `UserPromptSubmit`, `Stop`, `PostToolBatch` and a few others have no matcher support at all, and Claude Code silently ignores one if present. To act only when Bash ran, inspect the transcript or input inside the hook.",
+    "reference": "Claude Code docs: Hooks reference (Matcher patterns)",
+    "source": "interview:hook-matchers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-012",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A `Stop` hook must not block again when Claude is already continuing because of an earlier Stop-hook block. Which boolean field in the Stop hook's JSON input tells it that? Type the field name.",
+    "options": [],
+    "accepted": [
+      "stop_hook_active"
+    ],
+    "explanation": "`stop_hook_active` is `true` when Claude is already continuing because a Stop hook blocked. A Stop hook that blocks on a condition should check it and exit 0 (allow the stop) on the second pass, otherwise it can keep Claude working on something it cannot fix.",
+    "reference": "Claude Code docs: Hooks reference (Stop input)",
+    "source": "interview:stop-hook-loop",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-code/issues/103777"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-013",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A Python Agent SDK hook callback returns a dict. According to the SDK's `SyncHookJSONOutput` and `AsyncHookJSONOutput` types, which keys are spelled differently in Python than in the CLI's JSON? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`continue_`, which the SDK converts to `continue`",
+        "why": "`continue` is a Python keyword, so the typed dict uses `continue_` and the SDK renames it for the CLI."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`async_`, which the SDK converts to `async`",
+        "why": "`async` is also a keyword; Python code returns `async_: True` for fire-and-forget hooks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`stop_reason`, which the SDK converts to `stopReason`",
+        "why": "The Python type keeps the camelCase `stopReason`; only the two keyword clashes change."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`hook_specific_output`, which the SDK converts to `hookSpecificOutput`",
+        "why": "Python callbacks return `hookSpecificOutput` exactly as written in the docs."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`permission_decision`, which the SDK converts to `permissionDecision`",
+        "why": "Inside `hookSpecificOutput` the field stays `permissionDecision` in both languages."
+      }
+    ],
+    "explanation": "SDK callbacks return the same JSON shape as Claude Code's command hooks. Python's typed dicts only rename the two fields that clash with keywords: `continue_` and `async_`. Everything else, including `stopReason`, `systemMessage` and `hookSpecificOutput`, keeps the documented spelling.",
+    "reference": "Python Agent SDK reference: SyncHookJSONOutput",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-014",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "In Claude Code, which hook events stop the action when the command hook exits with code 2? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`PreToolUse`",
+        "why": "Exit 2 blocks the tool call, and Claude sees stderr as the reason."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`UserPromptSubmit`",
+        "why": "Exit 2 blocks the prompt, so it never reaches Claude."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`PostToolUse`",
+        "why": "The tool has already run; exit 2 only shows stderr to Claude."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Notification`",
+        "why": "Exit code and stderr are ignored for notifications."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`SessionStart`",
+        "why": "It cannot block; exit 2 only shows stderr to the user."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`PermissionRequest`",
+        "why": "Exit 2 is not honored here; deny through the `decision` object instead."
+      }
+    ],
+    "explanation": "Whether exit 2 blocks depends on whether the event represents something that has not happened yet. `PreToolUse`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `PreCompact` and a few others can block. Post-events and observational events (`PostToolUse`, `Notification`, `SessionStart`) cannot, and `PermissionRequest` ignores exit 2 entirely.",
+    "reference": "Claude Code docs: Hooks reference (Exit code 2 behavior per event)",
+    "source": "interview:hook-events-blocking",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-015",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python Agent SDK service needs per-session setup logic when each session starts. Putting `\"SessionStart\": [HookMatcher(hooks=[init])]` in `ClaudeAgentOptions.hooks` does nothing. What is the supported approach?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rename the key to `\"session_start\"`, because Python event names are snake_case",
+        "why": "Event names are case-sensitive and identical in both SDKs; the Python `HookEvent` type simply omits SessionStart."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Register it under `\"UserPromptSubmit\"` with `matcher=\"startup\"`",
+        "why": "`UserPromptSubmit` has no matcher support and fires on every prompt, not once at session start."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Upgrade the Python SDK, which accepts every event the TypeScript SDK has once `include_hook_events=True` is set",
+        "why": "That option adds hook lifecycle messages to the stream; it does not add callback events to the Python SDK."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Define a command hook in `.claude/settings.json` and keep `\"project\"` in `setting_sources` if you set it",
+        "why": "SessionStart and SessionEnd are only available to Python as settings-file shell hooks, and those load only when their source is enabled."
+      }
+    ],
+    "explanation": "The Python SDK's `HookEvent` covers PreToolUse, PostToolUse, PostToolUseFailure, UserPromptSubmit, Stop, SubagentStop, PreCompact, Notification, SubagentStart and PermissionRequest. Session lifecycle hooks are TypeScript-only as callbacks. In Python, use a settings-file command hook, or treat the first message from `receive_response()` as the trigger for initialisation.",
+    "reference": "Agent SDK docs: Hooks (Session hooks not available in Python)",
+    "source": "interview:hook-events-ts-vs-python",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-016",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "After Claude edits `src/gen/schema.ts`, you want Claude to be told, without blocking anything, that the file is generated and that `src/schema.ts` should be edited instead. Which `PostToolUse` output delivers that to the model?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{\"systemMessage\": \"This file is generated...\"}`",
+        "why": "`systemMessage` is a warning for the user, not text placed in Claude's context."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Print the note to stderr and exit 0",
+        "why": "Claude never sees stderr from a hook that exits 0; it only goes to the debug log."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"This file is generated...\"}}`",
+        "why": "`additionalContext` is inserted as a system reminder next to the tool result, so Claude reads it on the next request."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{\"continue\": false, \"stopReason\": \"This file is generated...\"}`",
+        "why": "That stops Claude entirely, which is the opposite of non-blocking guidance."
+      }
+    ],
+    "explanation": "Hook output has separate channels: `additionalContext` goes to Claude as a system reminder, `systemMessage` goes to the user, `continue: false` stops processing, and decisions such as `permissionDecision` control the action. Text in `additionalContext` should be phrased as plain facts, since text framed as system commands can trip prompt-injection defences.",
+    "reference": "Claude Code docs: Hooks reference (Add context for Claude)",
+    "source": "interview:hook-additional-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-017",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Claude is about to run `rm -rf /tmp/build`. Settings define a `PreToolUse` group with matcher `Bash` and a command handler with `\"if\": \"Bash(rm *)\"`. Put what happens in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `PreToolUse` event fires for the Bash call",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The matcher `Bash` is tested against the tool name",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The handler's `if` rule `Bash(rm *)` is tested against the command",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The handler's script starts and reads the event JSON on stdin",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Claude Code applies the decision the script printed or signalled by exit code",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "The matcher selects a group of handlers by tool name; the optional `if` field then filters individual handlers using permission-rule syntax against the tool input, so the process is not spawned for, say, `npm test`. The handler reads JSON on stdin and answers through its exit code and stdout.",
+    "reference": "Claude Code docs: Hooks reference (How a hook resolves)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-018",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `PreToolUse` hook denies `DROP TABLE` statements. You want Claude to understand why so it can try something else, and you also want the person watching to see a short notice. Which output fields do that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`permissionDecisionReason` for Claude and `systemMessage` for the user",
+        "why": "On a deny, the reason is shown to Claude; `systemMessage` is the field meant for the user."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`stopReason` for Claude and `reason` for the user",
+        "why": "`stopReason` pairs with `continue: false`, and PreToolUse no longer uses the top-level `reason`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`additionalContext` for Claude and `permissionDecisionReason` for the user",
+        "why": "On a deny, `permissionDecisionReason` goes to Claude; it is shown to the user only for `ask`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`systemMessage` for Claude and `stopReason` for the user",
+        "why": "`systemMessage` is for the user, and `stopReason` only applies when the hook stops processing."
+      }
+    ],
+    "explanation": "For `PreToolUse`, `permissionDecisionReason` is shown to Claude on `deny`, shown to the user in the prompt on `ask`, and only logged on `allow` and `defer`. `systemMessage` is a user-facing warning on any event that does not discard it.",
+    "reference": "Claude Code docs: Hooks reference (PreToolUse decision control)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-HKS-019",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "To keep latency down, a TypeScript `PreToolUse` callback starts its policy check in the background and returns `{ async: true, asyncTimeout: 30000 }`. When the check later finds a forbidden command, it wants to deny the call. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The deny applies as long as the check finishes within `asyncTimeout`",
+        "why": "The timeout only limits the background work; the agent never waits for a decision from it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The call is held until the background promise resolves, then the deny applies",
+        "why": "Async output tells the agent not to wait, so nothing is held."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The deny is applied to the next tool call instead of the current one",
+        "why": "There is no mechanism that carries a late decision over to another call."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The deny cannot take effect; async output can't block, modify or add context",
+        "why": "The agent has already moved on, so async hooks are only for side effects such as logging."
+      }
+    ],
+    "explanation": "Return async output only from hooks that do not influence behaviour: logging, metrics, webhooks. A policy check that may deny must run synchronously, with a `timeout` on its matcher if it can be slow.",
+    "reference": "Agent SDK docs: Hooks (Asynchronous output)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-020",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `PreToolUse` command hook prints this valid JSON to stdout and then exits with code 1. No `onFailure` is set. What happens to the tool call?\n\n```json\n{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"no prod writes\"}}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It runs, because exit 1 is a non-blocking error and the JSON is discarded",
+        "why": "When stdout passes schema validation, the JSON decides even with a non-zero exit."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It is denied, because Claude Code ignores the exit code when stdout is valid JSON",
+        "why": "With valid JSON and an exit code other than 0 or 2, the run counts as success and the fields alone decide."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is sent to the user as an `ask`, because the exit code and the JSON disagree with each other",
+        "why": "There is no rule that turns a conflict into a prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The hook is retried once, and the second run's result is used",
+        "why": "Claude Code does not retry hooks."
+      }
+    ],
+    "explanation": "Exit 0 is the intended code for JSON output, but if stdout is a valid JSON object the fields apply even with another non-zero code (except for hooks set to `onFailure: \"block\"`, where the run counts as a failure). With plain text or no output, exit 1 is a non-blocking error and the action goes ahead.",
+    "reference": "Claude Code docs: Hooks reference (Exit code output)",
+    "source": "interview:hook-exit-codes-json",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-021",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `PreToolUse` command hook prints `{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\"}}` and exits with code 2. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The call is blocked; exit 2 blocks, and the JSON cannot override it",
+        "why": "Claude Code still reads the fields, but even an `allow` doesn't let the action through after exit 2."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The call is allowed, because JSON output always wins over the exit code",
+        "why": "JSON wins over other non-zero codes, but exit 2 keeps its blocking effect."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The call is allowed and the user sees a hook-error notice",
+        "why": "Exit 2 on PreToolUse is a blocking error, not a notice."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The user is prompted, because exit 2 maps to `ask`",
+        "why": "Exit 2 behaves like a deny on PreToolUse, not like ask."
+      }
+    ],
+    "explanation": "Pick one style per hook: exit codes alone, or exit 0 with JSON. If you mix them, exit 2 still blocks; Claude sees stderr (or the JSON reason for a blocking decision) as the explanation.",
+    "reference": "Claude Code docs: Hooks reference (Exit code 2)",
+    "source": "interview:hook-exit-codes-json",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-022",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `PreToolUse` hook on `Edit` moves edits from `legacy/` to `src/` and returns:\n\n```json\n{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"updatedInput\": {\"file_path\": \"/repo/src/a.ts\"}}}\n```\n\nEvery redirected edit now fails. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`updatedInput` is only honoured with `permissionDecision: \"ask\"`",
+        "why": "It works with `allow` (auto-approve), with `ask`, or with no decision at all; only `defer` ignores it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`updatedInput` must sit at the top level of the JSON, next to `hookSpecificOutput`",
+        "why": "It belongs inside `hookSpecificOutput`, which is where this hook put it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`updatedInput` replaces the whole input, so `old_string` and `new_string` are gone",
+        "why": "The Edit call now carries only `file_path`; copy the original `tool_input` and change one field."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Hooks may not change `file_path`, only the content fields",
+        "why": "Any input field can be rewritten; the docs' own example redirects `file_path` into a sandbox."
+      }
+    ],
+    "explanation": "`updatedInput` is not a patch. Spread the original input (`{...tool_input, file_path: newPath}` in TypeScript or `{**tool_input, ...}` in Python) and return a new object rather than mutating the one you received.",
+    "reference": "Claude Code docs: Hooks reference (PreToolUse decision control)",
+    "source": "interview:pretooluse-updated-input",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-023",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Three `PreToolUse` hooks match the same Bash call: one logs the command, one returns `ask`, and one returns `deny`. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The call is denied, because the most restrictive decision wins: deny, then defer, then ask, then allow",
+        "why": "Decisions are merged with deny taking priority over every other result."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The logging hook still writes its entry, because matching hooks all run, in parallel",
+        "why": "One hook's deny does not stop sibling hooks from executing, so side effects still happen."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The hooks run in the order they are listed, and the first deny skips the rest",
+        "why": "Matching hooks run in parallel and complete in a non-deterministic order."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The user is prompted, because `ask` lets a person override the deny",
+        "why": "Ask ranks below deny, so no prompt is shown."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "If two hooks had returned `updatedInput`, the two objects would be deep-merged",
+        "why": "When several hooks rewrite input, the last one to finish takes effect; avoid more than one rewriting hook per tool."
+      }
+    ],
+    "explanation": "Write each hook to act on its own. Do not rely on one hook's deny to suppress another hook's side effects, and do not have two hooks rewrite the same tool's input, since completion order is non-deterministic. `additionalContext` from every hook is passed to Claude together.",
+    "reference": "Claude Code docs: Automate actions with hooks (Combine results from multiple hooks)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-024",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `PostToolUse` hook on `Edit|Write` runs ESLint, prints the errors to stderr and exits 1. Claude never fixes the lint errors. Which change makes Claude receive them?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Exit 0 instead, so the run counts as a success and stderr is passed on to Claude as context",
+        "why": "Claude never sees stderr from a hook that exits 0; it only reaches the debug log."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return `{\"systemMessage\": \"<lint errors>\"}` so they appear in the transcript",
+        "why": "`systemMessage` is shown to the user, not added to Claude's context."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Return `{\"continue\": false, \"stopReason\": \"<lint errors>\"}`",
+        "why": "This stops Claude from processing further instead of letting it fix the errors."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Exit 2 instead, so stderr is shown to Claude even though the edit already happened",
+        "why": "On PostToolUse, exit 2 cannot block (the tool ran) but it does feed stderr to Claude."
+      }
+    ],
+    "explanation": "Exit 1 is a non-blocking error: the user sees a short notice and the turn goes on. For post-events, exit 2 is the way to get stderr to Claude; the JSON alternatives are `decision: \"block\"` with a `reason`, or `additionalContext`.",
+    "reference": "Claude Code docs: Hooks reference (Exit code 0, Exit code 2 behavior per event)",
+    "source": "interview:hook-exit-codes-json",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-025",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript Agent SDK app often has Claude read five files in parallel. You want to add one reminder about the module's test command after the whole set of reads, not five copies of it. Which hook fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`PostToolUse` with matcher `Read`, returning `additionalContext`",
+        "why": "PostToolUse fires once per tool call, so parallel reads would inject five copies."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`PostToolBatch`, returning `additionalContext` once before the next model call",
+        "why": "It fires exactly once after every call in the batch resolves, with the full list in `tool_calls`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`UserPromptSubmit`, returning `additionalContext` with every prompt",
+        "why": "This fires per prompt, not after the reads, and adds the text even when no files were read."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`SubagentStart`, returning `additionalContext` to each reader subagent as it launches",
+        "why": "No subagent is involved in parallel tool calls made by the main agent."
+      }
+    ],
+    "explanation": "Use `PostToolBatch` for context that depends on the set of tools that ran. It has no matcher, and in the Agent SDK it is available to TypeScript callbacks but not Python ones. Its `tool_response` values are the serialised tool results the model sees, not PostToolUse's structured output objects.",
+    "reference": "Claude Code docs: Hooks reference (PostToolBatch)",
+    "source": "interview:hook-additional-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-026",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `SessionStart` hook injects a 40,000-character API style guide through `additionalContext`. Claude follows the first part of the guide but ignores rules near the end. What is the likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Context from SessionStart is dropped after the first turn",
+        "why": "It is placed at the start of the conversation and stays there like any other message."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`additionalContext` over the cap is saved to a file, and Claude gets the path plus a short preview",
+        "why": "Above 10,000 characters Claude sees the first 2,000 and a path; it is not asked to read the file."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "SessionStart hooks only accept plain-text stdout, so `additionalContext` is truncated to its first line",
+        "why": "SessionStart supports both plain stdout and `additionalContext`; neither is cut to one line."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The guide went to the user as a `systemMessage`, and the model only saw a summary",
+        "why": "`additionalContext` goes to Claude; `systemMessage` is the user-facing field."
+      }
+    ],
+    "explanation": "`additionalContext`, `systemMessage`, `initialUserMessage` and plain stdout are each capped at 10,000 characters, with no setting to raise the cap. Keep injected context short and dynamic; static conventions belong in CLAUDE.md, and anything Claude must always see has to fit under the cap.",
+    "reference": "Claude Code docs: Hooks reference (JSON output)",
+    "source": "interview:hook-additional-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-027",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A CI job runs Claude Code with `--dangerously-skip-permissions`. Security needs `terraform destroy` to be blocked in that job no matter what. Which of these does that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `PermissionRequest` hook that returns `behavior: \"deny\"` for any command containing `terraform destroy`",
+        "why": "Bypass mode never asks for permission, so a PermissionRequest hook never fires."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `CLAUDE.md` rule: \"Never run terraform destroy\"",
+        "why": "Instructions guide the model but are not enforced by the harness."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `PreToolUse` hook on `Bash` that returns `permissionDecision: \"deny\"` for that command",
+        "why": "PreToolUse fires before any permission-mode check, and its deny holds even in bypass mode."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `PostToolUse` hook that runs `terraform apply` again to undo the destroy",
+        "why": "PostToolUse runs after the tool, so the destroy has already happened."
+      }
+    ],
+    "explanation": "A hook `deny` holds in every permission mode, including `bypassPermissions` and `dontAsk`, which is why hooks are used for policy that users cannot get around by changing modes. (A deny rule in settings would also hold; the trap options are mechanisms that never run in bypass mode, or that run too late.)",
+    "reference": "Claude Code docs: Automate actions with hooks (Hooks and permission modes)",
+    "source": "interview:hook-vs-can-use-tool",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://github.com/mario-andreschak/FLUJO/issues/1092"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-028",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the `PreToolUse` and `PermissionRequest` hook events are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`PreToolUse` fires before every tool call, whether or not the call needs permission",
+        "why": "It runs ahead of the whole permission flow for each call."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`PermissionRequest` fires only when Claude Code is about to ask for permission, or would auto-deny a call that can't prompt",
+        "why": "Calls approved by rules or modes never reach it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Exiting 2 from a `PermissionRequest` hook denies the request",
+        "why": "Exit 2 is not honoured on this event; return `decision.behavior: \"deny\"` instead."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `PermissionRequest` hook returning `allow` overrides a matching deny rule",
+        "why": "Deny and ask rules are still evaluated, so a deny rule wins."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Both events receive the same `tool_use_id` so you can correlate them",
+        "why": "PermissionRequest input has `tool_name` and `tool_input` but no `tool_use_id`."
+      }
+    ],
+    "explanation": "Use `PreToolUse` for checks that must see every call and `PermissionRequest` to answer prompts automatically (it can also add rules through `updatedPermissions`). In SDK sessions with `canUseTool`, PermissionRequest hooks run alongside the callback and whichever decides first applies.",
+    "reference": "Claude Code docs: Hooks reference (PermissionRequest)",
+    "source": "interview:hook-events-blocking",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-029",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "Claude Code caps a hook's `additionalContext` string at a fixed number of characters; longer text is saved to a file and replaced with a path and preview. Type that limit as a number.",
+    "options": [],
+    "accepted": [
+      "10000",
+      "10,000"
+    ],
+    "explanation": "The cap is 10,000 characters, measured per field per hook. Over the limit, Claude gets the file path and a preview of up to the first 2,000 characters, and is not told to open the file. The same cap applies to `systemMessage`, `initialUserMessage` and plain stdout.",
+    "reference": "Claude Code docs: Hooks reference (JSON output)",
+    "source": "interview:hook-additional-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-030",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each hook event with what a command hook's exit code 2 does on it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`PostToolUse`",
+        "why": "Shows stderr to Claude; the tool already ran."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Stop`",
+        "why": "Keeps Claude working instead of stopping."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`PermissionRequest`",
+        "why": "Exit 2 is ignored; only the decision object counts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`SessionStart`",
+        "why": "Shows stderr to the user only."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Claude receives the stderr text, but the action has already happened",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Claude continues the conversation with stderr as its next instruction",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Nothing changes; the permission flow proceeds as if the hook were silent",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A notice appears in the transcript for the user, and Claude never sees it",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Exit 2 means \"stop, don't do this\", but its effect depends on whether the event can still be prevented. On Stop it sends Claude back to work with stderr as the reason, which is why careless Stop hooks loop.",
+    "reference": "Claude Code docs: Hooks reference (Exit code 2 behavior per event)",
+    "source": "interview:hook-events-blocking",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-031",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A team wants to block edits to `.env` files and writes a `PreToolUse` hook with `\"matcher\": \".env\"`. It never fires. What should they do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Escape the dot, as `\\\\.env`, because `.` is a regex wildcard",
+        "why": "Escaping would not help; the matcher is compared with the tool name, which is never `.env`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Match the tool names (`Write|Edit`) and check `tool_input.file_path` in the hook, or use the handler's `if` field",
+        "why": "Matchers only see tool names; file paths are in the tool input, which `if` rules such as `Edit(*.env)` can test."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Move the hook to `PostToolUse`, where the matcher is tested against the file path",
+        "why": "PostToolUse also matches on the tool name, and by then the file has been written."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `FileChanged` with matcher `.env`, which blocks the write before it reaches disk",
+        "why": "FileChanged reports changes after they happen and has no decision control."
+      }
+    ],
+    "explanation": "For tool events, matchers filter on `tool_name` only. Filter arguments inside the hook, or with the optional `if` field, which uses permission-rule syntax such as `Edit(*.ts)` or `Bash(git *)`. Remember that a `Write|Edit` hook does not see a Bash command that writes the same file.",
+    "reference": "Agent SDK docs: Hooks (Matcher not filtering as expected)",
+    "source": "interview:hook-matchers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-032",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "When you run `claude -p` or the Agent SDK in a cloned repository, hooks in that repository's `.claude/settings.json` run even though nobody accepted the workspace trust dialog for the folder.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: headless and SDK sessions never show the dialog and treat the folder as trusted."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "Only interactive sessions hold hooks back until trust is accepted; `-p` and SDK sessions do not."
+      }
+    ],
+    "explanation": "Command hooks run with your full user permissions. Before scripting `claude -p` over a repository you did not write, review its `.claude/` settings, start with `--bare`, or turn hooks off for the run with `--settings '{\"disableAllHooks\": true}'`.",
+    "reference": "Claude Code docs: Hooks reference (Workspace trust)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-HKS-033",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "A team is deciding where each rule should live. Match each rule with the mechanism that fits it best.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`CLAUDE.md`",
+        "why": "Instructions loaded into context every session."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`PostToolUse` command hook",
+        "why": "Code that runs after each matching tool call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Stop` agent hook",
+        "why": "A verifier subagent that runs when Claude tries to finish and can send it back to work."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`PreToolUse` command hook",
+        "why": "Code that runs before a tool call and can deny it in any permission mode."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Prefer `pnpm` over `npm` and follow the repository's naming conventions",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Format every edited file, with no exceptions",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Don't hand back control until the test suite actually passes",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Never run `git push --force`, even when someone starts the session in bypass mode",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Static conventions that need judgement go in CLAUDE.md. Things that must happen every time go in hooks: `PostToolUse` for after-the-fact actions, `PreToolUse` for prevention, and a `Stop` hook (prompt or agent type) for completion checks. Agent hooks are experimental; a command hook that runs the tests is the conservative choice for production.",
+    "reference": "Claude Code docs: Automate actions with hooks",
+    "source": "interview:hooks-vs-claude-md",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://institute.sfeir.com/en/claude-code/claude-code-resources/interview/",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/hooks-guide"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-034",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Project settings contain the ask rule `Bash(docker *)`. A new `PreToolUse` hook wraps every Bash command as `docker exec sandbox sh -c '<cmd>'`, returning that in `updatedInput` with `permissionDecision: \"allow\"`. Now every Bash command asks for approval. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Permission rules are evaluated against the input the hook returns, so every rewritten command matches the ask rule",
+        "why": "Ask rules are still checked after a hook allow, and they see the rewritten `docker ...` command."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A hook may return `allow` or `updatedInput`, not both, so the allow is dropped",
+        "why": "Pairing them is the documented way to auto-approve a rewritten call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Changing `command` changes the tool name to `docker`, which needs a new permission",
+        "why": "The tool is still `Bash`; only its input changed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`updatedInput` always forces a confirmation so the user can review the change",
+        "why": "That is what `ask` does; with `allow`, a rewrite runs without a prompt unless a rule intervenes."
+      }
+    ],
+    "explanation": "Claude Code evaluates permission rules (and Bash auto-background eligibility) against the input your hook returns, not the input Claude sent, and a hook `allow` never skips deny or ask rules. A rewriting hook therefore has to be designed together with the rule set it will run against.",
+    "reference": "Claude Code docs: Hooks reference (PreToolUse decision control)",
+    "source": "interview:pretooluse-updated-input",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-035",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A `UserPromptSubmit` SDK callback adds a research step by spawning subagents for each prompt. Soon the session fans out without end. What guard stops the loop?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Return `continue: false` from the callback after the first subagent starts",
+        "why": "That stops the whole agent, including the work the user asked for."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Lower the matcher timeout so slow recursive callbacks time out",
+        "why": "A UserPromptSubmit callback that times out blocks the prompt, which breaks the session instead of fixing it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Move the logic to `SubagentStart`, which cannot fire recursively",
+        "why": "SubagentStart fires for every subagent too, so the same fan-out can happen there."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Act only for the top-level session: skip when the input carries `agent_id` or session state says you're inside a subagent",
+        "why": "The docs' remedy is to track whether you're already in a subagent and scope the hook to the top-level agent."
+      }
+    ],
+    "explanation": "Hook-triggered work that itself triggers the same hook recurses. In TypeScript, `agent_id` is on the base hook input and is present only when the hook fires inside a subagent, so its absence identifies the main thread. A shared flag or per-session state works in either SDK.",
+    "reference": "Agent SDK docs: Hooks (Recursive hook loops with subagents)",
+    "source": "interview:hook-recursion",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-036",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A web app runs `claude -p` and must ask the user a question that Claude raises through `AskUserQuestion`. Its `PreToolUse` hook uses `defer`. Put the round trip in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The hook returns `permissionDecision: \"defer\"` for the `AskUserQuestion` call",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The run ends with a result whose `stop_reason` is `tool_deferred`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The app reads `deferred_tool_use` from the result and shows the question in its UI",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The app runs `claude -p --resume <session-id>` with the same permission host",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The same tool call fires `PreToolUse` again, and the hook returns `allow` with the answer in `updatedInput`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "`defer` is honoured only in `-p` mode and only when Claude made a single tool call in the turn. The pending call stays in the transcript with no timeout. On resume the hook must supply the answer through `updatedInput` paired with `allow`; `allow` alone is not enough for `AskUserQuestion`.",
+    "reference": "Claude Code docs: Hooks reference (Defer a tool call for later)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-037",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A Stop hook exits 2 while `git status` shows uncommitted changes. A deny rule blocks `git commit`. Claude tries the commit, is denied and stops again, over and over. The 8-continuation cap never ends it. Why, and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The cap only applies to prompt hooks; switch the hook to `type: \"prompt\"` so the cap applies",
+        "why": "The cap applies to Stop-hook continuations of any handler type."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The cap resets whenever Claude calls a tool, and each pass makes a commit attempt; exit 0 when `stop_hook_active` is `true`",
+        "why": "Consecutive continuations reset on tool calls, so the hook itself must recognise that it already sent Claude back."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Exit 2 on Stop is honoured only once per turn, so the loop must come from somewhere else; the session is stuck retrying the deny rule",
+        "why": "Exit 2 on Stop keeps sending Claude back each time; that is exactly the loop."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` to 1 so the cap triggers sooner",
+        "why": "The cap counts consecutive blocks with no tool call between them, and the commit attempts keep resetting it."
+      }
+    ],
+    "explanation": "A Stop hook that blocks on a condition Claude cannot fix keeps Claude working. Check `stop_hook_active` (or inspect the transcript) and let the stop through on the second pass, or report the problem once with `additionalContext` or `systemMessage`. A prompt hook can also return `impossible: true` to let the turn end.",
+    "reference": "Claude Code docs: Automate actions with hooks (Stop hook hits the block cap)",
+    "source": "interview:stop-hook-loop",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-code/issues/103777"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-038",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A multi-tenant SaaS runs Agent SDK sessions. Two rules apply: (1) a hard invariant that no tool may touch paths outside the tenant's `/workspace`, in any mode; (2) per-session approval of risky actions by the tenant's admin through your web UI. Where should each rule live?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "(1) in a `PreToolUse` hook, which runs for every call before modes and rules; (2) in `canUseTool`, which gets the calls still unresolved",
+        "why": "Hooks see every call and their deny holds in any mode, while canUseTool is the interactive approval point."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both in `canUseTool`, so all policy sits in one callback",
+        "why": "Calls approved by allow rules or by modes such as acceptEdits never reach canUseTool, so the invariant would be skipped."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "(1) in the system prompt and `CLAUDE.md`; (2) in a `PermissionRequest` hook",
+        "why": "Prompt text is advisory, and the model can be talked out of it, for example by injected content."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "(1) in a `PostToolUse` hook that reverts out-of-bounds changes; (2) in `canUseTool`",
+        "why": "PostToolUse runs after the tool, so writes and network calls have already happened."
+      }
+    ],
+    "explanation": "Interviewers like the split: hooks for invariants that must hold whatever the mode or rules say, `canUseTool` for per-session human decisions. Pair the hook with OS-level isolation (sandbox or container) for Bash, because a `Write|Edit` path check does not see shell commands.",
+    "reference": "Agent SDK docs: Configure permissions; Hooks",
+    "source": "interview:hook-vs-can-use-tool",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://github.com/mario-andreschak/FLUJO/issues/1092"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-HKS-039",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A policy check is slow and sometimes times out. Which statements about hook timeouts are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "An Agent SDK `PreToolUse` callback that times out blocks the tool call, and Claude gets a result saying the hook did not respond",
+        "why": "SDK callbacks fail closed on PreToolUse; the turn continues without running the tool."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A settings-file `PreToolUse` command hook that times out lets the call continue through the normal permission flow unless `onFailure` is `\"block\"`",
+        "why": "Command hooks fail open on timeout by default, so a stalled hook is not a gate."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A timed-out `UserPromptSubmit` SDK callback lets the prompt through without its context",
+        "why": "That is the command-hook behaviour; an SDK callback that times out on this event blocks the prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `timeout` on a `HookMatcher` is in milliseconds",
+        "why": "It is in seconds; only `asyncTimeout` on async output is in milliseconds."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A timed-out `Stop` callback counts as a block, so Claude keeps working",
+        "why": "A timed-out Stop callback counts as no decision, so the agent stops unless another hook blocks."
+      }
+    ],
+    "explanation": "Timeout behaviour differs by handler and event. Callbacks: PreToolUse and UserPromptSubmit fail closed, Stop and SubagentStop count as no decision, PostToolUse keeps the result. Command, HTTP and MCP-tool hooks: a timeout discards the output and on most events renders no decision; set `onFailure: \"block\"` where a gate must fail closed. In TypeScript, pass the callback's `AbortSignal` to slow work.",
+    "reference": "Agent SDK docs: Hooks (Hook timeout); Claude Code docs: Hooks reference (Timeouts)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-040",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An audit finds that for two weeks, a `PreToolUse` policy hook in managed settings never ran: its script path had a typo, and every Bash call went through. What change makes such failures block the action in future?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Have the script `exit 2` whenever it cannot load its policy file",
+        "why": "If the script cannot even start, none of its code runs, so its exit logic never applies."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set `\"async\": true` so the hook's failures are retried in the background",
+        "why": "Async hooks cannot block anything, and Claude Code does not retry hooks."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Set `\"onFailure\": \"block\"` on the handler, so a failure to start, a timeout or invalid output blocks the call",
+        "why": "With block set, a failed run does what exit 2 does on that event; on PreToolUse it blocks the tool call."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower the handler's `timeout` to 5 seconds so a broken hook fails quickly",
+        "why": "A faster failure is still a non-blocking failure by default."
+      }
+    ],
+    "explanation": "By default a hook that fails to start, exits with a code other than 0 or 2, times out, or prints invalid JSON is a non-blocking error, so the action goes ahead. `onFailure: \"block\"` (command and HTTP hooks, Claude Code v2.1.295 or later) makes a gate fail closed. It has no effect on Stop-type hooks or async hooks. Watch for the `hook error` notice the first time a policy hook runs.",
+    "reference": "Claude Code docs: Hooks reference (Block the action when a hook fails)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-041",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A `PreToolUse` hook prints a valid deny decision and exits 0, yet the tool call runs and no hook error appears. What could cause this? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The user's shell profile prints a line before the JSON, so stdout doesn't start with `{` and is read as plain text",
+        "why": "Profiles sourced by non-interactive shells can write to stdout first; the debug log shows `Hook output does not start with {`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`permissionDecision` is at the top level of the JSON instead of inside `hookSpecificOutput`",
+        "why": "Misplaced fields still parse, but Claude Code ignores them without an error."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The hook should have exited 1, because exit 0 means \"allow\"",
+        "why": "Exit 0 is the intended code for JSON output; it is not an approval."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The JSON object is pretty-printed over several lines",
+        "why": "One JSON object on one line or several is accepted, as long as nothing else is on stdout."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Deny decisions only take effect when they come with `systemMessage`",
+        "why": "`systemMessage` is optional and only addresses the user."
+      }
+    ],
+    "explanation": "When hook JSON seems to have no effect, run `claude --debug` and check the log for `Hook output does not start with {` (stray output, usually from a shell profile) or `Hook JSON output had unrecognized keys` (fields at the wrong level). Guard profile `echo` lines with an interactive-shell check.",
+    "reference": "Claude Code docs: Automate actions with hooks (Hook JSON has no effect)",
+    "source": "interview:hook-exit-codes-json",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/kenimo49/claude-code-hooks-vs-skills-vs-subagents-three-ways-to-extend-the-agent-and-when-each-backfires-1728",
+        "https://code.claude.com/docs/en/hooks",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-042",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript SDK service relies on a `SessionStart` command hook in the repository's `.claude/settings.json` to load ticket context. It works with the CLI, but it never fires in the service, which passes `settingSources: []`. What explains it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`SessionStart` command hooks run only in interactive sessions, never in SDK sessions",
+        "why": "SDK sessions run settings-file hooks when their source is loaded, and they do not wait for workspace trust."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "SessionStart fires before MCP servers connect, so command hooks are skipped at launch and only run after `/clear`",
+        "why": "That launch-time skip applies to `mcp_tool` hooks, not command hooks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "TypeScript sessions only run SessionStart for `source: \"resume\"`",
+        "why": "SessionStart fires for startup, resume, clear, compact and fork."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`settingSources: []` loads no filesystem settings, so the project's hooks are never read",
+        "why": "An empty list is SDK isolation mode; include `'project'`, or register the hook as an SDK callback."
+      }
+    ],
+    "explanation": "The SDK collects callback hooks from `options.hooks` plus settings-file hooks from the enabled setting sources. Omitting `settingSources` loads all sources, as the CLI does. An empty list disables them (managed policy is still read). Teams that want isolation from local config can register the logic as a TypeScript `SessionStart` callback instead.",
+    "reference": "Agent SDK docs: Hooks (How hooks work); TypeScript SDK reference: settingSources",
+    "source": "interview:sessionstart-hook-not-firing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/465",
+        "https://github.com/anthropics/claude-code/issues/102858",
+        "https://code.claude.com/docs/en/agent-sdk/hooks"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-043",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "To keep secrets out of Claude's context, a `PostToolUse` hook on `Bash` returns `{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"updatedToolOutput\": \"[redacted]\"}}`. Claude still quotes the secret. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`updatedToolOutput` only works for MCP tools; for Bash and other built-in tools use `updatedMCPToolOutput` instead",
+        "why": "It is the other way round: `updatedToolOutput` works for every tool, and the MCP-only field is the older one."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Bash output is an object (`stdout`, `stderr`, `interrupted`, `isImage`); a value of the wrong shape is ignored",
+        "why": "For built-in tools, a replacement that doesn't match the output schema is ignored, and the original output is used."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "PostToolUse output is shown to the user only; Claude reads the raw result",
+        "why": "A valid `updatedToolOutput` replaces what Claude sees."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Redaction must use `decision: \"block\"`, which removes the original result",
+        "why": "On PostToolUse, `block` adds a reason next to the original output; it does not remove it."
+      }
+    ],
+    "explanation": "`updatedToolOutput` changes only what Claude sees: the command has already run, and telemetry such as OpenTelemetry spans captured the original output. For built-in tools the value must match the tool's output shape. MCP output is passed through without validation. To stop secrets being produced in the first place, intercept at `PreToolUse`.",
+    "reference": "Claude Code docs: Hooks reference (PostToolUse decision control)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-HKS-044",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A platform team is reviewing how hooks affect developer machines and CI. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`disableAllHooks: true` in user or project settings cannot disable hooks that come from managed policy settings",
+        "why": "Only `disableAllHooks` set at the managed level can turn off managed hooks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A handler's `if` field is best-effort for Bash, so hard allow and deny decisions should be enforced with permission rules",
+        "why": "When Claude Code can't tell which commands a Bash input runs, it runs the hook regardless of the pattern."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Command hooks run in a restricted sandbox with read-only access to the project",
+        "why": "They run with your full user permissions and can modify or delete anything your account can."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`allowManagedHooksOnly` also blocks managed hooks, leaving only plugin hooks",
+        "why": "It keeps managed hooks and blocks user, project, local and most plugin hooks."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Defining the same handler in user and project settings makes it run twice per event",
+        "why": "An identical handler defined in more than one settings file runs once."
+      }
+    ],
+    "explanation": "Hooks merge across settings levels instead of replacing each other, and managed hooks cannot be switched off from below. Treat command hooks as code with your full privileges, and treat the `if` filter as an optimisation, not a security boundary.",
+    "reference": "Claude Code docs: Hooks reference (Disable or remove hooks, Configuration, Security considerations)",
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-HKS-045",
+    "domain": 2,
+    "skill": "hooks",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "After each subagent finishes, you want the parent agent to get the reminder \"Verify the subagent's claims before using them.\" Your `SubagentStop` hook returns it as `additionalContext`, but the subagent keeps running instead and the parent never sees it. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Return it as `systemMessage` from `SubagentStop`, which goes to the parent",
+        "why": "`systemMessage` is a user-facing warning, not context for the parent model."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Use a `PostToolUse` hook matched on the `Agent` tool and return the reminder as `additionalContext`",
+        "why": "The subagent's result returns to the parent as the Agent tool's result, and PostToolUse context lands next to it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Return `decision: \"block\"` with the reminder as `reason` from `SubagentStop`",
+        "why": "That also keeps the subagent running, with the reason as its next instruction."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `SubagentStart` with the reminder instead, since its `additionalContext` is delivered to the parent agent",
+        "why": "SubagentStart context is added to the subagent's own conversation, at its start."
+      }
+    ],
+    "explanation": "SubagentStop uses Stop's decision format, so `additionalContext` and `decision: \"block\"` both keep the subagent working. Context for the parent belongs on the parent's side of the boundary: the `PostToolUse` event for the `Agent` tool call that ran the subagent.",
+    "reference": "Claude Code docs: Hooks reference (SubagentStop)",
+    "roleLevel": 4
+  }
+]

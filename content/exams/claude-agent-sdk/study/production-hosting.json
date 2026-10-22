@@ -1,0 +1,51 @@
+{
+  "production-hosting": {
+    "summary": "Every Agent SDK session is a `claude` CLI subprocess with its own shell, working directory and on-disk transcript, so hosting it means hosting long-lived stateful processes. Know the four session patterns, what lives on local disk and how to persist it, the multi-tenant isolation checklist, how to keep credentials outside the agent's boundary and egress behind a proxy, which isolation technology fits which threat model, how to export OpenTelemetry safely, and how to build liveness, deadlines, cancellation and approvals around an SDK that has no session timeout of its own.",
+    "points": [
+      "`query()` spawns a `claude` CLI subprocess and talks to it over stdio; one session is one subprocess. Both SDKs bundle a native CLI binary pinned to the SDK version, so you upgrade the CLI by upgrading the SDK. Start sizing at 1 GiB RAM, 5 GiB disk and 1 CPU per agent, then use agents per host = (host RAM - overhead) / measured peak RSS per session.",
+      "Session patterns: ephemeral (a container per task), long-running (warm sessions in persistent containers; `streamInput()`/`startup()`/`prewarm()` in TS, `ClaudeSDKClient` in Python; route with consistent hashing on `sessionId`), hybrid (ephemeral containers plus a required `SessionStore`), and multi-agent container (separate `cwd` and isolated settings per agent).",
+      "Local-disk state (transcripts in `~/.claude/projects/` or under `CLAUDE_CONFIG_DIR`, `CLAUDE.md` files, working-directory artifacts) is lost on restart. `SessionStore` mirrors transcripts only, writes are best-effort (alert on `system`/`mirror_error`), and memory files and artifacts need a volume or an object-store sync.",
+      "Multi-tenant checklist for a shared container: `settingSources: []`, `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` (auto memory ignores `settingSources`), a per-tenant `CLAUDE_CONFIG_DIR`, an explicit per-tenant `cwd` on every call, and per-tenant egress rules at the proxy. In TS `env` replaces the inherited environment (spread `process.env`); in Python it merges.",
+      "Credentials stay outside the boundary. Route model calls through `ANTHROPIC_BASE_URL` to a proxy that injects the key (it sees plaintext requests). `HTTP(S)_PROXY` only gives the proxy an opaque CONNECT tunnel unless it terminates TLS and its CA is trusted in the agent. Custom tools or MCP servers can forward to an authenticated service outside the container. Authenticate end users at a gateway, never inside the agent.",
+      "Hardened container: `--cap-drop ALL`, `no-new-privileges`, a seccomp profile, `--read-only` plus `tmpfs`, `--network none` with a mounted proxy Unix socket, memory, CPU and pids limits, and a non-root user. Read-only mounts still expose `.env`, `.npmrc`, keys and cloud credential files, so filter what you mount.",
+      "Isolation trade-offs: sandbox runtime (low overhead, shared kernel, no TLS inspection); containers (strength depends on setup, shared kernel); gVisor (userspace syscall interception, up to 10-200x slower on file-heavy I/O); Firecracker microVMs (own kernel, under 125 ms boot, traffic over vsock to a host proxy). The built-in sandboxed Bash tool covers only shell commands; file tools, MCP servers and hooks need a whole-process boundary.",
+      "Inside Claude Code's sandbox, `sandbox.credentials` can `deny` a file or env var or `mask` it with a placeholder that the proxy swaps for the real value on allowed hosts. Masking requires `network.tlsTerminate` and trusted settings scopes. `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` strips recognized credentials from subprocess environments but keeps GitHub tokens and proxy variables.",
+      "OpenTelemetry: `CLAUDE_CODE_ENABLE_TELEMETRY=1` plus per-signal exporters; traces also need `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1`. Never use the `console` exporter through the SDK (stdout is the message channel). Export errors are silent unless `CLAUDE_CODE_OTEL_DIAG_STDERR=1`. Defaults: metrics every 60 s, traces and logs every 5 s. Spans: `claude_code.interaction` > `llm_request` / `tool` (> `blocked_on_user`, `execution`) / `hook`, with subagent spans nested under the parent's Agent tool span.",
+      "Telemetry is structural by default; content needs opt-in (`OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_TOOL_DETAILS`, `OTEL_LOG_TOOL_CONTENT`, `OTEL_LOG_RAW_API_BODIES`). The SDK auto-injects `TRACEPARENT` when a span is active, unless you set it yourself in `env`. Per-user IDs in `OTEL_RESOURCE_ATTRIBUTES` become metric labels unless `OTEL_METRICS_INCLUDE_RESOURCE_ATTRIBUTES=false`.",
+      "Liveness and limits: there is no top-level session timeout, so add your own wall-clock timer that calls `interrupt()`/abort/`close()` and keep `maxTurns` as a backstop. `tool_progress` heartbeats arrive about every 30 s during main-agent tool calls, `agentProgressSummaries` gives subagent `task_progress` summaries, and `ping` stream events show a gateway is still holding a response. `CLAUDE_ASYNC_AGENT_STALL_TIMEOUT_MS` is a stall watchdog, not a deadline. `maxBudgetUsd` is a client-side estimate; `task_budget`/`taskBudget` lets the model pace itself.",
+      "Approvals: `canUseTool` can stay pending indefinitely, so enforce your own timeout and return a deny with a message. For waits longer than the process lives, use a `PreToolUse` `defer` and resume later (single tool call per turn only). Choose a deployment: Agent SDK to embed the loop in your own infrastructure, Managed Agents (beta, `managed-agents-2026-04-01`) to have Anthropic host the loop, sandbox and session state (not ZDR-eligible), the raw Messages API for full control, the headless CLI for scripts and pipelines."
+    ],
+    "traps": [
+      "Thinking a read-only mount or a `Bash(curl *)` deny rule handles secrets or egress: reads still leak files, and text-matching rules are bypassed by other binaries. Enforce egress at the network layer and keep credentials outside the boundary.",
+      "Setting `HTTPS_PROXY` and expecting the proxy to add an API key header: without TLS termination it only sees an encrypted tunnel. Use `ANTHROPIC_BASE_URL` for model calls.",
+      "Assuming `settingSources: []` isolates tenants on its own: auto memory, the shared `~/.claude.json`/config directory and the shared outbound identity still need `CLAUDE_CODE_DISABLE_AUTO_MEMORY`, `CLAUDE_CONFIG_DIR` and per-tenant egress rules.",
+      "Expecting a `SessionStore` to bring back files and `CLAUDE.md` notes on a new container: it mirrors transcripts only.",
+      "Relying on `finally` blocks or `atexit` to clean up CLI subprocesses: an OOM kill (SIGKILL) skips them, so make a container, pod or process group the unit of cleanup.",
+      "Treating `API_TIMEOUT_MS`, `BASH_DEFAULT_TIMEOUT_MS` or the subagent stall timeout as a session deadline: each guards one narrow thing, and the SDK has no session timeout.",
+      "Using the `console` OTel exporter with the SDK, or adding per-user IDs as resource attributes without turning off metric labels: the first corrupts the stdio protocol, the second explodes metric cardinality.",
+      "Picking Managed Agents for a workload that requires Zero Data Retention: it stores session history server-side and is currently not eligible."
+    ],
+    "docs": [
+      {
+        "title": "Hosting the Agent SDK",
+        "url": "https://code.claude.com/docs/en/agent-sdk/hosting"
+      },
+      {
+        "title": "Securely deploying AI agents",
+        "url": "https://code.claude.com/docs/en/agent-sdk/secure-deployment"
+      },
+      {
+        "title": "Observability with OpenTelemetry",
+        "url": "https://code.claude.com/docs/en/agent-sdk/observability"
+      },
+      {
+        "title": "Choose a sandbox environment",
+        "url": "https://code.claude.com/docs/en/sandbox-environments"
+      },
+      {
+        "title": "Claude Managed Agents overview",
+        "url": "https://platform.claude.com/docs/en/managed-agents/overview"
+      }
+    ]
+  }
+}
