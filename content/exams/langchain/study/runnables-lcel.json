@@ -1,0 +1,34 @@
+{
+  "runnables-lcel": {
+    "summary": "Every LangChain component (prompts, chat models, parsers, retrievers) implements the Runnable interface, and LCEL composes them with `|`. Know how values flow and get coerced, how the wrappers (`with_retry`, `with_fallbacks`, `bind`, `with_config`) change behaviour, and how `RunnableConfig` fields reach nested steps.",
+    "points": [
+      "The Runnable interface is `invoke`, `batch` and `stream`, plus `ainvoke`, `abatch` and `astream`. Each takes one input and an optional `config`. The default `batch` runs `invoke` in parallel on a thread pool, and the default async methods run the sync version in a thread executor.",
+      "`a | b` builds a `RunnableSequence`, where each output feeds the next step. `prompt | model | StrOutputParser()` returns a plain `str`, and without the parser you get an `AIMessage`.",
+      "Coercion happens only when a Runnable is one of the operands. A dict becomes `RunnableParallel` (every value gets the same input and the output is a dict with the same keys), and a function or `itemgetter` becomes `RunnableLambda`. Joining `f1 | f2` raises `TypeError`, and `dict | dict` is just Python's dict merge.",
+      "`RunnablePassthrough()` returns its input unchanged. `RunnablePassthrough.assign(k=fn)` keeps the input dict and adds computed keys, and raises `ValueError` if the input is not a dict. `.pick(\"k\")` returns one value, while `.pick([\"a\", \"b\"])` returns a smaller dict.",
+      "A `RunnableLambda` function receives exactly one input (optionally plus `config`), so pack multiple values into a dict. If the function returns a Runnable, that Runnable is invoked with the same input, which is the basis of function-based routing. Nesting is bounded by `recursion_limit` (default 25), and exceeding it raises `RecursionError`.",
+      "`RunnableBranch((cond, runnable), ..., default)` checks conditions lazily in order, runs only the first match on the original input, and requires a trailing default.",
+      "`@chain` turns a function into a named Runnable (a `RunnableLambda`). Runnables invoked inside it inherit its config through a context variable and are traced as its children.",
+      "`bind(**kwargs)` returns a `RunnableBinding` that passes fixed keyword arguments on every call. `with_config(...)` attaches config such as tags, and child configs are merged with the parent's rather than replacing them.",
+      "`with_retry(retry_if_exception_type=(Exception,), stop_after_attempt=3, wait_exponential_jitter=True)` counts total attempts. Errors outside the listed types fail immediately, and in `batch` only the failing inputs are retried. Keep the retry scope as small as possible, usually the model.",
+      "`with_fallbacks([b], exceptions_to_handle=(Exception,), exception_key=None)` tries the fallbacks in order. Unlisted error types propagate. With `exception_key` set, the fallback receives the input dict plus the exception, so inputs must be dicts. If everything fails, the first error is re-raised.",
+      "Wrapper order matters. `p.with_retry().with_fallbacks([b])` runs p, p, b, whereas `p.with_fallbacks([b]).with_retry()` retries the whole group (p, b, p, b). A model-level fallback cannot catch a later parser error, so wrap the whole chain if you need that.",
+      "Inheritance across `RunnableConfig` fields: `tags`, `metadata`, `callbacks` and `configurable` flow to sub-calls, but `run_name` and `run_id` do not. `max_concurrency` caps `batch` parallelism. `configurable_fields` (a parameter) and `configurable_alternatives` (a whole component) read `config[\"configurable\"]`, and an unknown alternative name raises `ValueError`."
+    ],
+    "traps": [
+      "`batch` is client-side concurrency, not a provider batch API. Results come back in input order, unlike `batch_as_completed`.",
+      "Callbacks passed to a component's constructor only see that component's runs. Use `config={\"callbacks\": [...]}` to observe the whole chain.",
+      "Comparing a classifier's output to a string without `StrOutputParser()` compares against an `AIMessage`, so it is always False and the router silently takes the default path.",
+      "Inside a dict step, `RunnablePassthrough()` gets the original input, not a sibling branch's output.",
+      "Without a narrowed `exceptions_to_handle`, a fallback model can hide real bugs in your own code.",
+      "`LLMChain`, `ConversationChain` and the other legacy chains live in `langchain-classic` in 1.x. Replace them with `prompt | model` (plus a parser), and use `create_agent` or LangGraph when the path is not fixed."
+    ],
+    "docs": [
+      { "title": "Runnable (API reference)", "url": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable" },
+      { "title": "RunnableWithFallbacks (API reference)", "url": "https://reference.langchain.com/python/langchain-core/runnables/fallbacks/RunnableWithFallbacks" },
+      { "title": "RunnableRetry (API reference)", "url": "https://reference.langchain.com/python/langchain-core/runnables/retry/RunnableRetry" },
+      { "title": "Models: batch and invocation config", "url": "https://docs.langchain.com/oss/python/langchain/models" },
+      { "title": "LangChain v1 migration guide", "url": "https://docs.langchain.com/oss/python/migrate/langchain-v1" }
+    ]
+  }
+}

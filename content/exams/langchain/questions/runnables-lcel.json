@@ -1,0 +1,2026 @@
+[
+  {
+    "id": "LCH-RLC-001",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `result` hold after this runs?\n\n```python\nfrom langchain_core.output_parsers import StrOutputParser\n\nchain = prompt | model | StrOutputParser()   # prompt: ChatPromptTemplate, model: a chat model\nresult = chain.invoke({\"topic\": \"Pune\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An `AIMessage` whose `.content` is the model's reply",
+        "why": "That is what `prompt | model` returns. The parser at the end turns the message into text."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A plain Python `str` with the model's reply",
+        "why": "`StrOutputParser` extracts the text of the message, so the whole sequence returns a string."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `ChatPromptValue` holding the formatted messages",
+        "why": "That is the output of the prompt step alone; the value is passed on to the model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `RunnableSequence`, which you then call with `.run()`",
+        "why": "`chain` is the `RunnableSequence`; `invoke` executes it and returns the last step's output. There is no `.run()` on Runnables."
+      }
+    ],
+    "explanation": "The `|` operator builds a `RunnableSequence`. Calling `invoke` feeds the dict to the prompt, the prompt value to the model and the `AIMessage` to the parser, and returns the parser's output: a plain string. Interviewers ask this to check that you can trace types through an LCEL pipeline.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-lcel-pipe"
+  },
+  {
+    "id": "LCH-RLC-002",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In LCEL, when a plain Python `dict` of runnables appears as a step in a `|` pipeline, LangChain turns it into a `RunnableParallel` that runs every value on the same input.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: dict literals inside a sequence are coerced to `RunnableParallel`, and the output is a dict with the same keys."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It is true. The dict is not passed through as data; each value is run on the step's input."
+      }
+    ],
+    "explanation": "This coercion is why the RAG idiom `{\"context\": retriever, \"question\": RunnablePassthrough()} | prompt` works: both values receive the same input and the result is a dict keyed `context` and `question`. Plain functions are coerced the same way, into `RunnableLambda`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableParallel",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://github.com/thota-vivek05/langchain-practical-learning"
+      ]
+    },
+    "source": "interview:lc-parallel-passthrough"
+  },
+  {
+    "id": "LCH-RLC-003",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nfrom langchain_core.runnables import RunnableLambda\n\nadd1 = RunnableLambda(lambda x: x + 1)\ndouble = RunnableLambda(lambda x: x * 2)\nprint((add1 | double).invoke(3))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`7`",
+        "why": "That would be `double` first and then `add1` (3 * 2 + 1). A sequence runs left to right."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`8`",
+        "why": "`add1` runs first (3 + 1 = 4), and its output feeds `double` (4 * 2 = 8)."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[4, 6]`",
+        "why": "That is what a `RunnableParallel` of the two would give (as a dict, not a list). `|` chains them in order."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `TypeError`, because `|` is not defined for `RunnableLambda`",
+        "why": "Every Runnable implements `__or__`, so `|` builds a `RunnableSequence`."
+      }
+    ],
+    "explanation": "`a | b` builds a `RunnableSequence` in which each step's output is the next step's input, left to right. The same pipe works for any Runnable: prompts, models, parsers, retrievers and wrapped functions.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-lcel-pipe"
+  },
+  {
+    "id": "LCH-RLC-004",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "What is `result[\"n\"]` after this runs? Type a number.\n\n```python\nfrom langchain_core.runnables import RunnablePassthrough\n\nstep = RunnablePassthrough.assign(n=lambda d: len(d[\"q\"]))\nresult = step.invoke({\"q\": \"abc\"})\n```",
+    "options": [],
+    "accepted": [
+      "3"
+    ],
+    "explanation": "`RunnablePassthrough.assign` keeps every key of the input dict and adds the computed keys, so `result` is `{'q': 'abc', 'n': 3}`. The input must be a dict; any other input raises a `ValueError`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/passthrough/RunnablePassthrough",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://github.com/thota-vivek05/langchain-practical-learning"
+      ]
+    },
+    "source": "interview:lc-parallel-passthrough"
+  },
+  {
+    "id": "LCH-RLC-005",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A LangChain 0.x codebase builds `LLMChain(llm=model, prompt=prompt)` and calls `.run(...)`. What is the idiomatic replacement in LangChain 1.x?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`ConversationChain(llm=model, prompt=prompt)`, its 1.x successor",
+        "why": "`ConversationChain` is another legacy chain; it moved to `langchain-classic` along with `LLMChain`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep `LLMChain`; it is still the main chain class in `langchain`",
+        "why": "In 1.x, `LLMChain` lives only in `langchain-classic` and emits a deprecation warning that points to `prompt | llm`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`chain = prompt | model`, then `chain.invoke({...})`",
+        "why": "An LCEL sequence does what `LLMChain` did and gets batch, streaming and async for free."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`create_agent(model, tools=[])` with the prompt as `system_prompt`",
+        "why": "An agent adds a tool loop that a single formatted call does not need; the direct replacement is an LCEL sequence."
+      }
+    ],
+    "explanation": "LangChain 1.0 moved the legacy chains (`LLMChain`, `ConversationChain` and friends) into the `langchain-classic` package. The deprecation message for `LLMChain` itself recommends a `RunnableSequence` such as `prompt | llm`. Add `| StrOutputParser()` if callers expect a string as `.run()` returned.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ]
+    },
+    "source": "interview:lc-legacy-chains-vs-lcel"
+  },
+  {
+    "id": "LCH-RLC-006",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which methods can you call on any LangChain Runnable, such as a prompt template, a chat model or an LCEL chain? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`invoke`",
+        "why": "One input in, one output out; the core method of the interface."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`run`",
+        "why": "`.run()` belonged to the legacy `Chain` classes; Runnables do not have it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`batch`",
+        "why": "Takes a list of inputs and returns a list of outputs, running them in parallel by default."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`predict`",
+        "why": "`predict` was a method on legacy LLM wrappers and is not part of the Runnable interface."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "`stream`",
+        "why": "Yields output chunks as they are produced (async form: `astream`)."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`apply`",
+        "why": "`apply` was a legacy `LLMChain` method for lists of inputs; Runnables use `batch`."
+      }
+    ],
+    "explanation": "The shared Runnable interface is `invoke`, `batch` and `stream`, plus their async forms `ainvoke`, `abatch` and `astream`. Because every component implements it, any of them can be piped together and the resulting chain has the same methods.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-what-is-runnable"
+  },
+  {
+    "id": "LCH-RLC-007",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each LCEL building block with what it does.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`RunnablePassthrough`",
+        "why": "Returns its input unchanged."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`RunnableParallel`",
+        "why": "Runs several runnables on the same input and returns a dict of results."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`RunnableLambda`",
+        "why": "Wraps an ordinary Python function as a Runnable."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`RunnableBranch`",
+        "why": "Picks one runnable to run based on conditions."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Forward the user's question unchanged next to retrieved context",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Compute a summary and a sentiment label from the same text at once",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Strip whitespace from the text with your own `clean(text)` helper",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Send billing questions to one sub-chain and everything else to another",
+        "answer": "D"
+      }
+    ],
+    "explanation": "These four cover most LCEL wiring: pass data through, fan out, run custom code and choose a path. In practice a dict literal stands in for `RunnableParallel` and a bare function for `RunnableLambda`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1
+  },
+  {
+    "id": "LCH-RLC-008",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks what a Runnable is and why it matters. Which answer is most accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A decorator that makes any function stream tokens to the client",
+        "why": "Streaming is one method of the interface; a Runnable is not a decorator, and wrapping a function does not make it stream."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A shared interface that prompts, models, parsers and retrievers all implement, so they compose with `|` and all get invoke, batch and stream",
+        "why": "That shared contract is what lets LCEL compose components and gives every chain sync, async, batch and streaming support."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The base class for agents; only agents and chains implement it, while prompts are plain format strings and parsers are ordinary helper functions",
+        "why": "Prompt templates, chat models, output parsers and retrievers are all Runnables, not just chains."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A LangGraph node type that keeps state between calls",
+        "why": "Runnables are a `langchain-core` abstraction and are stateless by default; LangGraph is a separate layer."
+      }
+    ],
+    "explanation": "`Runnable` is the core abstraction in `langchain-core`. Its value is uniformity: one set of methods (`invoke`, `batch`, `stream` and async forms), a common `config` argument for tags, metadata and callbacks, and wrappers such as `with_retry` and `with_fallbacks` that work on any component or whole chain.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://zerotomastery.io/blog/langchain-interview-questions/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-what-is-runnable"
+  },
+  {
+    "id": "LCH-RLC-009",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`retriever` returns a list of documents for a query string. What does `rag.invoke(\"cats\")` return?\n\n```python\nfrom langchain_core.runnables import RunnablePassthrough, RunnableLambda\n\nrag = {\"context\": retriever, \"question\": RunnablePassthrough()} | RunnableLambda(lambda d: d)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{'context': [...docs...], 'question': 'cats'}`",
+        "why": "The dict becomes a parallel step: the retriever gets `\"cats\"` and so does the passthrough, which returns it unchanged."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'context': [...docs...], 'question': [...docs...]}`",
+        "why": "Parallel branches do not feed each other; `RunnablePassthrough` gets the original input, not the retriever's output."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[...docs...]`, since the passthrough just forwards the retriever's output",
+        "why": "Inside a dict both values run side by side on the same input; nothing is forwarded between them."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `TypeError`, because a dict cannot be the first step of a pipe",
+        "why": "A dict on the left of `|` is coerced too, because the right-hand side is a Runnable and handles the operator."
+      }
+    ],
+    "explanation": "This is the standard LCEL RAG input step. The dict is coerced to `RunnableParallel`, every branch receives the chain input, and the next step gets a dict with both keys, ready for a prompt with `{context}` and `{question}` variables.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableParallel",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://github.com/thota-vivek05/langchain-practical-learning"
+      ]
+    },
+    "source": "interview:lc-parallel-passthrough"
+  },
+  {
+    "id": "LCH-RLC-010",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A candidate pipes a two-argument helper into a chain and it fails with `TypeError: ... missing 1 required positional argument: 'b'`. Which change fixes it the LCEL way?\n\n```python\ndef combine(a, b):\n    return a + b\n\nchain = some_step | RunnableLambda(combine)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Call it as `RunnableLambda(combine).invoke(a, b)` instead",
+        "why": "`invoke` takes a single input (plus an optional config); a second positional value is treated as the config, not as `b`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use `RunnableLambda(combine, args=2)` to declare the arity",
+        "why": "There is no arity parameter. `RunnableLambda` always passes exactly one input value."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Make the function take one dict, e.g. `def combine(d): return d[\"a\"] + d[\"b\"]`, and have the previous step output that dict",
+        "why": "A Runnable receives one input. Packing the values in a dict (often built with a dict step and `itemgetter`) is the usual pattern."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap it in `@tool` so LangChain maps the arguments automatically",
+        "why": "Tools are for model tool calling; a tool would still receive one input when used as a chain step."
+      }
+    ],
+    "explanation": "Each Runnable takes exactly one input. `RunnableLambda` may also accept a `config` as a second parameter, but never a second data argument. To pass several values, build a dict upstream, for example `{\"a\": itemgetter(\"x\"), \"b\": itemgetter(\"y\")} | RunnableLambda(combine)`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableLambda",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-runnable-lambda"
+  },
+  {
+    "id": "LCH-RLC-011",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this line runs?\n\n```python\nchain = (lambda x: x.strip()) | (lambda x: x.upper())\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It builds a `RunnableSequence` of two `RunnableLambda`s",
+        "why": "Coercion only happens when one side of `|` is already a Runnable that can handle the operator."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It builds a chain that only fails when invoked with a non-string",
+        "why": "The error happens immediately, at the `|`, not at invoke time."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It raises `TypeError` straight away, because Python functions do not support `|`",
+        "why": "Neither operand is a Runnable, so Python finds no `__or__`/`__ror__` and raises `TypeError: unsupported operand type(s)`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It composes the two functions with plain Python semantics, giving `upper(strip(x))`",
+        "why": "Python has no built-in function composition operator; `|` on two functions is simply unsupported."
+      }
+    ],
+    "explanation": "LCEL coercion works through `Runnable.__or__` and `__ror__`, so at least one operand must already be a Runnable. `RunnableLambda(f1) | f2` and `f1 | RunnableLambda(f2)` both work; `f1 | f2` does not.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableLambda",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-runnable-lambda"
+  },
+  {
+    "id": "LCH-RLC-012",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "You need to run a chain over 500 support tickets. Which statements about `chain.batch(tickets, ...)` are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "By default it runs `invoke` for the inputs in parallel on a thread pool, on the client side",
+        "why": "That is the default `batch` implementation; subclasses can override it with something more efficient."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It automatically uses the provider's discounted asynchronous batch API",
+        "why": "`batch` is client-side parallelism and is separate from provider batch APIs."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "You cap the number of parallel calls with `config={\"max_concurrency\": 5}`",
+        "why": "`max_concurrency` is a `RunnableConfig` field that limits how many calls run at once."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Results come back in completion order, so you must re-sort them by index",
+        "why": "`batch` returns outputs in input order; `batch_as_completed` is the method that yields results as they finish, with their index."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It is the same as a `for` loop over `invoke`, only shorter to write",
+        "why": "A loop runs one call at a time; `batch` runs them concurrently."
+      }
+    ],
+    "explanation": "`batch` is the easy win for offline jobs: concurrent calls in input order. Set `max_concurrency` in the config to stay under rate limits, and use `batch_as_completed` when you want to process results as soon as each one finishes.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-batch-concurrency"
+  },
+  {
+    "id": "LCH-RLC-013",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nfrom langchain_core.runnables import RunnableLambda\n\ndef check(x):\n    if x == 2:\n        raise ValueError(\"bad\")\n    return x\n\nprint(RunnableLambda(check).batch([1, 2, 3], return_exceptions=True))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[1, 3]`",
+        "why": "Failed inputs are not dropped; that would break the alignment between inputs and outputs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[1, None, 3]`",
+        "why": "The failure is not replaced with `None`; the exception object itself is returned."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises `ValueError: bad` after finishing the other inputs",
+        "why": "That is the behaviour with the default `return_exceptions=False`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`[1, ValueError('bad'), 3]`",
+        "why": "With `return_exceptions=True`, each failed input's exception sits at that input's position in the result list."
+      }
+    ],
+    "explanation": "`return_exceptions=True` keeps one bad input from failing the whole batch: the output list stays aligned with the inputs and holds the exception wherever a call failed. Without it, the first error is raised.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-batch-concurrency"
+  },
+  {
+    "id": "LCH-RLC-014",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What do the two calls return?\n\n```python\nfrom langchain_core.runnables import RunnableParallel\n\npar = RunnableParallel(a=lambda x: 1, b=lambda x: 2)\nprint(par.pick(\"a\").invoke(0))\nprint(par.pick([\"a\", \"b\"]).invoke(0))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`1`, then `{'a': 1, 'b': 2}`",
+        "why": "Picking a single key returns that value on its own; picking a list of keys returns a dict with just those keys."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'a': 1}`, then `{'a': 1, 'b': 2}`",
+        "why": "A single string key returns the bare value, not a one-key dict."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`1`, then `[1, 2]`",
+        "why": "A list of keys gives a dict, not a list of values."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both raise `AttributeError`; `pick` only exists on `RunnablePassthrough`",
+        "why": "`pick` is a method on every Runnable whose output is a dict."
+      }
+    ],
+    "explanation": "`.pick(key)` narrows a dict output: a string key returns that value, a list of keys returns a smaller dict. It is handy after `RunnablePassthrough.assign` when only one computed field should flow on.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-RLC-015",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does decorating a function with `@chain` from `langchain_core.runnables` give you?\n\n```python\n@chain\ndef answer(question):\n    docs = retriever.invoke(question)\n    return (prompt | model).invoke({\"q\": question, \"docs\": docs})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An `AgentExecutor` that can loop until the answer is complete",
+        "why": "`@chain` creates no agent loop; it just wraps the function."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A cached function whose results are reused whenever the same question is asked again, keyed on the input",
+        "why": "The decorator adds no caching."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A plain function again; the decorator only adds type hints",
+        "why": "It returns a Runnable object, not the original function."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A Runnable named `answer`, under which the inner calls are traced as nested runs",
+        "why": "`@chain` wraps the function as a Runnable (a `RunnableLambda`) named after it, so it composes with `|` and the runnables it calls appear as its children."
+      }
+    ],
+    "explanation": "`@chain` is the decorator form of `RunnableLambda`. You keep ordinary Python control flow, yet the result has `invoke`, `batch` and `stream`, composes with `|`, and shows up as one named parent run with the retriever and model calls nested beneath it.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/chain",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-RLC-016",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print, and what is `bind` doing?\n\n```python\nfrom langchain_core.runnables import RunnableLambda\n\ndef scale(x, *, k=1):\n    return x * k\n\nprint(RunnableLambda(scale).bind(k=3).invoke(2))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`2`; `bind` only stores `k` as metadata for tracing",
+        "why": "Bound values are passed to the call, not just recorded."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`6`; `bind` fixes keyword arguments that are passed on every call",
+        "why": "`bind` returns a `RunnableBinding` that adds `k=3` each time the wrapped runnable runs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `TypeError`, because `bind` only works on chat models",
+        "why": "`bind` is defined on every Runnable; on chat models it is commonly used for `stop` or provider parameters."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`6`, but only on the first call; later calls revert to the function's default of `k=1`",
+        "why": "The binding is part of the returned runnable and applies on every call."
+      }
+    ],
+    "explanation": "`runnable.bind(**kwargs)` returns a new Runnable that always passes those keyword arguments. With chat models it is a common way to pin call parameters such as `stop=[...]`, without changing the input that flows through the chain.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-RLC-017",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If you call `chain.invoke(x, config={\"run_name\": \"checkout-summary\"})` on a three-step `RunnableSequence`, every child step's run is also named `checkout-summary` in the trace.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false: `run_name` is not inherited."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `run_name` names only the run it is passed to. The child steps keep their own names, unlike `tags` and `metadata`, which are inherited."
+      }
+    ],
+    "explanation": "Inheritance differs by field. `tags` and `metadata` flow to sub-calls, as do `callbacks` and `configurable`. `run_name` (and `run_id`) apply to the top-level run only, so the trace shows `checkout-summary` with the children named after their own components.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-runnable-config"
+  },
+  {
+    "id": "LCH-RLC-018",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "`flaky` raises `ValueError` every time it is called. How many times is it called in total before the error reaches the caller? Type a number.\n\n```python\nsafe = RunnableLambda(flaky).with_retry(stop_after_attempt=3, wait_exponential_jitter=False)\nsafe.invoke(1)\n```",
+    "options": [],
+    "accepted": [
+      "3"
+    ],
+    "explanation": "`stop_after_attempt` counts total attempts, including the first, so the function runs 3 times and then the last `ValueError` is raised. By default `with_retry` retries any `Exception` and waits with exponential backoff and jitter between attempts.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/retry/RunnableRetry",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-fallbacks-retries"
+  },
+  {
+    "id": "LCH-RLC-019",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of this RAG chain in the order the data flows through them when you call `invoke(\"What is our refund window?\")`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{\"context\": retriever, \"question\": RunnablePassthrough()}`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`prompt` (a `ChatPromptTemplate` with `{context}` and `{question}`)",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`model` (a chat model)",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`StrOutputParser()`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The dict step runs first and turns the question into `{context, question}`. The prompt formats those into messages, the model returns an `AIMessage`, and the parser turns that message into a string. The pipe order is the execution order.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 1
+  },
+  {
+    "id": "LCH-RLC-020",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`primary` raises `ValueError(\"nope\")`. What happens when you call `guarded.invoke(1)`?\n\n```python\nguarded = primary.with_fallbacks([backup], exceptions_to_handle=(KeyError,))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`backup` runs, because a fallback catches every error from the primary",
+        "why": "Only the exception types listed in `exceptions_to_handle` trigger a fallback; the default is `(Exception,)`, but here it was narrowed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The `ValueError` propagates to the caller and `backup` never runs",
+        "why": "`ValueError` is not a `KeyError`, so the fallback logic does not handle it and re-raises."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`backup` runs, and then the `ValueError` is raised as well",
+        "why": "A fallback either handles the error and returns a result, or does not run at all."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It returns `None`, because unhandled exceptions are suppressed",
+        "why": "Nothing is suppressed; unlisted errors propagate unchanged."
+      }
+    ],
+    "explanation": "`exceptions_to_handle` lets you fall back only on errors a backup can fix, such as rate limits or timeouts, while bugs like a `ValueError` in your own code still surface. Leaving the default `(Exception,)` can hide programming errors behind a backup model's answer.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/with_fallbacks",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-fallbacks-retries"
+  },
+  {
+    "id": "LCH-RLC-021",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You want the fallback to know why the primary failed. Which statement about `exception_key` is correct?\n\n```python\nchain = primary.with_fallbacks([backup], exception_key=\"error\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The exception is logged under the `error` tag in the trace, and `backup` gets the original input",
+        "why": "`exception_key` changes the input given to the fallback; it is not a tracing option."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`backup` is called with the exception object instead of the input",
+        "why": "The exception is added to the input dict under the key; the rest of the input is kept."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Inputs must be dicts; `backup` receives the original dict plus the caught exception under `\"error\"`",
+        "why": "With `exception_key` set, the handled exception is added to the input under that key, so a non-dict input raises a `ValueError` at runtime."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It only works with chat models, which put the error in `response_metadata`",
+        "why": "It works with any Runnable whose inputs are dicts."
+      }
+    ],
+    "explanation": "Setting `exception_key` passes the failure to the fallbacks, which is useful for a repair step such as 'the JSON was invalid, try again'. The trade-off is that the primary and every fallback must accept dict inputs; invoking with a string or int fails with a `ValueError` saying the input must be a dictionary.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable/with_fallbacks",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-fallbacks-retries"
+  },
+  {
+    "id": "LCH-RLC-022",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`flaky` always raises `ValueError`. How many times is it called here?\n\n```python\nr = RunnableLambda(flaky).with_retry(\n    retry_if_exception_type=(KeyError,),\n    stop_after_attempt=3,\n    wait_exponential_jitter=False,\n)\nr.invoke(1)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "3 times, because `stop_after_attempt` always applies to every error raised, whatever types are listed for retrying",
+        "why": "The attempt limit only matters for errors that qualify for a retry."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "4 times: the first call plus 3 retries",
+        "why": "`stop_after_attempt` counts total attempts, and in any case this error is not retried."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Once; the `ValueError` is not in `retry_if_exception_type`, so it is raised immediately",
+        "why": "Only exceptions matching the listed types are retried; anything else propagates on the first failure."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "0 times, because the type mismatch is detected when the wrapper is built",
+        "why": "The exception type is only known at runtime, so the first call happens."
+      }
+    ],
+    "explanation": "Choose `retry_if_exception_type` deliberately: retry transient errors (timeouts, rate limits, connection resets) and let deterministic failures such as validation errors fail fast. Retrying a bug three times only adds latency and cost.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/retry/RunnableRetry",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-RLC-023",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "You call `chain.invoke(x, config={\"tags\": [\"checkout\"], \"metadata\": {\"user\": \"u1\"}, \"configurable\": {\"k\": 1}})` on a sequence whose second step is a `RunnableLambda` that accepts `config`. Which statements are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The inner step's config contains the `checkout` tag",
+        "why": "Tags are inherited by sub-calls; LangChain also adds its own step tags such as `seq:step:2`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The inner step's config contains `{\"user\": \"u1\"}` in its metadata",
+        "why": "Metadata is inherited by sub-calls."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The inner step can read `config[\"configurable\"][\"k\"]`",
+        "why": "`configurable` values propagate to nested runnables, which is how `configurable_fields` deep in a chain receive their values."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "If the inner step was built with `.with_config(tags=[\"child\"])`, its tags are only `[\"child\"]`",
+        "why": "Configs are merged rather than replaced, so the child ends up with both `child` and `checkout`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The inner step receives `run_name` from the outer call when one is given",
+        "why": "`run_name` is not inherited by sub-calls."
+      }
+    ],
+    "explanation": "Config is passed down through a context variable and merged at each level: tags are combined, metadata is merged, and `callbacks` and `configurable` flow through. `run_name` and `run_id` belong to a single run only. This is what makes per-request tags and user ids appear on every child span in a trace.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-runnable-config"
+  },
+  {
+    "id": "LCH-RLC-024",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A team attaches a logging handler two ways: once via `FakeListChatModel(..., callbacks=[h1])` and once via `chain.invoke(x, config={\"callbacks\": [h2]})`, where `chain = prompt | model | StrOutputParser()`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`h2` sees the sequence, the prompt, the model and the parser runs",
+        "why": "Request-time callbacks in the config are inherited by every child run."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`h1` sees only the model's own run",
+        "why": "Callbacks passed to a component's constructor are scoped to that object's runs and are not passed to other steps."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`h1` sees every step, because a constructor callback is registered globally",
+        "why": "Constructor callbacks are not global; the parser and prompt runs never reach `h1`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`h2` sees only the top-level sequence run, not its children",
+        "why": "Config callbacks propagate down the tree, so `h2` gets the child events too."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Both handlers see exactly the same events",
+        "why": "Their scopes differ: per-object for `h1`, the whole call tree for `h2`."
+      }
+    ],
+    "explanation": "Use request-time callbacks (in `config`) when you want to observe the whole call tree, for example per-request logging or tracing. Constructor callbacks suit concerns tied to one component, such as counting calls on one model.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callbacks"
+  },
+  {
+    "id": "LCH-RLC-025",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this `RunnableBranch` return for `0`, and what would happen if you deleted its last argument?\n\n```python\nbr = RunnableBranch(\n    (lambda x: x > 0, RunnableLambda(lambda x: \"pos\")),\n    (lambda x: x < 0, RunnableLambda(lambda x: \"neg\")),\n    RunnableLambda(lambda x: \"zero\"),\n)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`\"zero\"`; without the last argument, construction fails because a default branch is required",
+        "why": "No condition matches `0`, so the default runs. The final positional argument must be a default runnable, so a trailing `(condition, runnable)` pair raises `TypeError`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`\"zero\"`; without the last argument, `invoke(0)` returns `None`",
+        "why": "There is no silent `None`; the branch cannot even be constructed without a default."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`None`; the default only runs when a condition raises an exception",
+        "why": "The default runs when no condition is true, which is the case for `0`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`\"neg\"`, because the last condition checked wins",
+        "why": "Conditions are checked in order, and only a true condition selects a branch."
+      }
+    ],
+    "explanation": "`RunnableBranch` takes `(condition, runnable)` pairs followed by a mandatory default. It checks conditions in order, runs only the first match on the original input and falls back to the default when nothing matches.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/branch/RunnableBranch",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-lcel-routing"
+  },
+  {
+    "id": "LCH-RLC-026",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A classifier step produces `{\"topic\": ..., \"question\": ...}`, and the next step is `RunnableLambda(route)`, where `route` returns `billing_chain` or `general_chain` (Runnables, not results). What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`route` returns a chain object, so the final output is the chain itself, not an answer",
+        "why": "`RunnableLambda` checks whether the function returned a Runnable and, if so, runs it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The returned chain is invoked with the same input dict that `route` received",
+        "why": "When the function returns a Runnable, that Runnable is invoked (or streamed) with the original input as part of the same run."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LangChain raises an error asking you to use `RunnableBranch` for routing",
+        "why": "Returning a Runnable from a function is a supported, documented routing pattern."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both chains run in parallel and the first one to finish wins",
+        "why": "Only the chain that `route` returns runs."
+      }
+    ],
+    "explanation": "Function-based routing is often simpler than `RunnableBranch`: plain `if`/`elif` logic, and any number of routes. Watch for one thing: returned runnables count against `recursion_limit`, so a function that keeps returning runnables can hit a `RecursionError`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableLambda",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.javapedia.net/langgraph-langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-lcel-routing"
+  },
+  {
+    "id": "LCH-RLC-027",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`RunnableBranch` evaluates every condition first and then runs the first branch whose condition was true.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false: conditions are evaluated lazily."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: it checks conditions one at a time, in order, and stops at the first true one, so later conditions are never called."
+      }
+    ],
+    "explanation": "Because evaluation stops at the first true condition, you can put cheap checks first and expensive checks, such as an LLM classifier, later. Only the selected branch runs, and it receives the original input.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/branch/RunnableBranch",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-RLC-028",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`chain` uses a model built with `configurable_alternatives(ConfigurableField(id=\"llm\"), default_key=\"fast\", accurate=other_model)`. Which statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`config={\"configurable\": {\"llm\": \"accurate\"}}` selects `other_model`; an unrecognised value such as `\"cheap\"` raises `ValueError`",
+        "why": "The `ConfigurableField` id is the key under `configurable` and the value names the alternative. Unknown alternative names are rejected."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "You must rebuild the chain with `other_model` swapped in; alternatives are fixed when the chain is built",
+        "why": "Avoiding a rebuild is the point: the choice is made per call through `config`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`config={\"llm\": \"accurate\"}` at the top level of the config selects it",
+        "why": "Values for configurable runnables go under the `configurable` key, not at the top level."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An unknown value such as `\"cheap\"` silently falls back to the default model",
+        "why": "An unknown alternative raises `ValueError: Unknown alternative`; only unrelated keys in `configurable` are ignored."
+      }
+    ],
+    "explanation": "`configurable_alternatives` swaps a whole component (model, prompt or retriever) per request; `configurable_fields` changes a field such as temperature. The selection travels in `config[\"configurable\"]`, so it reaches the component even when it is nested deep in a chain, and `chain.with_config(configurable={...})` can pin it.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/configurable/RunnableConfigurableAlternatives",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/models",
+        "https://reference.langchain.com/python/langchain-core/runnables/configurable/RunnableConfigurableAlternatives",
+        "https://reference.langchain.com/python/langchain-core/runnables/configurable/RunnableConfigurableFields"
+      ]
+    },
+    "source": "interview:lc-configurable"
+  },
+  {
+    "id": "LCH-RLC-029",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate writes this to fan out two steps before a combine step, but `step` turns out not to be a Runnable at all. Why?\n\n```python\nstep = {\"summary\": summarise} | {\"tags\": tagger}   # summarise and tagger are Runnables\nchain = step | combine\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Dicts are only coerced on the right of `|`, never on the left",
+        "why": "A dict on the left is coerced when the right-hand side is a Runnable, as in `{...} | prompt`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`summarise` and `tagger` must be wrapped in `RunnablePassthrough` first",
+        "why": "The values are already Runnables; the problem is the operator between the two dicts."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LCEL forbids two parallel steps in a row, so the second dict is silently dropped from the chain",
+        "why": "Two dict steps can be chained if one is wrapped in `RunnableParallel`; nothing is forbidden."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`dict | dict` is Python's dict-merge operator, so `step` is a plain merged dict",
+        "why": "Neither operand is a Runnable, so Python's own `dict.__or__` runs and returns `{'summary': ..., 'tags': ...}` as a dict."
+      }
+    ],
+    "explanation": "Coercion only kicks in when a Runnable takes part in the `|`. Between two dicts, Python 3.9+ merges them. Here the merged dict happens to be coerced into a single parallel step later, which silently changes the meaning from 'two stages' to 'one stage with two branches'. Wrap one side in `RunnableParallel(...)` to get a real sequence.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableParallel",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-RLC-030",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "A callback handler is passed through `config={\"callbacks\": [h]}` to `(prompt | model | StrOutputParser()).invoke(...)`. Put the runs in the order their start events reach the handler.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `RunnableSequence` run",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The `ChatPromptTemplate` run",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The chat model run (`on_chat_model_start`)",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `StrOutputParser` run",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The parent sequence run starts first, then each child in pipe order. Each child also gets a tag such as `seq:step:1`, which helps when you filter traces or events by position.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-RLC-031",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Which task fits a plain LCEL chain best rather than `create_agent` or a custom LangGraph graph?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A support assistant that decides whether to search orders, issue refunds or escalate to a human, depending on what the customer says over several turns",
+        "why": "The model chooses tools and the number of steps, which is agent territory."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Extracting invoice fields from each uploaded PDF's text with one prompt and a structured-output model, in a fixed order every time",
+        "why": "The path is predetermined, with no loop or tool choice, so a simple sequence is the cheapest and easiest to test."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A research flow that retries with new search queries until a quality check passes",
+        "why": "A loop that depends on runtime results needs a graph or an agent, not a linear chain."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A workflow that pauses for a manager's approval and resumes the next day",
+        "why": "Pausing and resuming needs persisted state and interrupts, which is LangGraph's job."
+      }
+    ],
+    "explanation": "The docs distinguish workflows, which follow predetermined code paths, from agents, which choose their own steps and tools. LCEL remains the right tool for short, fixed pipelines. Loops, branching on intermediate results, persistence and human approval call for `create_agent` or LangGraph.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://interviewbaba.com/langchain-interview-questions/"
+      ]
+    },
+    "source": "interview:lc-lcel-vs-agents"
+  },
+  {
+    "id": "LCH-RLC-032",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `Runnable.with_retry()` are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "By default it retries on any `Exception` subclass",
+        "why": "The default `retry_if_exception_type` is `(Exception,)`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The reference docs advise wrapping the smallest runnable likely to fail, such as the model, rather than the whole chain",
+        "why": "Keeping the retry scope small avoids re-running deterministic steps such as prompt formatting or parsing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`stop_after_attempt=3` means one call plus three retries, so four calls in total",
+        "why": "`stop_after_attempt` counts total attempts, including the first."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "By default it waits exactly one second between attempts, with no jitter",
+        "why": "The default is exponential backoff with jitter (`wait_exponential_jitter=True`)."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It modifies the runnable in place, so every other chain using that object also retries",
+        "why": "It returns a new `RunnableRetry` wrapper; the original object is unchanged."
+      }
+    ],
+    "explanation": "`with_retry` returns a wrapper (`RunnableRetry`) with three main knobs: which exceptions to retry, how many attempts in total, and whether to back off with jitter. Put it close to the flaky call and limit it to transient error types.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/retry/RunnableRetry",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-RLC-033",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `RunnableConfig` field with the job it does.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`tags`",
+        "why": "Labels inherited by sub-calls, used to filter runs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`run_name`",
+        "why": "Names one invocation's run; not inherited."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`max_concurrency`",
+        "why": "Caps parallel calls, for example in `batch`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`configurable`",
+        "why": "Runtime values for configurable fields and alternatives."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Mark every run of a request with `tenant:acme` so you can filter them in LangSmith",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Make one top-level run show up as `nightly-digest` in the trace list",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Keep a 1,000-input batch job under the provider's rate limit",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Switch a nested prompt from its default version to `v2` for one call",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Each `RunnableConfig` field has its own scope: `tags` and `metadata` are inherited for filtering, `run_name` labels a single run, `max_concurrency` limits parallelism, `recursion_limit` stops runaway nesting, `callbacks` attach handlers, and `configurable` carries per-call component settings.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/"
+      ]
+    },
+    "source": "interview:lc-runnable-config"
+  },
+  {
+    "id": "LCH-RLC-034",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Requirement: retry the primary model on transient errors up to 2 attempts, then try a backup model once, and never retry the backup. Which composition meets it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`primary.with_fallbacks([backup]).with_retry(stop_after_attempt=2)`",
+        "why": "The retry wraps the whole fallback group, so each attempt runs primary and then backup, which means the backup is retried too."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`primary.with_retry(stop_after_attempt=2).with_fallbacks([backup])`",
+        "why": "The primary is tried up to twice; only if both attempts fail does the backup run, once."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`primary.with_fallbacks([backup.with_retry(stop_after_attempt=2)])`",
+        "why": "This retries the backup, not the primary, which is the opposite of the requirement."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`(primary | backup).with_retry(stop_after_attempt=2)`",
+        "why": "A sequence would feed the primary's output into the backup and retry both; it is not a fallback at all."
+      }
+    ],
+    "explanation": "Wrapper order defines the semantics. `x.with_retry().with_fallbacks([y])` means retry x, then fall back to y. `x.with_fallbacks([y]).with_retry()` means retry the whole x-then-y group, which multiplies calls: with both failing and 3 attempts, that is p, b, p, b, p, b. Interviewers probe this to see whether you reason about composition rather than guess.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/retry/RunnableRetry",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-fallbacks-retries"
+  },
+  {
+    "id": "LCH-RLC-035",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Both `primary` and `backup` always fail (`primary` with `ValueError`, `backup` with `KeyError`). Put the events of `guarded.invoke(1)` in order.\n\n```python\nguarded = primary.with_retry(stop_after_attempt=2, wait_exponential_jitter=False).with_fallbacks([backup])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`primary` is called (attempt 1)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`primary` is called again (attempt 2)",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`backup` is called once",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The primary's `ValueError` is raised to the caller",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The retry wrapper exhausts its 2 attempts, then the fallback wrapper tries `backup`. When every option fails, `RunnableWithFallbacks` re-raises the first error, the primary's `ValueError`, not the backup's `KeyError`. Keep this in mind when you alert on error types.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/fallbacks/RunnableWithFallbacks",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-RLC-036",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "fill",
+    "select": 1,
+    "stem": "`p` and `b` always raise `ValueError`. How many function calls (of `p` and `b` together) happen before the error reaches the caller? Type a number.\n\n```python\nguarded = RunnableLambda(p).with_fallbacks([RunnableLambda(b)]).with_retry(\n    stop_after_attempt=2, wait_exponential_jitter=False\n)\nguarded.invoke(1)\n```",
+    "options": [],
+    "accepted": [
+      "4"
+    ],
+    "explanation": "The retry wraps the fallback group. Each of the 2 attempts runs `p`, fails, then runs `b`, and fails, giving p, b, p, b: 4 calls. Putting `with_retry` on the inner primary instead (`p.with_retry(...).with_fallbacks([b])`) gives p, p, b: 3 calls.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/retry/RunnableRetry",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-RLC-037",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "`chain = prompt | primary_model.with_fallbacks([backup_model]) | JsonOutputParser()`. The primary sometimes answers with prose instead of JSON, and the backup reliably returns valid JSON. When the primary returns prose, what happens and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The backup runs, because a parser failure anywhere in the chain triggers the model's fallback",
+        "why": "The model fallback only wraps the model call, and that call succeeded; the error comes later, in the parser."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`OutputParserException` reaches the caller; wrap the whole sequence instead, e.g. `(prompt | primary | parser).with_fallbacks([prompt | backup | parser])`",
+        "why": "Fallbacks only catch errors from the runnable they wrap, so the failing step (the parser) has to be inside the wrapped unit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The chain returns the prose as a string, since `JsonOutputParser` passes through invalid JSON",
+        "why": "The parser raises `OutputParserException` on text that is not JSON."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add `.with_retry()` to the backup model; parser errors are retried on the backup automatically",
+        "why": "Retrying the backup does nothing, because the backup never runs when only the parser failed."
+      }
+    ],
+    "explanation": "A fallback guards exactly the runnable it wraps. A model-level fallback covers API errors from the model; it cannot see failures in later steps. Wrap a whole chain when the fallback must also cover formatting or parsing problems. The chain version can also use a different prompt for the backup.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/fallbacks/RunnableWithFallbacks",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://reddit.sentinel-team.org/posts/1t1ywp7/snapshots/2026-05-09T00%3A32%3A05.66647Z",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-fallbacks-retries"
+  },
+  {
+    "id": "LCH-RLC-038",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A job runs `step.batch([1, 2, 3])`, where `step = RunnableLambda(fn).with_retry(stop_after_attempt=3, wait_exponential_jitter=False)`. Input `2` fails once with a transient error and then succeeds; the others always succeed. How many times is `fn` called, and what is returned?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "6 calls, because the whole batch is re-run after the failure; returns `[1, 2, 3]`",
+        "why": "`RunnableRetry.batch` does not re-run inputs that already succeeded."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "4 calls, because only the failed input is retried; returns `[1, 2, 3]`",
+        "why": "The first pass makes 3 calls, then only input `2` is retried, for 4 calls, and the results stay in input order."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "3 calls; returns `[1, ValueError(...), 3]`",
+        "why": "The error is retryable and the second attempt succeeds, so no exception ends up in the output."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "9 calls, because each input gets all 3 attempts",
+        "why": "Attempts stop as soon as an input succeeds."
+      }
+    ],
+    "explanation": "The retry wrapper handles batches per input: successful outputs are kept and only failing inputs are retried, up to `stop_after_attempt`. That keeps a single transient failure in a large batch cheap.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/retry/RunnableRetry",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-RLC-039",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "In a staff-level design round you are asked whether a new service should build its pipeline on LCEL abstractions or on a thin hand-written loop. The service makes one model call, with heavy custom branching, strict latency budgets, and an on-call team unfamiliar with LangChain who must debug it from stack traces. Which argument is strongest?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use LCEL, because every pipeline gets free async, batch and streaming, which always outweighs other concerns",
+        "why": "Those benefits are real but do not automatically outweigh debuggability and team familiarity when the pipeline is one call."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use LCEL, because plain Python cannot call chat models with tracing",
+        "why": "Chat models can be called directly, and tracing works without LCEL (for example with `@traceable`)."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Write a thin loop with direct model calls: one call and complex branching gain little from composition, and plain Python is easier for this team to debug",
+        "why": "This argument weighs the abstraction's benefits against the stated constraints: little to compose, heavy control flow, debugging by unfamiliar engineers."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use a LangGraph multi-agent setup, because branching logic always needs agents",
+        "why": "Branching in code does not need agents; that adds autonomy and complexity without a need for them."
+      }
+    ],
+    "explanation": "Senior interviewers want a reasoned trade-off, not loyalty to a framework. LCEL pays off when you compose many steps and want uniform batch, streaming, tracing and wrappers. With one model call, lots of bespoke control flow and debugging by people new to LangChain, plain code (perhaps still using LangChain model classes) is often the better design.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://interviewbaba.com/langchain-interview-questions/",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "source": "interview:lc-framework-design-critique"
+  },
+  {
+    "id": "LCH-RLC-040",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are reviewing four proposals. Which two belong in a fixed LCEL chain rather than an agent? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Translate every incoming product description into three languages in parallel, then format the results",
+        "why": "A fixed fan-out with no runtime decisions is a natural `RunnableParallel` step."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Summarise a call transcript, then classify the summary's sentiment, always in that order",
+        "why": "Two predetermined steps form a simple sequence; an agent loop adds cost and unpredictability."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A coding assistant that reads files, runs tests and edits code until the tests pass",
+        "why": "An open-ended number of tool calls driven by results is the textbook agent case."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A travel helper that picks among flight, hotel and visa tools depending on what the user asks",
+        "why": "Tool choice made by the model at runtime calls for `create_agent`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A data analyst bot that decides which SQL queries to run and when it has enough data",
+        "why": "The model decides the steps and when to stop, so this is an agent."
+      }
+    ],
+    "explanation": "The test is who decides the path. If you can write the steps down in advance, use a workflow (an LCEL chain, or a LangGraph graph for loops and state). If the model must choose tools or decide when to stop, use an agent. Fixed chains are cheaper, faster and easier to evaluate.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://interviewbaba.com/langchain-interview-questions/"
+      ]
+    },
+    "source": "interview:lc-lcel-vs-agents"
+  },
+  {
+    "id": "LCH-RLC-041",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this runs, and why?\n\n```python\ndef step(x):\n    return RunnableLambda(step)\n\nRunnableLambda(step).invoke(1)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It loops forever, because LCEL has no protection against functions that keep returning new runnables",
+        "why": "LCEL tracks the depth of returned runnables and enforces a limit."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Python raises its own `RecursionError` after about 1000 frames",
+        "why": "LangChain's own check stops it long before Python's stack limit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It returns a `RunnableLambda` object, because returned runnables are not executed",
+        "why": "A Runnable returned from a `RunnableLambda` function is invoked, which is what causes the nesting."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It raises `RecursionError` once the nesting passes `recursion_limit` (25 by default)",
+        "why": "Each returned runnable is invoked one level deeper; LangChain stops it with 'Recursion limit reached' when the limit is exceeded."
+      }
+    ],
+    "explanation": "`recursion_limit` (default 25) is a `RunnableConfig` field that bounds how deeply runnables returned from functions can nest. Raising it via `config={\"recursion_limit\": 50}` helps legitimate deep routing, but for a function that always returns another runnable it only delays the error; fix the base case instead.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableLambda",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-RLC-042",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "This router always sends questions to the general chain, even when the classifier clearly answers `billing`. What is the most likely cause?\n\n```python\nclassifier = ChatPromptTemplate.from_template(\"Classify: {question}\") | model\n\ndef route(d):\n    return billing_chain if d[\"topic\"] == \"billing\" else general_chain\n\nchain = {\"topic\": classifier, \"question\": itemgetter(\"question\")} | RunnableLambda(route)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`d[\"topic\"]` is an `AIMessage`, not a string, so the comparison is always `False`; add `| StrOutputParser()` to the classifier",
+        "why": "Without a parser the classifier outputs a message object, which never equals the string `\"billing\"`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The dict step runs `classifier` and `itemgetter` in sequence, so `topic` is overwritten",
+        "why": "The dict becomes a parallel step; both values run on the same input and neither overwrites the other."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`RunnableLambda` cannot return a chain, so `route` falls through to its default",
+        "why": "Returning a Runnable from the function is supported, and that runnable is invoked."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`itemgetter` cannot be used inside LCEL, so `question` is missing",
+        "why": "`itemgetter` is coerced to a `RunnableLambda` like any other callable."
+      }
+    ],
+    "explanation": "A classic routing bug. Chat models return `AIMessage` objects, so compare strings only after `StrOutputParser()`, and normalise them (for example `.strip().lower()`) because models add whitespace or capitals. Checking intermediate types with a quick `invoke` on each step finds these bugs fast.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/RunnableLambda",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-RLC-043",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A platform team wants product teams to choose, per request, between two prompt versions and to tune temperature, without rebuilding or forking the shared chain. Which designs meet this? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Expose the prompt with `configurable_alternatives(ConfigurableField(id=\"prompt\"), default_key=\"v1\", v2=prompt_v2)`",
+        "why": "Callers pick a version per call with `config={\"configurable\": {\"prompt\": \"v2\"}}`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Expose temperature with `model.configurable_fields(temperature=ConfigurableField(id=\"temperature\"))`",
+        "why": "A single field can then be overridden through `config[\"configurable\"]` for each call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Store the chosen version in a module-level global that the chain reads",
+        "why": "A shared global is not per request, so concurrent requests overwrite each other's choice."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass `{\"prompt_version\": \"v2\"}` in `metadata` and expect the chain to switch prompts",
+        "why": "Metadata is for tracing; components do not change behaviour based on it."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Build a new chain inside each request handler with the chosen prompt and temperature",
+        "why": "That works but is exactly the per-request rebuild the team wants to avoid, and it spreads the wiring across teams."
+      }
+    ],
+    "explanation": "Configurable runnables move per-call choices into `config[\"configurable\"]`, which propagates to nested components. Use `configurable_alternatives` to swap a whole component and `configurable_fields` to change a parameter. `chain.config_schema()` documents what callers may set.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/configurable/RunnableConfigurableFields",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/models",
+        "https://reference.langchain.com/python/langchain-core/runnables/configurable/RunnableConfigurableAlternatives",
+        "https://reference.langchain.com/python/langchain-core/runnables/configurable/RunnableConfigurableFields"
+      ]
+    },
+    "source": "interview:lc-configurable"
+  },
+  {
+    "id": "LCH-RLC-044",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Inside a `@chain` function you call `retriever.invoke(q)` without passing any config. A caller runs `answer.invoke(q, config={\"tags\": [\"req-42\"], \"callbacks\": [handler]})`. Does the retriever run get the tag and the handler?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "No; you must thread `config` into every inner `invoke` by hand or the inner runs are lost",
+        "why": "In synchronous code the parent's config is picked up from a context variable automatically."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only the tag is inherited; callbacks never reach runs started inside a function",
+        "why": "Callbacks propagate the same way tags do."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Yes; the inner run inherits the tag and the handler and appears as a child of `answer`",
+        "why": "The parent config is set in a context variable while the function runs, so inner runnables pick it up and nest under it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Yes, but the inner run appears as a separate root trace rather than as a child",
+        "why": "Inherited callbacks carry the parent run, so the retriever run is nested under `answer`."
+      }
+    ],
+    "explanation": "While a `RunnableLambda` or `@chain` function runs, LangChain stores its config in a context variable, and runnables invoked inside it inherit tags, metadata and callbacks and nest under it in traces. This is what makes `@chain` functions trace as one tree.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/chain",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.index.dev/interview-questions/langchain-developer"
+      ]
+    },
+    "source": "interview:lc-callbacks"
+  },
+  {
+    "id": "LCH-RLC-045",
+    "domain": 1,
+    "skill": "runnables-lcel",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each error message with the most likely cause in an LCEL chain.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `RunnablePassthrough.assign` step received a string instead of a dict",
+        "why": "`assign` adds keys, so it needs a dict input."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A prompt received a dict without one of its template variables",
+        "why": "Prompt templates check that every variable is present."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Two plain Python functions were joined with `|`",
+        "why": "Neither operand was a Runnable, so no coercion happened."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A caller asked a `configurable_alternatives` component for a name it does not have",
+        "why": "Only registered alternative names (and the default key) are accepted."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`ValueError: The input to RunnablePassthrough.assign() must be a dict.`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`KeyError: Input to ChatPromptTemplate is missing variables {'style'}`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`TypeError: unsupported operand type(s) for |: 'function' and 'function'`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`ValueError: Unknown alternative: cheap`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Each message points to a different layer: `assign` input shape, prompt variables, operator coercion and runtime configuration. Reading the exception type and the component it names usually leads straight to the faulty step.",
+    "reference": "https://reference.langchain.com/python/langchain-core/runnables/base/Runnable",
+    "roleLevel": 4
+  }
+]
