@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { daysBetween, formatDay, type GoalTaskKind, type PlanHealth } from '@/lib/goal-plan';
 import { cn } from '@/lib/utils';
 import type { GoalTaskView, PlanView } from '@/server/goal-plan';
-import { CoachCard } from './coach-card';
 import { GoalTaskButton } from './goal-task-button';
 import { DismissNotice, PlanMenu, RecoveryButton, ResumeButton } from './plan-actions';
 
@@ -54,8 +53,6 @@ export function PlanBoard({ plan }: { plan: PlanView }) {
           </div>
         </Reveal>
       )}
-
-      {plan.coach && plan.coach.status !== 'failed' && <Reveal><CoachCard planId={plan.id} coach={plan.coach} /></Reveal>}
 
       {plan.status === 'paused' && (
         <Reveal>
