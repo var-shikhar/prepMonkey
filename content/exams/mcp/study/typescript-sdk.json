@@ -1,0 +1,51 @@
+{
+  "typescript-sdk": {
+    "summary": "TypeScript SDK v2 (2.3) splits the old `@modelcontextprotocol/sdk` into `@modelcontextprotocol/server` and `@modelcontextprotocol/client` (plus `core`, framework adapters and migration packages). Servers are `McpServer` instances with `registerTool`/`registerResource`/`registerPrompt` and Zod 4 schemas, served per connection by `serveStdio(factory)` or per request by `createMcpHandler(factory)`. Know the two error channels, the context object, the era model (2025 `initialize` vs 2026-07-28 `server/discover`), and what changed from v1.",
+    "points": [
+      "Packages: `@modelcontextprotocol/server` and `@modelcontextprotocol/client` are the two you install; package roots are runtime-neutral, and anything that spawns processes lives behind `./stdio` (`serveStdio`, `StdioServerTransport`, `StdioClientTransport`). `@modelcontextprotocol/node`, `express`, `hono`, `fastify` are thin HTTP adapters; `core` holds raw Zod wire schemas; `server-legacy` and `codemod` exist only for migration.",
+      "`registerTool(name, { title?, description, inputSchema, outputSchema?, annotations? }, handler)`: one Zod object schema yields the advertised JSON Schema (2020-12), argument validation and handler types. `.optional()` and `.default()` remove a key from `required`, `.nullable()` does not, and `.describe()` becomes the property `description` the model reads.",
+      "Arguments that fail `inputSchema` never reach the handler: the client gets `isError: true` with `Input validation error: Invalid arguments for tool <name>: ...`. With `outputSchema`, `structuredContent` is validated before it leaves the server, and a mismatch or missing value becomes an `isError` result too.",
+      "Error channels: a tool handler only produces tool errors (any throw, even a `ProtocolError`, becomes `isError: true` with the message as text; only `UrlElicitationRequiredError` escapes). Resource, prompt and completion callbacks only produce protocol errors: plain exceptions become `-32603`, `ResourceNotFoundError` becomes `-32602` with `data.uri`. Unknown or disabled tools reject with `-32602` (in v1 they returned `isError`).",
+      "Handlers receive `ctx` as the second argument (the only argument when a tool has no `inputSchema`). `ctx.mcpReq` holds `signal` (aborts on cancel or disconnect), `notify` (progress when `_meta.progressToken` is present), `_meta`, `inputResponses` and `requestState()`; `ctx.http?.authInfo` carries what you passed to `handler.fetch(request, { authInfo })`.",
+      "`ResourceTemplate('users://{userId}/profile', { list: undefined })`: variables arrive as strings in the read callback's second argument; instances appear in `resources/list` only with a `list` callback, while `resources/templates/list` always advertises the pattern. Registration handles (`update`, `enable`, `disable`, `remove`) send list-changed notifications automatically, and `McpServer` advertises `listChanged: true` as you register.",
+      "`createMcpHandler(factory)` returns `{ fetch, close, notify, bus }` and builds a fresh server per HTTP request, so state on the instance does not survive between calls and nodes need no session affinity. It validates no Host, Origin or token: use `createMcpExpressApp` (Host/Origin checks on localhost binds, `allowedHosts` when binding 0.0.0.0) or the `localhost*Validation` / `*ValidationResponse` helpers, and verify tokens in front.",
+      "Eras: `Client` defaults to the 2025 `initialize` handshake. `versionNegotiation: { mode: 'auto' }` probes `server/discover` and falls back; `{ pin: '2026-07-28' }` never falls back (`ERA_NEGOTIATION_FAILED`). `getProtocolEra()` reports the result; calling an era-mismatched method such as `listen()` on a legacy connection or `ping()` on a modern one rejects locally with `METHOD_NOT_SUPPORTED_BY_PROTOCOL_VERSION`.",
+      "On 2026-07-28 a handler asks for input by returning `inputRequired({ inputRequests })`; `ctx.mcpReq.elicitInput` throws on that era. The client must declare the capability (otherwise `-32021`), and its registered `elicitation/create` handler answers inside `callTool` automatically. Protect `requestState` with `createRequestStateCodec` (HMAC, shared 32-byte key, signed not encrypted) and mint only what earlier rounds proved.",
+      "Legacy serving: `createMcpHandler` defaults to `legacy: 'stateless'` (2025 clients served per request; GET/DELETE get 405, no server-to-client requests), `serveStdio` defaults to `'serve'`; `legacy: 'reject'` answers `-32022`. Keep a sessionful 2025 deployment by routing with `isLegacyRequest` in front of a strict handler. Change notifications cross nodes only through a shared `ServerEventBus`.",
+      "Client: `listTools()` and the other list verbs auto-aggregate pages (capped by `listMaxPages`, default 64) and return empty lists when the capability is absent; `callTool` validates `structuredContent` against an `outputSchema` cached by an earlier `listTools()`. Aborting the `signal` passed to a call rejects with an `SdkError`; `close()` stops a spawned stdio server (stdin, then SIGTERM, then SIGKILL).",
+      "Migration from v1: run `npx @modelcontextprotocol/codemod@latest v1-to-v2 .` at the package root, then fix `@mcp-codemod-error` markers. `tool()`/`resource()`/`prompt()` became `register*`, `McpError`/`ErrorCode` became `ProtocolError`/`ProtocolErrorCode`, `setRequestHandler(Schema, ...)` became method strings (the schema form throws `TypeError`), `extra` became `ctx`, Zod 3 is unsupported, and server-side SSE moved to the frozen `server-legacy` package."
+    ],
+    "traps": [
+      "Logging with `console.log` in a stdio server. The v2 SDK client skips non-JSON stdout lines, so your own tests may pass while stricter hosts drop the connection. Use `console.error`.",
+      "Expecting a thrown error in a resource or prompt callback to reach the model as an `isError` result; those callbacks only produce protocol errors.",
+      "Checking `result.isError` for an unknown tool name after upgrading; v2 rejects the promise with `-32602`.",
+      "Keeping per-user state (a cart, a counter) inside the `createMcpHandler` factory; each request gets a new instance.",
+      "Assuming a default `new Client(...)` speaks 2026-07-28. It runs the 2025 handshake until you set `versionNegotiation`.",
+      "Leaving a Zod 3 range in `package.json`: everything type-checks and starts, then the first `tools/list` fails.",
+      "Writing `async (args) => ...` for a tool with no `inputSchema`; the single parameter is the context, not arguments.",
+      "Exposing `createMcpHandler` on plain `node:http` or `0.0.0.0` without Host/Origin validation, leaving it open to DNS rebinding."
+    ],
+    "docs": [
+      {
+        "title": "MCP TypeScript SDK v2 documentation",
+        "url": "https://ts.sdk.modelcontextprotocol.io/v2/"
+      },
+      {
+        "title": "TypeScript SDK: Errors",
+        "url": "https://ts.sdk.modelcontextprotocol.io/v2/servers/errors"
+      },
+      {
+        "title": "TypeScript SDK: Serve over HTTP",
+        "url": "https://ts.sdk.modelcontextprotocol.io/v2/serving/http"
+      },
+      {
+        "title": "TypeScript SDK: Protocol versions",
+        "url": "https://ts.sdk.modelcontextprotocol.io/v2/protocol-versions"
+      },
+      {
+        "title": "TypeScript SDK: Upgrading from v1.x to v2",
+        "url": "https://ts.sdk.modelcontextprotocol.io/v2/migration/upgrade-to-v2"
+      }
+    ]
+  }
+}

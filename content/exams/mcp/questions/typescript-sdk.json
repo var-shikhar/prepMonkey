@@ -1,0 +1,2070 @@
+[
+  {
+    "id": "MCP-TSS-001",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which file is a complete, working stdio MCP server on TypeScript SDK v2 that exposes one tool?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "```ts\nimport { McpServer } from '@modelcontextprotocol/server';\nimport { serveStdio } from '@modelcontextprotocol/server/stdio';\nimport * as z from 'zod/v4';\n\nserveStdio(() => {\n  const server = new McpServer({ name: 'weather', version: '1.0.0' });\n  server.registerTool('get-forecast',\n    { description: 'Forecast for a city', inputSchema: z.object({ city: z.string() }) },\n    async ({ city }) => ({ content: [{ type: 'text', text: `Sunny in ${city}` }] }));\n  return server;\n});\n```",
+        "why": "Correct: `registerTool` with a `z.object(...)` schema, a handler returning `content` blocks, and `serveStdio` given a factory that returns the server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "```ts\nimport { McpServer, serveStdio } from '@modelcontextprotocol/server';\nimport * as z from 'zod/v4';\n\nserveStdio(() => {\n  const server = new McpServer({ name: 'weather', version: '1.0.0' });\n  server.registerTool('get-forecast',\n    { description: 'Forecast for a city', inputSchema: z.object({ city: z.string() }) },\n    async ({ city }) => ({ content: [{ type: 'text', text: city }] }));\n  return server;\n});\n```",
+        "why": "The package root does not export `serveStdio`; it lives behind the Node-only `@modelcontextprotocol/server/stdio` subpath, so this import is `undefined`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "```ts\nimport { McpServer } from '@modelcontextprotocol/server';\nimport { serveStdio } from '@modelcontextprotocol/server/stdio';\nimport * as z from 'zod/v4';\n\nconst server = new McpServer({ name: 'weather', version: '1.0.0' });\nserver.tool('get-forecast', 'Forecast for a city', { city: z.string() },\n  async ({ city }) => ({ content: [{ type: 'text', text: city }] }));\nserveStdio(server);\n```",
+        "why": "The variadic `server.tool(...)` was removed in v2 (use `registerTool`), and `serveStdio` takes a factory function, not a server instance."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```ts\nimport { McpServer } from '@modelcontextprotocol/server';\nimport { serveStdio } from '@modelcontextprotocol/server/stdio';\nimport * as z from 'zod/v4';\n\nserveStdio(() => {\n  const server = new McpServer({ name: 'weather', version: '1.0.0' });\n  server.registerTool('get-forecast',\n    { description: 'Forecast for a city', inputSchema: z.object({ city: z.string() }) },\n    async ({ city }) => `Sunny in ${city}`);\n  return server;\n});\n```",
+        "why": "A tool handler must return a result object with a `content` array, not a bare string; TypeScript rejects this handler."
+      }
+    ],
+    "explanation": "In v2 a server is `new McpServer({ name, version })` plus `registerTool(name, config, handler)`, where `inputSchema` is a Zod object schema and the handler returns `{ content: [...] }`. `serveStdio(factory)` from the `./stdio` subpath owns the transport and calls the factory to build the instance for the connection. Interviewers asking you to \"build a TypeScript MCP server\" want exactly this shape.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/get-started/first-server",
+    "source": "interview:ts-server-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://datacamp.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-002",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In TypeScript SDK v2, why is `StdioClientTransport` imported from `@modelcontextprotocol/client/stdio` instead of the package root?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Stdio spawns child processes, so it is kept out of the runtime-neutral root",
+        "why": "Correct: keeping `node:child_process` behind a subpath lets browser and Workers bundlers consume the root entry."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The stdio transport is deprecated in 2026-07-28 and was moved to a subpath ahead of its removal",
+        "why": "stdio is a current, fully supported transport; only the old HTTP+SSE transport is deprecated."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is a separate npm package that must be installed on its own",
+        "why": "It is a subpath export inside `@modelcontextprotocol/client`, not another package."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The root entry only contains TypeScript types, with no runtime code",
+        "why": "The root exports runtime classes such as `Client` and `StreamableHTTPClientTransport`."
+      }
+    ],
+    "explanation": "Every v2 package root is runtime-neutral: its module graph never reaches a Node builtin, so the same `Client` works in browsers, Cloudflare Workers and Node. Code that spawns processes (`StdioClientTransport` on the client, `serveStdio`/`StdioServerTransport` on the server) sits behind the `./stdio` subpath, and importing it is the explicit opt-in to a process runtime.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/get-started/packages",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TSS-003",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Adding `console.log('debug: starting')` to a TypeScript MCP server that runs over stdio is harmless, because hosts ignore anything on stdout that is not JSON-RPC.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Hosts parse every stdout line as a protocol message. A stray line can make the host drop the connection."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: on stdio, stdout is the JSON-RPC channel. Log with `console.error`, which writes to stderr, where hosts show it in the server log."
+      }
+    ],
+    "explanation": "With the stdio transport the host reads JSON-RPC from the server's stdout, so a `console.log` (yours or a dependency's) injects a line no parser accepts, typically reported as `SyntaxError: Unexpected token ... is not valid JSON`, and the host may drop the connection. `console.error` goes to stderr and is safe anywhere in the process.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/stdio",
+    "source": "interview:stdio-logging",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://modelcontextprotocol.io/docs/tools/debugging"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-004",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "The MCP project classifies its official SDKs into tiers. What does it mean that the TypeScript SDK is **Tier 1**?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It is the only SDK allowed to implement servers; other tiers are client-only",
+        "why": "Every official SDK can build both servers and clients; tiers describe completeness and maintenance."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It must pass 100% of applicable conformance tests and meet strict support timelines",
+        "why": "Correct: Tier 1 requires a 100% conformance pass rate, issue triage within 2 business days and new protocol features before a spec release."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is maintained by Anthropic, while Tier 2 and 3 SDKs are community projects",
+        "why": "Tiers are about conformance, support commitments and documentation, not about who maintains the SDK."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It supports experimental extensions such as Tasks and MCP Apps, which lower tiers cannot use",
+        "why": "Experimental features and extensions are not required for any tier."
+      }
+    ],
+    "explanation": "SDK tiers set expectations. Tier 1 (TypeScript, Python, C#, Go, Rust, Ruby) needs a 100% conformance pass rate, triage within 2 business days, critical fixes within 7 days and new protocol features ready before a spec release. Tier 2 needs 80% and new features within 6 months; Tier 3 has no minimum. An SDK is relegated if conformance tests fail continuously for 4 weeks.",
+    "reference": "https://modelcontextprotocol.io/community/sdk-tiers",
+    "source": "interview:sdk-landscape",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-005",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Complete the v2 call that adds a tool to an `McpServer` (method name only):\n\n```ts\nserver.______('get-alerts', { description: 'Active alerts for a US state', inputSchema: z.object({ state: z.string().length(2) }) }, handler);\n```",
+    "options": [],
+    "accepted": [
+      "registerTool"
+    ],
+    "explanation": "`registerTool(name, config, handler)` registers a tool; `registerResource` and `registerPrompt` are its siblings. It replaced v1's variadic `tool()`, which v2 removed.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/tools",
+    "source": "interview:tools",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-006",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A long-running tool handler is declared `async ({ pages }, ctx) => { ... }`. Where does it read the signal that fires when the client cancels the call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`ctx.signal`",
+        "why": "The context groups request-scoped helpers under `mcpReq`; there is no top-level `signal`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`ctx.mcpReq.signal`",
+        "why": "Correct: an `AbortSignal` that aborts on `notifications/cancelled` and when the connection closes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`server.signal`",
+        "why": "Cancellation is per request, so it lives on the handler context, not on the server instance."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`process.on('SIGINT')` inside the handler",
+        "why": "A process signal stops the whole server; it says nothing about one cancelled request."
+      }
+    ],
+    "explanation": "Every handler gets a context as its second argument, and request-scoped helpers live on `ctx.mcpReq`: `signal` for cancellation, `notify` for progress notifications, `_meta` for the request's metadata. Check `ctx.mcpReq.signal.aborted` in loops and pass the signal to `fetch` so cancellation reaches your own I/O. (v1 called this `extra.signal`.)",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/logging-progress-cancellation",
+    "source": "interview:utilities",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-007",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each job in a small TypeScript MCP client with the `Client` method that does it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`client.listTools()`",
+        "why": "Returns every tool with its name, description and JSON Schema."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`client.callTool({ name, arguments })`",
+        "why": "Invokes one tool and returns its content blocks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`client.readResource({ uri })`",
+        "why": "Fetches the contents behind one resource URI."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`client.getPrompt({ name, arguments })`",
+        "why": "Fills a prompt template and returns its messages."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Discover what the model may call, to hand the list to an LLM",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Run the tool the model picked, passing its arguments unchanged",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Load `config://app` to attach as context",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Expand a slash command the user picked",
+        "answer": "D"
+      }
+    ],
+    "explanation": "A `Client` plus one transport is a complete client. `listTools()` output maps one-to-one onto the tool definitions LLM APIs take; when the model returns a tool call, pass its name and arguments to `callTool` and append `result.content` as the tool result. `readResource` and `getPrompt` follow the same list-then-fetch shape.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/clients/calling",
+    "source": "interview:client-implementation",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-008",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a TypeScript tool, the field is declared `query: z.string().describe('Substring to match against product names')`. Where does that text end up?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Only in TypeScript type hints for the handler; it never leaves the server",
+        "why": "Descriptions survive the conversion and are sent to clients in `tools/list`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "In the tool's top-level `description`, replacing the one in the config",
+        "why": "The config `description` describes the tool; `.describe()` describes one argument."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "As the `description` of `query` in the advertised JSON Schema",
+        "why": "Correct: it is the only documentation the model gets for that argument."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "In the validation error message when `query` is missing",
+        "why": "Validation errors are generated from the failed check, not from the description."
+      }
+    ],
+    "explanation": "From one Zod `inputSchema` the SDK derives the JSON Schema clients see, validates arguments and infers handler types. `.describe()` carries over as the property's `description`, which is what the model reads to fill the argument, so write it for the model.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/tools",
+    "source": "interview:ts-tool-schema",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-009",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the `required` array in the JSON Schema that `tools/list` advertises for this tool?\n\n```ts\ninputSchema: z.object({\n  query: z.string(),\n  limit: z.number().int().max(50).optional(),\n  sort: z.enum(['asc', 'desc']).default('asc'),\n  tags: z.array(z.string()).nullable()\n})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[\"query\"]`",
+        "why": "`.nullable()` allows `null` but does not make the key optional, so `tags` must still be sent."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`[\"query\", \"tags\"]`",
+        "why": "Correct: `limit` is optional and `sort` has a default, so only `query` and `tags` are required."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[\"query\", \"sort\", \"tags\"]`",
+        "why": "A field with `.default()` is optional on input; the advertised schema carries `default: \"asc\"` instead."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[\"query\", \"limit\", \"sort\", \"tags\"]`",
+        "why": "`.optional()` and `.default()` both remove a key from `required`."
+      }
+    ],
+    "explanation": "The SDK converts the Zod schema for input. `.optional()` and `.default()` drop a key from `required` (the default appears as `default` in the schema and is filled in before your handler runs), while `.nullable()` only widens the type to `anyOf [..., null]`. Running it, `tags` is advertised as `anyOf: [{type: array}, {type: null}]` and a call without `tags` is rejected.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/tools",
+    "source": "interview:ts-tool-schema",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-010",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The tool below is called with `{ \"query\": \"mug\", \"limit\": 999 }`. What does the client get?\n\n```ts\nserver.registerTool('search', {\n  description: 'Search the catalog',\n  inputSchema: z.object({ query: z.string(), limit: z.number().int().max(50).optional() })\n}, async ({ query, limit }) => ({ content: [{ type: 'text', text: `${query}:${limit}` }] }));\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "An `isError: true` result explaining that `limit` is too big; the handler never runs",
+        "why": "Correct: the SDK validates before the handler and reports the failure as a tool result the model can read."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The text `mug:50`, because the SDK clamps values to the schema's maximum",
+        "why": "Zod validation rejects out-of-range values; nothing is clamped."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A rejected promise with a `-32602 Invalid params` protocol error naming the `limit` field",
+        "why": "For tools, schema failures come back as `isError` results, not JSON-RPC errors (unlike prompts)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The text `mug:999`, because the model's arguments are passed through unchanged",
+        "why": "Every call is validated against `inputSchema` before the handler sees it."
+      }
+    ],
+    "explanation": "The SDK parses every `tools/call` against the Zod schema first. A failure becomes an ordinary result with `isError: true`, so the model sees the message (`limit: Too big: expected number to be <=50`) and can retry with valid arguments. The handler only ever receives parsed, typed arguments.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/tools",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-011",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The weather API is down and this handler throws. What does `await client.callTool({ name: 'forecast', arguments: { city: 'Oslo' } })` produce?\n\n```ts\nasync ({ city }) => {\n  const res = await fetch(`${API}/forecast?city=${city}`);\n  if (!res.ok) throw new Error(`Weather API returned ${res.status}`);\n  return { content: [{ type: 'text', text: await res.text() }] };\n}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It rejects with a `ProtocolError` whose code is `-32603` (Internal error) and that message",
+        "why": "That is what a resource or prompt callback produces; tool handler exceptions are converted to results."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It resolves to an `isError: true` result with the text `Weather API returned 503`",
+        "why": "Correct: the SDK catches tool exceptions and turns the message into an `isError` result."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It resolves to an empty `content` array with no error flag",
+        "why": "The failure is reported: the exception message becomes the text and `isError` is set."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The server process crashes and the client sees the connection close",
+        "why": "The SDK catches the exception; the server keeps serving other calls."
+      }
+    ],
+    "explanation": "Inside a tool handler a throw and an explicit `return { ..., isError: true }` produce the same shape: a successful JSON-RPC result whose text is the exception message. That keeps the failure visible to the model. Return explicitly when you want control over the text, for example to add a recovery hint such as which ids exist.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/errors",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-012",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A host on TypeScript SDK v2 calls `client.callTool({ name: 'serach', arguments: {} })` (a typo; no such tool exists). What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It resolves with `isError: true` and the text `Unknown tool: serach`",
+        "why": "That was v1's behaviour; v2 changed unknown and disabled tools to a protocol error."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It resolves with an empty result because the client filters unknown names",
+        "why": "The client sends the request; the server decides it is invalid."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It rejects: `ProtocolError` `-32602`, `Tool serach not found`",
+        "why": "Correct: a missing or disabled tool is an invalid-params protocol error in v2."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It rejects with `-32601 Method not found`",
+        "why": "The method `tools/call` exists; only the tool name inside its params is wrong."
+      }
+    ],
+    "explanation": "Tool execution failures are `isError` results, but a call naming a tool that does not exist (or was disabled through its registration handle) rejects with `ProtocolError(-32602)`. The migration guide flags this: v1 callers that checked `result.isError` for an unknown tool now get a rejected promise and must catch it. Hosts normally avoid this by only calling names from `listTools()`.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/migration/upgrade-to-v2",
+    "source": "interview:error-handling",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-013",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "A server registers this template. Which statements are true when a client connects? (Choose three.)\n\n```ts\nserver.registerResource('user-profile',\n  new ResourceTemplate('users://{userId}/profile', { list: undefined }),\n  { mimeType: 'application/json' },\n  async (uri, { userId }) => ({ contents: [{ uri: uri.href, text: JSON.stringify({ userId }) }] }));\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Reading `users://42/profile` runs the callback with `userId` equal to the string `'42'`",
+        "why": "Correct: matched template variables arrive as strings."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "No `users://...` entry appears in `client.listResources()`",
+        "why": "Correct: with `list: undefined` there is nothing to enumerate."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`client.listResourceTemplates()` advertises `users://{userId}/profile`",
+        "why": "Correct: the pattern is still discoverable, so a client that knows an id can build the URI."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`userId` arrives as the number `42` because it looks numeric",
+        "why": "URI template variables are not coerced; convert them yourself."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Registering fails because `list` must be a function",
+        "why": "`list` is a required key, but `undefined` is the documented value for unbounded sets."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Reading `users://a/b/profile` runs the callback with `userId` equal to `'a/b'`",
+        "why": "A simple `{userId}` variable does not match across `/`; that read fails with resource not found (-32602)."
+      }
+    ],
+    "explanation": "A `ResourceTemplate` registers a URI pattern. Matched variables arrive parsed (as strings) in the read callback's second argument. Instances appear in `resources/list` only if the template has a `list` callback; the pattern itself is always advertised by `resources/templates/list`. A template variable that becomes a file path is client-controlled input: resolve the real path and reject anything outside your root.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/resources",
+    "source": "interview:resources",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-014",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A prompt is registered with `argsSchema: z.object({ code: z.string() })`. A client calls `getPrompt({ name: 'review-code', arguments: {} })`. The promise rejects with a `ProtocolError`. Type its numeric `code`.",
+    "options": [],
+    "accepted": [
+      "-32602"
+    ],
+    "explanation": "Prompt arguments are validated against `argsSchema` before the callback runs, and a failure rejects `prompts/get` with `-32602` (Invalid params): `Invalid arguments for prompt review-code: code: Invalid input: expected string, received undefined`. Prompts are invoked by the host application, so failures are protocol errors; tools report schema failures as `isError` results instead.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/prompts",
+    "source": "interview:prompts",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/avinash247/ai-agent-interview-26-real-world-questions-expert-answers-for-2026-3fbo",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-015",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You want CI tests that drive your real server factory through a real `Client`, cover the 2026-07-28 revision, and open no port or child process. Which setup fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`InMemoryTransport.createLinkedPair()`, connecting `createServer()` to one end and a `Client` to the other",
+        "why": "Linked pairs connect 2025-era instances only, so they never exercise the 2026-07-28 path."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Start the server with `app.listen(0)` and connect `StreamableHTTPClientTransport` to the random port",
+        "why": "That opens a real socket, which the requirement rules out."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`createMcpHandler(createServer)`, a transport whose `fetch` is `handler.fetch`, and `mode: 'auto'`",
+        "why": "Correct: the transport never dials the URL, and auto negotiation lands on the modern era."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call the tool handler functions directly with hand-built argument objects",
+        "why": "That skips schema validation, error conversion and the protocol entirely."
+      }
+    ],
+    "explanation": "Pass `fetch: (url, init) => handler.fetch(new Request(url, init))` to `StreamableHTTPClientTransport` and every request is served in process by the same `createMcpHandler` you deploy. With `mode: 'auto'` the client negotiates 2026-07-28; with the default it uses the 2025 handshake, so you can cover both eras. Close the client, then the handler, between tests. Stdio still needs a spawned process.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/testing",
+    "source": "interview:testing",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-016",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If a client calls a tool without passing `onprogress`, then inside the handler `ctx.mcpReq._meta?.progressToken` is `undefined`, so a handler that guards on the token sends no progress notifications.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: the client SDK only adds a `progressToken` to `_meta` when you pass `onprogress`, so the guard skips every notification."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "The token is present only when the caller asked for progress; without it there is nothing to correlate updates with."
+      }
+    ],
+    "explanation": "Progress is opt-in per request. `client.callTool(params, { onprogress })` makes the SDK put a `progressToken` in the request's `_meta`; the handler reads it and sends `notifications/progress` with `ctx.mcpReq.notify`, with `progress` increasing each time. Without `onprogress` the token is absent and a guarded handler just returns its result.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/logging-progress-cancellation",
+    "source": "interview:utilities",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-017",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps of a minimal TypeScript client script that runs a local server, calls one tool and exits cleanly.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`await client.callTool({ name: 'get-alerts', arguments: { state: 'CA' } })`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`const client = new Client({ name: 'my-client', version: '1.0.0' })`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`await client.close()` in a `finally` block",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`await client.connect(new StdioClientTransport({ command: 'npx', args: ['tsx', 'src/index.ts'] }))`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`const { tools } = await client.listTools()`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "E",
+      "A",
+      "C"
+    ],
+    "explanation": "Construct the `Client`, then `connect()` a transport: `StdioClientTransport` spawns and owns the server process (never start it yourself). Discover with `listTools()`, call with `callTool()`, and `close()` in `finally` so a crash does not leave the child running; `close()` ends stdin, then sends SIGTERM, then SIGKILL.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/get-started/first-client",
+    "source": "interview:client-implementation",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-018",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each deployment target with the v2 serving entry point that fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`serveStdio(factory)`",
+        "why": "Owns stdin/stdout and builds one instance per connection."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`export default createMcpHandler(factory)`",
+        "why": "A `{ fetch }` object that web-standard runtimes serve directly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`app.all('/mcp', ...)` over `toNodeHandler(createMcpHandler(factory))` on `createMcpExpressApp()`",
+        "why": "Adapts the web-standard handler to Node's `(req, res)` with Host/Origin checks."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`SSEServerTransport` from `@modelcontextprotocol/server-legacy/sse`",
+        "why": "Frozen v1 copy of the deprecated HTTP+SSE server transport."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A host launches the server as a local child process",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A Cloudflare Worker, or Deno or Bun",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "An existing Express app that should gain an `/mcp` route",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A temporary bridge for clients that only speak HTTP+SSE",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`createMcpHandler` is the one HTTP entry: on fetch-native runtimes `export default handler` is the whole mount; on Node frameworks `toNodeHandler` from `@modelcontextprotocol/node` adapts it, and `createMcpExpressApp` adds `express.json()` and DNS-rebinding protection. The v2 server never serves HTTP+SSE itself; the frozen legacy package is deprecated and planned for removal in v3.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/http",
+    "source": "interview:ts-http-serving",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://datacamp.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-019",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the client see when it calls `whoami` with no arguments?\n\n```ts\nserver.registerTool('whoami', { description: 'Debug helper' }, async (args) => ({\n  content: [{ type: 'text', text: Object.keys(args).sort().join(',') }]\n}));\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An empty string, because a tool with no `inputSchema` receives `{}`",
+        "why": "Without an `inputSchema` there are no arguments to pass, so the first parameter is something else."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A TypeScript compile error, because the handler must declare two parameters",
+        "why": "A one-parameter callback type-checks; that is exactly why the mistake is easy to make."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`http,mcpReq,sessionId`: the first parameter is the context",
+        "why": "Correct: a tool registered without `inputSchema` receives the context as its only argument."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A validation error, because the call sent no `arguments` object",
+        "why": "A schema-less tool accepts calls without arguments; nothing is validated."
+      }
+    ],
+    "explanation": "When `inputSchema` (or a prompt's `argsSchema`) is omitted, the callback's single parameter is the context (`ctx`), not an args object. Running this prints `http,mcpReq,sessionId`. Name it `ctx` to avoid confusion; the advertised input schema for such a tool is `{ type: 'object', properties: {} }`.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/migration/upgrade-to-v2",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TSS-020",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This tool declares an `outputSchema`. An upstream change makes `total` arrive as the string `'ten'`. What does the client receive?\n\n```ts\nserver.registerTool('order-total', {\n  inputSchema: z.object({ id: z.string() }),\n  outputSchema: z.object({ total: z.number() })\n}, async ({ id }) => {\n  const total = await fetchTotal(id); // now returns 'ten'\n  return { content: [{ type: 'text', text: String(total) }], structuredContent: { total } };\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The result as returned, because output schemas are documentation for clients only",
+        "why": "`McpServer` validates `structuredContent` against `outputSchema` before the result leaves the server."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "An `isError: true` result reporting an output validation error",
+        "why": "Correct: a failed output check becomes a tool error, so the model sees what went wrong."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A rejected promise with `-32603 Internal error`",
+        "why": "The SDK reports output validation failures as tool results, not protocol errors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The value coerced to `NaN` so that it matches `z.number()`",
+        "why": "Validation never coerces; it passes or fails."
+      }
+    ],
+    "explanation": "Declaring `outputSchema` makes `McpServer` validate `structuredContent` on every non-error result and advertise the derived JSON Schema so clients can validate too. A mismatch, or a missing `structuredContent`, turns into `isError: true` with an `Output validation error: ...` message. Results you mark `isError` yourself skip output validation.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/tools",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-021",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the low-level `Server` class, compared with `McpServer`, are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "If a `tools/call` handler throws, the client gets a JSON-RPC error (`-32603`), not an `isError` tool result",
+        "why": "Correct: only `McpServer` converts tool exceptions into `isError` results."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`setRequestHandler('tools/list', ...)` throws unless the `tools` capability was declared in the constructor",
+        "why": "Correct: `Server` never infers capabilities from handlers."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Server` validates `tools/call` arguments against the schema your `tools/list` handler advertised",
+        "why": "It checks only that `arguments` is an object; validation is yours, for example with `fromJsonSchema`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Choosing `Server` means you cannot use `serveStdio` or `createMcpHandler`",
+        "why": "Both entry points accept a factory that returns either class."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "An `McpServer` cannot drop down to hand-written handlers, so you must choose one class for the whole program",
+        "why": "Every `McpServer` exposes its `Server` as `mcp.server` for per-method overrides."
+      }
+    ],
+    "explanation": "`Server` is the protocol layer: one handler per method string and nothing derived. You write the JSON Schema in `tools/list`, validate arguments in `tools/call`, declare capabilities up front, and a thrown exception surfaces as `-32603`. Build on it when you own dispatch (gateways, per-request tool sets, custom methods); otherwise default to `McpServer` and override single methods through `mcp.server`.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/advanced/low-level-server",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TSS-022",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A stdio server has a leftover `console.log('adding', a, b)` in a tool. Your integration tests, which spawn it with the TypeScript SDK's own `StdioClientTransport`, pass. A user reports that another host drops the server with `Unexpected token 'a' ... is not valid JSON`. What explains the difference?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The SDK client spawns the server with stdout redirected to stderr, so the log never reaches the wire",
+        "why": "The SDK client reads JSON-RPC from the child's stdout; nothing is redirected."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The SDK client skips non-JSON stdout lines; other hosts parse every line",
+        "why": "Correct: the SDK tolerates the stray line, which hides a bug that strict hosts expose."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Your tests use Streamable HTTP under the hood, where stdout is not the protocol channel",
+        "why": "`StdioClientTransport` is a real stdio connection to a spawned process."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The other host is outdated; the 2026-07-28 revision allows free-form text on stdout",
+        "why": "The spec still forbids anything but valid MCP messages on a stdio server's stdout."
+      }
+    ],
+    "explanation": "In v2, `ReadBuffer` skips stdout lines that are not JSON (so hot-reload tools that print to stdout do not break the transport), while a line that parses as JSON but is not JSON-RPC still raises `onerror`. Other hosts are stricter. Never rely on that tolerance: the stdio spec reserves stdout for MCP messages, and the fix is always to log to stderr.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/troubleshooting",
+    "source": "interview:transports",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-023",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This shopping server is served with `createMcpHandler`. A client calls `add-item` with `mug`, then with `cup`. The second call returns `Cart: cup`. Why?\n\n```ts\nconst handler = createMcpHandler(() => {\n  const server = new McpServer({ name: 'shop', version: '1.0.0' });\n  const cart: string[] = [];\n  server.registerTool('add-item', { inputSchema: z.object({ sku: z.string() }) }, async ({ sku }) => {\n    cart.push(sku);\n    return { content: [{ type: 'text', text: `Cart: ${cart.join(', ')}` }] };\n  });\n  return server;\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The factory runs once per HTTP request, so each call gets a fresh `cart`",
+        "why": "Correct: the handler keeps nothing between requests; durable state must live outside the instance."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Zod strips unknown keys, so the first `sku` is discarded",
+        "why": "Both calls pass valid arguments; the array itself is what resets."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`cart` must be declared with `let`, because `const` arrays cannot be pushed to",
+        "why": "`const` prevents reassignment, not mutation; `push` works."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The client must send an `Mcp-Session-Id` header to keep its cart",
+        "why": "`createMcpHandler` has no sessions; the 2026-07-28 revision removed `Mcp-Session-Id`."
+      }
+    ],
+    "explanation": "`createMcpHandler` builds a fresh `McpServer` from your factory for every HTTP request, which is what makes v2 servers stateless and horizontally scalable. Put shared resources (pools, caches) at module scope, and keep per-user state such as a cart in a store keyed by something the client sends back (an id your tool returns, or the authenticated user), never on the instance.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/http",
+    "source": "interview:lifecycle",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-024",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You compare two Express deployments behind a round-robin load balancer: (1) `createMcpHandler(factory)` mounted with `toNodeHandler`, and (2) a hand-wired `NodeStreamableHTTPServerTransport` with `sessionIdGenerator: () => randomUUID()` and a per-node session map. Which statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both need sticky sessions, because MCP clients reuse one connection",
+        "why": "The per-request handler holds nothing between requests, so any node can serve any request."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Neither needs affinity, because the client resends `Mcp-Session-Id` on every request",
+        "why": "Resending the id does not help when the node that receives it never created that session."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only (1) needs affinity, because it builds a new server per request",
+        "why": "Building a fresh instance per request is exactly why (1) needs no affinity."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Only (2) needs affinity or shared session routing",
+        "why": "Correct: sessions live in one node's memory, and other nodes answer unknown ids with 404."
+      }
+    ],
+    "explanation": "The v2 default is stateless: every node builds a fresh instance per request, so no affinity and nothing shared. Sessions belong to the hand-wired 2025-era transport: the session map lives in process memory, so a request routed to the wrong node gets `404 Session not found`. Scale those with load-balancer affinity or pub/sub routing; a shared `eventStore` only makes dropped streams resumable.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/sessions-state-scaling",
+    "source": "interview:ts-http-serving",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://datacamp.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-025",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each failure inside an `McpServer` with what the calling `Client` observes.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Resolves with `isError: true` and the exception message as text",
+        "why": "Tool-error channel; the model reads it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Rejects with `ProtocolError` `-32603` and the exception message",
+        "why": "Internal error from a non-tool callback."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Rejects with `ProtocolError` `-32602` and `data: { uri }`",
+        "why": "Spec-mandated code for a resources/read miss."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rejects with `ProtocolError` `-32602`, message `Tool ... disabled`",
+        "why": "Invalid params: the named tool is not callable."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A tool handler throws `new Error('upstream 503')`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A resource read callback throws `new Error('disk gone')`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A resource read callback throws `new ResourceNotFoundError(uri.href)`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A client calls a tool after the server called `.disable()` on its registration handle",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Pick the channel by audience. Tool handlers only produce tool errors: every exception, even a thrown `ProtocolError`, becomes `isError: true` (only `UrlElicitationRequiredError` escapes). Resource, prompt and completion callbacks only produce protocol errors: a plain exception becomes `-32603`, `ResourceNotFoundError` becomes `-32602` with the URI in `data` (the SDK never emits `-32002`). Unknown or disabled tools are `-32602` protocol errors.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/errors",
+    "source": "interview:json-rpc",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-026",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A client on a 2025-era in-memory connection counts `notifications/tools/list_changed`. After it connects, the server runs the code below. How many notifications does the client receive? Type a number.\n\n```ts\nconst h = server.registerTool('report', { description: 'Weekly report' }, run);\nh.update({ description: 'Weekly report, emailed' });\nh.disable();\nh.enable();\nh.remove();\n```",
+    "options": [],
+    "accepted": [
+      "5",
+      "five"
+    ],
+    "explanation": "Every mutation through a registration handle sends the matching list-changed notification: register, update, disable, enable and remove each send one, so five (verified by running it). That is why most servers never call `sendToolListChanged()` directly; they use it only when the tool set changes for a reason the registration API cannot see. On 2026-07-28 connections these notifications reach clients only on a `subscriptions/listen` stream.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/notifications",
+    "source": "interview:dynamic-tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-027",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A client connects to a v2 server built with `createMcpHandler` like this, then logs `client.getProtocolEra()`. What does it print, and why?\n\n```ts\nconst client = new Client({ name: 'app', version: '1.0.0' });\nawait client.connect(new StreamableHTTPClientTransport(new URL('https://api.example.com/mcp')));\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`modern`, because a v2 client always negotiates the newest revision both sides support",
+        "why": "The v2 client does not probe by default; negotiation must be opted into."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`modern`, because `createMcpHandler` refuses 2025-era handshakes",
+        "why": "Its default posture is `legacy: 'stateless'`, which serves 2025-era clients."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`legacy`: the default client runs the 2025 `initialize` handshake",
+        "why": "Correct: the default mode is the unchanged `initialize` handshake with no `server/discover` probe."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`undefined`, because the era is only known after the first tool call",
+        "why": "The era is decided once, at connect time, and reported after `connect()` resolves."
+      }
+    ],
+    "explanation": "`versionNegotiation.mode` defaults to legacy: the client sends `initialize` exactly as a 2025 client would. `mode: 'auto'` probes with `server/discover` and falls back to `initialize` against a 2025-only server; `mode: { pin: '2026-07-28' }` never falls back. Against `createMcpHandler`, the default client lands on `legacy` and `auto` lands on `modern`.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/protocol-versions",
+    "source": "interview:lifecycle",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-028",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A host wants to be told when a server's tools change. With a client created as `new Client({ name: 'app', version: '1.0.0' })` it calls `await client.listen({ toolsListChanged: true })`, which rejects locally with `METHOD_NOT_SUPPORTED_BY_PROTOCOL_VERSION`. What is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Retry `listen()` with exponential backoff until the server accepts it",
+        "why": "The rejection is local and deterministic; nothing was sent, so retrying cannot succeed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Declare `capabilities: { tools: { listChanged: true } }` on the client",
+        "why": "`listChanged` is a server capability; the client's problem is the negotiated era."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Call `client.subscribeResource({ uri: 'tools://list' })` instead",
+        "why": "There is no such resource, and per-resource subscribe is about resource contents, not tool lists."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Negotiate `mode: 'auto'`, or use the `listChanged` client option",
+        "why": "Correct: `listen()` exists only on 2026-07-28 connections; 2025-era ones deliver unsolicited notifications."
+      }
+    ],
+    "explanation": "`subscriptions/listen` is 2026-07-28-only, and the default client negotiated a 2025 era, so the SDK rejects before sending (the message names the replacement). Either negotiate the modern era, or use the surface that era defines. The `listChanged` client option works on both: it registers handlers, opens the stream when the era supports it, and re-fetches the list for you.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/clients/subscriptions",
+    "source": "interview:utilities",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-029",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are reviewing a v1-to-v2 upgrade of a TypeScript MCP server. Which statements are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`McpError` and `ErrorCode` become `ProtocolError` and `ProtocolErrorCode`",
+        "why": "Correct: the codemod renames them; timeouts and closed connections move to `SdkError`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`setRequestHandler(CallToolRequestSchema, ...)` becomes `setRequestHandler('tools/call', ...)`; the schema-first form throws `TypeError` in v2",
+        "why": "Correct: verified; registering with a schema object throws `'[object Object]' is not a spec request method`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Callers that checked `result.isError` for an unknown tool must now catch a rejected promise",
+        "why": "Correct: unknown or disabled tools reject with `-32602` in v2."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `zod` ^3.25 dependency keeps working, because v2 accepts Zod 3 and 4",
+        "why": "Zod 3 is no longer supported; schemas must be Zod 4 (4.2+ recommended) or another Standard Schema."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`@modelcontextprotocol/sdk/server/mcp.js` becomes `@modelcontextprotocol/server/mcp.js`",
+        "why": "v2 packages expose only declared subpaths; `McpServer` comes from the package root."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "The codemod also moves the server to `createMcpHandler` and multi-round-trip requests",
+        "why": "Adopting 2026-07-28 is architectural and not codemod-automatable; it has its own guide."
+      }
+    ],
+    "explanation": "Run `npx @modelcontextprotocol/codemod@latest v1-to-v2 .` first: it rewrites imports, renames symbols, converts `.tool()`/`.prompt()`/`.resource()` to `register*` with `z.object()` wrappers and switches handler registration to method strings. What remains is judgment and behaviour: Zod 4, unknown tools rejecting, list methods auto-aggregating pages, and the separate decision to adopt the 2026-07-28 revision.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/migration/upgrade-to-v2",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TSS-030",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A user clicks Stop while this call runs: `client.callTool({ name: 'scan-archive', arguments: { pages: 40 } }, { signal: controller.signal })`, followed by `controller.abort('the end user clicked Stop')`. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The client promise rejects with an `SdkError` carrying the abort reason",
+        "why": "Correct: verified; the error message is the reason and its code is `REQUEST_TIMEOUT`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "On the server, `ctx.mcpReq.signal` aborts, and `signal.reason` carries the client's reason",
+        "why": "Correct: the SDK aborts the handler's signal when cancellation arrives."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The handler is killed immediately, even in the middle of a `for` loop",
+        "why": "JavaScript cannot preempt a handler; it stops only where it checks the signal or passes it to I/O."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The server still sends the final result, which the client delivers later",
+        "why": "The SDK never answers a cancelled request and discards whatever the handler returns."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The client must also call `client.close()`, or the server never learns about the cancel",
+        "why": "Cancellation is per request; the connection stays usable for other calls."
+      }
+    ],
+    "explanation": "Aborting the signal you passed to `callTool` rejects the call on the client and cancels the request on the server (a `notifications/cancelled`, or on 2026-07-28 Streamable HTTP, closing that request's response stream). The handler must cooperate: check `ctx.mcpReq.signal.aborted` between units of work and pass the signal to `fetch` so in-flight I/O aborts too.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/logging-progress-cancellation",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TSS-031",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In TypeScript SDK v2, `server.registerTool('Search Orders!', ...)` throws at registration, because the name contains a space and `!`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It does not throw. The SDK prints a validation warning listing the allowed characters and registers the tool anyway."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: it is accepted with a warning (`Tool registration will proceed, but this may cause compatibility issues`), so rename it yourself."
+      }
+    ],
+    "explanation": "The SDK checks tool names against the MCP naming rule (A-Z, a-z, 0-9, `_`, `-` and `.`) and warns about spaces and invalid characters, but registration proceeds. Some clients may reject or mangle such names, so treat the warning as a bug: use names like `search-orders`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TSS-032",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "On a 2026-07-28 connection, this tool returns `isError: true`. What does the error text tell you to do?\n\n```ts\nserver.registerTool('wipe', { description: 'Wipe the cache' }, async (ctx) => {\n  const answer = await ctx.mcpReq.elicitInput({\n    message: 'Really wipe?',\n    requestedSchema: { type: 'object', properties: { ok: { type: 'boolean' } } }\n  });\n  return { content: [{ type: 'text', text: JSON.stringify(answer) }] };\n});\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Declare `capabilities: { elicitation: {} }` on the server",
+        "why": "Elicitation is a client capability, and the failure is about the push channel, not capabilities."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Switch the client to `mode: { pin: '2026-07-28' }` so elicitation is negotiated",
+        "why": "The connection is already 2026-07-28; that is precisely the era where pushing fails."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Wrap the call in `try/catch` and retry, because the client was busy",
+        "why": "It fails every time on this era; retrying changes nothing."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Return `inputRequired(...)` from the handler instead of pushing a request",
+        "why": "Correct: 2026-07-28 has no server-to-client requests; the client fulfils embedded requests and retries."
+      }
+    ],
+    "explanation": "`ctx.mcpReq.elicitInput` and `requestSampling` are 2025-era push channels. On 2026-07-28 the SDK refuses them (verified message: `Server-to-client requests are not available on protocol revision 2026-07-28 ... Return inputRequired({ ... }) from the handler instead`). Write the handler write-once: read answers with `acceptedContent(ctx.mcpReq.inputResponses, key, schema)` and return `inputRequired(...)` while anything is missing; the legacy shim serves the same handler to stateful 2025-era connections.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/input-required",
+    "source": "interview:client-features",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-033",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the upgrade-to-v2 quick path for a repository on `@modelcontextprotocol/sdk` 1.x.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Grep for `@mcp-codemod-error` markers and fix each site by hand",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run `tsc --noEmit` and work through the remaining errors with the manual sections of the guide",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run `npx @modelcontextprotocol/codemod@latest v1-to-v2 .` at the package root",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run your test suite",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Run your formatter on the changed files",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "A",
+      "B",
+      "E",
+      "D"
+    ],
+    "explanation": "The codemod applies every fixed mapping (imports, symbol renames, `register*`, method-string handlers) and rewrites `package.json`, so run it at the package root, not `./src`. It marks what it recognised but could not rewrite with `@mcp-codemod-error`; then type-check, format (it rewrites the AST without reformatting) and run tests to catch behavioural changes such as unknown tools rejecting.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/migration/upgrade-to-v2",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TSS-034",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A `deploy` tool returns `inputRequired(...)` to ask for confirmation and is served by `createMcpHandler` with default options. A client on the 2026-07-28 revision gets the prompt and the deploy succeeds. A 2025-era client (default `Client` options) gets `isError: true` saying `per-request legacy serving cannot receive server-to-client requests`. What is the best fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `ServerOptions.inputRequired.legacyShim: true`, since the shim is off by default",
+        "why": "The shim is on by default. It needs a channel to push requests on, and stateless legacy HTTP has none."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Let that client negotiate `mode: 'auto'`, or serve legacy over a stateful transport",
+        "why": "Correct: the modern era carries input requests in results; legacy elicitation needs a live session."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Replace `inputRequired` with `ctx.mcpReq.elicitInput`, which works on every era",
+        "why": "`elicitInput` throws on 2026-07-28 requests and still needs a session on legacy ones."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass `legacy: 'reject'` to `createMcpHandler` so that legacy clients upgrade automatically",
+        "why": "That refuses legacy clients with `-32022`; it does not upgrade them."
+      }
+    ],
+    "explanation": "The legacy shim fulfils an `input_required` return on a 2025-era connection by pushing real `elicitation/create` requests over the session. `createMcpHandler`'s default legacy posture serves each request from a fresh instance with no session, so there is nothing to push on, and the tool fails with that message (verified). A client that negotiates 2026-07-28 gets the requests inside the result and retries; stdio or a sessionful 2025 deployment gives the shim its channel.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/input-required",
+    "source": "interview:client-features",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-035",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The same `deploy` tool (which returns `inputRequired.elicit(...)`) is called by two 2026-07-28 clients. Client A declared `capabilities: { elicitation: {} }` and registered an `elicitation/create` handler; client B declared nothing. What does each get?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both see the elicitation; B's SDK synthesises a decline",
+        "why": "The server checks the declared capabilities before anything reaches the client."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A completes; B's `callTool` rejects with `-32021` (missing client capability)",
+        "why": "Correct: verified; the missing capability is a protocol error, not an `isError` result."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A completes the deploy; B gets `isError: true` asking it to enable elicitation",
+        "why": "On a modern connection the capability failure rejects the call as a protocol error."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both reject, because elicitation only works on 2025-era connections",
+        "why": "Elicitation works on 2026-07-28 through multi-round-trip requests; A succeeds."
+      }
+    ],
+    "explanation": "Each embedded request is checked against the capabilities the client declared in the request's `_meta`. Without `elicitation`, the call rejects with `-32021` before anything reaches the wire, and `data.requiredCapabilities` names what to declare. With it, the client SDK runs its `elicitation/create` handler and retries automatically (up to `inputRequired.maxRounds`, default 10).",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/input-required",
+    "source": "interview:client-features",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-036",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A low-level `Server` advertises `outputSchema: { type: 'object', properties: { total: { type: 'number' } }, required: ['total'] }` for tool `total`, but its `tools/call` handler returns `structuredContent: { total: 'ten' }`. A fresh client runs the code below. What happens?\n\n```ts\nconst first = await client.callTool({ name: 'total', arguments: {} });\nawait client.listTools();\nconst second = await client.callTool({ name: 'total', arguments: {} });\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both calls resolve with `{ total: 'ten' }`, because only servers validate output",
+        "why": "The client validates too, once it has the tool's schema."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both calls reject, because the client fetches schemas before every call",
+        "why": "The client does not list tools on your behalf before `callTool`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The first resolves unchecked; the second rejects with `-32602` (schema mismatch)",
+        "why": "Correct: verified; client-side validation uses the `outputSchema` cached by an earlier `listTools()`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The first rejects and the second resolves, because `listTools()` clears the cache",
+        "why": "Listing populates the cache that enables validation; it does not clear it."
+      }
+    ],
+    "explanation": "`McpServer` validates output on the server, but a low-level `Server` (or another SDK) may not. The v2 client validates `structuredContent` only against an `outputSchema` it learned from `listTools()`, compiling the validator lazily on the first call. Hosts normally list before calling, so they get the check; code that calls blind does not. Either way, narrow `structuredContent` (typed `unknown`) before use.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/clients/calling",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TSS-037",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You run one `createMcpHandler` per node on three nodes behind a round-robin load balancer, serving 2026-07-28 clients that keep `subscriptions/listen` streams open. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`tools/call` requests need no session affinity, because each request builds a fresh instance",
+        "why": "Correct: the stateless default scales behind any balancer."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`handler.notify.toolsChanged()` on node A reaches streams held by node B only if every node shares one custom `ServerEventBus`",
+        "why": "Correct: the default bus is in-process; implement `publish`/`subscribe` over your pub/sub."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Turn on `sessionIdGenerator` so the balancer can route by `Mcp-Session-Id`",
+        "why": "The 2026-07-28 revision has no `Mcp-Session-Id`; sessions belong to the hand-wired 2025 transport."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Configure a shared `eventStore` so clients resume dropped streams with `Last-Event-ID`",
+        "why": "SSE resumability was removed in 2026-07-28; a client whose listen stream drops simply re-listens."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Register tools on one module-level `McpServer` returned by every factory call, so all nodes share it",
+        "why": "Module scope is per process, so nodes still share nothing; register inside the factory."
+      }
+    ],
+    "explanation": "Requests are stateless, so any node can serve any call. The one thing that crosses nodes is change delivery: listen streams are held by whichever node accepted them, and `handler.notify` publishes on the handler's `ServerEventBus`, which defaults to `InMemoryServerEventBus`. Pass the same pub/sub-backed bus to every node. Clients see `closed` resolve with `'remote'` when a stream drops and re-listen themselves.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/sessions-state-scaling",
+    "source": "interview:scaling",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-038",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A multi-step tool mints `requestState` with `createRequestStateCodec` (shared 32-byte key, verify hook installed). A security review flags this first round. What is the vulnerability?\n\n```ts\nconst state = ctx.mcpReq.requestState<{ step: string }>();\nif (state?.step !== 'confirmed') {\n  return inputRequired({\n    inputRequests: { confirm: inputRequired.elicit({ message: 'Really wipe the cache?', requestedSchema: confirmSchema }) },\n    requestState: await stateCodec.mint({ step: 'confirmed' })\n  });\n}\n// ...wipe the cache...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The codec encrypts the payload, so the server cannot read `step` on re-entry",
+        "why": "The codec signs but does not encrypt; the handler reads the decoded payload through `requestState()`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The HMAC is checked only after the handler runs, so tampered state executes once",
+        "why": "With the verify hook installed, tampered or expired state is rejected (`-32602`) before the handler runs."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It mints `confirmed` before the user confirms, so a client can skip the question",
+        "why": "Correct: the signed token is bearer proof of what it claims; mint only what earlier rounds proved."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`requestState` must be a JSON object, not a string returned by `mint`",
+        "why": "`requestState` is an opaque string that the client echoes back byte for byte."
+      }
+    ],
+    "explanation": "`requestState` round-trips through the client, so it is attacker-controlled input. The codec's HMAC stops forgery and expiry abuse, but it cannot stop you signing a false claim: a client that receives a token claiming confirmation can retry with it and never answer the question. Mint `{ step: 'confirmed' }` only after `acceptedContent` shows the confirmation, and keep secrets out of the payload because it is readable.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/servers/input-required",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TSS-039",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You run a sessionful 2025-era Streamable HTTP deployment (a `StreamableHTTPServerTransport` per session, with an event store) and want the same endpoint to start serving 2026-07-28 clients without breaking existing clients that use the standalone GET stream. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to `createMcpHandler(factory)` with its default `legacy: 'stateless'` posture",
+        "why": "Legacy GET and DELETE get `405` under that posture, so existing clients lose their notification stream."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pass your existing session router as `createMcpHandler(factory, { legacy: router })`",
+        "why": "The `legacy` option takes a posture string; it does not accept a handler."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep only the sessionful transport, since it negotiates 2026-07-28 for new clients",
+        "why": "The hand-wired 2025 transport serves the initialize era; 2026-07-28 uses the per-request entry."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Route by `isLegacyRequest()`: legacy to the old wiring, the rest to a strict handler",
+        "why": "Correct: the predicate is the entry's own classifier, so the two legs never disagree."
+      }
+    ],
+    "explanation": "Both serving entries answer 2025-era clients by default, but `createMcpHandler`'s answer is stateless: no sessions, so legacy GET (standalone SSE) and DELETE get `405`. To keep sessions, event store and existing clients, put `isLegacyRequest` in front of a strict modern handler and send every legacy request to the old wiring; the strict handler owns errors for malformed modern requests. Behind Express, build the `Request` with `toWebRequest(req, req.body)`.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/legacy-clients",
+    "source": "interview:versioning",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-040",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You expose an MCP endpoint from Node and must defend against DNS rebinding. Which statements about v2 are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`createMcpHandler` itself checks no `Host` header, no `Origin` header and no token",
+        "why": "Correct: the handler trusts its caller; guards go in front of it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`createMcpExpressApp()` with its default `127.0.0.1` bind answers non-localhost `Host` or `Origin` values with `403`",
+        "why": "Correct: it arms both checks by default on localhost binds."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Binding with `host: '0.0.0.0'` drops the default allowlist, so you should pass `allowedHosts`",
+        "why": "Correct: name the hostnames you serve when binding to all interfaces."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A request without an `Origin` header is rejected, so CLI clients must send one",
+        "why": "Requests without `Origin` always pass, so non-browser MCP clients are unaffected."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`allowedOrigins: ['https://*']` admits every HTTPS origin",
+        "why": "`http://*` and `https://*` are not honoured; list the origins you trust."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "On plain `node:http` the handler validates `Host` once you call `listen(3000, '127.0.0.1')`",
+        "why": "On plain `node:http` you compose `localhostHostValidation`/`localhostOriginValidation` yourself."
+      }
+    ],
+    "explanation": "A malicious page can rebind its own domain to `127.0.0.1` and reach a local server as if same-origin; the `Host` check stops it. The framework factories (`createMcpExpressApp`, `createMcpHonoApp`, `createMcpFastifyApp`) arm Host and Origin validation on localhost binds; bare handlers need `localhostHostValidation`/`localhostOriginValidation` (Node) or `hostHeaderValidationResponse`/`originValidationResponse` (fetch runtimes). Authentication is separate: verify tokens in front and pass `authInfo` through.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/http",
+    "source": "interview:transports",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-041",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "After upgrading to v2, a server type-checks, starts and connects, but the first `client.listTools()` returns an error pointing at `fromJsonSchema()`. The schemas are written with `import { z } from 'zod'`. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A Zod 3 range is still declared in `package.json`; v2 does not convert it",
+        "why": "Correct: a Zod 3 range typechecks under v2 and fails quietly at the first `tools/list`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`registerTool` must be called after `serveStdio`, or schemas are never compiled",
+        "why": "Registration order relative to serving does not affect schema conversion."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tools with optional fields need `fromJsonSchema()`, because Zod cannot express `required`",
+        "why": "Zod 4 expresses optional and required fields; the SDK converts them."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The client must call `listTools({ cursor: undefined })` to fetch schemas",
+        "why": "A bare `listTools()` aggregates every page; the cursor has nothing to do with conversion."
+      }
+    ],
+    "explanation": "v2 requires Zod 4 (or another Standard Schema). Check the declared range, not just what is installed: with a Zod 3 range, registration does not convert the schema and the first `tools/list` fails while the process keeps running. Zod 4.2+ converts itself through `~standard.jsonSchema`; 4.0 and 4.1 fall back to the bundled converter and drop `.describe()` text. Fix: `zod ^4.2.0`, or author raw JSON Schema with `fromJsonSchema()`.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/migration/upgrade-to-v2",
+    "source": "interview:ts-tool-schema",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-042",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A client created with `versionNegotiation: { mode: 'auto' }` connects over Streamable HTTP to a server that only implements the 2025-11-25 revision. Order what happens.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`client.getProtocolEra()` returns `legacy`, and `client.listen(...)` would reject locally",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The server's reply carries no 2026-07-28 evidence",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`connect()` falls back to the `initialize` handshake",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`connect()` sends a `server/discover` probe",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "D",
+      "B",
+      "C",
+      "A"
+    ],
+    "explanation": "`auto` probes first and connects on whichever era it finds, paying one extra round trip against an old server, with no error. A pin (`{ pin: '2026-07-28' }`) would reject instead with `ERA_NEGOTIATION_FAILED`. Auth statuses (401/403), 5xx and unusable 2xx replies are never treated as legacy evidence; they fail typed instead, so an outage is not misreported as an old server.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/protocol-versions",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TSS-043",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You maintain a CLI that spawns a stdio MCP server on every invocation and must stay fast against many third-party servers, some of them 2025-only. Which negotiation default is right?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Default to `mode: 'auto'` so every server gets the newest revision it supports",
+        "why": "On stdio the probe spawns an extra sibling process per connect and can stall on servers that ignore unknown pre-initialize requests."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Default to `{ pin: '2026-07-28' }` and print an upgrade hint when it fails",
+        "why": "A pin never falls back, so every 2025-only server becomes a hard failure."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Keep the default legacy mode and offer `auto` or a pin behind a flag",
+        "why": "Correct: this is the SDK's documented advice for spawn-per-invocation CLIs."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `supportedProtocolVersions: ['2026-07-28']` so the probe resolves faster",
+        "why": "A list with no pre-2026 entry removes the legacy fallback; 2025-only servers then fail to connect."
+      }
+    ],
+    "explanation": "On the SDK's `StdioClientTransport` the `server/discover` probe runs on a short-lived sibling process (some servers exit on any pre-initialize request), and a legacy server that silently ignores the probe stalls `connect()` for the full probe timeout before falling back. For a short-lived CLI that cost lands on every run, so the guidance is to keep the default and expose `auto` as an option.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/protocol-versions",
+    "source": "interview:versioning",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TSS-044",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A gateway caches each upstream server's era verdict and passes it as `connect(transport, { prior })` to skip the probe. Which cache policy does the SDK documentation call for?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Cache modern verdicts forever and never cache legacy ones, since legacy servers are rare",
+        "why": "Caching legacy verdicts is supported; the point is to bound how long you trust them."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Date legacy verdicts and expire them; a stale one succeeds silently after an upgrade",
+        "why": "Correct: a stale modern verdict fails loudly, a stale legacy one never does."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Let the SDK expire both verdict kinds automatically after the server's `ttlMs`",
+        "why": "Freshness of a `prior` verdict is the host's job, not the SDK's."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Re-probe only when a call fails with `-32022`, because legacy connections report upgrades that way",
+        "why": "A legacy connection to an upgraded server keeps working, so no error ever triggers the re-probe."
+      }
+    ],
+    "explanation": "`prior: { kind: 'modern', discover }` adopts a saved `DiscoverResult` with zero round trips; `{ kind: 'legacy' }` goes straight to `initialize`. If a modern verdict goes stale, the first request fails and you re-probe. A stale legacy verdict keeps succeeding on the old protocol after the server upgrades, so you would never move to 2026-07-28 unless you date and expire those entries yourself.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/protocol-versions",
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-TSS-045",
+    "domain": 3,
+    "skill": "typescript-sdk",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `createMcpHandler` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Its factory receives the request context: `era`, `authInfo` and the inbound `Request` as `requestInfo`",
+        "why": "Correct: verified; the factory can build an instance around one caller or era."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`authInfo` is pass-through: you verify the bearer token in front and call `handler.fetch(request, { authInfo })`",
+        "why": "Correct: tool handlers then read it as `ctx.http.authInfo`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It reads the `Authorization` header and verifies the token against your authorization server",
+        "why": "The handler never reads auth from headers and never verifies tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "With `responseMode: 'json'`, progress notifications are buffered and sent with the final result",
+        "why": "`'json'` never streams; the SDK drops mid-call notifications and sends only the result."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The factory runs once at startup, and its instance is reused for every request",
+        "why": "The factory runs once per HTTP request; nothing is kept between requests."
+      }
+    ],
+    "explanation": "`createMcpHandler(factory, options)` returns `{ fetch, close, notify, bus }`. Every request gets a fresh instance from the factory, which receives `era`, `authInfo` and `requestInfo`. Token verification happens in front (`requireBearerAuth` in the Express adapter, or your own verifier). The handler answers with one JSON body and upgrades to SSE only when a handler emits notifications first; `responseMode` pins either shape.",
+    "reference": "https://ts.sdk.modelcontextprotocol.io/v2/serving/http",
+    "roleLevel": 4
+  }
+]
