@@ -32,11 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ examId: s
   const title = `${skill.name}: ${ex.code} study notes`;
   const description = clip(note.summary);
   const path = `/exams/${ex.id}/study/${skill.id}`;
-  return {
-    title, description, alternates: { canonical: path }, openGraph: { title, description, url: path, type: 'article' },
-    // AI-written notes stay out of search until an admin has reviewed them.
-    ...(note.source === 'ai' ? { robots: { index: false } } : {}),
-  };
+  return { title, description, alternates: { canonical: path }, openGraph: { title, description, url: path, type: 'article' } };
 }
 
 export default async function StudyNotePage({ params }: { params: Promise<{ examId: string; skillId: string }> }) {
@@ -63,7 +59,6 @@ export default async function StudyNotePage({ params }: { params: Promise<{ exam
         <div className="flex items-center gap-2 text-sm font-medium text-primary"><BookOpen className="size-4" /> Study notes · {skill.weight}% of the exam</div>
         <h1 className="text-[2rem] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">{skill.name}</h1>
         <p className="text-lg text-muted-foreground">{note.summary}</p>
-        {note.source === 'ai' && <p className="text-xs text-muted-foreground">AI-generated notes, not yet reviewed by our editors. Check anything important against the official docs.</p>}
         <Suspense fallback={null}>
           <YourMastery examId={ex.id} skillId={skill.id} />
         </Suspense>

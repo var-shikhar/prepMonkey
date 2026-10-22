@@ -6,7 +6,6 @@ import {
   boolean, date, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import type { AskedInInterviews, ExamConfig, MatchPrompt, QuestionOption, RoleLevel } from '@/lib/engine/types';
-import type { Familiarity, GoalTaskKind } from '@/lib/goal-plan';
 
 const createdAt = () => timestamp({ withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp({ withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date());
@@ -172,8 +171,6 @@ export interface StudyNote {
   points: string[];
   traps?: string[];
   docs?: { title: string; url: string }[];
-  /** 'ai' when generated on demand for the goal planner and not yet reviewed */
-  source?: 'ai';
 }
 
 export const studyNote = pgTable('study_note', {
@@ -202,8 +199,6 @@ export interface AttemptSettings {
   askedOnly?: boolean;
   /** adaptive tests: running ability estimate and planned length */
   adaptive?: { theta: number; target: number };
-  /** started from a goal-planner task; finishing the attempt ticks it off */
-  planTaskId?: string;
 }
 
 export interface AttemptSummary {
@@ -328,55 +323,6 @@ export const studyPlan = pgTable('study_plan', {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [primaryKey({ columns: [t.userId, t.examId] })]);
-
-/** Goal planner (Pro): one plan spans several subjects and is laid out day by day in goal_task. */
-export interface GoalSubject { examId: string; familiarity: Familiarity; targetLevel: RoleLevel | null }
-export type GoalPlanStatus = 'active' | 'paused' | 'completed' | 'dropped';
-export interface GoalPlanNotice { kind: 'rebalanced' | 'resumed' | 'recovered'; day: string; message: string }
-
-export const goalPlan = pgTable('goal_plan', {
-  id: text().primaryKey().default(sql`gen_random_uuid()`),
-  userId: text().notNull().references(() => user.id, { onDelete: 'cascade' }),
-  name: text().notNull(),
-  subjects: jsonb().$type<GoalSubject[]>().notNull(),
-  /** study minutes per weekday, Sunday first */
-  availability: jsonb().$type<number[]>().notNull(),
-  startDate: date().notNull(),
-  targetDate: date().notNull(),
-  status: text().$type<GoalPlanStatus>().notNull().default('active'),
-  pausedAt: timestamp({ withTimezone: true }),
-  /** vacation: the plan resumes by itself on this day */
-  pausedUntil: date(),
-  /** paused by us after days without activity, not by the learner */
-  autoPaused: boolean().notNull().default(false),
-  /** the last change we made on the learner's behalf, shown once on the plan */
-  notice: jsonb().$type<GoalPlanNotice>(),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-}, (t) => [index().on(t.userId, t.status)]);
-
-export type GoalTaskStatus = 'pending' | 'done' | 'skipped';
-
-export const goalTask = pgTable('goal_task', {
-  id: text().primaryKey().default(sql`gen_random_uuid()`),
-  planId: text().notNull().references(() => goalPlan.id, { onDelete: 'cascade' }),
-  day: date().notNull(),
-  position: integer().notNull(),
-  kind: text().$type<GoalTaskKind>().notNull(),
-  examId: text().notNull(),
-  skillId: text(),
-  count: integer(),
-  role: integer(),
-  minutes: integer().notNull(),
-  label: text().notNull(),
-  detail: text().notNull(),
-  priority: real().notNull().default(0),
-  status: text().$type<GoalTaskStatus>().notNull().default('pending'),
-  doneAt: timestamp({ withTimezone: true }),
-  attemptId: text(),
-  /** carried over from a missed day by a recovery */
-  carried: boolean().notNull().default(false),
-}, (t) => [index().on(t.planId, t.day)]);
 
 // ---------------------------------------------------------------- quality
 
