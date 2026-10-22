@@ -1,0 +1,36 @@
+{
+  "headless-and-ci": {
+    "summary": "`claude -p` runs the full Claude Code agent loop without the terminal UI, which makes it the building block for scripts, CI jobs and other-language integrations. Know the three output formats, how sessions resume across runs, how permissions behave when nobody can answer a prompt, how to relay questions to a person, and how the GitHub and GitLab integrations authenticate and stay bounded.",
+    "points": [
+      "`claude -p \"prompt\"` (or `--print`) runs non-interactively, reads piped stdin (capped at 10 MB) and exits 0 on success or non-zero on failure. Flags such as `--output-format`, `--json-schema`, `--max-turns`, `--max-budget-usd` and `--no-session-persistence` work only with `-p`.",
+      "`--output-format text` is the default. `json` prints one object with `result`, `session_id`, usage and `total_cost_usd`. `stream-json` prints newline-delimited events, ending with a `result` line. For token deltas add `--verbose --include-partial-messages` and filter `stream_event` items whose `delta.type` is `text_delta`.",
+      "`--output-format json --json-schema '<schema>'` puts the validated object in `structured_output`. An invalid schema stops the run at startup, `format` is only an annotation, and the field is absent when the run ends without valid output.",
+      "`--continue` resumes the most recent conversation in the directory; `--resume <id>` resumes a specific one and also accepts the absolute path of a `.jsonl` transcript. Interactive `claude --continue` skips `-p` and SDK sessions, but `claude -p --continue` includes them. Sessions are local files, so a fresh CI runner cannot resume another runner's session by ID.",
+      "Since v2.1.302, a `-p` run with no permission mode set starts in Manual (`default`). Calls that need approval are denied unless an allow rule, hook, `canUseTool` callback or `--permission-prompt-tool` approves them. A `-p --resume` run also starts in that default mode rather than the mode the session used before.",
+      "`--permission-prompts none` (v2.1.259+) denies whatever nothing else resolves, tells Claude not to retry, removes `AskUserQuestion` and reports denials as `permission_denied` messages and in `permission_denials`. Without it, a run with a permission host waits for that host.",
+      "To relay questions and approvals to a person: an SDK app uses `canUseTool`, and `AskUserQuestion` answers go back as `updatedInput` holding `questions` plus `answers` (question text mapped to label). Plain `claude -p` uses an MCP tool named in `--permission-prompt-tool`. When answers can take longer than the process lives, a `PreToolUse` hook defers the call and the session resumes later. Stdin `stream-json` user messages (`{\"type\":\"user\",\"message\":{...}}`) steer the conversation; they do not answer a pending tool call.",
+      "`--bare` skips hooks, skills, plugins, MCP servers, auto memory and CLAUDE.md discovery, starts no background tasks and drops system reminders. Auth is only `ANTHROPIC_API_KEY` or an `apiKeyHelper` from `--settings`, never OAuth. Context goes in with `--append-system-prompt(-file)`, `--settings`, `--mcp-config`, `--agents` and `--plugin-dir`. It is recommended for scripts and planned as the future `-p` default.",
+      "`--dangerously-skip-permissions` equals `bypassPermissions`. Deny rules still block, it refuses root on Linux and macOS outside a recognized sandbox, and it offers no protection against prompt injection, so use it only in isolated containers without internet. For CI, prefer `--permission-mode dontAsk` with an exact `--allowedTools` list, or `auto`.",
+      "Caps: `--max-turns` (no default limit; exits with an error) and `--max-budget-usd` (client-side estimate that includes subagents; can overshoot by one response; stops background work when reached; restored totals from earlier runs do not count). A finished run can stay open while background commands, subagents or Monitor watches it started are still running.",
+      "GitHub Actions (`anthropics/claude-code-action@v1`): a `prompt` input means automation mode and no prompt means `@claude` interactive mode. CLI flags go in `claude_args`, auth in `anthropic_api_key` or `claude_code_oauth_token` (from `claude setup-token`), or OIDC federation with `id-token: write`. The action checks for write access and rejects bot actors unless they are listed in `allowed_bots`.",
+      "GitLab CI/CD is a beta integration maintained by GitLab: a `.gitlab-ci.yml` job installs the CLI on your runner and calls `claude -p` with `ANTHROPIC_API_KEY` as a masked variable, or uses OIDC for Bedrock and Agent Platform. From a language without an SDK, such as Go or Java, run the CLI as a subprocess with `-p --output-format json`."
+    ],
+    "traps": [
+      "Assuming `-p` auto-approves tools: it starts in Manual mode, and anything not pre-approved is denied rather than prompted.",
+      "Relying on project `.claude/settings.json` allow rules in CI: in a folder that was never trusted, `-p` does not use them, though it still runs the repository's hooks and `env` block. Pass `--allowedTools` explicitly.",
+      "Using `CLAUDE_CODE_OAUTH_TOKEN` with `--bare`: bare mode never reads OAuth credentials. Use an API key or `apiKeyHelper`.",
+      "Expecting an allow rule to let `AskUserQuestion` through in `dontAsk` mode: it is always denied there, and `--permission-prompts none` removes it entirely.",
+      "Writing a person's answer to stdin as a chat message and expecting it to answer a pending `AskUserQuestion` call: answers travel through the permission host.",
+      "Treating SIGTERM as a clean stop: it exits 143 with the turn unfinished. Send SIGINT or call `interrupt()` first.",
+      "Passing `github_token: ${{ secrets.GITHUB_TOKEN }}` to the action: commits made with that token do not trigger CI workflows.",
+      "Removing `--allowedTools` from `claude_args` in the review workflow because the skill's frontmatter names the tool: the action starts the inline-comment MCP server only when `claude_args` names it."
+    ],
+    "docs": [
+      { "title": "Run Claude Code programmatically", "url": "https://code.claude.com/docs/en/headless" },
+      { "title": "CLI reference", "url": "https://code.claude.com/docs/en/cli-reference" },
+      { "title": "Choose a permission mode", "url": "https://code.claude.com/docs/en/permission-modes" },
+      { "title": "Claude Code GitHub Actions", "url": "https://code.claude.com/docs/en/github-actions" },
+      { "title": "Handle approvals and user input (Agent SDK)", "url": "https://code.claude.com/docs/en/agent-sdk/user-input" }
+    ]
+  }
+}
