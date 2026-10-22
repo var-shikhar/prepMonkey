@@ -1,0 +1,2064 @@
+[
+  {
+    "id": "MCP-PYS-001",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You are asked to write the smallest possible MCP server in Python SDK 2.x that exposes one tool. Which file is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "```python\nfrom mcp.server import MCPServer\n\nmcp = MCPServer(\"Weather\")\n\n@mcp.tool()\ndef get_temp(city: str) -> str:\n    \"\"\"Current temperature for a city.\"\"\"\n    return f\"{city}: 17C\"\n\nif __name__ == \"__main__\":\n    mcp.run()\n```",
+        "why": "Correct: `MCPServer` lives in `mcp.server`, `@mcp.tool()` registers the function, and `run()` with no argument serves over stdio."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "```python\nfrom mcp import MCPServer\n\nmcp = MCPServer(\"Weather\")\n\n@mcp.tool()\ndef get_temp(city: str) -> str:\n    return f\"{city}: 17C\"\n\nmcp.run()\n```",
+        "why": "There is no `from mcp import MCPServer`: the top-level `mcp` package exports the client side (`Client`), and the server class is imported from `mcp.server`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "```python\nfrom mcp.server.fastmcp import FastMCP\n\nmcp = FastMCP(\"Weather\")\n\n@mcp.tool()\ndef get_temp(city: str) -> str:\n    return f\"{city}: 17C\"\n\nmcp.run()\n```",
+        "why": "That is the v1 spelling. In SDK 2.x, importing `mcp.server.fastmcp` raises `ModuleNotFoundError` with a pointer to the migration guide."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```python\nfrom mcp.server import MCPServer\n\nmcp = MCPServer(\"Weather\")\n\n@mcp.tool\ndef get_temp(city: str) -> str:\n    return f\"{city}: 17C\"\n\nmcp.run(port=8000)\n```",
+        "why": "`@mcp.tool` without parentheses raises `TypeError` at import, and `port=` only means something with `transport=\"streamable-http\"`; a stdio `run()` ignores it."
+      }
+    ],
+    "explanation": "In SDK 2.x the server class is `MCPServer` (formerly `FastMCP`), imported with `from mcp.server import MCPServer`. A decorator per primitive registers the function, and `mcp.run()` defaults to stdio. Interviewers asking you to \"build a minimal MCP server\" want to see exactly this shape, plus the `if __name__ == \"__main__\":` guard, because `mcp dev`, `mcp run` and tests import the file.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/get-started/first-steps/",
+    "source": "interview:python-server-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-002",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A colleague runs `python server.py` on a file that ends with `mcp.run()`. The terminal prints nothing and the command never returns. What is happening?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The server crashed silently because no port was given",
+        "why": "No port is needed: the default transport is stdio, which never opens a port."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is serving over Streamable HTTP on `127.0.0.1:8000` and waiting for clients",
+        "why": "Streamable HTTP only runs when you pass `transport=\"streamable-http\"`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It is serving over stdio, waiting for a host to write to its stdin",
+        "why": "Correct: `run()` with no argument is stdio, and it blocks for the life of the server."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is waiting for the MCP Inspector to be installed with `npx`",
+        "why": "Only `mcp dev` launches the Inspector; `python server.py` just runs the server."
+      }
+    ],
+    "explanation": "`MCPServer.run()` is synchronous and blocks. With no argument it uses the stdio transport: a host launches the file as a subprocess, writes JSON-RPC to stdin and reads it from stdout. Run by hand, it simply waits for input. Use `mcp.run(transport=\"streamable-http\", port=...)` to listen on a port instead.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/run/",
+    "source": "interview:python-server-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-003",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In this tool, the model sees two arguments in the input schema, `query` and `ctx`.\n\n```python\n@mcp.tool()\ndef search_books(query: str, ctx: Context) -> str:\n    \"\"\"Search the catalog.\"\"\"\n    return f\"[{ctx.request_id}] results for {query}\"\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The SDK finds the `Context` parameter by its annotation and removes it from the schema; it is never a model argument."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the schema has one property, `query`. The SDK injects `ctx` itself on every request."
+      }
+    ],
+    "explanation": "A parameter annotated with `Context` (any name) is injected by the SDK and is invisible on the wire: the generated input schema lists only the real arguments, so no client can fill it in. The same applies to resources and prompts that declare a `Context` parameter.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/context/",
+    "source": "interview:python-tool-schema",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://pypi.org/project/mcp/1.29.1/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-004",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "With `@mcp.tool()` and no arguments to the decorator, where does the tool **description** that the model reads come from?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The function name, converted to sentence case",
+        "why": "The function name becomes the tool `name`, not its description."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The function's docstring",
+        "why": "Correct: the docstring becomes the description, so vague docstrings make the model pick tools badly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `description` key in the return type annotation",
+        "why": "Return annotations drive the output schema, not the description."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing: a description must always be passed to the decorator",
+        "why": "`description=` is optional and only overrides the docstring."
+      }
+    ],
+    "explanation": "The SDK reads three things from the function: the name becomes the tool name, the docstring becomes the description, and the type hints become the input schema. A docstring is the model's main clue for when to call the tool, so it should say what the tool does and when to use it. `name=`, `title=` and `description=` on the decorator override the derived values.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/tools/",
+    "source": "interview:python-tool-schema",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://pypi.org/project/mcp/1.29.1/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-005",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each need on a Python `MCPServer` with the decorator that implements it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`@mcp.tool()`",
+        "why": "Registers a function the model can call."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`@mcp.resource(\"greeting://{name}\")`",
+        "why": "Registers a resource template addressed by URI."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`@mcp.prompt()`",
+        "why": "Registers a reusable message template."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`@mcp.completion()`",
+        "why": "Registers an argument autocomplete handler."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A function the model decides to call to take an action, such as creating a ticket",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Data the application loads by URI, with a placeholder filled in at read time",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A message template the user picks by name, like a slash command",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Suggestions for a prompt or template argument while the user types",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Tools are model-controlled, resources application-controlled and prompts user-controlled. A URI containing `{param}` makes `@mcp.resource` register a template, listed under resource templates rather than concrete resources. Completions are optional: registering a `@mcp.completion()` handler is what makes the server declare the `completions` capability.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/get-started/first-steps/",
+    "source": "interview:python-server-basics",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-006",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A stdio server built with `MCPServer` misbehaves only under a desktop host. The tool contains `print(\"got here\")` for debugging. What should you use instead?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`sys.stdout.write(\"got here\")`, which bypasses `print` buffering",
+        "why": "That still writes to stdout, which is the protocol channel on stdio."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`await ctx.info(\"got here\")`, which is the recommended logging API in 2026-07-28",
+        "why": "`ctx.info` uses the protocol logging capability, which 2026-07-28 deprecates; the SDK docs say not to build on it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`logger.debug(\"got here\")` via the `logging` module, which writes to stderr",
+        "why": "Correct: stderr is yours on stdio, and `MCPServer` already configures logging to stderr."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return the debug text from the tool so the host shows it",
+        "why": "That changes the tool's answer to the model; debugging output belongs in logs."
+      }
+    ],
+    "explanation": "On stdio, stdout is the wire. The SDK diverts flushed stray stdout to stderr while serving, but buffered `print` output can still drain onto the protocol stream at exit, and diverted lines have no level or logger name. Log with `logging.getLogger(__name__)`; `MCPServer(..., log_level=\"DEBUG\")` sets the level.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/logging/",
+    "source": "interview:transports",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-007",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this module is imported?\n\n```python\nfrom mcp.server import MCPServer\n\nmcp = MCPServer(\"Demo\")\n\n@mcp.tool\ndef add(a: int, b: int) -> int:\n    return a + b\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`add` is registered as a tool named `add`",
+        "why": "The decorator must be called; passing the function to it directly is detected and rejected."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`add` is registered, but with an empty input schema",
+        "why": "Nothing is registered at all; the decorator raises first."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `TypeError` telling you to use `@tool()` instead of `@tool`",
+        "why": "Correct: the SDK checks for a callable passed as the name and raises with that hint."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing at import; the first `tools/list` request then fails with an error",
+        "why": "The check runs at decoration time, at import, not on the first request."
+      }
+    ],
+    "explanation": "`@mcp.tool()`, `@mcp.prompt()` and `@mcp.resource(uri)` are decorator factories. Writing `@mcp.tool` passes the function as the `name` argument, which the SDK detects and turns into `TypeError: The @tool decorator was used incorrectly. Did you forget to call it?`. Failing at import is deliberate: the mistake never reaches a running server.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/tools/",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-PYS-008",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "A tool is declared `def get_temperature(city: str) -> int:` and returns `17`. Its `structured_content` is a JSON object with one key. Type that key.",
+    "options": [],
+    "accepted": [
+      "result",
+      "\"result\"",
+      "'result'"
+    ],
+    "explanation": "A bare `int` is not a JSON object, so the SDK wraps scalars (and lists, tuples, unions) as `{\"result\": ...}`; here `{\"result\": 17}`, with `content` holding the text `17`. Models, `TypedDict`s, dataclasses and `dict[str, ...]` are already objects and are not wrapped.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/structured-output/",
+    "source": "interview:structured-output",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-009",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the `required` list in the input schema that `tools/list` reports for this tool?\n\n```python\n@mcp.tool()\ndef search_books(query: str, limit: int = 10, genre: str | None = None) -> str:\n    \"\"\"Search the catalog.\"\"\"\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[\"query\", \"limit\", \"genre\"]`",
+        "why": "Parameters with defaults are optional; only parameters without one are required."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[\"query\", \"genre\"]`",
+        "why": "`genre` has a default of `None`, so it is optional even though its type allows `None`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[]`, because type hints never mark anything required",
+        "why": "Parameters without a default are required, exactly as in Python."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`[\"query\"]`",
+        "why": "Correct: only `query` lacks a default; `limit` gets `\"default\": 10` in its property."
+      }
+    ],
+    "explanation": "The input schema is a Pydantic model generated from the signature. A parameter without a default is required; a default makes it optional and appears as `\"default\"` in the property. `str | None = None` renders as an `anyOf` with a `null` branch and `\"default\": null`. The `title` keys in the schema are Pydantic artifacts.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/tools/",
+    "source": "interview:python-tool-schema",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://pypi.org/project/mcp/1.29.1/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-010",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the client see for this call?\n\n```python\n@mcp.tool()\ndef get_temperature(city: str) -> int:\n    return 17\n\n# client\nr = await client.call_tool(\"get_temperature\", {\"city\": \"London\"})\nprint(r.content[0].text, r.structured_content)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`17 {'result': 17}`",
+        "why": "Correct: the text block carries `17` and the scalar is wrapped under `result` in the structured channel."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`17 None`",
+        "why": "The `-> int` annotation produces an output schema, so structured content is filled in."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`17 17`",
+        "why": "Structured content must be a JSON object here, so the int is wrapped, not sent bare."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{\"result\": 17} {'result': 17}`",
+        "why": "The text block holds the plain value; the wrapper appears only in `structured_content`."
+      }
+    ],
+    "explanation": "The return annotation is the output schema. For scalars the SDK publishes `{\"properties\": {\"result\": ...}, \"required\": [\"result\"]}` and fills both channels: `content` is for the model (text `17`) and `structured_content` is for the application (`{\"result\": 17}`). Pass `structured_output=False` for a text-only tool.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/structured-output/",
+    "source": "interview:structured-output",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-011",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the client receive when the model calls this tool with `title=\"Nothing\"`?\n\n```python\nfrom mcp.server.mcpserver.exceptions import ToolError\n\n@mcp.tool()\ndef get_author(title: str) -> str:\n    \"\"\"Look up a book's author.\"\"\"\n    if title not in CATALOG:\n        raise ToolError(f\"No book titled {title!r}.\")\n    return CATALOG[title]\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A JSON-RPC error with code `-32603` and message `No book titled 'Nothing'.`, raised on the client by `call_tool`",
+        "why": "`ToolError` is caught by the tool wrapper and becomes a result, not a protocol error."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A result with `is_error=True` and content `Error executing tool get_author: No book titled 'Nothing'.`",
+        "why": "Correct: the request succeeds, the error flag is set, and the message (prefixed with the tool name) is where the model reads."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A result with `is_error=False` and the message as normal content",
+        "why": "Raising sets `is_error`; only returning a string would leave it false."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A result with `is_error=True` and only `Error executing tool get_author`",
+        "why": "That generic text is what an unexpected exception produces; `ToolError` keeps your message."
+      }
+    ],
+    "explanation": "`ToolError` signals a tool execution failure the model can act on: the call returns `is_error=True` with your message in `content` and `structured_content=None`, and the server logs one INFO line. The model reads it and can retry with a better title. Never `return` an error string: that leaves `is_error=False`, so it looks like a successful answer.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/handling-errors/",
+    "source": "interview:error-handling",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-012",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `Context` injection in `MCPServer` are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The parameter can have any name, such as `ctx` or `c`; the SDK finds it by its `Context` annotation",
+        "why": "Correct: the annotation is the whole mechanism."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A fresh `Context` is built for every request, so `ctx.request_id` differs between calls",
+        "why": "Correct: each request gets its own context object."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A helper function called from the tool can fetch the current context with `mcp.get_context()`",
+        "why": "`get_context()` was removed in 2.x; pass `ctx` down to helpers as an ordinary argument."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The parameter must be named `ctx` and be the last parameter",
+        "why": "Neither the name nor the position matters."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A static resource such as `@mcp.resource(\"cfg://app\")` can declare a `Context` parameter too",
+        "why": "Static resources reject a `Context` parameter with a `ValueError`; only template resources, tools and prompts get one."
+      }
+    ],
+    "explanation": "Context injection is by annotation, per request, and only into the function you registered; there is no ambient context to look up. It gives you `request_id`, `read_resource`, `report_progress`, `session`, `headers` and `request_context.lifespan_context`. A static resource has no per-request inputs, so the decorator refuses a `Context` parameter on it.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/context/",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-PYS-013",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool opens a new database connection on every call and the server is slow. Which change shares one pool for the life of the server?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "```python\npool = None\n\n@mcp.tool()\nasync def count(genre: str) -> int:\n    global pool\n    pool = pool or await Pool.connect()\n    return await pool.count(genre)\n```",
+        "why": "A lazily created global is never closed on shutdown and races when two first calls arrive together."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "```python\n@asynccontextmanager\nasync def lifespan(server: MCPServer) -> AsyncIterator[AppCtx]:\n    pool = await Pool.connect()\n    try:\n        yield AppCtx(pool=pool)\n    finally:\n        await pool.close()\n\nmcp = MCPServer(\"Books\", lifespan=lifespan)\n\n@mcp.tool()\nasync def count(genre: str, ctx: Context[AppCtx]) -> int:\n    return await ctx.request_context.lifespan_context.pool.count(genre)\n```",
+        "why": "Correct: the lifespan runs once around the server's life and its yielded object is available on every request."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "```python\n@mcp.tool()\nasync def count(genre: str) -> int:\n    async with Pool.connect() as pool:\n        return await pool.count(genre)\n```",
+        "why": "This is the original problem: a new connection per call."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```python\nmcp = MCPServer(\"Books\", pool=Pool.connect())\n\n@mcp.tool()\nasync def count(genre: str, ctx: Context) -> int:\n    return await ctx.pool.count(genre)\n```",
+        "why": "`MCPServer` has no `pool=` parameter and `Context` has no `pool` attribute; this raises `TypeError` at construction."
+      }
+    ],
+    "explanation": "A lifespan is an `@asynccontextmanager` passed as `MCPServer(..., lifespan=...)`. Code before `yield` is startup, the `finally` is shutdown, and the yielded object is `ctx.request_context.lifespan_context` in every handler. Annotating `Context[AppCtx]` types it for the checker; with no lifespan the default yields `{}`.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/lifespan/",
+    "source": "interview:server-state",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-014",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A client wants progress updates from one slow tool call. Complete the call with the keyword argument name:\n\n```python\nresult = await client.call_tool(\"import_catalog\", args, ________=show)\n```",
+    "options": [],
+    "accepted": [
+      "progress_callback"
+    ],
+    "explanation": "Progress is opted into per call with `progress_callback=`, an `async (progress, total, message)` function. There is no constructor argument for it on `Client`, because different calls want different handlers. On the server, `await ctx.report_progress(done, total=n, message=...)` drives it, and the spec requires `progress` to increase with every report.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/progress/",
+    "source": "interview:long-running-tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-015",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If the client did not pass a progress callback for a call, `await ctx.report_progress(1, total=10)` inside the tool raises an error, so tools should check first whether anyone is listening.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "There is no check to make: the SDK turns the call into a no-op when the caller did not ask for progress."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `report_progress` does nothing when no progress was requested, so tools report unconditionally."
+      }
+    ],
+    "explanation": "Progress is a per-request opt-in by the caller (a progress token in the request). When there is no token, `report_progress` is silently a no-op, so a tool can always report without branching. The result is the same with or without a listener.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/progress/",
+    "source": "interview:long-running-tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-016",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You want a pytest suite for your `MCPServer` that exercises real `tools/list` and `tools/call` handling without a subprocess or a port. What does the SDK recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Start the server with `mcp.run(transport=\"streamable-http\")` in a thread and call it with `httpx`",
+        "why": "That works but adds a port and threads; the SDK has an in-process path made for tests."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call the decorated functions directly, since `@mcp.tool()` returns the original function",
+        "why": "That skips schema validation, result conversion and error mapping, which is what you want to test."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Pass the server object to the client: `async with Client(mcp, raise_exceptions=True) as c:`",
+        "why": "Correct: the in-memory connection goes through the real protocol layer, and the flag surfaces real errors in tests."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `create_connected_server_and_client_session(mcp)` from the testing utilities",
+        "why": "That v1 helper was removed in 2.x; `Client(mcp)` replaces it."
+      }
+    ],
+    "explanation": "`Client` resolves its argument by type, and a server object connects in memory, like FastAPI's `TestClient`. Tools are still listed, validated and invoked as over HTTP. `raise_exceptions=True` only matters for failures outside a tool body (which are otherwise sanitised to `Internal server error`); a raising tool still returns an `is_error=True` result, so assert on the result.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/get-started/testing/",
+    "source": "interview:testing",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-017",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "A stdio `MCPServer` has a lifespan that opens a database. Put these events in the order they happen during one run of the server.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `finally` block after `yield` closes the database",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The first `tools/call` uses `ctx.request_context.lifespan_context`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The module is imported and `@mcp.tool()` registers the functions",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lifespan code before `yield` connects the database",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "D",
+      "B",
+      "A"
+    ],
+    "explanation": "Importing the module only registers tools; it connects nothing. The lifespan is entered once when the server starts, before the first request, and every request shares the yielded object. When the server stops, the code after `yield` (ideally in a `finally`) runs. It is not per request.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/lifespan/",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-PYS-018",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Given the resource below, how does a client get the profile for user 42?\n\n```python\n@mcp.resource(\"users://{user_id}/profile\")\ndef profile(user_id: str) -> str:\n    return load_profile(user_id)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It finds `users://42/profile` in `list_resources()` and reads it",
+        "why": "A URI with a placeholder is a template; it appears in `list_resource_templates()`, not the concrete list."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It calls `read_resource(\"users://42/profile\")`; the SDK matches the template and calls `profile(\"42\")`",
+        "why": "Correct: reads use a concrete URI, and the extracted value is passed to the matching parameter."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It calls `call_tool(\"profile\", {\"user_id\": \"42\"})`",
+        "why": "Resources are not tools; they are read with `resources/read`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It calls `read_resource(\"users://{user_id}/profile\", user_id=\"42\")` and the SDK substitutes the value",
+        "why": "`read_resource` takes one concrete URI; the client fills in the template itself."
+      }
+    ],
+    "explanation": "A `{param}` in the URI makes the decorator register a resource template, and the URI variables must match the function's parameters exactly (otherwise `ValueError` at import). Clients discover it via `resources/templates/list` and read a filled-in URI. Values arrive as strings but are converted if you annotate another type, such as `user_id: int`.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/resources/",
+    "source": "interview:python-resources",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://pypi.org/project/mcp/1.29.1/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-019",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The model calls this tool with `{\"query\": \"dune\", \"limit\": 999}`. What happens?\n\n```python\n@mcp.tool()\ndef search_books(\n    query: str,\n    limit: Annotated[int, Field(ge=1, le=50)] = 10,\n) -> str:\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The function runs with `limit=50`, because Pydantic clamps values to the bounds",
+        "why": "Pydantic validates; it does not clamp out-of-range numbers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The call fails with a JSON-RPC `-32602` error that the host handles",
+        "why": "Argument validation failures become tool results the model can read, not protocol errors."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The function runs with `limit=999`, because `Field` constraints only document the schema for the client and are not enforced",
+        "why": "The constraints are enforced before the function runs, not just published."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The function never runs; the result has `is_error=True` and says the input should be less than or equal to 50",
+        "why": "Correct: validation against the generated schema rejects the call, and the model can retry with a valid value."
+      }
+    ],
+    "explanation": "`Annotated[int, Field(ge=1, le=50)]` lands in the schema as `minimum`/`maximum` and is enforced by Pydantic before your code runs. The failure comes back as an `is_error=True` tool result whose text includes the validation message, so the model can self-correct. Don't re-validate what your type hints already guarantee.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/tools/",
+    "source": "interview:input-validation",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-020",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This tool raises an unplanned `KeyError` for an unknown title. What do the model and the operator each see?\n\n```python\n@mcp.tool()\ndef get_author(title: str) -> str:\n    return CATALOG[title]\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The model sees `KeyError: 'Solaris'` in an `is_error=True` result; nothing is logged",
+        "why": "The exception text is deliberately kept off the wire, and the crash is logged."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The client gets a JSON-RPC `-32603 Internal server error` instead of a result, and the server logs the full traceback at ERROR level",
+        "why": "On `@mcp.tool()` an unexpected exception still becomes an `is_error=True` result, not a protocol error."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The model sees only `Error executing tool get_author` in an `is_error=True` result; the server logs the traceback at ERROR",
+        "why": "Correct: the message is generic so internals don't leak, and the full traceback goes to your log."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The model sees `Unknown tool: get_author`, because the tool failed to load",
+        "why": "The tool exists and ran; that text is for a name the server does not have."
+      }
+    ],
+    "explanation": "The SDK treats any exception other than `ToolError` and `MCPError` as a crash: the result is `is_error=True` with just `Error executing tool <name>`, because an exception message may describe server internals. The traceback is logged as `Tool 'get_author' raised an unexpected exception`. If the model should be able to recover, check the condition and raise `ToolError` with an actionable message.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/handling-errors/",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-021",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool raises `MCPError(code=INVALID_PARAMS, message=\"bad title\")`. What does `await client.call_tool(...)` do on the calling side in SDK 2.x?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Returns a result with `is_error=True` and `bad title` in `content`",
+        "why": "That was v1 behaviour; in 2.x the tool wrapper lets `MCPError` propagate."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Returns a result with `is_error=False` and empty `content`",
+        "why": "There is no result at all; the request fails."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Raises `MCPError` with `code == -32602` and `message == \"bad title\"`",
+        "why": "Correct: `MCPError` surfaces as a JSON-RPC error with code, message and data intact, and the client raises it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raises `MCPError` with `code == -32603` and the sanitised message `Internal server error`",
+        "why": "The SDK forwards a raised `MCPError` verbatim; it only sanitises unexpected exceptions."
+      }
+    ],
+    "explanation": "In 2.x `MCPError` is the protocol-error path: the whole `tools/call` fails with a JSON-RPC error and the model reads nothing. Use it when no smarter model could have avoided the failure (missing client capability, server not ready). For failures the model can fix, raise `ToolError`. The rule of thumb from the SDK docs: could a smarter model have avoided this? Yes means `ToolError`.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/handling-errors/",
+    "source": "interview:error-handling",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-022",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This app starts and `/mcp` routes, but the first MCP request fails with `RuntimeError: Task group is not initialized. Make sure to use run().` What is the fix?\n\n```python\nmcp = MCPServer(\"Notes\")\n\napp = Starlette(routes=[\n    Mount(\"/\", app=mcp.streamable_http_app()),\n])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pass `stateless_http=True` to `streamable_http_app()` so no task group is needed",
+        "why": "The session manager still has to be started; the flag changes legacy session handling, not its lifecycle."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Add a lifespan to the outer `Starlette` that enters `mcp.session_manager.run()`",
+        "why": "Correct: a mounted sub-app's lifespan never runs, so the host app must start the session manager."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Call `mcp.run(transport=\"streamable-http\")` before building the Starlette app",
+        "why": "`run()` blocks and starts its own uvicorn server; it does not prepare a mounted app."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Move `Mount(\"/\", ...)` after the other routes so Starlette initialises it last",
+        "why": "Route order affects matching, not lifespan; mounted apps' lifespans are ignored either way."
+      }
+    ],
+    "explanation": "`streamable_http_app()` wires `session_manager.run()` into the lifespan of the Starlette app it returns, but Starlette never runs a mounted sub-application's lifespan. The top-level app must do it: `@asynccontextmanager async def lifespan(app): async with mcp.session_manager.run(): yield`. With several servers, enter each manager with an `AsyncExitStack`.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/run/asgi/",
+    "source": "interview:python-http-serving",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-023",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You deploy `app = mcp.streamable_http_app()` behind `https://mcp.example.com`. Every request, even a plain `curl`, gets `421 Misdirected Request`. What fixes it properly?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pass `host=\"mcp.example.com\"` to `streamable_http_app()` so that this hostname is added to the Host header allowlist",
+        "why": "A non-localhost `host=` does not allowlist it; it only stops the protection from arming, leaving every Host accepted."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run uvicorn with `--proxy-headers` so the Host header is rewritten",
+        "why": "Proxy headers fix scheme detection for redirects; they do not change the Host allowlist."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Pass `transport_security=TransportSecuritySettings(allowed_hosts=[...])` listing your real hostname",
+        "why": "Correct: the default DNS-rebinding protection only allows localhost Hosts until you allowlist your real hostname."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `json_response=True` so responses are plain JSON instead of SSE",
+        "why": "The 421 is returned before any MCP handling, regardless of response format."
+      }
+    ],
+    "explanation": "With no `transport_security=`, the app arms DNS-rebinding protection for localhost only, so a request whose `Host` is your real domain is refused with 421 (and a bad `Origin` with 403) before MCP code runs. List both the bare host and `host:*`. Behind a proxy that already controls `Host`, `enable_dns_rebinding_protection=False` is the honest alternative.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/run/deploy/",
+    "source": "interview:python-http-serving",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-024",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `MCPServer` structured output are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A tool annotated `-> dict[str, float]` publishes an object schema and is not wrapped in `{\"result\": ...}`",
+        "why": "Correct: `dict` with `str` keys is already a JSON object."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A tool annotated `-> list[Book]` returning two books puts two text blocks in `content`",
+        "why": "Correct: lists are flattened for the model, one block per item, while `structured_content` is `{\"result\": [...]}`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A tool annotated `-> dict[int, float]` is rejected at import because JSON keys must be strings",
+        "why": "It is accepted; it just falls back to the `{\"result\": ...}` wrapper."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`structured_output=False` keeps the output schema but skips validation",
+        "why": "Opting out removes the output schema, wrapping and validation; `structured_content` is `None`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Returning a plain `dict` from a tool annotated `-> Book` always fails, because the Python type differs",
+        "why": "Validation is on the value: a dict with the right fields passes."
+      }
+    ],
+    "explanation": "Scalars, lists, tuples and unions are wrapped as `{\"result\": ...}`; models, `TypedDict`s, dataclasses, annotated classes and `dict[str, ...]` are not. `dict[int, ...]` cannot be a JSON object, so it is wrapped. Whatever you return is validated against the published schema, and a mismatch becomes a tool error.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/structured-output/",
+    "source": "interview:structured-output",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-025",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the client get from this tool?\n\n```python\nclass Station:\n    def __init__(self, name: str, online: bool):\n        self.name = name\n        self.online = online\n\n@mcp.tool()\ndef get_station(name: str) -> Station:\n    return Station(name, True)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`structured_content == {'name': ..., 'online': True}`, built from the `__init__` parameters",
+        "why": "The SDK reads class-body annotations, not `__init__` parameters, and finds none."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An import-time error saying `Station` is not serializable",
+        "why": "That error only appears if you pass `structured_output=True`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`is_error=True`, because the return value fails output validation",
+        "why": "There is no output schema to validate against, so nothing fails."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "No output schema, `structured_content` is `None`, and the text is the object's `repr`",
+        "why": "Correct: without class annotations the SDK silently falls back to an unstructured tool."
+      }
+    ],
+    "explanation": "Auto-detection builds a schema from class annotations. A class that only assigns attributes in `__init__` has none, so the tool silently becomes text-only and the model reads `<server.Station object at 0x...>`. Declare the fields on the class body (or use a dataclass, `TypedDict` or `BaseModel`), or pass `structured_output=True` to turn this into an import-time error.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/structured-output/",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-PYS-026",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An upstream API stopped sending `humidity`. What happens when the model calls this tool?\n\n```python\nclass WeatherData(BaseModel):\n    temperature: float\n    humidity: float\n\n@mcp.tool()\ndef get_weather(city: str) -> WeatherData:\n    return json.loads(fetch(city))  # {\"temperature\": 16.2}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It succeeds with `structured_content == {'temperature': 16.2}`",
+        "why": "The return value is validated against the output schema, and a required field is missing."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It succeeds with `humidity` set to `None` in `structured_content`",
+        "why": "Pydantic does not invent values for required fields."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It returns `is_error=True` with `Error executing tool get_weather`, and the missing field is in the server log",
+        "why": "Correct: the validation failure is treated as an unexpected error, so the model only learns the call failed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises a JSON-RPC `-32602` invalid-params error, because the returned value does not match the published output schema",
+        "why": "Output conversion failures are tool errors, not protocol errors."
+      }
+    ],
+    "explanation": "The output schema is enforced: whatever the function returns is validated before it leaves the server. A plain dict is fine if it has the right fields; one missing `humidity` fails, and the client gets `is_error=True` instead of confidently wrong weather. The Pydantic `ValidationError` naming the field is logged at ERROR for you.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/structured-output/",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-PYS-027",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This tool ran fine in v1. After upgrading to SDK 2.x, what does it return?\n\n```python\n@mcp.tool()\ndef where_am_i() -> str:\n    try:\n        asyncio.get_running_loop()\n        return \"event loop\"\n    except RuntimeError:\n        return \"no loop\"\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`event loop`, because tools always run on the server's event loop",
+        "why": "That was v1 behaviour for `def` tools."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`no loop`, because 2.x runs synchronous handlers in a worker thread",
+        "why": "Correct: `def` tools, resources, prompts and resolvers now run via `anyio.to_thread.run_sync()`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It fails at registration because `def` tools are no longer allowed",
+        "why": "Plain `def` tools are fully supported."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`event loop` on stdio, but `no loop` on Streamable HTTP, where requests run in threads",
+        "why": "The threading rule is the same on every transport."
+      }
+    ],
+    "explanation": "v1 called synchronous handlers inline, so a blocking body stalled every other request. v2 runs them on a worker thread, which adds concurrency but breaks code that needs the loop thread: `asyncio.get_running_loop()` raises, thread-affine state moves threads, and `def` handlers can run concurrently. Declare the handler `async def` to stay on the event loop.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/migration/",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-PYS-028",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A tool must confirm with the user before deleting a non-empty folder, and it must work for clients on both 2025-11-25 and 2026-07-28. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A parameter annotated `Annotated[ElicitationResult[Confirm], Resolve(confirm_delete)]`, whose resolver returns `Elicit(...)`, works on both eras",
+        "why": "Correct: the SDK pushes the question on legacy sessions and returns it as an `InputRequiredResult` on 2026-07-28."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`await ctx.elicit(\"Delete?\", Confirm)` works on both eras, because the SDK converts it automatically",
+        "why": "`ctx.elicit` is a server-to-client request; on 2026-07-28 there is no back-channel, so it fails."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The resolver can return `Confirm(ok=True)` for an empty folder, so no question is sent at all",
+        "why": "Correct: a resolver only elicits when it must; returning the value directly skips the round trip."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `confirm` parameter appears in the input schema so the model can pre-answer it",
+        "why": "Resolver-filled parameters are never in the input schema."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "An elicitation schema may contain nested models, as tool input schemas can",
+        "why": "Elicitation schemas are flat primitives only; a nested model raises before anything is sent."
+      }
+    ],
+    "explanation": "Resolvers are the era-neutral way to ask: on handshake-era sessions the SDK sends `elicitation/create` mid-call, and on 2026-07-28 it returns the question and resumes when the client retries with `input_responses`. `ctx.elicit()` and `ctx.elicit_url()` need a legacy back-channel. Annotating `ElicitationResult[T]` lets the tool branch on accept, decline and cancel.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/elicitation/",
+    "source": "interview:client-features",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-029",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "`Client` picks its transport from the type of its first argument. Match each argument with what happens.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Streamable HTTP",
+        "why": "Connects to the URL with the production HTTP transport."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A subprocess over stdin and stdout",
+        "why": "Launches the command and speaks stdio to it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An in-process connection",
+        "why": "Talks to the server object directly, with no port or process."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Entered directly as a transport",
+        "why": "Any async context manager yielding a (read, write) pair."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`Client(\"https://mcp.example.com/mcp\")`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`Client(StdioServerParameters(command=\"uv\", args=[\"run\", \"server.py\"]))`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`Client(mcp)`, where `mcp` is your `MCPServer`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`Client(stdio_client(params, errlog=log_file))`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "A string becomes `streamable_http_client(url)`, `StdioServerParameters` becomes `stdio_client(params)`, a server object connects in memory, and anything else is treated as a transport. Building `stdio_client` yourself is how you redirect the child's stderr. Note the stdio child does not inherit your environment: pass secrets with `env=`.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/client/transports/",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-PYS-030",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this client code print?\n\n```python\n@mcp.tool()\ndef double(n: int) -> int:\n    return n * 2\n\nfor args in ({\"n\": \"5\"}, {\"n\": 2.5}):\n    r = await client.call_tool(\"double\", args)\n    print(r.is_error, r.content[0].text[:30])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`True Error executing tool double` then `True Error executing tool double`",
+        "why": "The string \"5\" is accepted: Pydantic's lax mode parses numeric strings into ints."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`False 10` then `True Error executing tool double`",
+        "why": "Correct: \"5\" is coerced to 5, while 2.5 is rejected because it has a fractional part."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`False 55` then `False 5.0`",
+        "why": "Arguments are validated to `int` before the function runs, so no string repetition or float maths happens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`False 10` then `False 4`",
+        "why": "Pydantic accepts `2.0` as an int but rejects `2.5` rather than truncating it."
+      }
+    ],
+    "explanation": "Arguments are validated by a Pydantic model in lax mode: a numeric string such as \"5\" becomes `5`, and a float with no fractional part such as `2.0` is accepted, but `2.5` fails with `int_from_float`. Interviewers use this to check that you know validation happens, and how strict it is, before your code runs. Use `Field(strict=True)` when coercion is unwanted.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/tools/",
+    "source": "interview:input-validation",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-031",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A tool annotated `-> list[WeatherData]` (a Pydantic model) returns three items. How many blocks does `result.content` contain? Type a number.",
+    "options": [],
+    "accepted": [
+      "3",
+      "three"
+    ],
+    "explanation": "A list is flattened for the model: each item becomes its own `TextContent` block holding that item's JSON, so three items give three blocks. `structured_content` is `{\"result\": [ {...}, {...}, {...} ]}`, and the output schema wraps the item type as a `$defs` reference under `result`.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/structured-output/",
+    "source": "interview:structured-output",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-032",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each failure inside an `MCPServer` handler with what the client receives.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`is_error=True` with your message in `content`",
+        "why": "The model reads the message and can retry."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`is_error=True` with only `Error executing tool <name>`",
+        "why": "A generic failure; the traceback stays in the server log."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A JSON-RPC error raised by `call_tool` with your code and data",
+        "why": "No result; the host handles the error."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A JSON-RPC `-32602` error with the URI in `data`",
+        "why": "The spec's code for a missing resource."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A tool raises `ToolError(\"No such book\")`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A tool hits an unplanned `KeyError`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A tool raises `MCPError(code=..., message=..., data=...)`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A resource template raises `ResourceNotFoundError`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Tools have two channels: results with `is_error` for execution failures, and JSON-RPC errors for rejected requests. `ToolError` keeps your message, other exceptions are sanitised, and `MCPError` propagates verbatim. Resources have only the protocol path: `ResourceNotFoundError` maps to `-32602` with `{\"uri\": ...}`, `ResourceError` to `-32603` with your message.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/servers/handling-errors/",
+    "source": "interview:error-handling",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-033",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are porting this v1 server to SDK 2.x. Which two changes are required? (Choose two.)\n\n```python\nfrom mcp.server.fastmcp import FastMCP\n\nmcp = FastMCP(\"Demo\")\n\n@mcp.tool()\nasync def slow(x: int) -> str:\n    ctx = mcp.get_context()\n    await ctx.report_progress(1, 2)\n    return str(x)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Import `MCPServer` from `mcp.server` (or `mcp.server.mcpserver`) and construct `MCPServer(\"Demo\")`",
+        "why": "Correct: `FastMCP` was renamed and the old module now raises `ModuleNotFoundError`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Replace `mcp.get_context()` with a `ctx: Context` parameter on the tool",
+        "why": "Correct: `get_context()` was removed; context is injected by annotation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Rename `report_progress` to `send_progress_notification`",
+        "why": "`ctx.report_progress(progress, total, message)` is unchanged."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Change `async def` to `def`, because 2.x tools must be synchronous",
+        "why": "Both forms are supported; `async def` stays on the event loop."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Change `@mcp.tool()` to `@mcp.register_tool()`",
+        "why": "The decorators carry over unchanged."
+      }
+    ],
+    "explanation": "The rename is mechanical: `mcp.server.fastmcp.*` moved to `mcp.server.mcpserver.*`, and `ctx.fastmcp` is now `ctx.mcp_server`. `get_context()` is gone because there is no ambient ContextVar. Other common hits: snake_case fields (`is_error`, `input_schema`), `McpError` renamed to `MCPError`, and transport options moved from the constructor to `run()`. Pass everything after `name` by keyword: positional arguments shifted when `title` and `description` were added.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/migration/",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-PYS-034",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A refund tool asks for confirmation through a resolver. It works with one uvicorn worker, but with `--workers 4` some retries fail with `-32602 \"Invalid or expired requestState\"`. The server log says `unknown key`. What is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Enable sticky sessions on the load balancer, keyed on the `Mcp-Session-Id` response header, so retries return to one worker",
+        "why": "2026-07-28 requests carry no session ID; there is nothing to be sticky on."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pass `stateless_http=True` so every worker can serve any request",
+        "why": "That flag only affects legacy clients; modern requests are already sessionless."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Store `request_state` in Redis keyed by the JSON-RPC request id",
+        "why": "The retry is a new request with a new id, and the state already travels with the client."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Configure `RequestStateSecurity(keys=[shared_secret])` with the same secret and server name on every worker",
+        "why": "Correct: the default seal key is generated per process, so a sibling worker cannot unseal the token."
+      }
+    ],
+    "explanation": "`MCPServer` seals every outgoing `requestState` under a key from `os.urandom(32)` created at construction. Four workers mean four keys, so a retry that lands elsewhere is rejected with one frozen message. Share at least 32 bytes of secret via `RequestStateSecurity(keys=[...])`. Tools using `Resolve(...)` are on this path even if you never typed `InputRequiredResult`.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/run/deploy/",
+    "source": "interview:scaling",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-035",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "After sharing `RequestStateSecurity(keys=[KEY])` across pods, cross-pod retries still fail with `Invalid or expired requestState`. Each pod builds `MCPServer(f\"billing-{POD_NAME}\", request_state_security=...)`, and the log now says `audience`. What is wrong?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The key must first go through a rotation phase with `keys=[NEW, OLD]` on every pod before cross-pod verification starts working",
+        "why": "Rotation is for changing keys; a single shared key already verifies everywhere."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Each pod stamps its own name as the token's audience, so siblings reject it; use one name or set `audience=\"billing\"`",
+        "why": "Correct: the server name is the default audience claim, checked strictly on unseal."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The TTL is too short; raise `ttl` above 600 seconds",
+        "why": "An expired token is possible, but the log points to the audience check, not expiry."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pod names contain hyphens, which are invalid in an audience claim",
+        "why": "The value itself is fine; the problem is that it differs per pod."
+      }
+    ],
+    "explanation": "Sealed state carries the server name as an audience so that a different service sharing the secret cannot replay it. Instances of one service must therefore agree on that name, or set an explicit `RequestStateSecurity(keys=[...], audience=\"billing\")`. The client cannot tell `unknown key` from `audience`: the wire message is frozen and only the server log has the reason.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/run/deploy/",
+    "source": "interview:client-features",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-036",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You run `streamable_http_app()` behind a round-robin load balancer for a mix of 2026-07-28 and 2025-11-25 clients. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "2026-07-28 requests can reach any worker without sticky routing, whatever `stateless_http` is set to",
+        "why": "Correct: the modern path is sessionless by construction and returns before the flag is read."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "With the default `stateless_http=False`, 2025-11-25 clients need sticky routing, or follow-ups hit `404 Session not found`",
+        "why": "Correct: legacy sessions live in one worker's memory."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`stateless_http=True` is required for 2026-07-28 clients to scale horizontally",
+        "why": "It is a legacy-only knob; modern requests never reach that code."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A shared `EventStore` is needed so 2026-07-28 streams can resume on another worker",
+        "why": "2026-07-28 has no SSE resumability; a modern exchange is one POST and one response."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`stateless_http=True` keeps push elicitation working for legacy clients",
+        "why": "It removes the server-to-client back-channel (sampling, push elicitation, roots) for legacy clients."
+      }
+    ],
+    "explanation": "The transport routes on the `MCP-Protocol-Version` header: modern requests go to the modern handler, which keeps no session. For legacy clients the default keeps `Mcp-Session-Id` state in one process (sticky routing needed); `stateless_http=True` removes the session at the cost of the back-channel and resumability. Multi-round-trip `requestState` still needs shared keys either way.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/run/deploy/",
+    "source": "interview:python-http-serving",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-037",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate wants a tool that uses a `Resolve(...)` confirmation parameter and, in some branches, also returns its own `InputRequiredResult` to ask for a region. What happens?\n\n```python\n@mcp.tool()\nasync def deploy(\n    name: str,\n    ok: Annotated[Confirm, Resolve(confirm)],\n) -> str | InputRequiredResult:\n    ...\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It works: the SDK merges the resolver's question and the body's question into one `InputRequiredResult`",
+        "why": "There is one `input_responses`/`request_state` channel per call, so the two forms cannot be merged."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It works, but the resolver's question is always asked first in its own round",
+        "why": "The SDK does not sequence the two; it refuses the combination."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Registration fails with `InvalidSignature`, because a call has one input-required channel",
+        "why": "Correct: the multi-round flow is driven either by resolvers or by the tool body, not both."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It registers, and the body's `InputRequiredResult` is silently converted to text",
+        "why": "A declared `InputRequiredResult` return next to `Resolve(...)` is caught at registration."
+      }
+    ],
+    "explanation": "Resolvers own the tool's `request_state` channel: the SDK records asked outcomes in it. Letting the body also mint state would clobber it, so a declared `InputRequiredResult` return next to `Resolve(...)` parameters raises `InvalidSignature` at registration, and an undeclared one fails the call at runtime. Model the region as a second resolver instead.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/multi-round-trip/",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-PYS-038",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool asks for confirmation only when a folder is non-empty, through a resolver that returns `Elicit(...)`. A client with **no** `elicitation_callback` calls it twice. What does it see?\n\n```python\nawait client.call_tool(\"delete\", {\"path\": \"/empty\"})\nawait client.call_tool(\"delete\", {\"path\": \"/full\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The first call succeeds; the second raises `MCPError` with code `-32021` (missing required client capability)",
+        "why": "Correct: no question means no capability check, and asking without the form elicitation capability is refused."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both calls raise `MCPError` with `-32021`, because the tool declares a resolver",
+        "why": "The capability is checked when a question is actually sent; the empty-folder path never asks."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The first call succeeds; the second returns a normal result with `is_error=True` and the text `Elicitation not supported`",
+        "why": "The capability failure is a JSON-RPC error, not a tool result."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both calls succeed; the second is auto-declined because there is no callback",
+        "why": "The SDK does not invent a decline; it refuses to send a request the client cannot handle."
+      }
+    ],
+    "explanation": "Resolver requests (`Elicit`, `Sample`, `ListRoots`) enforce the spec's egress rule on every protocol version: if the client did not declare the capability, the call fails with `-32021` `MISSING_REQUIRED_CLIENT_CAPABILITY` and a `requiredCapabilities` payload. The Python `Client` declares `elicitation` when you pass an `elicitation_callback`. A resolver that can answer without asking never triggers the check.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/dependencies/",
+    "source": "interview:client-features",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-039",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Your security review asks what a sealed `requestState` minted by `MCPServer` is bound to, beyond integrity. Which three are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A time window: every round re-seals with a fresh expiry (`ttl`, 600 seconds by default)",
+        "why": "Correct: the TTL bounds think time per round, not the whole flow."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The originating request: method, tool or prompt name (or URI) and a digest of the arguments",
+        "why": "Correct: replaying a token against another tool or other arguments fails."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The authenticated principal (client, issuer and subject) when the SDK validated an OAuth token",
+        "why": "Correct: state minted for one user fails under another."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `Mcp-Session-Id` header of the original request",
+        "why": "2026-07-28 has no sessions; the binding is to the principal and request, not a session."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The client's IP address",
+        "why": "IP addresses change behind proxies and mobile networks; the SDK does not bind to them."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "The JSON-RPC request id of the first round",
+        "why": "Each retry is a new request with a new id, so binding to the id would break every retry."
+      }
+    ],
+    "explanation": "The spec requires servers to integrity-protect `requestState` when it can influence authorization, resource access or business logic. `MCPServer` seals it by default and also binds it to a TTL, the principal and the originating request, and pins resolver answers to the exact question rendered. Every failure returns the same `-32602 \"Invalid or expired requestState\"`, so the wire never reveals which check failed.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/multi-round-trip/",
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-PYS-040",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "On a 2026-07-28 connection, after `mcp.add_tool(recommend_book)`, calling `await ctx.session.send_tool_list_changed()` notifies clients that opened a `subscriptions/listen` stream.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The `send_*` methods do not reach listen streams; on 2026-07-28 change notifications travel only on `subscriptions/listen`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: use `await ctx.notify_tools_changed()`, which publishes to the subscription bus that feeds every listen stream."
+      }
+    ],
+    "explanation": "In 2026-07-28, clients receive list-changed and resource-updated notifications only on streams they opened with `subscriptions/listen`. `MCPServer` serves those streams from a `SubscriptionBus`; publish with `ctx.notify_tools_changed()`, `notify_prompts_changed()`, `notify_resources_changed()` or `notify_resource_updated(uri)`. Across replicas, give every server the same bus implementation over your own pub/sub.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/subscriptions/",
+    "source": "interview:utilities",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-041",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "On the low-level `Server`, this tool is called without `q`. What does the model learn, and what is the right fix?\n\n```python\nasync def call_tool(ctx, params):\n    text = params.arguments[\"q\"].upper()\n    return CallToolResult(content=[TextContent(type=\"text\", text=text)])\n\nserver = Server(\"Low\", on_list_tools=list_tools, on_call_tool=call_tool)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Nothing: the client gets JSON-RPC `-32603 Internal server error`. Validate `params.arguments` yourself and return `CallToolResult(..., is_error=True)` with a helpful message",
+        "why": "Correct: low-level handler exceptions are always protocol errors, and the advertised schema is never applied."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The model reads `KeyError: 'q'` in an `is_error=True` result, so no fix is needed",
+        "why": "The low-level server does not convert exceptions into tool results, and it does not leak exception text."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The call never reaches the handler, because `Server` validates against `input_schema`",
+        "why": "On `Server` the schema is advertised only; it is never applied to the arguments."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The model reads a Pydantic validation message; switch to `json_response=True` to hide it",
+        "why": "No validation runs, and the response format has nothing to do with it."
+      }
+    ],
+    "explanation": "`Server` puts exactly what you give it on the wire: no schema derivation, no argument validation, no result wrapping, and every raised exception becomes a protocol error (sanitised to `Internal server error`). That is v2 behaviour; v1 used to turn low-level tool exceptions into `isError` results. Stay on `MCPServer` unless you need exact schemas or full control of the result.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/advanced/low-level-server/",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-PYS-042",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A user presses stop on a long tool call. Which statements about cancellation in the Python SDK are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "In an `async def` tool, cleanup that must `await` belongs in a `finally` inside `anyio.move_on_after(5, shield=True)`",
+        "why": "Correct: after cancellation every unshielded `await` raises again, and the timeout stops the shield hanging forever."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A plain `def` tool keeps running to the end unless it calls `anyio.from_thread.check_cancelled()` between units of work",
+        "why": "Correct: a thread cannot be interrupted from outside, so it must ask."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Catching the cancellation in `except` and returning a partial result is the recommended pattern",
+        "why": "Cancellation must keep propagating; nothing a cancelled handler returns is sent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Cancellation reaches the handler even with `json_response=True` on a 2026-07-28 connection",
+        "why": "The SDK docs list that option as one that keeps the news from the handler."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Prompt and resource functions cannot be cancelled; only tools can",
+        "why": "They are cancelled exactly like tools."
+      }
+    ],
+    "explanation": "When the client gives up (a cancelled task or `read_timeout_seconds`), the SDK cancels the handler and sends nothing it returns. Use `finally`, not `except`, so cancellation continues upward. `json_response=True` on modern connections and `stateless_http=True` on legacy ones switch cancellation delivery off, so the handler runs to the end.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/cancellation/",
+    "source": "interview:long-running-tools",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-043",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A latency-sensitive agent reconnects often. It uses `Client(url, mode=\"2026-07-28\")` to skip negotiation, but feature code that reads `client.server_capabilities` started offering nothing. What is the best fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to `mode=\"legacy\"`, which always reports capabilities",
+        "why": "That forces a full `initialize` handshake on every reconnect and drops to the old era."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `client.list_tools()` first; it refreshes `server_capabilities`",
+        "why": "Listing tools does not fill in the discovery result the pin skipped."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pin `mode=\"2025-11-25\"` instead, because handshake-era pins include the server capabilities in the pinned connection",
+        "why": "Handshake-era versions cannot be pinned; the constructor raises `ValueError` and tells you to use `mode=\"legacy\"`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Save `client.session.discover_result` from one `auto` connection and pass it as `prior_discover=` with the pin",
+        "why": "Correct: the pin then sends no negotiation traffic and still knows the server's capabilities and identity."
+      }
+    ],
+    "explanation": "`mode=\"auto\"` sends one `server/discover` probe and falls back to `initialize` for old servers. A version pin sends nothing, so `server_info` is `None` and every capability is `None`. `prior_discover=` supplies a saved `DiscoverResult` (a Pydantic model you can persist with `model_dump_json()`), giving zero round trips with full knowledge. It is ignored unless `mode` is a version pin.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/protocol-versions/",
+    "source": "interview:versioning",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  },
+  {
+    "id": "MCP-PYS-044",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "You must rotate the `requestState` sealing key on a 20-instance `MCPServer` fleet with zero dropped multi-round flows. Order the rollout phases (each fully rolled out before the next).",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Deploy `RequestStateSecurity(keys=[NEW])`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Deploy `RequestStateSecurity(keys=[OLD, NEW])`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Wait at least one `ttl` after the previous phase has reached every instance",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Deploy `RequestStateSecurity(keys=[NEW, OLD])`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "C",
+      "A"
+    ],
+    "explanation": "`keys[0]` seals new state and every key in the list verifies. First teach every instance to verify NEW while OLD still mints. Then promote NEW to mint while OLD keeps verifying in-flight tokens. After one TTL (600 seconds by default) no OLD-sealed state can still be valid, so OLD can go. Promoting the minter first drops in-flight rounds on instances that cannot yet verify NEW.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/multi-round-trip/",
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-PYS-045",
+    "domain": 3,
+    "skill": "python-sdk",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "On a 2026-07-28 connection, `await client.call_tool(\"provision\", {\"name\": \"orders\"})` hits a tool that needs a region from the user. Order what the Python `Client` and server do.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Client` calls `tools/call` for `provision` again with the same arguments, `input_responses` and the echoed `request_state`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The server returns an `InputRequiredResult` with `input_requests={\"region\": ElicitRequest(...)}` and a sealed `request_state`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The server finds the answer under the `region` key, finishes and returns a `CallToolResult` to the caller",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Client` sends `tools/call` for `provision`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`Client` dispatches the `region` request to its `elicitation_callback`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "D",
+      "B",
+      "E",
+      "A",
+      "C"
+    ],
+    "explanation": "No message flows from server to client as a request: the server returns its questions, the client answers them with the same callbacks it would use for legacy push requests, and retries the identical call. `call_tool` hides the intermediate rounds and caps them with `input_required_max_rounds` (default 10). Use `client.session.call_tool(..., allow_input_required=True)` to drive the loop yourself, for example across processes.",
+    "reference": "https://py.sdk.modelcontextprotocol.io/handlers/multi-round-trip/",
+    "source": "interview:client-features",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    }
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "clients-tooling": {
+    "summary": "The host is the AI application. It creates one MCP client per server, owns consent and approvals, and decides how tools reach the model. Know how the main hosts are configured (Claude Desktop, Claude Code, VS Code), how to debug a server that will not connect, how to use the MCP Inspector (web, CLI and TUI) and its security model, and the client best practices for scaling to many servers: progressive discovery, prompt caching and code mode.",
+    "points": [
+      "Claude Desktop reads `claude_desktop_config.json` from `~/Library/Application Support/Claude/` on macOS or `%APPDATA%\\Claude\\` on Windows. Servers go under `mcpServers`, keyed by name, with `command`, `args` and optional `env`. Fully quit and restart after any change; closing the window is not enough. Remote servers are added in Claude as Custom Connectors (Settings > Connectors > Add custom connector), then authenticated, usually with OAuth.",
+      "Claude Desktop logs live in `~/Library/Logs/Claude` or `%APPDATA%\\Claude\\logs`. `mcp.log` covers connections and failures, and `mcp-server-NAME.log` holds that server's stderr (all of its logging, not just errors). Stdio servers get an undefined working directory (possibly `/`) and only a limited set of environment variables, so use absolute paths and put the variables a server needs in `env`.",
+      "Claude Code: `claude mcp add --transport http <name> <url>` adds a remote server, and `claude mcp add [options] <name> -- <command> [args]` adds a stdio server. `--` separates Claude Code's options from the server command. `claude mcp list`, `get` and `remove` manage servers, `/mcp` (or `claude mcp login`) runs OAuth, and `claude mcp add-from-claude-desktop` imports Claude Desktop entries.",
+      "Claude Code scopes: local (the default; `~/.claude.json` under the current project, private), project (`.mcp.json`, committed, needs approval before first use) and user (`~/.claude.json`, all projects). Precedence runs local > project > user > plugin > claude.ai connectors, and the whole entry from the winning source is used, with no field merging. Organisation-managed servers rank above all of them.",
+      "Claude Code's `.mcp.json` expands `${VAR}` and `${VAR:-default}` in `command`, `args`, `env`, `url` and `headers`. An unset variable without a default stays literal and triggers a warning. Claude Code's own and cloud credentials read as empty in remote `url` and `headers`, to stop exfiltration. An entry with a `url` but no `type` is read as stdio and skipped, so add `\"type\": \"http\"`.",
+      "VS Code's `.vscode/mcp.json` uses `servers` (not `mcpServers`) plus an optional `inputs` array. A `promptString` input with `password: true`, referenced as `${input:id}`, prompts once and stores the secret securely, so shared files hold no credentials.",
+      "MCP Inspector (`npx @modelcontextprotocol/inspector`, Node 22.19+) is one package with three clients: web (default), `--cli` and `--tui`. The web backend can spawn processes, so `/api/*` needs a per-launch token, it binds `127.0.0.1` by default, and `DANGEROUSLY_OMIT_AUTH` removes the guard. Tabs: Console (stdio stderr), Network (HTTP), Protocol (JSON-RPC), plus Tools, Resources, Prompts, Tasks and Apps when the server supports them.",
+      "Inspector CLI: `--method tools/list|tools/call|resources/read|prompts/get`, `--format json` for `jq`, and exit codes 3 (auth required), 4 (unreachable), 5 (tool error or tool not found) with a JSON error line on stderr. `--stored-auth-only` makes CI fail fast instead of opening a browser. The CLI treats everything after `--` as Inspector options, while web and TUI pass it to the server. `--config` is read-only; `--catalog` is the writable server list.",
+      "Inspector protocol era is set per server: `legacy` (the default, plain `initialize`), `auto` (probe `server/discover`, then fall back) or `modern` (pin 2026-07-28). Secrets go to the OS keychain, or else to `~/.mcp-inspector/secrets.json`, which is plaintext unless keyed. Stdio servers run as you, with an environment allowlist plus their `env`.",
+      "Host and client duties: one client and connection per server, which isolates failures. Disambiguate colliding tool names with a host-controlled server prefix, never `serverInfo.name`. Keep prefixed names within 128 characters. Confirm sensitive operations, show inputs before calling, validate results before the model sees them, and pass `isError` results back to the model rather than raising. An agent loop keeps calling the model until it stops requesting tools.",
+      "Client best practices: switch to progressive discovery (a `search_tools` meta-tool, then fetch full schemas) once definitions pass a threshold such as 1 to 5% of the context window. Group tools by server, cache definitions, and re-index on `list_changed`. Preserve prompt caching by appending new tools after the cache breakpoint or routing calls through a stable `call_tool` meta-tool. Connect servers on demand, and disconnect only at conversation boundaries.",
+      "Code mode (programmatic tool calling): the host turns tool schemas into typed functions in a sandbox that has no network and no credentials. The broker routes calls as `tools/call` and still applies per-call authorization. Treat cross-server data as untrusted, set time and memory limits, filter output, and convert `isError` into exceptions."
+    ],
+    "traps": [
+      "Pasting a Claude Desktop `mcpServers` block into VS Code's `mcp.json`, which expects `servers`.",
+      "Using relative paths, or relying on shell-exported variables, in a host config. The host's working directory and environment differ from your terminal's.",
+      "Closing the Claude Desktop window instead of quitting it, then concluding that the config is broken.",
+      "Assuming project `.mcp.json` servers connect silently. Interactive Claude Code asks for approval first, and a cloned repository cannot approve its own servers.",
+      "Writing `\"url\"` without `\"type\"` in Claude Code JSON config: the entry is read as stdio and skipped.",
+      "Exposing the Inspector with a bare `docker -p 6274:6274`, `0.0.0.0` or `DANGEROUSLY_OMIT_AUTH`. The backend can spawn processes as you.",
+      "Treating a script approval in code mode as blanket approval for every tool call the script makes.",
+      "Expecting the Inspector to speak 2026-07-28 by default. Its default protocol era is `legacy`."
+    ],
+    "docs": [
+      {
+        "title": "Connect to local MCP servers",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/develop/connect-local-servers"
+      },
+      {
+        "title": "Debugging MCP",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/tools/debugging"
+      },
+      {
+        "title": "MCP Inspector",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/tools/inspector"
+      },
+      {
+        "title": "Client best practices",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices"
+      },
+      {
+        "title": "Claude Code: connect to tools via MCP",
+        "url": "https://code.claude.com/docs/en/mcp"
+      }
+    ]
+  }
+}

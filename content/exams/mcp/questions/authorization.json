@@ -1,0 +1,1941 @@
+[
+  {
+    "id": "MCP-ATH-001",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "How does the MCP specification (revision 2026-07-28) say a server using the **stdio** transport should obtain credentials?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It must ask the client for a bearer token in the first JSON-RPC message",
+        "why": "There is no in-band token message in MCP; for stdio, credentials come from the environment the host launches the process with."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It must use Dynamic Client Registration to get a client ID from the host",
+        "why": "Client registration is part of the HTTP OAuth flow, and DCR is deprecated in 2026-07-28 anyway."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Read credentials from its environment, not via the HTTP OAuth flow",
+        "why": "The authorization spec says stdio implementations SHOULD NOT follow it and should instead retrieve credentials from the environment."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It must run the full OAuth 2.1 authorization code flow with PKCE before reading stdin",
+        "why": "The OAuth-based flow is defined for HTTP-based transports; stdio servers are told not to use it."
+      }
+    ],
+    "explanation": "Authorization in MCP is OPTIONAL. When supported, HTTP-based transports SHOULD conform to the OAuth 2.1-based authorization spec, while stdio implementations SHOULD NOT follow it and should retrieve credentials from the environment (for example an API token passed in the server's `env` block in the host config). Interviewers want to hear that the remote and local cases use different mechanisms.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "source": "interview:auth-basics",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-ATH-002",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In MCP authorization, which OAuth 2.1 role does a protected MCP server play?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Authorization server: it must issue its own tokens to every client",
+        "why": "The authorization server issues tokens; it may be hosted with the MCP server or separately, but that is a different role."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "OAuth client: it requests tokens on behalf of the end user",
+        "why": "The MCP client is the OAuth client. An MCP server is a client only toward separate upstream APIs it calls."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Resource owner: it grants consent for the user's data",
+        "why": "The resource owner is the user; the server only protects resources."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Resource server, which validates access tokens",
+        "why": "The spec defines a protected MCP server as an OAuth 2.1 resource server."
+      }
+    ],
+    "explanation": "Roles in MCP authorization: the MCP server is an OAuth 2.1 resource server, the MCP client is an OAuth 2.1 client acting for the resource owner, and the authorization server issues tokens. The authorization server can be co-hosted with the MCP server or be a separate identity provider; the spec leaves its implementation out of scope.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-ATH-003",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Every MCP server that uses the Streamable HTTP transport is required by the specification to implement OAuth authorization.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The spec states that authorization is OPTIONAL for MCP implementations."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: authorization is optional. HTTP servers that do support it SHOULD conform to the authorization spec."
+      }
+    ],
+    "explanation": "Authorization is **OPTIONAL**. When an HTTP-based server supports it, it SHOULD conform to the MCP authorization specification. The official tutorial strongly recommends it whenever a server touches user-specific data, needs per-user audit or rate limits, or runs in enterprise environments.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-ATH-004",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "An MCP server receives a request whose bearer token has expired. Which HTTP status code MUST it return? Type the number.",
+    "options": [],
+    "accepted": [
+      "401"
+    ],
+    "explanation": "Invalid or expired tokens MUST receive HTTP 401 Unauthorized. 403 Forbidden is for a valid token that lacks the required scopes or permissions, and 400 is for a malformed authorization request.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-ATH-005",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "How must an MCP client present its access token to an MCP server over HTTP?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Inside the JSON-RPC `params._meta` object of each request",
+        "why": "MCP authorization works at the HTTP transport level; the token goes in the Authorization header, not the message body."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only once, on the first request, after which the server remembers the client",
+        "why": "Authorization MUST be included in every HTTP request; the 2026-07-28 protocol is stateless and has no session to remember a client by."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "In an `Authorization: Bearer <token>` header on every HTTP request",
+        "why": "The spec requires the Authorization request header and requires it on every request from client to server."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "As an `access_token` query parameter on the MCP endpoint URL",
+        "why": "Access tokens MUST NOT be included in the URI query string; URLs leak into logs and history."
+      }
+    ],
+    "explanation": "Token usage follows OAuth 2.1 Section 5: use the `Authorization: Bearer` header, include it on every HTTP request, and never put the token in the query string. The server validates the token on every request.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-ATH-006",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Which PKCE `code_challenge_method` value MUST MCP clients use when they are technically capable of it? Type the value.",
+    "options": [],
+    "accepted": [
+      "S256",
+      "s256"
+    ],
+    "explanation": "MCP clients MUST implement PKCE and MUST use the `S256` method (SHA-256 of the code verifier) when technically capable, as OAuth 2.1 requires. The `plain` method sends the verifier itself as the challenge, so an attacker who sees the authorization request learns it.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-ATH-007",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What attack does PKCE (Proof Key for Code Exchange) primarily prevent in the MCP authorization flow?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Redemption of an intercepted authorization code by a party that lacks the verifier",
+        "why": "PKCE binds the code to a secret verifier that only the original requester holds, preventing interception and injection of codes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A token issued for one MCP server being replayed against a different MCP server by an attacker",
+        "why": "That is prevented by audience binding with the `resource` parameter (RFC 8707) and server-side audience validation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A malicious tool description instructing the model to leak data",
+        "why": "That is tool poisoning, a model-context attack that OAuth does not address."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "DNS rebinding against a server bound to localhost",
+        "why": "DNS rebinding is countered by Origin validation and binding to 127.0.0.1, not by PKCE."
+      }
+    ],
+    "explanation": "With PKCE the client generates a random `code_verifier`, sends its hash (`code_challenge`, S256) in the authorization request, and proves possession by sending the verifier in the token request. An attacker who intercepts the authorization code cannot redeem it without the verifier. MCP clients MUST implement PKCE and verify the authorization server supports it before proceeding.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations",
+    "source": "interview:pkce",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-ATH-008",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each standard that MCP authorization builds on with what it contributes.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "RFC 9728 (Protected Resource Metadata)",
+        "why": "Lets a resource server publish which authorization servers protect it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "RFC 8414 (Authorization Server Metadata)",
+        "why": "Lets a client discover an authorization server's endpoints and capabilities."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "RFC 8707 (Resource Indicators)",
+        "why": "Lets a client name the resource a token is for, so tokens are audience-bound."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "RFC 9207 (Issuer Identification)",
+        "why": "Adds the `iss` parameter to authorization responses."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The MCP server tells clients where its authorization server lives",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The client finds the authorization and token endpoints of the chosen authorization server",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The client sends `resource=https://mcp.example.com` in authorization and token requests",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The client checks which authorization server actually sent the authorization response",
+        "answer": "D"
+      }
+    ],
+    "explanation": "MCP servers MUST implement Protected Resource Metadata (RFC 9728) and clients MUST use it to find the authorization server. Authorization servers MUST offer RFC 8414 metadata or OpenID Connect Discovery, and clients MUST support both. Clients MUST send the RFC 8707 `resource` parameter, and since 2026-07-28 MUST validate a present `iss` (RFC 9207) before redeeming the code.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-ATH-009",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A client fetches an MCP server's Protected Resource Metadata (RFC 9728) document. What is the key piece of information this document MUST give the client?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A pre-issued access token for anonymous use",
+        "why": "Metadata documents never carry tokens; tokens come from the authorization server's token endpoint."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The list of tools the server exposes, so the client can request matching scopes",
+        "why": "Tools are discovered through `tools/list` after authorization, not through OAuth metadata."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`authorization_servers`, with at least one entry",
+        "why": "The PRM document returned by an MCP server MUST include `authorization_servers` with at least one entry."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `token_endpoint` and `authorization_endpoint` URLs",
+        "why": "Those come from the authorization server's own metadata (RFC 8414 or OpenID Connect Discovery), fetched in the next step."
+      }
+    ],
+    "explanation": "Protected Resource Metadata is how an MCP server tells clients who protects it. The client then picks an authorization server from `authorization_servers` (the choice is the client's, following RFC 9728 Section 7.6) and discovers its endpoints through RFC 8414 or OpenID Connect Discovery. The PRM document usually also carries `resource` and `scopes_supported`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/authorization-server-discovery",
+    "source": "interview:resource-metadata",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-010",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You are packaging a local GitHub MCP server that runs over **stdio** and needs a personal access token. Which approach fits the MCP specification and keeps the secret narrowly exposed?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Implement Protected Resource Metadata and the OAuth flow on stdout",
+        "why": "The HTTP authorization flow is not meant for stdio; stdio implementations SHOULD NOT follow it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Export the token globally in the shell profile so every server can find it",
+        "why": "Every locally launched server can inherit a global environment, so one compromised server could read all of your tokens."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ask the model to request the token from the user in chat and pass it as a tool argument",
+        "why": "Secrets typed into chat or tool arguments enter the model context and transcripts, which is exactly where they should not be."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Pass a narrowly scoped token to just that server via its per-server `env` config",
+        "why": "stdio servers retrieve credentials from the environment, and per-server env keeps each secret visible only to its server."
+      }
+    ],
+    "explanation": "For stdio, the spec says to take credentials from the environment. The local-server security guide adds the operational detail: pass secrets per server rather than globally, scope tokens narrowly (for example a fine-grained token for one repository), and prefer an OS secret store over plaintext config where the client supports it.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/local-server-security",
+    "source": "interview:transports",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-ATH-011",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the RFC 8707 `resource` parameter are requirements on MCP clients? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It MUST be sent in both the authorization request and the token request",
+        "why": "The spec requires the parameter in both requests."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It MUST identify the MCP server using that server's canonical URI",
+        "why": "The value is the canonical URI of the MCP server the token will be used with."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is sent only when the authorization server advertises support for resource indicators",
+        "why": "Clients MUST send it regardless of whether the authorization server supports it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It names the authorization server's issuer URL",
+        "why": "It names the protected resource (the MCP server), not the authorization server."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It replaces the need for the MCP server to check the token audience",
+        "why": "Servers MUST still validate that tokens were issued for them; the parameter only lets the authorization server bind the audience."
+      }
+    ],
+    "explanation": "Resource indicators bind a token to its intended audience. Clients MUST include `resource` in authorization and token requests, MUST use the canonical URI of the MCP server, and MUST send it even if the authorization server does not support it. Binding only protects anyone if the MCP server also rejects tokens whose audience is not itself.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-012",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A client is about to authorize against the MCP server at `https://mcp.example.com/mcp`. Which value should it send as the `resource` parameter?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`https://auth.example.com`, the authorization server",
+        "why": "The `resource` parameter names the MCP server the token is for, not the authorization server issuing it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`https://mcp.example.com/mcp`",
+        "why": "The canonical URI of the server, including the path because it identifies this MCP server, is the right value."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`mcp.example.com/mcp`",
+        "why": "A canonical URI needs a scheme; the spec lists a missing scheme as invalid."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`https://mcp.example.com/mcp#tools`",
+        "why": "Fragments are not allowed in the canonical URI."
+      }
+    ],
+    "explanation": "The canonical server URI follows RFC 8707 Section 2: an absolute URI with scheme, no fragment, and as specific as the client can make it. Valid examples in the spec include `https://mcp.example.com/mcp` and `https://mcp.example.com:8443`. Implementations SHOULD use the form without a trailing slash unless the slash is significant, and SHOULD accept uppercase scheme and host for robustness.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-013",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which MCP client registration mechanism uses an HTTPS URL that points to a JSON document as the `client_id` itself?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pre-registration",
+        "why": "Pre-registration uses a client ID created ahead of time, typically an opaque string."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "OAuth client credentials grant",
+        "why": "That is a grant type for machine-to-machine access, not a registration mechanism."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Client ID Metadata Documents",
+        "why": "With CIMD the client hosts a metadata document at an HTTPS URL and uses that URL as its `client_id`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Dynamic Client Registration",
+        "why": "DCR POSTs client metadata to the `registration_endpoint` and receives a server-assigned `client_id`."
+      }
+    ],
+    "explanation": "Client ID Metadata Documents fit MCP's common case where client and authorization server have no prior relationship. The `client_id` URL MUST use https and contain a path, the document MUST include at least `client_id`, `client_name` and `redirect_uris`, and its `client_id` MUST match the URL exactly. Authorization servers advertise support with `client_id_metadata_document_supported: true`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration",
+    "source": "interview:client-registration",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-ATH-014",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Dynamic Client Registration (RFC 7591) was removed from the MCP specification in revision 2026-07-28.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It was deprecated, not removed. It stays in the spec for backwards compatibility."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: DCR is Deprecated in 2026-07-28 in favour of Client ID Metadata Documents and remains available for authorization servers that do not support CIMD."
+      }
+    ],
+    "explanation": "Revision 2026-07-28 deprecated DCR (PR #2858) in favour of Client ID Metadata Documents. Deprecated features remain fully part of the spec; the deprecation registry lists the earliest removal as the first revision released on or after 2027-07-28. Clients and authorization servers MAY still support DCR, and clients that support every option try it after pre-registration and CIMD.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/deprecated",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-015",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A server's Protected Resource Metadata lists `\"scopes_supported\": [\"*\"]` and its 401 challenges carry no `scope` parameter. Why is this a scope-design problem?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Clients with no challenge scope request everything in `scopes_supported`, so every token carries an omnibus scope and a stolen token can do anything",
+        "why": "The scope selection strategy falls back to all of `scopes_supported`, and wildcard scopes are a listed common mistake that widens the blast radius."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `*` scope is invalid JSON in a metadata document, so clients reject it",
+        "why": "`\"*\"` is a valid JSON string; the problem is what it grants, not how it parses."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Clients ignore `scopes_supported` entirely, so the setting has no effect",
+        "why": "Clients use it: when the challenge has no `scope`, they SHOULD request all scopes in `scopes_supported`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wildcard scopes force clients to fall back to Dynamic Client Registration",
+        "why": "Scope values have nothing to do with which registration mechanism a client uses."
+      }
+    ],
+    "explanation": "During the first authorization, clients SHOULD use the `scope` from the 401 challenge, and otherwise request all scopes in `scopes_supported`. That is why `scopes_supported` is meant to be the minimal set for basic functionality, with more requested later through step-up challenges. The security best practices list publishing every scope, and wildcard or omnibus scopes such as `*`, `all` or `full-access`, as common mistakes.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+    "source": "interview:scope-minimization",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/draft/basic/security_best_practices"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-016",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An MCP server lives at `https://example.com/public/mcp`. Its 401 response has a `WWW-Authenticate` header **without** `resource_metadata`. Which URL must the client try first to find the Protected Resource Metadata?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`https://example.com/.well-known/oauth-authorization-server`",
+        "why": "That is authorization server metadata (RFC 8414); the client is still looking for the resource's metadata."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`https://example.com/.well-known/oauth-protected-resource/public/mcp`",
+        "why": "When the header gives no URL, clients MUST try the path-specific well-known URI first, then the root one."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`https://example.com/.well-known/oauth-protected-resource` (the root document)",
+        "why": "The root location is the fallback, tried only after the path-specific URI."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`https://example.com/public/mcp/.well-known/oauth-protected-resource`",
+        "why": "RFC 9728 inserts the well-known segment after the host, not at the end of the path."
+      }
+    ],
+    "explanation": "MCP servers MUST offer PRM through the `resource_metadata` parameter of `WWW-Authenticate` or at a well-known URI. Clients MUST support both: use the header URL when present, otherwise try `/.well-known/oauth-protected-resource/<path>` and then `/.well-known/oauth-protected-resource` at the root. If neither exists, the client aborts or uses pre-configured values.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/authorization-server-discovery",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-017",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about refresh tokens match the MCP authorization specification? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "MCP servers MUST include `offline_access` so that clients can stay connected",
+        "why": "The guidance is the opposite: protected resources SHOULD NOT include it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Clients MUST always request `offline_access`, even if the authorization server does not list it",
+        "why": "Clients MAY add `offline_access` only when the authorization server metadata lists it in `scopes_supported`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Refresh tokens may be sent to the MCP server in place of access tokens",
+        "why": "Refresh tokens go only to the authorization server's token endpoint; the MCP server receives access tokens."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Clients MUST NOT assume a refresh token will be issued; the authorization server decides",
+        "why": "The spec says the authorization server retains discretion over issuing refresh tokens."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "MCP servers SHOULD NOT put `offline_access` in their `WWW-Authenticate` scope or `scopes_supported`",
+        "why": "Refresh tokens are not a resource requirement, so protected resources should not demand `offline_access`."
+      }
+    ],
+    "explanation": "Clients that want refresh tokens MUST keep them confidential, SHOULD list `refresh_token` in their `grant_types`, MAY add `offline_access` when the authorization server advertises it, and MUST NOT assume one will be issued. For public clients, authorization servers MUST rotate refresh tokens.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-018",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool on your remote MCP server needs the user's API key for a third-party service. The first prototype asks the user to paste the key into the chat. What should the server do instead?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use form mode elicitation with a password-type field for the key",
+        "why": "Servers MUST NOT use form mode elicitation to request passwords, API keys, tokens or payment credentials."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add a required `api_key` string argument to the tool's `inputSchema`",
+        "why": "Tool arguments are produced by the model and visible in context and logs, so the secret would pass through the model."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ask the user to put the key in the MCP client's access token so the server can reuse it",
+        "why": "Mixing third-party credentials into the MCP access token breaks audience separation and amounts to token passthrough."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "URL mode elicitation to a server-controlled page; store the key server-side per user",
+        "why": "URL mode keeps the secret out of the MCP client, the LLM context and any intermediate servers."
+      }
+    ],
+    "explanation": "The elicitation spec splits interactions: form mode for ordinary structured input, URL mode for sensitive ones. For API keys the pattern is a branded HTTPS form on a domain the user trusts, with the server storing the credential bound to the user's identity, so the credential never passes through the LLM context or the MCP client. The server MUST NOT send credentials obtained this way back to the client.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation",
+    "source": "interview:secret-handling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-019",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each deployment scenario with the authorization approach MCP recommends for it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "OAuth Client Credentials extension",
+        "why": "Application-level credentials (client secret or a signed JWT assertion), no user present."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Enterprise-Managed Authorization extension",
+        "why": "The organisation's identity provider decides which MCP servers each employee can reach."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Core MCP authorization (authorization code with PKCE)",
+        "why": "A user interactively grants a client access to a server."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Credentials from the environment",
+        "why": "A locally launched server reads a token from its process environment."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A nightly CI pipeline calls MCP tools with no human involved",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Employees use corporate SSO, and IT wants one place to grant and revoke MCP access",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A consumer desktop app connects a user to a remote notes server",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A stdio filesystem server spawned by a desktop host",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The ext-auth extensions cover cases the core flow does not: machine-to-machine access (OAuth Client Credentials, `io.modelcontextprotocol/oauth-client-credentials`) and IdP-controlled enterprise access (Enterprise-Managed Authorization). Both are negotiated through the `extensions` field of the capabilities and are never active by default. Interactive users use the core flow, and stdio servers take credentials from the environment.",
+    "reference": "https://modelcontextprotocol.io/extensions/auth/overview",
+    "source": "interview:enterprise-auth",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://datacamp.com/blog/mcp-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-020",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put these steps of a first connection to an OAuth-protected remote MCP server in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Client obtains a client ID (pre-registered, Client ID Metadata Document, or DCR)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Client validates `iss`, then redeems the code with `code_verifier` and `resource` and retries with the bearer token",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Browser authorization request with `code_challenge` and `resource`; user approves",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Client fetches the Protected Resource Metadata and picks an authorization server",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Client sends an MCP request without a token and receives `401` with `WWW-Authenticate`",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Client fetches the authorization server's metadata (RFC 8414 or OpenID Connect Discovery)",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "E",
+      "D",
+      "F",
+      "A",
+      "C",
+      "B"
+    ],
+    "explanation": "The flow goes from the 401 challenge to resource metadata, then authorization server metadata, then registration, then the PKCE authorization request carrying `resource`. The client records the expected issuer before redirecting and validates `iss` on the response before sending the code to any token endpoint. The token request carries the `code_verifier` and the same `resource`, and every later MCP request carries `Authorization: Bearer`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "source": "interview:oauth-flow",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-021",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A code review of an MCP server's token check finds this logic:\n\n```python\nclaims = jwt.decode(token, idp_public_key, algorithms=[\"RS256\"])\nif claims[\"exp\"] < time.time():\n    raise Unauthorized()\nreturn claims[\"sub\"]\n```\n\nThe company identity provider issues tokens for dozens of internal APIs. What is the security bug?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It should return 403 instead of raising Unauthorized for expired tokens",
+        "why": "Expired or invalid tokens MUST get 401; 403 is for insufficient scope."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It reads `sub` instead of `client_id`, so users cannot be identified",
+        "why": "`sub` is the usual stable user identifier; the missing audience check is the real problem."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It never checks the audience, so tokens meant for other APIs are accepted",
+        "why": "MCP servers MUST validate that a token was issued specifically for them; skipping the audience check accepts tokens meant for other resources."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It uses RS256 instead of HS256, which public clients and gateways cannot verify",
+        "why": "RS256 with the identity provider's public key is a normal way to verify a JWT; the algorithm is not the bug."
+      }
+    ],
+    "explanation": "The spec requires MCP servers to validate tokens per OAuth 2.1 Section 5.2 and to reject tokens that do not name them in the audience. Without that check, a token a user obtained for some other internal service can be replayed against the MCP server. Clients cooperate by sending the RFC 8707 `resource` parameter so the authorization server can set the right audience. The official tutorial warns against generic audiences like `api` for the same reason.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations",
+    "source": "interview:token-audience",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization",
+        "https://modelcontextprotocol.io/specification/draft/basic/security_best_practices"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-022",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Your remote MCP server's tools call a downstream SaaS API. A teammate proposes forwarding the bearer token the MCP client sent straight to that API. What should the server do instead?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Forward the token only after checking its signature",
+        "why": "Checking the signature does not make forwarding acceptable; passing the client's token downstream is forbidden."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Ask the client to request a token with two audiences so one token works for both",
+        "why": "Spreading one token across services defeats audience separation; each resource should get its own token."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Strip the `Bearer` prefix and send the raw token in an `X-Api-Token` header",
+        "why": "Changing the header does not change what happens: the client's token is still being reused downstream."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Get its own token for the downstream API from that API's authorization server",
+        "why": "The spec says the upstream token is separate, issued by the upstream authorization server, and the MCP server MUST NOT pass through the token it received."
+      }
+    ],
+    "explanation": "If an MCP server calls upstream APIs, it may act as an OAuth client to them, and the token it uses there is separate and issued by the upstream authorization server. MCP servers MUST NOT accept or transit tokens not issued for them. One way to get the upstream credential is URL mode elicitation, where the user authorizes the MCP server directly and the server stores the upstream token.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations",
+    "source": "interview:token-passthrough",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/security_best_practices",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-023",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which are risks of the token passthrough anti-pattern that the MCP security best practices call out? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A stolen token can use the MCP server as a proxy to exfiltrate data from other services",
+        "why": "If claims are not validated, the server becomes a convenient exfiltration proxy."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It breaks the newline-delimited framing of the stdio transport",
+        "why": "Token passthrough is an HTTP authorization issue and has nothing to do with stdio framing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It makes PKCE impossible for the MCP client",
+        "why": "PKCE happens between the client and the authorization server and is unaffected by what the server does with tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It forces every client to use Dynamic Client Registration",
+        "why": "Registration mechanisms are unrelated to whether the server forwards tokens."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Downstream rate limits, validation and monitoring that rely on the token audience can be bypassed",
+        "why": "This is listed as security control circumvention."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Audit trails become unreliable because downstream logs show a different identity than the forwarding server",
+        "why": "Accountability and audit trail issues are a named risk."
+      }
+    ],
+    "explanation": "The best-practices page lists four risk areas for passthrough: security control circumvention, accountability and audit trail problems, trust boundary violations (a token accepted by many services lets one compromise spread), and future compatibility. The mitigation is simple: MCP servers MUST NOT accept tokens that were not explicitly issued for them.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+    "source": "interview:token-passthrough",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/security_best_practices",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-024",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A client holds a valid token with too few scopes for a write tool. Which response follows the MCP specification for this case?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`403 Forbidden` whose `scope` lists every scope the server supports",
+        "why": "Returning the whole scope catalog in every challenge is a listed mistake; challenge for what the operation needs."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`403 Forbidden` with `WWW-Authenticate: Bearer error=\"insufficient_scope\", scope=\"files:write\", resource_metadata=\"...\"`",
+        "why": "Runtime insufficient-scope errors SHOULD be a 403 with `error`, the needed `scope` and `resource_metadata`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`401 Unauthorized` with `WWW-Authenticate: Bearer error=\"invalid_token\"`",
+        "why": "401 is for missing, invalid or expired tokens; this token is valid but under-scoped."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`200 OK` with a tool result whose `isError` is true and text saying a scope is missing",
+        "why": "Authorization failures are reported at the HTTP layer so the client can run step-up authorization."
+      }
+    ],
+    "explanation": "For runtime insufficient-scope errors the server SHOULD send HTTP 403 with a Bearer challenge carrying `error=\"insufficient_scope\"`, the scopes needed for the operation, `resource_metadata` for consistency with 401, and optionally `error_description`. The client then runs the step-up authorization flow.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-025",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "An MCP client fetches an authorization server's RFC 8414 metadata and finds no field advertising PKCE methods, so it MUST refuse to proceed. What is the name of that metadata field?",
+    "options": [],
+    "accepted": [
+      "code_challenge_methods_supported",
+      "`code_challenge_methods_supported`"
+    ],
+    "explanation": "OAuth 2.1 and PKCE define no way to discover PKCE support, so MCP relies on metadata: if `code_challenge_methods_supported` is absent from RFC 8414 metadata, the authorization server is treated as not supporting PKCE and the client MUST refuse to proceed. The same check applies to OpenID Connect Discovery documents, and authorization servers that offer OIDC Discovery MUST include the field.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-026",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "The issuer is `https://auth.example.com/tenant1`. Put the authorization server metadata URLs in the order an MCP client MUST try them.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`https://auth.example.com/tenant1/.well-known/openid-configuration`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`https://auth.example.com/.well-known/openid-configuration/tenant1`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`https://auth.example.com/.well-known/oauth-authorization-server/tenant1`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "B",
+      "A"
+    ],
+    "explanation": "For issuers with a path, clients MUST try OAuth 2.0 metadata with path insertion, then OpenID Connect Discovery with path insertion, then OIDC Discovery with the path appended. For issuers without a path they try `/.well-known/oauth-authorization-server` and then `/.well-known/openid-configuration`. MCP uses the default `oauth-authorization-server` suffix and defines no MCP-specific suffix.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/authorization-server-discovery",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-027",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A client builds the URL `https://attacker.example/.well-known/oauth-authorization-server` from an issuer identifier and gets back a document whose `issuer` is `https://honest.example`. What must the client do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Reject it: the `issuer` must exactly match the issuer used to build the URL",
+        "why": "Clients MUST validate the document per RFC 8414 Section 3.3 and MUST NOT use it if the issuer differs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use it, because `honest.example` is a well-known, trustworthy domain and HTTPS was used",
+        "why": "Trusting the claimed issuer is exactly what lets an attacker impersonate an honest authorization server."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Re-fetch the document from `https://honest.example` and merge the two",
+        "why": "A mismatched document must not be used at all; merging only adds an attack surface."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use it, but only for the token endpoint",
+        "why": "Using any part of the document sends codes or credentials toward endpoints the attacker chose."
+      }
+    ],
+    "explanation": "Metadata validation is what makes the recorded issuer authentic. The spec's own example: a document fetched from `https://attacker.example/...` that claims `\"issuer\": \"https://honest.example\"` MUST be rejected. This recorded issuer is also the value later compared with `iss` in the authorization response, so skipping this check weakens mix-up protection too.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/authorization-server-discovery",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-028",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "An MCP client supports every registration option and follows the spec's priority order. Match each situation with what the client should do.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use pre-registered client information",
+        "why": "Static credentials created ahead of time for this authorization server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use a Client ID Metadata Document",
+        "why": "Self-hosted HTTPS URL used as the `client_id`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Use Dynamic Client Registration",
+        "why": "POST metadata to the `registration_endpoint` (deprecated, kept for compatibility)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Prompt the user to enter client information",
+        "why": "Last resort when no automatic option exists."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The client ships a client ID created with this authorization server",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "No prior relationship, and the metadata has `client_id_metadata_document_supported: true`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "No prior relationship, no CIMD support, but metadata lists a `registration_endpoint`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "No pre-registration, no CIMD support and no `registration_endpoint`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The spec's priority order: pre-registered client information first, then Client ID Metadata Documents if the authorization server advertises `client_id_metadata_document_supported`, then Dynamic Client Registration if it advertises a `registration_endpoint`, and finally prompting the user to enter client details.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration",
+    "source": "interview:client-registration",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-029",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A client that identifies itself with a Client ID Metadata Document must re-register when an MCP server's Protected Resource Metadata switches to a different authorization server.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "CIMD client IDs are self-hosted HTTPS URLs that any authorization server can resolve, so no re-registration is needed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: CIMD client IDs are portable across authorization servers. The re-registration requirement applies to pre-registered and DCR credentials."
+      }
+    ],
+    "explanation": "Credentials from pre-registration or Dynamic Client Registration are bound to the issuing authorization server: clients MUST key them by `issuer`, MUST NOT reuse them with a different authorization server, and MUST re-register when it changes. Client ID Metadata Document IDs are resolved on demand by whichever authorization server sees them, so they are portable.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-030",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A server's Protected Resource Metadata used to list `https://as-a.example` and now lists `https://as-b.example`. The client has a `client_id` that it got from AS-A through Dynamic Client Registration. What should it do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Send the AS-A `client_id` to AS-B, since client IDs are global identifiers across servers",
+        "why": "Client identifiers are unique to the authorization server that issued them."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep using AS-A because the client already has tokens there",
+        "why": "The resource now names AS-B; tokens from AS-A will not be accepted for this resource going forward."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ask the MCP server to forward AS-A tokens to AS-B for exchange",
+        "why": "MCP servers must not transit other tokens, and nothing in the spec defines such an exchange."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Re-register with AS-B; the AS-A credentials are bound to AS-A's issuer",
+        "why": "Persisted credentials MUST be keyed by issuer, MUST NOT be reused with another authorization server, and the client MUST re-register."
+      }
+    ],
+    "explanation": "Revision 2026-07-28 made authorization server binding explicit (SEP-2352): clients MUST key persisted client credentials by the authorization server's `issuer`, MUST NOT reuse them elsewhere, and MUST re-register when the authorization server changes. Pre-registered credentials that no longer match SHOULD produce an error rather than a silent attempt. When several authorization servers are listed, clients keep separate registration state per server.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-031",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A remote MCP server calls an internal HR system using one shared service account for all users. Which problem does this cause that per-user delegated credentials avoid?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Users inherit the account's rights, and audits cannot tell who acted",
+        "why": "A shared identity collapses authorization and attribution: the backend sees one principal for everyone."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Service accounts cannot use HTTPS",
+        "why": "Service accounts work over HTTPS like any other client; transport security is not the issue."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The MCP spec forbids service accounts entirely",
+        "why": "Machine credentials are legitimate; the OAuth Client Credentials extension even standardises them for no-user cases."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Shared accounts make the MCP server stateful, so it cannot scale horizontally",
+        "why": "Credential choice does not decide whether the server keeps per-request state."
+      }
+    ],
+    "explanation": "When a server acts for a user, the backend should see that user's identity and permissions. A shared service account turns the MCP server into a privilege amplifier (anyone who can call a tool gets the account's rights) and hides who acted. Service accounts suit workloads with no user, such as CI jobs, where the client credentials extension applies.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/authorization",
+    "source": "interview:delegated-identity",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-032",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are designing a hospital assistant that reads patient summaries through a remote MCP server. Which design best limits exposure of patient data?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Grant broad scopes up front so clinicians never see a second consent screen",
+        "why": "Broad up-front scopes are a listed scope-minimisation mistake; step-up exists for extra privileges."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Per-user tokens audience-bound to the MCP server with minimal scopes, server-side checks of each patient record against the clinician's permissions, and audit logs per call",
+        "why": "This combines least-privilege tokens, real authorization at the server and attributable audit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "One long-lived admin token in the server config so every clinician sees consistent data",
+        "why": "A shared, long-lived, broad token maximises the blast radius and destroys per-user attribution."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rely on the tool's `readOnlyHint` annotation to ensure only reads happen",
+        "why": "Annotations are untrusted hints for the client; they enforce nothing on the server."
+      }
+    ],
+    "explanation": "Regulated access needs authorization decisions at the resource server: validate the token's audience and scopes, then check each record against the authenticated user's entitlements. Scope claims alone are not sufficient; the best practices warn against treating token scopes as enough without server-side authorization logic. Short-lived tokens and per-call audit logs complete the design.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+    "source": "interview:regulated-access",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-ATH-033",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A CI pipeline must call tools on an OAuth-protected MCP server with no human present. Which approach does the MCP ecosystem provide for this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Run the authorization code flow in a headless browser that clicks Approve",
+        "why": "Automating a consent screen defeats the purpose of consent and breaks easily."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call the MCP server without a token; CI traffic is trusted",
+        "why": "Network location is not authorization; the server should still require a valid token."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The OAuth Client Credentials extension (JWT bearer assertion preferred)",
+        "why": "This extension exists for machine-to-machine access, and JWT bearer assertions are the recommended credential format."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Copy a developer's refresh token into the CI secrets store",
+        "why": "That impersonates a human, ties the pipeline to one person's account and spreads a user credential."
+      }
+    ],
+    "explanation": "The `io.modelcontextprotocol/oauth-client-credentials` extension lets a client authenticate with application credentials (a client secret, or a JWT bearer assertion per RFC 7523, which is recommended) and get a token without a browser. The client declares the extension in its per-request `clientCapabilities.extensions`, sends the token as a bearer header, and refreshes it before expiry.",
+    "reference": "https://modelcontextprotocol.io/extensions/auth/oauth-client-credentials",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-034",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A client was granted `files:read`. While calling a write tool it receives:\n\n```http\nHTTP/1.1 403 Forbidden\nWWW-Authenticate: Bearer error=\"insufficient_scope\", scope=\"files:write\"\n```\n\nWhich scope set should the client request when it re-authorizes?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`files:write`",
+        "why": "Requesting only the challenged scope can drop `files:read` and break the read tools that worked before."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Every scope in `scopes_supported`",
+        "why": "That over-asks; the challenge tells the client exactly what this operation needs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`files:read`, then retry, because the server may have misread the token",
+        "why": "Re-sending the same scope set cannot satisfy a challenge for a scope the token lacks."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`files:read files:write`",
+        "why": "Step-up computes the union of previously requested scopes and the challenged scopes, so earlier permissions are kept."
+      }
+    ],
+    "explanation": "Servers are not required to include previously granted scopes in a challenge; scope accumulation is the client's job. Clients SHOULD compute the union of the previously requested scope set and the challenged scopes, re-authorize, retry a limited number of times, and track scope upgrade attempts to avoid loops. Clients that act for a user SHOULD attempt step-up; client-credentials clients MAY step up or abort.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "source": "interview:step-up-auth",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-035",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A desktop MCP client uses Dynamic Client Registration with redirect URI `http://127.0.0.1:33418/callback`. Against an OpenID Connect authorization server, registration fails with a redirect URI error. Which change fixes the root cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Send `application_type: \"native\"` in the registration request",
+        "why": "Omitting `application_type` defaults to `web` under OIDC, which can conflict with loopback redirect URIs; native apps SHOULD send `native`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Switch the redirect URI to `http://example.com/callback`",
+        "why": "Redirect URIs MUST be localhost or HTTPS; a plain-HTTP public host is not allowed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add `offline_access` to the requested scopes so the server issues a native-style refresh token",
+        "why": "Scopes do not affect redirect URI validation during registration."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retry the same registration with exponential backoff",
+        "why": "The rejection is deterministic; the same request fails again."
+      }
+    ],
+    "explanation": "Since 2026-07-28 clients MUST specify an appropriate `application_type` during DCR (SEP-837). Desktop apps, CLIs and localhost-served apps SHOULD use `native`, and remote browser-based apps `web`. Non-OIDC servers ignore the parameter. Clients MUST be ready for redirect-URI rejections, SHOULD surface a meaningful error, and MAY retry with an adjusted `application_type`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-ATH-036",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does PKCE **not** protect an MCP client against an OAuth mix-up attack, where an attacker controls one of the authorization servers the client talks to?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Mix-up attacks only target refresh tokens",
+        "why": "Mix-up aims to get an authorization code or token from an honest server redeemed or sent to the attacker."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The client itself hands the `code_verifier` to the attacker's token endpoint",
+        "why": "The security best practices point out that PKCE fails here because the verifier is handed straight to the attacker's token endpoint."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "PKCE is optional for public clients in OAuth 2.1, so many clients skip it",
+        "why": "MCP clients MUST implement PKCE; the problem is structural, not optional use."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`S256` challenges can be reversed with a rainbow table",
+        "why": "A random high-entropy verifier makes reversing the SHA-256 challenge infeasible; that is not the weakness."
+      }
+    ],
+    "explanation": "In a mix-up, the client is tricked into sending a code issued by an honest authorization server to the attacker's endpoints. PKCE doesn't help because the client hands over the verifier, and resource indicators don't help when the attacker intercepts first. The mitigation is RFC 9207: record the expected issuer before redirecting and compare it with the `iss` in the authorization response before redeeming the code. This depends on honest servers emitting `iss`.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+    "source": "interview:mix-up",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization",
+        "https://modelcontextprotocol.io/specification/draft/basic/security_best_practices"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-ATH-037",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The authorization server's metadata contains `\"authorization_response_iss_parameter_supported\": true`. The callback arrives with a valid `code` and the correct `state`, but **no** `iss` parameter. What must the MCP client do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Proceed, because including `iss` is only a SHOULD for authorization servers",
+        "why": "The SHOULD applies to authorization servers in general; once support is advertised, a missing `iss` means rejection."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Redeem the code, then compare `iss` from the token response",
+        "why": "Validation MUST happen before the code is sent to any token endpoint."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Reject the response without redeeming the code",
+        "why": "When the server advertises `iss` support and the response lacks it, the validation table says to reject."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Proceed, because `state` already matched",
+        "why": "`state` defends against CSRF, not against a code coming from the wrong authorization server."
+      }
+    ],
+    "explanation": "The RFC 9207 validation table in the 2026-07-28 spec: metadata true and `iss` present, compare; true and absent, reject; false or absent with `iss` present, still compare (MCP's local policy); false or absent with no `iss`, proceed. Comparison is simple string comparison against the issuer recorded before the redirect.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-038",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about validating the `iss` parameter in an authorization response are correct for an MCP client? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Take the expected issuer from the `iss` value of the first response you receive",
+        "why": "The expected issuer must come from validated metadata and be recorded before redirecting, or the check proves nothing."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Compare the decoded `iss` with the recorded issuer by simple string comparison, with no case folding, default-port elision or trailing-slash normalization",
+        "why": "The spec forbids those RFC 3986 normalizations before comparison."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "If an error response carries a mismatched `iss`, do not act on or display its `error`, `error_description` or `error_uri`",
+        "why": "Validation applies to error responses too; a mismatched error must be ignored."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Normalize both values by removing trailing slashes so cosmetic differences do not cause failures",
+        "why": "Trailing-slash normalization is explicitly not allowed."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Reject any response without `iss`, even if the metadata does not advertise support",
+        "why": "If metadata does not advertise support and `iss` is absent, the client proceeds."
+      }
+    ],
+    "explanation": "Before redirecting, the client records the `issuer` from validated authorization server metadata together with the PKCE verifier and `state`. On the response it applies RFC 9207 Section 2.4 before sending the code anywhere, using exact string comparison after form-decoding, and it ignores error details from a mismatched response. A future revision is expected to make emitting `iss` a MUST for authorization servers.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-ATH-039",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Which statement correctly describes how MCP authorization has evolved across specification revisions?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "2025-03-26 introduced OAuth 2.1 with fallback endpoints on the MCP server's own origin; 2025-06-18 made servers resource servers with Protected Resource Metadata; 2025-11-25 added Client ID Metadata Documents; 2026-07-28 deprecated DCR",
+        "why": "Each part matches the changelogs: the original framework, the resource-server reclassification, CIMD, then DCR deprecation."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "2025-03-26 required Protected Resource Metadata and RFC 8707 from the start; later revisions only renamed fields",
+        "why": "PRM and the RFC 8707 requirement came in 2025-06-18; 2025-03-26 relied on RFC 8414 discovery with default paths."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "2025-06-18 required every MCP server to host its own authorization server; 2026-07-28 removed OAuth for HTTP",
+        "why": "2025-06-18 moved the other way, separating the resource server role, and 2026-07-28 still specifies OAuth 2.1."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "2025-11-25 removed PKCE because Client ID Metadata Documents made it unnecessary",
+        "why": "PKCE has been required throughout; CIMD addresses registration, not code interception."
+      }
+    ],
+    "explanation": "In 2025-03-26 the auth example assumed the MCP server also acted as the authorization server, and clients fell back to `/authorize`, `/token` and `/register` on the server's origin. 2025-06-18 classified MCP servers as OAuth resource servers with Protected Resource Metadata and required RFC 8707. 2025-11-25 added OIDC Discovery, CIMD and incremental scope consent. 2026-07-28 added `iss` validation, `application_type`, issuer-keyed credentials and deprecated DCR.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "source": "interview:auth-history",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-040",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A company adopts the Enterprise-Managed Authorization extension. Which steps does a supporting MCP client perform? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Send the enterprise ID token directly to the MCP server as the bearer token",
+        "why": "The ID token is for the client; the MCP server receives an access token from its own authorization server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Ask each employee to register an OAuth client for every MCP server",
+        "why": "Removing per-user, per-server setup is the point of the extension."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Exchange the identity assertion (ID token or SAML assertion) from the user's SSO login at the enterprise IdP for an ID-JAG",
+        "why": "The client requests an Identity Assertion JWT Authorization Grant from the IdP, which evaluates policy first."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Exchange the ID-JAG at the MCP authorization server for an MCP access token",
+        "why": "The MCP authorization server validates the ID-JAG and issues the access token used with the MCP server."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Redirect the user to the MCP authorization server's authorization endpoint for per-server consent",
+        "why": "The extension tells clients not to redirect the user to the MCP authorization server's authorization endpoint."
+      }
+    ],
+    "explanation": "With Enterprise-Managed Authorization (`io.modelcontextprotocol/enterprise-managed-authorization`) the user signs into the client with corporate SSO. The client exchanges the identity assertion for an ID-JAG at the IdP, which applies group and conditional-access policy, then exchanges the ID-JAG at the MCP authorization server for an access token. Revoking access at the IdP takes effect across clients without per-server revocation.",
+    "reference": "https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization",
+    "source": "interview:enterprise-auth",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://datacamp.com/blog/mcp-interview-questions"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-ATH-041",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python MCP server (SDK 2.3) is configured like this, and its `TokenVerifier` checks only the signature and expiry:\n\n```python\nAuthSettings(\n    issuer_url=\"https://auth.example.com\",\n    resource_server_url=\"https://mcp.example.com/mcp\",\n    required_scopes=[\"notes:read\"],\n)\n```\n\nA pen test shows that a token issued for another API at the same authorization server is accepted. What explains it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`issuer_url` must equal `resource_server_url` for validation to run",
+        "why": "The issuer is the authorization server and the resource URL is the MCP server; they are normally different."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The SDK only validates audiences for stdio servers",
+        "why": "Bearer-token auth applies to HTTP transports; stdio servers take credentials from the environment."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`validate_token_resource` was left unset, which skips the resource check",
+        "why": "In SDK 2.3 leaving it unset raises a deprecation warning and skips the check; the audience check is then the verifier's job."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`required_scopes` replaces audience checking whenever it is set, so only scopes are verified",
+        "why": "Scope enforcement and resource checking are independent; scopes do not switch off the audience check."
+      }
+    ],
+    "explanation": "In the 2.3 SDK, `AuthSettings.validate_token_resource` defaults to `None`. With `resource_server_url` set, `None` emits an `MCPDeprecationWarning` and behaves as `False` (the field docs say 3.0 makes `True` the default). Fix it by setting `validate_token_resource=True` and having the verifier report `AccessToken.resource`, or by checking the expected audience inside the verifier. Either way the server satisfies the spec's MUST to reject tokens not issued for it.",
+    "reference": "https://github.com/modelcontextprotocol/python-sdk",
+    "source": "interview:token-audience",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization",
+        "https://modelcontextprotocol.io/specification/draft/basic/security_best_practices"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-042",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A client acting for a user receives a runtime `insufficient_scope` challenge. Put the step-up authorization steps in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compute the union of the previously requested scopes and the challenged scopes",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Parse `error`, `scope` and `resource_metadata` from the `WWW-Authenticate` header",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run the authorization flow again with that scope set",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retry the original request a limited number of times, then treat failure as permanent",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "A",
+      "C",
+      "D"
+    ],
+    "explanation": "The spec's step-up flow: parse the error information, compute the union of previous and challenged scopes, start (re-)authorization with that set, then retry the original request no more than a few times. Clients SHOULD track scope upgrade attempts per resource and operation so a denied scope does not cause an endless elevation loop.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "source": "interview:step-up-auth",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-043",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool needs both `calendar:write` and `mail:send`. The server first challenges for `calendar:write`; after the user consents and the client retries, it challenges for `mail:send`. Users complain about two consent screens for one action. What should the server change?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Emit every scope required for the operation together in a single challenge",
+        "why": "Servers SHOULD include all scopes required for the current operation in one challenge; incremental challenges force extra round-trips."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return 401 instead of 403 so the client restarts with all of `scopes_supported`",
+        "why": "401 means the token is invalid; misusing it hides the real problem and over-asks scopes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Include every scope in the catalog in each challenge",
+        "why": "Returning the whole catalog is a listed mistake; include what the operation needs, plus related scopes if you choose."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Store the client's granted scopes server-side and add the missing ones silently",
+        "why": "Servers cannot grant scopes; only the authorization server issues tokens, after user consent."
+      }
+    ],
+    "explanation": "Required scopes may depend on the request arguments, but once known they should be emitted together. The best practices describe a minimum approach (only this operation's scopes), a recommended one (plus related scopes that commonly go together) and an extended one (plus scopes the client will likely need soon). Each is valid as long as the strategy is consistent and avoids multiple round-trips for one operation.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "source": "interview:step-up-auth",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/draft/basic/authorization"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "MCP-ATH-044",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your authorization server defines scope hierarchies (for example, `files:admin` implies `files:read`). Which statements match the MCP guidance? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Clients may send a union containing redundant scopes; authorization servers typically normalize that at issuance",
+        "why": "Clients need not deduplicate hierarchically; redundancy is normally normalized by the authorization server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Every challenge must include the scopes the client already holds",
+        "why": "Servers are not required to include previously granted scopes; accumulation is a client job."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Clients must remove narrower scopes implied by broader ones before re-authorizing",
+        "why": "The guidance says clients need not deduplicate hierarchically."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`scopes_supported` must list every scope the server could ever challenge for",
+        "why": "Servers are not required to surface every dynamically issued scope through `scopes_supported`."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "The MCP server must treat a token holding `files:admin` as sufficient for an operation that needs `files:read`",
+        "why": "Servers MUST account for scope hierarchies when deciding whether a token is sufficient."
+      }
+    ],
+    "explanation": "Hierarchy affects how a server decides whether a token is sufficient, not which scopes it emits in a challenge. Clients compute the union of previous and challenged scopes and may end up with semantically redundant entries, which is fine. This split lets servers stay stateless about each client's scope set while clients keep their earlier permissions.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-ATH-045",
+    "domain": 4,
+    "skill": "authorization",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "During a security review of an MCP deployment you check token handling against the authorization security considerations. Which practices are required or recommended there? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Accept long-lived access tokens to reduce load on the authorization server",
+        "why": "Long lifetimes extend how long a stolen token is useful, so short-lived tokens are recommended."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Allow wildcard redirect URIs so new client ports work without re-registration",
+        "why": "Authorization servers MUST validate exact redirect URIs against pre-registered values."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Authorization servers issue short-lived access tokens and rotate refresh tokens for public clients",
+        "why": "Short-lived access tokens are a SHOULD, and rotating refresh tokens for public clients is a MUST."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "All authorization server endpoints use HTTPS, and redirect URIs are either localhost or HTTPS",
+        "why": "These are the two communication-security MUSTs listed in the spec."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Log full `Authorization` headers so incidents can be replayed exactly",
+        "why": "Logged or cached tokens are a named theft vector; the tutorial says never log credentials."
+      }
+    ],
+    "explanation": "The security considerations cover token theft (secure storage, short-lived access tokens, refresh-token rotation for public clients), communication security (HTTPS endpoints, localhost-or-HTTPS redirect URIs), PKCE, mix-up, open redirection (exact redirect URI matching, state checks) and CIMD-specific risks such as SSRF and localhost redirect impersonation.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations",
+    "roleLevel": 3
+  }
+]

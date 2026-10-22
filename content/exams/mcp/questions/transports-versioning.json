@@ -1,0 +1,1952 @@
+[
+  {
+    "id": "MCP-TRV-001",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which transports are the standard transports in MCP revision 2026-07-28? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "WebSocket",
+        "why": "MCP defines no standard WebSocket transport; it could only be a custom transport."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "HTTP+SSE with separate SSE and POST endpoints",
+        "why": "That is the 2024-11-05 transport, deprecated since 2025-03-26."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Streamable HTTP",
+        "why": "Each message is an HTTP POST to one MCP endpoint; replies are JSON or a request-scoped SSE stream."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "stdio",
+        "why": "A client-launched subprocess exchanging newline-delimited JSON-RPC over stdin and stdout."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "gRPC streaming",
+        "why": "Not a standard MCP transport. Custom transports are allowed but not standard."
+      }
+    ],
+    "explanation": "The spec defines two standard bindings: stdio for local subprocess servers and Streamable HTTP for independent server processes, usually remote. The old HTTP+SSE transport is Deprecated. Custom transports are allowed if they keep the JSON-RPC format, the message patterns and the per-request metadata model.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    },
+    "source": "interview:transports"
+  },
+  {
+    "id": "MCP-TRV-002",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "How are messages framed on the stdio transport?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Each message is prefixed with a `Content-Length` header, like the Language Server Protocol",
+        "why": "MCP stdio does not use LSP-style headers; it is newline-delimited."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "One JSON-RPC message per line, with no embedded newlines",
+        "why": "This is the stdio framing rule; messages **MUST NOT** contain embedded newlines."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Messages are length-prefixed binary frames",
+        "why": "Messages are UTF-8 JSON text, one per line."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Messages are pretty-printed JSON separated by blank lines",
+        "why": "Pretty-printing adds newlines inside a message, which breaks the framing."
+      }
+    ],
+    "explanation": "On stdio, the server reads JSON-RPC messages from stdin and writes them to stdout, one message per line. Messages **MUST NOT** contain embedded newlines, so serialise compactly. The same newline-delimited framing is recommended for custom transports over any reliable byte stream, such as Unix sockets or TCP.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-TRV-003",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python stdio server built with the MCP SDK works in tests, but the host drops or garbles responses as soon as `add` is called:\n\n```python\nfrom mcp.server import MCPServer\n\nmcp = MCPServer(\"demo\")\n\n@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers.\"\"\"\n    print(f\"adding {a} and {b}\")\n    return a + b\n\nif __name__ == \"__main__\":\n    mcp.run()\n```\n\nWhat is the bug?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`print` puts a non-JSON line on stdout, the protocol channel; log to stderr",
+        "why": "The server **MUST NOT** write anything to stdout that is not a valid MCP message."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The tool needs `async def`, because synchronous tool functions block the stdio transport while they run",
+        "why": "The SDK accepts synchronous tool functions; that is not what breaks the stream."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The return type must be `str`, because tool results are always text",
+        "why": "An `int` return is fine; the SDK converts it into a result."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`mcp.run()` defaults to HTTP, so the host cannot reach it over stdio",
+        "why": "`run()` uses stdio by default, which is why the stray stdout line matters."
+      }
+    ],
+    "explanation": "On stdio, stdout carries only MCP messages; the server may write UTF-8 logs to stderr. A bare `print()` inserts a plain-text line such as `adding 2 and 3` into the JSON-RPC stream, which the client cannot parse. Use `print(..., file=sys.stderr)` or the `logging` module configured for stderr. This is the most common local-server bug interviewers ask about.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    },
+    "source": "interview:transports"
+  },
+  {
+    "id": "MCP-TRV-004",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "MCP protocol versions are date strings in the form `YYYY-MM-DD` that mark the last date backwards-incompatible changes were made, so a backwards-compatible update does not change the version string.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. The version only changes when an incompatible change is made."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "The version string is a date, and backwards-compatible improvements do not bump it."
+      }
+    ],
+    "explanation": "MCP uses string identifiers such as `2025-11-25` and `2026-07-28`. The version is not incremented for backwards-compatible updates, which allows incremental improvements while preserving interoperability. Revisions are marked Draft, Current or Final; the Current revision is 2026-07-28.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/learn/versioning",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-TRV-005",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which deployment clearly calls for Streamable HTTP rather than stdio?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A shared server used by hundreds of employees from several hosts, with OAuth-based access control",
+        "why": "Many clients, remote access and OAuth all point to an independent HTTP server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A command-line tool that a coding agent starts on demand and stops after the session",
+        "why": "Starting and stopping a local process on demand is exactly what stdio is for."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A Git helper that runs inside a developer's IDE and reads credentials from environment variables",
+        "why": "Local, single-client and environment credentials match stdio; stdio servers should not use the HTTP auth spec."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A filesystem server that one desktop host launches on the user's own machine",
+        "why": "A host-launched local subprocess with one client is the classic stdio case."
+      }
+    ],
+    "explanation": "stdio fits local servers launched by the host, typically serving one client, with credentials taken from the environment. Streamable HTTP fits an independent process that serves many clients, often remotely, with authentication through the spec's OAuth 2.1-based authorization. The protocol messages are identical on both.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    },
+    "source": "interview:transports"
+  },
+  {
+    "id": "MCP-TRV-006",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "What is the protocol version string of the current MCP specification revision (as of October 2026)? Type it exactly as it appears in `_meta`.",
+    "options": [],
+    "accepted": [
+      "2026-07-28"
+    ],
+    "explanation": "The current revision is `2026-07-28`, the stateless revision. Requests declare it in `_meta[\"io.modelcontextprotocol/protocolVersion\"]` (and on HTTP in the `MCP-Protocol-Version` header). Earlier revisions are `2025-11-25`, `2025-06-18`, `2025-03-26` and `2024-11-05`.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/learn/versioning",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-TRV-007",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does a Streamable HTTP server expose in revision 2026-07-28?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A POST endpoint plus a GET endpoint for a standalone notification stream",
+        "why": "The GET stream was removed in 2026-07-28; change notifications use `subscriptions/listen` instead."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A single MCP endpoint path that accepts POST",
+        "why": "The server **MUST** provide a single HTTP endpoint that supports POST, such as `https://example.com/mcp`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Two endpoints: one for an SSE stream and one for POSTs",
+        "why": "That two-endpoint layout belongs to the deprecated 2024-11-05 HTTP+SSE transport."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "One endpoint per method, such as `/tools/list` and `/tools/call`",
+        "why": "All methods share one endpoint; the method lives in the JSON-RPC body (and the `Mcp-Method` header)."
+      }
+    ],
+    "explanation": "Every client message is its own HTTP POST to the one MCP endpoint. The server answers with `application/json` or a `text/event-stream` scoped to that request. The GET stream endpoint and protocol-level sessions were removed in 2026-07-28.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-008",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In revision 2025-11-25 a client opened a connection with an `initialize` request. What replaced that handshake in 2026-07-28?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The server pushes its capabilities on a GET stream when the client connects",
+        "why": "The GET stream was removed, and servers do not push capabilities."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Per-request `_meta` carrying version and capabilities, plus `server/discover`",
+        "why": "The handshake was removed; each request is self-describing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The `Mcp-Session-Id` header, which now carries the negotiated version",
+        "why": "`Mcp-Session-Id` and protocol sessions were removed too."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A shorter `hello` request that must still be sent before any other request",
+        "why": "There is no mandatory opening request. Even `server/discover` is optional for clients."
+      }
+    ],
+    "explanation": "Revision 2026-07-28 removed the `initialize` / `notifications/initialized` handshake. Each request includes `io.modelcontextprotocol/protocolVersion` and `io.modelcontextprotocol/clientCapabilities` in `_meta`, and clients should add `clientInfo`. Servers must implement `server/discover`, which clients may call to learn versions and capabilities up front.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:lifecycle"
+  },
+  {
+    "id": "MCP-TRV-009",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A custom HTTP client sends `Accept: application/json` on every POST to a 2026-07-28 server, and some long tool calls fail. What is wrong?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Accept` must list both `application/json` and `text/event-stream`",
+        "why": "Both content types are required in `Accept`, because the server chooses per request."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The server should ignore `Accept` and always reply with JSON",
+        "why": "The server may choose SSE for a request, for example to stream progress before the result."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The client must send `Accept: text/event-stream` only, because all responses are streamed",
+        "why": "Servers may answer with a single JSON object; the client must accept both."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Accept` must be `application/json-rpc`",
+        "why": "No such media type is used; the two required types are JSON and SSE."
+      }
+    ],
+    "explanation": "The client **MUST** include an `Accept` header listing both `application/json` and `text/event-stream`. For each request the server returns either a single JSON object or an SSE stream (for example progress notifications followed by the response), and the client **MUST** support both.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-010",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each situation on a 2026-07-28 Streamable HTTP server with the HTTP status it should return.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`404 Not Found`",
+        "why": "Unknown method, with a `-32601` JSON-RPC error body."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`202 Accepted`",
+        "why": "Accepted notification, no body."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`400 Bad Request`",
+        "why": "Malformed or unsupported request, such as an unsupported protocol version."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`403 Forbidden`",
+        "why": "Rejected Origin."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The client POSTs a JSON-RPC notification and the server accepts it",
+        "answer": "B"
+      },
+      {
+        "id": "P2",
+        "text": "The request carries an `Origin` header the server does not allow",
+        "answer": "D"
+      },
+      {
+        "id": "P3",
+        "text": "The request names a method the server does not implement",
+        "answer": "A"
+      },
+      {
+        "id": "P4",
+        "text": "The request asks for protocol version `1900-01-01`",
+        "answer": "C"
+      }
+    ],
+    "explanation": "An accepted notification gets `202` with no body. An invalid `Origin` **MUST** get `403` (DNS-rebinding protection). An unimplemented method gets `404` with a `-32601` JSON-RPC error, whose body distinguishes it from a legacy server's plain 404. An unsupported version gets `400` with `UnsupportedProtocolVersionError` (`-32022`); header mismatches and missing capabilities are also 400.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-011",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which statement about `server/discover` in revision 2026-07-28 is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Servers must implement it; clients may call it but can also send any request directly",
+        "why": "This is the spec: mandatory for servers, optional for clients."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Clients must call it before any other request, as they once had to call `initialize`",
+        "why": "It is not a handshake. A client may invoke any RPC inline and handle a version error."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It opens a session and returns an ID that later requests must echo",
+        "why": "There are no sessions; requests stay independent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is optional for servers and only exists for stdio",
+        "why": "Every server **MUST** implement it, on every transport."
+      }
+    ],
+    "explanation": "`server/discover` returns `supportedVersions`, the server's `capabilities`, optional `instructions` and `serverInfo` in `_meta`, plus caching hints (`ttlMs`, `cacheScope`). It is useful for showing server information in one call and as the stdio backward-compatibility probe, but clients are free to skip it.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/discover",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-012",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the connection lifecycle of the **2025-11-25** revision (the legacy, handshake-based era) in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The server responds with the agreed protocol version, its capabilities and `serverInfo`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The client sends `initialize` with its protocol version, capabilities and `clientInfo`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The client closes the connection (on stdio, by closing the server's stdin)",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both sides exchange normal requests using only the negotiated capabilities",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The client sends the `notifications/initialized` notification",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "A",
+      "E",
+      "D",
+      "C"
+    ],
+    "explanation": "Up to 2025-11-25, the lifecycle was initialization, operation and shutdown. The client sent `initialize`; the server replied with the same version if supported (or another one it supports); the client confirmed with `notifications/initialized`; then both sides used only the negotiated capabilities. Revision 2026-07-28 removed this handshake, but interviews still ask about it and dual-era clients still implement it as a fallback.",
+    "reference": "https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:lifecycle"
+  },
+  {
+    "id": "MCP-TRV-013",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A client calls `server/discover` and receives `\"capabilities\": {\"tools\": {\"listChanged\": true}, \"resources\": {}}`. Which action should the client avoid?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Calling `resources/read` on a URI the server listed",
+        "why": "The server declared `resources`, so reading listed resources is supported."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Calling `prompts/list`",
+        "why": "Clients should not attempt features the server has not advertised."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Calling `tools/list` to fetch the tool definitions",
+        "why": "The server declared `tools`, so this is expected."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Opening `subscriptions/listen` with `toolsListChanged: true` to follow tool changes",
+        "why": "`listChanged: true` on tools means the server can honour this filter."
+      }
+    ],
+    "explanation": "Capability negotiation tells each side which features the other supports, so unsupported operations are never attempted. The server advertises capabilities in its `server/discover` result (in 2025-11-25, in the `initialize` response), and the client declares its own on every request. No `prompts` key means no prompt support.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://schoolofcoreai.com/interview-prep/protocols/mcp-interview-questions",
+        "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture"
+      ]
+    },
+    "source": "interview:lifecycle"
+  },
+  {
+    "id": "MCP-TRV-014",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about Server-Sent Events in MCP are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Streamable HTTP SSE streams are resumable with `Last-Event-ID`",
+        "why": "Resumability was removed in 2026-07-28."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "In 2026-07-28 a client opens a standalone GET SSE stream to receive server-initiated requests",
+        "why": "The GET stream was removed, and servers no longer send requests at all."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Streamable HTTP removed SSE entirely and only returns JSON",
+        "why": "SSE remains one of the two allowed response types."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The deprecated HTTP+SSE transport needed a long-lived SSE endpoint plus a separate POST endpoint",
+        "why": "The 2024-11-05 transport used two endpoints and announced the POST URL in an `endpoint` event."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Streamable HTTP can still answer an individual POST with an SSE stream scoped to that request",
+        "why": "The server may choose `text/event-stream` to send request-related notifications before the final response."
+      }
+    ],
+    "explanation": "Streamable HTTP (introduced in 2025-03-26) replaced the HTTP+SSE transport, which needed a persistent SSE connection plus a separate POST endpoint. In Streamable HTTP everything goes to one endpoint by POST, and the server may stream that one response as SSE. Long-lived change notifications now come from a `subscriptions/listen` request whose response is an SSE stream.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:transports"
+  },
+  {
+    "id": "MCP-TRV-015",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A host should treat any output a stdio server writes to stderr as an error condition and surface it to the user as a failure.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Servers may use stderr for informational and debug logs, not just errors."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. The client **SHOULD NOT** assume stderr output indicates an error; it may capture, forward or ignore it."
+      }
+    ],
+    "explanation": "The stdio binding lets servers write UTF-8 logs of any kind (informational, debug, error) to stderr, and the client **MAY** capture, forward or ignore them. Treating every stderr line as a failure produces false alarms. Use stderr as a diagnostic log, and use JSON-RPC errors on stdout for actual protocol failures.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-016",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the stdio transport in 2026-07-28 are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Each client request gets its own pipe so responses cannot interleave",
+        "why": "All server messages share stdout and are correlated by `id` (and `subscriptionId` for subscriptions)."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The client must send `initialize` on stdin before any other message",
+        "why": "There is no handshake in 2026-07-28."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The client must not write JSON-RPC responses to the server's stdin",
+        "why": "Clients send only requests and notifications; servers do not send requests to answer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The server may write JSON-RPC requests to stdout to ask for sampling",
+        "why": "The server **MUST NOT** write requests; it returns an `InputRequiredResult` instead."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "The server must not write anything to stdout that is not a valid MCP message",
+        "why": "stdout carries only MCP messages; logs go to stderr."
+      }
+    ],
+    "explanation": "On stdio, the client writes requests and notifications to stdin, and the server writes responses, request-scoped notifications and subscription notifications to stdout, all on one channel. Server-to-client interactions travel inside `InputRequiredResult` replies, so the server never writes requests and the client never writes responses.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-017",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "How should a host shut down a stdio server cleanly?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Send a `shutdown` request and wait for its response",
+        "why": "MCP defines no shutdown message; the transport signals termination."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Leave it running, since stdio servers are stateless",
+        "why": "Stateless does not mean the process should leak; the client manages its lifecycle."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Close its stdin, wait for exit, and force-terminate only if it hangs",
+        "why": "This is the spec's recommended order; servers should exit when stdin closes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Send `notifications/cancelled` for every request, then `SIGKILL` the process at once",
+        "why": "Closing stdin is the graceful signal; forced termination is the last resort."
+      }
+    ],
+    "explanation": "The client **SHOULD** close the input stream, wait for exit, then force termination if needed (POSIX `SIGTERM` then `SIGKILL`; on Windows, `TerminateProcess` or Job Objects). Servers **SHOULD** exit promptly on stdin end-of-file, the primary and only portable graceful signal. If a server dies unexpectedly, the client should restart it and retry in-flight requests.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-018",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A developer runs a local Streamable HTTP MCP server on their laptop, bound to `0.0.0.0` with no `Origin` checks. What risk does the spec call out, and what are the required defences?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "DNS rebinding; validate `Origin` (403 if invalid) and bind to 127.0.0.1",
+        "why": "These are the spec's protections for local HTTP servers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Port exhaustion; the fix is to use a random high port",
+        "why": "A random port does not prevent a rebinding attack and is not the spec's guidance."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "No risk, because only processes on the same machine can reach `0.0.0.0`",
+        "why": "Binding to `0.0.0.0` listens on all interfaces, so other machines can reach it too."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only TLS downgrade attacks; serving the endpoint over HTTPS removes the need for any other checks",
+        "why": "TLS does not stop a browser page from reaching a local server through DNS rebinding."
+      }
+    ],
+    "explanation": "Servers **MUST** validate the `Origin` header on all incoming connections and respond `403 Forbidden` when it is present and invalid. When running locally they **SHOULD** bind only to localhost (127.0.0.1) rather than all interfaces, and **SHOULD** authenticate all connections. Without this, a remote website can use DNS rebinding to drive a local MCP server.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    },
+    "source": "interview:transports"
+  },
+  {
+    "id": "MCP-TRV-019",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A tool's `inputSchema` has a top-level property `region` annotated with `\"x-mcp-header\": \"Region\"`. When a Streamable HTTP client calls this tool with `\"region\": \"us-west1\"`, what is the **name** of the HTTP header it must add? Type the header name only.",
+    "options": [],
+    "accepted": [
+      "Mcp-Param-Region",
+      "mcp-param-region",
+      "MCP-PARAM-REGION",
+      "Mcp-Param-region"
+    ],
+    "explanation": "The `x-mcp-header` value supplies the name part of `Mcp-Param-{name}`, so the client adds `Mcp-Param-Region: us-west1`. Header names are case-insensitive. Clients **MUST** support this mirroring, and servers that read the body **MUST** check that the header matches the argument.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-020",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A client sends `MCP-Protocol-Version: 2026-07-28`, but the body's `_meta` says `\"io.modelcontextprotocol/protocolVersion\": \"2025-11-25\"`. How must a 2026-07-28 server respond?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use the body value, because the body is the source of truth",
+        "why": "The body is the source of truth, but a mismatch is rejected, not silently resolved."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return `UnsupportedProtocolVersionError` listing supported versions",
+        "why": "Both versions may be supported; the problem is the disagreement between header and body."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Use the header value, because intermediaries already routed on it",
+        "why": "Trusting the header over the body is exactly the inconsistency the rule prevents."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`400 Bad Request` with a `HeaderMismatch` error, code `-32020`",
+        "why": "The header must match the body field; a mismatch **MUST** be rejected with 400 and `HeaderMismatch`."
+      }
+    ],
+    "explanation": "Streamable HTTP mirrors body fields into headers so that load balancers and gateways can route without parsing JSON. To stop different components from acting on different values, servers that process the body **MUST** reject requests where a header disagrees with the body, with `400 Bad Request` and JSON-RPC error `-32020` (HeaderMismatch).",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-021",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A server's `tools/list` returns 12 tools. One of them, `bulk_tag`, puts `x-mcp-header` on a property inside `items` of an array parameter. What must a Streamable HTTP client do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Mirror the first array element's value into the header",
+        "why": "Annotations reached through `items` are not allowed at all, so there is nothing valid to mirror."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Reject the whole `tools/list` response as malformed and show the server as unavailable",
+        "why": "The spec makes sure one bad definition does not block every valid tool."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Exclude only `bulk_tag`, log a warning, keep the rest",
+        "why": "Invalid `x-mcp-header` use makes that one tool definition invalid, and the client excludes just that tool."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ignore the annotation but still offer the tool",
+        "why": "Only non-HTTP clients may ignore `x-mcp-header`; HTTP clients **MUST** reject invalid definitions."
+      }
+    ],
+    "explanation": "`x-mcp-header` may only be applied to primitive (`string`, `integer`, `boolean`) properties that are statically reachable through a chain of `properties` keys: no `items`, composition keywords, conditionals or `$ref`. Clients using Streamable HTTP **MUST** reject invalid definitions by excluding that tool from `tools/list` and **SHOULD** log a warning. stdio clients **MAY** ignore the annotation.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TRV-022",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool parameter annotated with `\"x-mcp-header\": \"City\"` receives the value `Zürich`. How must the client send the header?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Mcp-Param-City: Zürich`, because HTTP allows UTF-8 header values",
+        "why": "Header values must be visible ASCII, space or tab; non-ASCII must be encoded."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The client omits the header, because only ASCII values are mirrored",
+        "why": "Omitting a header whose value is present in the body makes the server reject the request."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Mcp-Param-City: Z%C3%BCrich`",
+        "why": "MCP specifies the Base64 sentinel format, not percent-encoding."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`Mcp-Param-City: =?base64?WsO8cmljaA==?=`",
+        "why": "Non-ASCII values are Base64-encoded from UTF-8 and wrapped in the case-sensitive `=?base64?...?=` sentinel."
+      }
+    ],
+    "explanation": "Values that cannot be represented as plain ASCII (non-ASCII text, control characters, leading or trailing whitespace) **MUST** be sent as `=?base64?{Base64 of the UTF-8 bytes}?=`. The same applies to `Mcp-Name`. Plain-ASCII values that happen to look like the sentinel must also be encoded. Servers decode before comparing with the body.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-023",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A client's SSE response stream for a `tools/call` (id 41) drops halfway through, after two progress notifications. Under 2026-07-28, what should the client do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Re-issue the request as a new request with a new ID",
+        "why": "A broken stream loses the in-flight request, and the client **MUST** re-issue it with a new ID."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Wait, because the server will redeliver the response for id 41 on the next POST",
+        "why": "Message redelivery was removed; nothing will arrive for id 41."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Open a GET stream to the MCP endpoint to collect the pending response",
+        "why": "The GET stream no longer exists; modern servers answer GET with 405."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Reconnect with `Last-Event-ID` to resume from the last progress event",
+        "why": "SSE resumability and `Last-Event-ID` were removed in 2026-07-28."
+      }
+    ],
+    "explanation": "Revision 2026-07-28 removed stream resumability and redelivery. For the server, closing the response stream counts as cancellation of that request. The client **MUST** re-issue it as a new request with a new ID. For non-idempotent tools, design for retries, for example with idempotency keys in the arguments.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-024",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A legacy (2025-11-25) client sends an HTTP GET to the MCP endpoint of a server that supports only 2026-07-28, trying to open a standalone SSE stream. Which HTTP status code should the server return? Type the number.",
+    "options": [],
+    "accepted": [
+      "405"
+    ],
+    "explanation": "A modern-only server **SHOULD** answer GET or DELETE on the MCP endpoint with `405 Method Not Allowed`, ignore any `Mcp-Session-Id` header (and never mint or echo session IDs), and ignore `Last-Event-ID`, since streams are not resumable. In 2025-11-25 the GET opened a standalone SSE stream and DELETE ended a session; neither mechanism exists in 2026-07-28.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-025",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A dual-era stdio client starts a server and sends `server/discover` with its preferred version `2026-07-28`. The server replies with error `-32601` (Method not found). What should the client conclude?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The server is modern but broken, because every server must implement `server/discover`",
+        "why": "Modern servers must implement it, so a method-not-found error points to a legacy server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Send `tools/list` with modern `_meta` and see whether it works",
+        "why": "Some legacy servers would process an era-ambiguous method under legacy semantics, which is exactly what the probe avoids."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Retry `server/discover` with version `2025-11-25` in `_meta`",
+        "why": "Legacy servers do not read per-request `_meta`; the fallback is `initialize`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The server is legacy; fall back to the `initialize` handshake",
+        "why": "Any error other than a recognised modern error (or no reply) identifies a legacy server."
+      }
+    ],
+    "explanation": "On stdio there is no HTTP status to drive fallback, so a dual-era client **SHOULD** probe with `server/discover`. A `DiscoverResult` means modern; a recognised modern error such as `UnsupportedProtocolVersionError` means modern but a different version is needed; any other error or no reply within a timeout means legacy, so fall back to `initialize`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-026",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are writing the era-detection logic of a dual-era MCP client. Which rules are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Do not key the legacy fallback to one specific error code, because legacy servers answer unknown requests with different codes or not at all",
+        "why": "The spec says the fallback **MUST NOT** be keyed to one code; `-32601`, `-32602` or silence are all possible."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Detect the era again before every request, since each request is independent",
+        "why": "Statelessness applies to requests, not to the server's era; probing every time wastes round trips."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Treat a timeout on the probe as a modern server that is slow",
+        "why": "No reply within a reasonable timeout is classified as legacy."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Cache the detected era per server process (stdio) or origin (HTTP), and re-probe if the assumption later fails",
+        "why": "Era is a property of the server; clients **SHOULD** cache it and **MAY** persist it."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Fall back to `initialize` whenever the probe returns any JSON-RPC error, including `-32022`",
+        "why": "`-32022` UnsupportedProtocolVersion is a modern error: retry with a supported version instead."
+      }
+    ],
+    "explanation": "Recognised modern errors (such as `UnsupportedProtocolVersionError`) identify a modern server, and the client retries with a supported version. Anything else, including timeouts and implementation-defined error codes, identifies a legacy server. The era determination should be cached for the server process or origin, and may be persisted across restarts with a re-probe if it later fails.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TRV-027",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A dual-era client POSTs a modern `tools/list` to an HTTP server and gets `400 Bad Request` with an **empty body**. What should it do next?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Report the server as broken; modern servers always include a body",
+        "why": "An empty 400 is the expected signal for falling back, not proof of a broken server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Switch immediately to the deprecated HTTP+SSE transport",
+        "why": "HTTP+SSE fallback follows only if the legacy Streamable HTTP attempt also fails."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Retry the same request with a lower version in `MCP-Protocol-Version`",
+        "why": "That is the right response to a modern `UnsupportedProtocolVersionError`, which this is not."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Fall back to `initialize` and use the legacy revision for later requests",
+        "why": "A 400 without a recognised modern JSON-RPC error body indicates a legacy server."
+      }
+    ],
+    "explanation": "Modern servers also use 400 for `UnsupportedProtocolVersionError`, `MissingRequiredClientCapabilityError` and header-validation failures, so the client **SHOULD** inspect the body. A recognised modern error means stay modern and correct the request. An empty or unrecognised body means fall back to `initialize`, and possibly further to HTTP+SSE.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-028",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A client sends a request with `io.modelcontextprotocol/protocolVersion: \"2027-01-15\"` and receives:\n\n```json\n{\"jsonrpc\": \"2.0\", \"id\": 1, \"error\": {\"code\": -32022, \"message\": \"Unsupported protocol version\", \"data\": {\"supported\": [\"2026-07-28\", \"2025-11-25\"], \"requested\": \"2027-01-15\"}}}\n```\n\nThe client supports `2026-07-28` and `2027-01-15`. What should it do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Retry the request with `2026-07-28`",
+        "why": "The client **SHOULD** pick a mutually supported version from `supported` and retry."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retry with `2027-01-15` after a delay",
+        "why": "The server said clearly that it does not support that version."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Fall back to the `initialize` handshake with `2025-11-25`",
+        "why": "`-32022` is a modern error; falling back to the legacy handshake is explicitly wrong here."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Show a fatal error, because the server rejected the request",
+        "why": "A mutually supported version exists, so the client can recover."
+      }
+    ],
+    "explanation": "Every request names its version, and the server accepts or rejects each one independently. If unsupported, the server **MUST** return `UnsupportedProtocolVersionError` (`-32022`, HTTP 400) with `data.supported` and `data.requested`. The client chooses a mutually supported version and retries, or tells the user if none exists. This is how older clients keep working against newer servers and the reverse.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:versioning"
+  },
+  {
+    "id": "MCP-TRV-029",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each client/server era combination with its outcome under 2026-07-28's compatibility rules.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Works: the server answers `initialize` and serves legacy semantics",
+        "why": "Legacy client, dual-era server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Fails: the legacy client has no fall-forward mechanism",
+        "why": "Legacy client, modern-only server."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Works: the client detects a legacy server and falls back to `initialize`",
+        "why": "Dual-era client, legacy server."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Fails: the client should probe first and show an actionable error",
+        "why": "Modern-only client, legacy server."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A 2025-11-25-only client connects to a server that supports only 2026-07-28",
+        "answer": "B"
+      },
+      {
+        "id": "P2",
+        "text": "A client supporting both eras connects to a 2025-11-25-only server",
+        "answer": "C"
+      },
+      {
+        "id": "P3",
+        "text": "A 2025-11-25-only client connects to a server supporting both eras",
+        "answer": "A"
+      },
+      {
+        "id": "P4",
+        "text": "A 2026-07-28-only client connects to a 2025-11-25-only server",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Only dual-era implementations bridge the eras. A modern-only server rejects `initialize` (on HTTP, the request lacks required headers and gets 400), and legacy clients cannot move forward. A modern-only client cannot talk to a legacy server, but should probe with `server/discover` on stdio so it fails deterministically instead of having a legacy server misinterpret a request.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TRV-030",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are migrating a 2025-11-25 Streamable HTTP server to 2026-07-28 only. It used to store each user's filtered tool list keyed by `Mcp-Session-Id`. Which changes are required? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keep sessions but rename the header to `Mcp-Session`",
+        "why": "Any protocol-level session contradicts the stateless design."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Require clients to call `server/discover` first to create a session",
+        "why": "`server/discover` is optional for clients and creates no state."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Stop minting `Mcp-Session-Id`; ignore it if an old client sends it",
+        "why": "Protocol sessions were removed; modern-only servers ignore the header and never mint or echo one."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Make `tools/list` independent of any connection or session, keeping per-call state in explicit handles",
+        "why": "List endpoints no longer vary per connection, and cross-call state uses explicit identifiers."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Move the session ID into `_meta` as `io.modelcontextprotocol/sessionId`",
+        "why": "No such key exists; sessions were removed, not moved."
+      }
+    ],
+    "explanation": "Revision 2026-07-28 removed protocol-level sessions and `Mcp-Session-Id`. List endpoints (`tools/list`, `resources/list`, `prompts/list`) no longer vary per connection. Servers needing cross-call state use explicit server-minted handles passed as ordinary arguments. Per-user authorization still works, based on the authenticated identity on each request rather than a session.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:lifecycle"
+  },
+  {
+    "id": "MCP-TRV-031",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In revision 2026-07-28, a client whose SSE response stream breaks can reconnect with a `Last-Event-ID` header and the server will replay the missed events.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Resumability via `Last-Event-ID` was removed in 2026-07-28."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Streams are not resumable; the client re-issues the request with a new ID."
+      }
+    ],
+    "explanation": "Revisions 2025-03-26 to 2025-11-25 supported resumable SSE streams with event IDs and `Last-Event-ID`. Revision 2026-07-28 removed resumability and redelivery: a broken response stream loses the in-flight request, and the client **MUST** re-issue it as a new request with a new ID. Modern-only servers ignore `Last-Event-ID`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TRV-032",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Behind nginx, clients of your MCP server receive all progress notifications at once, only when a long tool call finishes. Direct connections work fine. What is the most likely fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch every response to `application/json`, which proxies never buffer",
+        "why": "A single JSON response cannot carry progress before the result at all."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add `Last-Event-ID` so the proxy can flush by event",
+        "why": "`Last-Event-ID` is not supported in 2026-07-28 and does not control buffering."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Send `X-Accel-Buffering: no` on SSE responses",
+        "why": "The spec recommends this header so proxies such as nginx deliver SSE events immediately."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return `202 Accepted` first, then send the response on a GET stream",
+        "why": "Requests are answered on their own POST response; the GET stream was removed."
+      }
+    ],
+    "explanation": "When a server opens an SSE stream it **SHOULD** include `X-Accel-Buffering: no`, which tells reverse proxies such as nginx to disable response buffering. Without it, intermediaries may hold events and break the real-time behaviour. For long-lived streams such as `subscriptions/listen`, servers are also encouraged to send SSE comment lines (starting with `:`) as keep-alives.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-033",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps a Streamable HTTP client follows to build a `tools/call` request for a tool with `x-mcp-header` annotations in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Encode each value (decimal for integers, lowercase booleans, Base64 sentinel when not plain ASCII)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add the `Mcp-Method` and `Mcp-Name` headers",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Read the standard values from the request body: `method` and `params.name`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Inspect the tool's `inputSchema` for properties marked `x-mcp-header` and read each value at its exact path",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Append one `Mcp-Param-{Name}` header per value present in the arguments",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "B",
+      "D",
+      "A",
+      "E"
+    ],
+    "explanation": "The client extracts standard header values from the body, appends `Mcp-Method` and `Mcp-Name`, then reads annotated parameter values from the arguments (omitting a header when the value is absent or null), encodes them and appends `Mcp-Param-{Name}` headers. `MCP-Protocol-Version` is also required on every POST. If the server answers HeaderMismatch, the client **SHOULD** re-fetch `tools/list` and retry.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TRV-034",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A user pastes an MCP URL into a client that supports Streamable HTTP and the deprecated HTTP+SSE transport. The modern POST returns `404 Not Found` with an HTML error page as the body. What should the client try next?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Retry the POST with `MCP-Protocol-Version: 2025-03-26`",
+        "why": "A missing endpoint is not a version problem; this would also return 404."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Send a GET to the URL and treat an SSE `endpoint` event as proof of an HTTP+SSE server",
+        "why": "A 400, 404 or 405 without a recognised modern JSON-RPC error body triggers this fallback."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Report \"method not found\" to the user, since a modern server returns 404 for unknown methods",
+        "why": "A modern 404 carries a `-32601` JSON-RPC error body; an HTML page is not one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retry the POST with a new request ID",
+        "why": "Nothing suggests a transient failure; the endpoint itself may not exist in this form."
+      }
+    ],
+    "explanation": "To support older servers, the client POSTs first. If that fails with 400, 404 or 405 **and** the body is not a recognised modern JSON-RPC error, it issues a GET expecting an SSE stream whose first event is `endpoint`; if that arrives, it uses the 2024-11-05 HTTP+SSE transport from then on. The JSON-RPC body is what separates a modern unknown-method 404 from a server that does not host the modern endpoint.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TRV-035",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A 2025-11-25 MCP server runs as three replicas behind a round-robin load balancer. Tool calls fail intermittently with `404 Not Found`, mostly a few calls into a conversation. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Session state keyed by `Mcp-Session-Id` lives in one replica, and later requests land on others",
+        "why": "In 2025-11-25 a session ID the server does not recognise gets 404, which forces a new session."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Tool names are routed by `Mcp-Name`, which 2025-11-25 servers do not understand",
+        "why": "`Mcp-Name` belongs to 2026-07-28 and would not cause session 404s."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "JSON-RPC IDs collide across replicas",
+        "why": "IDs are chosen by the client and correlated per request, so replicas do not share an ID space."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The load balancer strips the `Accept` header, so replicas refuse SSE",
+        "why": "That would fail every streaming call consistently, not intermittently after a few calls."
+      }
+    ],
+    "explanation": "In 2025-11-25, a server could assign `Mcp-Session-Id` at initialization. The spec requires 404 for terminated sessions, SDKs (such as the Python SDK's session manager) also answer 404 for unknown IDs, and a client that gets 404 **MUST** start a new session with `initialize`. With in-memory sessions behind round-robin balancing, that happens whenever a request reaches another replica. Fixes for that era are sticky routing or shared session storage. Revision 2026-07-28 removes sessions, so any replica can serve any request.",
+    "reference": "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    },
+    "source": "interview:scaling"
+  },
+  {
+    "id": "MCP-TRV-036",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You must scale a 2026-07-28 Streamable HTTP server to thousands of concurrent agents behind an L7 load balancer, which should route expensive tools to a dedicated pool without parsing JSON bodies. Which property of the transport makes this possible?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`server/discover` returns a replica ID that clients put in every request",
+        "why": "Discovery returns versions, capabilities and identity, not routing affinity."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Clients open a GET stream per replica, so the balancer can count active agents",
+        "why": "There is no GET stream; change notifications use `subscriptions/listen` POSTs."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Self-contained POSTs with body-validated `Mcp-Method` and `Mcp-Name` headers",
+        "why": "No sessions means any replica can serve any request, and validated headers let the balancer route safely."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `Mcp-Session-Id` header lets the balancer pin each agent to one replica",
+        "why": "Sessions and `Mcp-Session-Id` do not exist in 2026-07-28."
+      }
+    ],
+    "explanation": "Because 2026-07-28 requests are self-contained (version and capabilities in `_meta`, no sessions), replicas can scale horizontally. The required `Mcp-Method` header, and `Mcp-Name` for `tools/call`, `resources/read` and `prompts/get`, let intermediaries route or rate-limit without parsing the body, and servers **MUST** reject mismatches so routing and execution cannot disagree.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    },
+    "source": "interview:scaling"
+  },
+  {
+    "id": "MCP-TRV-037",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your API gateway rate-limits by the `Mcp-Name` header to protect an expensive tool. An attacker sends `MCP-Protocol-Version: 2025-06-18` with `Mcp-Name: cheap_tool` and a body that calls `expensive_tool`. What should the gateway do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Reject the request, because header-to-body validation is only required from 2026-07-28 on",
+        "why": "Intermediaries enforcing policy on mirrored headers **SHOULD** reject older or missing versions."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Forward it and rely on the server to reject the mismatch with `-32020`",
+        "why": "A 2025-06-18 server never validates these headers, so the mismatch would go through."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Rewrite `Mcp-Name` from the body and forward the request",
+        "why": "That requires parsing the body, which the headers exist to avoid, and still lets old clients through unvalidated."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Trust `Mcp-Name`, since headers are the source of truth for intermediaries",
+        "why": "The body is the source of truth; trusting the header lets an attacker bypass the limit."
+      }
+    ],
+    "explanation": "Servers on 2026-07-28 must reject header/body mismatches with `-32020`, but older revisions did not define `Mcp-Method` or `Mcp-Name` validation. The spec therefore says intermediaries that route or rate-limit on mirrored headers **SHOULD** check that `MCP-Protocol-Version` names a version requiring validation, and reject older or missing versions instead of trusting unvalidated headers.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:scaling"
+  },
+  {
+    "id": "MCP-TRV-038",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which of these are changes introduced in revision 2026-07-28? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A mandatory `server/discover` RPC for servers",
+        "why": "Added so clients can learn versions and capabilities without a handshake."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A standard WebSocket transport",
+        "why": "No WebSocket transport was added; the standard bindings are stdio and Streamable HTTP."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`subscriptions/listen` replacing the GET stream and `resources/subscribe`",
+        "why": "One opt-in, long-lived POST-response stream for change notifications."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Multi Round-Trip Requests replacing server-initiated requests",
+        "why": "Servers return `InputRequiredResult` and clients retry with `inputResponses`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A required `Mcp-Session-Id` on every HTTP request",
+        "why": "The opposite: sessions and `Mcp-Session-Id` were removed."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Restoring JSON-RPC batching",
+        "why": "Batching was added in 2025-03-26 and removed in 2025-06-18; 2026-07-28 did not bring it back."
+      }
+    ],
+    "explanation": "The 2026-07-28 revision made MCP stateless: no `initialize` and no sessions, per-request `_meta`, mandatory `server/discover`, `subscriptions/listen`, MRTR with `resultType`, no SSE resumability, `Mcp-Method`/`Mcp-Name` headers, cacheable list results, and tasks moved to an extension. It also deprecated Roots, Sampling, Logging and Dynamic Client Registration. Production impact: easier horizontal scaling and new client fallback logic.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:versioning"
+  },
+  {
+    "id": "MCP-TRV-039",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each MCP specification revision with one of its headline changes.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "2026-07-28",
+        "why": "Stateless core."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "2025-03-26",
+        "why": "Streamable HTTP and the OAuth 2.1 authorization framework."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "2025-11-25",
+        "why": "Experimental tasks and URL-mode elicitation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "2025-06-18",
+        "why": "Structured tool output and elicitation; batching removed."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Replaced HTTP+SSE with Streamable HTTP and added OAuth 2.1-based authorization",
+        "answer": "B"
+      },
+      {
+        "id": "P2",
+        "text": "Added structured tool output and elicitation, and removed JSON-RPC batching",
+        "answer": "D"
+      },
+      {
+        "id": "P3",
+        "text": "Added experimental tasks, URL-mode elicitation and Client ID Metadata Documents",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Removed the initialize handshake and sessions, and added `server/discover`",
+        "answer": "A"
+      }
+    ],
+    "explanation": "2025-03-26 introduced Streamable HTTP, OAuth 2.1 authorization, tool annotations and (briefly) batching. 2025-06-18 removed batching and added structured output, elicitation, resource links and the `MCP-Protocol-Version` header. 2025-11-25 added experimental tasks, URL-mode elicitation, icons and Client ID Metadata Documents. 2026-07-28 made the core stateless.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    },
+    "source": "interview:versioning"
+  },
+  {
+    "id": "MCP-TRV-040",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your 2026-07-28 server still supports Sampling, which the registry lists as Deprecated with \"earliest removal: first revision released on or after 2027-07-28\". A manager asks whether Sampling will definitely be gone in the first revision after that date. What is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "No: once deprecated, a feature can never be removed without a new major version number",
+        "why": "MCP uses date versions, and deprecated features can be removed in a later revision."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Not definitely: it becomes eligible then, and Core Maintainers decide",
+        "why": "Earliest removal marks eligibility; the actual removal is a later Core Maintainer decision."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Yes, and Tier 1 SDKs must already have deleted it",
+        "why": "Spec removal does not oblige SDKs to drop features; Tier 1 SDKs must mark them deprecated."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Yes: deprecated features are removed automatically when the window ends",
+        "why": "Nothing is automatic, and features may stay Deprecated much longer than the minimum window."
+      }
+    ],
+    "explanation": "Under the feature lifecycle policy (SEP-2596) a feature is Active, Deprecated or Removed. Deprecated features stay in the spec for at least twelve months (at least ninety days under expedited removal for active security risks) and become eligible in the first Current revision released after the window. Removal is decided by Core Maintainers and may come later. Tier 1 SDKs must mark deprecated APIs and should emit runtime warnings.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/deprecated",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TRV-041",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Based on revision 2026-07-28, which trends best describe the direction of the MCP specification? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Moving optional or specialised features out of the core into negotiated extensions, as happened with tasks",
+        "why": "Tasks became the `io.modelcontextprotocol/tasks` extension, and extensions are negotiated through capabilities."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Freezing the protocol so no future revision can deprecate anything",
+        "why": "The new lifecycle policy exists precisely to deprecate and remove features in an orderly way."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Adding more server-initiated JSON-RPC requests over long-lived streams",
+        "why": "Server-initiated requests were replaced by MRTR."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Making the server hold more connection state so clients can stay simpler",
+        "why": "The direction is the opposite: a stateless core with explicit handles."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Retiring client features with low adoption or better alternatives, such as Roots, Sampling and Logging, through a formal deprecation window",
+        "why": "These were deprecated in 2026-07-28 under the new lifecycle policy."
+      }
+    ],
+    "explanation": "Revision 2026-07-28 shows the direction clearly: a small stateless core that scales horizontally, optional features moved to extensions negotiated in the `extensions` capability, and a formal Active, Deprecated and Removed lifecycle with a public registry. A good interview answer ties these trends to what they mean for server builders: horizontal scaling, explicit state and planned migrations.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://www.igmguru.com/blog/mcp-interview-questions"
+      ]
+    },
+    "source": "interview:versioning"
+  },
+  {
+    "id": "MCP-TRV-042",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A dual-era stdio client launches an unknown server that turns out to support only 2025-11-25. Put the client's steps in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Receive an error that is not a recognised modern error (or no reply before the timeout)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Send `initialize` with `protocolVersion: \"2025-11-25\"`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Launch the server as a subprocess",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Send `server/discover` with `2026-07-28` as the preferred version in `_meta`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Record the server as legacy for this process and continue with legacy requests",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Receive the initialize result and send `notifications/initialized`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "D",
+      "A",
+      "B",
+      "F",
+      "E"
+    ],
+    "explanation": "On stdio the client **SHOULD** probe with `server/discover` before anything else. A non-modern error or a timeout identifies a legacy server, so the client falls back to the 2025-11-25 handshake: `initialize`, the result, then `notifications/initialized`. The era is a property of the server, so the client caches it for the lifetime of that process instead of probing again.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TRV-043",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your server supports the `io.modelcontextprotocol/tasks` extension and would normally return a task handle for slow `tools/call` requests. A request arrives whose `clientCapabilities` does not declare that extension. What should the server do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Ask the client to upgrade by sending a server-initiated request",
+        "why": "Servers do not initiate requests in 2026-07-28."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return the task handle anyway, since the client will see the unfamiliar `resultType` and adapt",
+        "why": "Clients must treat unrecognised result types as invalid, so the client would fail."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Revert to core behaviour, such as a normal result, or reject the request with an appropriate error",
+        "why": "If one side does not support an extension, the supporting side **MUST** fall back to core or reject."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return `UnsupportedProtocolVersionError`, since extensions are versions",
+        "why": "Extensions are negotiated through capabilities, not protocol versions."
+      }
+    ],
+    "explanation": "Extensions are advertised in the `extensions` field of client and server capabilities, keyed by identifiers such as `io.modelcontextprotocol/tasks`. If one party supports an extension and the other does not, the supporting party **MUST** either revert to core protocol behaviour or reject the request with an appropriate error, and extensions **SHOULD** document their fallback. This lets you ship custom extensions without breaking clients that ignore them.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:versioning"
+  },
+  {
+    "id": "MCP-TRV-044",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your company's MCP server must keep serving existing 2025-11-25 clients while new clients move to 2026-07-28, on the same HTTP endpoint. Which design does the spec allow?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A dual-era server that picks legacy or stateless semantics from how each client opens",
+        "why": "The spec lets a dual-era server choose its behaviour from how each client opens, on one endpoint."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Two endpoints, `/mcp/v1` and `/mcp/v2`, which the spec requires",
+        "why": "Nothing requires separate paths; serving both eras on one endpoint is allowed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Upgrade every legacy client's session by returning `UnsupportedProtocolVersionError` to `initialize`",
+        "why": "Legacy clients have no fall-forward mechanism, so this simply breaks them."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Answer `initialize` but then serve that client statelessly with 2026-07-28 semantics",
+        "why": "After `initialize`, the client expects the negotiated legacy revision's behaviour."
+      }
+    ],
+    "explanation": "A server that wants to support both legacy clients (with the `initialize` handshake) and modern clients (with per-request `_meta`) **MAY** implement both. It picks semantics from how the client opens: modern `_meta` means stateless 2026-07-28 handling, while `initialize` means legacy semantics scoped to the stdio process or HTTP session. Both eras may be served concurrently on the same endpoint.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:versioning"
+  },
+  {
+    "id": "MCP-TRV-045",
+    "domain": 1,
+    "skill": "transports-versioning",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An HTTP request reaches your 2026-07-28 server with no `MCP-Protocol-Version` header at all. Your product still promises support for very old clients. What does the spec allow?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Always assume `2026-07-28`, the current revision",
+        "why": "Modern clients must send the header, so a missing header never means a modern client."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return `UnsupportedProtocolVersionError` listing every version you support so the client can choose one",
+        "why": "Without a requested version there is nothing to compare; the spec's rule is about treating the request as 2025-03-26 or failing validation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Always assume `2025-11-25`, the latest legacy revision",
+        "why": "2025-11-25 clients send the header; its absence points to an older client."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Treat it as `2025-03-26` if you support pre-2025-06-18 clients; otherwise reject it",
+        "why": "Revisions before 2025-06-18 did not define the header, so its absence can mean such a client."
+      }
+    ],
+    "explanation": "The `MCP-Protocol-Version` header was introduced in 2025-06-18. A server that supports clients on earlier versions **MAY** treat a request without the header as `2025-03-26`. A server that does not support them **MUST** reject such requests through server validation (`400 Bad Request`). This shows how compatibility promises translate into concrete transport rules.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
+      ]
+    },
+    "source": "interview:versioning"
+  }
+]

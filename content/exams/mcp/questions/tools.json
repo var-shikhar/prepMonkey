@@ -1,0 +1,1979 @@
+[
+  {
+    "id": "MCP-TLS-001",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In an MCP tool definition returned by `tools/list`, which field is required and holds the JSON Schema that describes the tool's arguments?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`arguments`",
+        "why": "That is the field in the `tools/call` request that carries the actual argument values, not part of the definition."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`outputSchema`",
+        "why": "Optional, and it describes the shape of `structuredContent` in the result, not the arguments."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`inputSchema`",
+        "why": "Correct: it is the one required schema field, and it must be a valid JSON Schema object with `type: \"object\"` at the root."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`annotations`",
+        "why": "Optional behaviour hints such as `readOnlyHint`; they say nothing about argument shape."
+      }
+    ],
+    "explanation": "A tool definition has a required `name` and `inputSchema`, plus optional `title`, `description`, `icons`, `outputSchema` and `annotations`. Tool arguments are always a JSON object, so the input schema must have `type: \"object\"` at its root. Interviewers use this to check that you know the difference between the schema advertised by `tools/list` and the values sent by `tools/call`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-002",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In MCP, tools are a user-controlled primitive: the protocol requires the user to pick each tool explicitly before the model is allowed to call it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Tools are designed to be model-controlled; it is prompts that are user-controlled."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: tools are model-controlled. The spec says there SHOULD be a human in the loop who can deny invocations, but it leaves the interaction pattern to the application."
+      }
+    ],
+    "explanation": "The spec describes tools as model-controlled: the language model discovers and invokes them based on context. For safety it recommends (SHOULD) a human in the loop with the ability to deny calls, clear indicators when tools run, and confirmation prompts, but the protocol does not mandate a specific interaction model.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-TLS-003",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Which JSON-RPC method does an MCP client send to invoke a tool on a server? Type the method name.",
+    "options": [],
+    "accepted": [
+      "tools/call",
+      "`tools/call`"
+    ],
+    "explanation": "Clients discover tools with `tools/list` and invoke one with `tools/call`, passing `name` and an `arguments` object in `params`. The result carries a `content` array, optional `structuredContent`, and an optional `isError` flag.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-004",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A `get_current_time` tool takes no parameters. Which `inputSchema` does the 2026-07-28 spec recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`null`",
+        "why": "The spec says `inputSchema` MUST be a valid JSON Schema object, not `null`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{ \"type\": \"object\", \"properties\": {}, \"required\": [] }`",
+        "why": "Valid, but an empty `properties` map does not forbid extra keys, so it still accepts any object."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{ \"type\": \"object\" }`",
+        "why": "Valid, but it accepts any object, including one with unexpected properties, so it is not the recommended form."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`{ \"type\": \"object\", \"additionalProperties\": false }`",
+        "why": "Correct: the spec marks this as recommended because it accepts only an empty arguments object."
+      }
+    ],
+    "explanation": "For a parameterless tool the spec lists two valid schemas: `{ \"type\": \"object\", \"additionalProperties\": false }` (recommended, accepts only `{}`) and `{ \"type\": \"object\" }` (accepts any object). `null` is explicitly forbidden, and a schema without a root `type: \"object\"` does not fit the Tool type.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TLS-005",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each thing a tool wants to return with the content block type that fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`text`",
+        "why": "Plain text in a `text` field."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`image`",
+        "why": "Base64 `data` plus a `mimeType`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`resource_link`",
+        "why": "A URI the client can fetch or subscribe to, without the contents."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`resource`",
+        "why": "An embedded resource whose contents travel inline with its URI."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A short human-readable summary of what the tool did",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A PNG chart generated by the tool, sent inline",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A pointer to `file:///project/src/main.rs` without sending the file's contents",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The full text of a config file, sent inline together with its URI and MIME type",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Unstructured tool results are an array of content blocks: `text`, `image` and `audio` (base64 `data` with `mimeType`), `resource_link` (a URI, name and optional MIME type that the client may read later) and `resource` (an embedded resource with `text` or `blob`). All of them accept the same optional annotations (`audience`, `priority`, `lastModified`) used by resources.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-006",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which of these tool names follows the 2026-07-28 tool naming rules?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`get user`",
+        "why": "Tool names SHOULD NOT contain spaces."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`admin.tools.list`",
+        "why": "Correct: ASCII letters, digits, underscore, hyphen and dot are the allowed characters, so dotted names are fine."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`créer_facture`",
+        "why": "Only ASCII letters are in the allowed set, so the accented `é` falls outside it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`files.search,recent_only`",
+        "why": "Commas and other special characters SHOULD NOT appear in tool names."
+      }
+    ],
+    "explanation": "Tool names SHOULD be 1 to 128 characters, case-sensitive, unique within a server, and use only `A-Z`, `a-z`, `0-9`, `_`, `-` and `.`. The spec's own examples are `getUser`, `DATA_EXPORT_v2` and `admin.tools.list`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-TLS-007",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Under the 2026-07-28 spec, a tool name SHOULD be between 1 and how many characters long, inclusive? Type a number.",
+    "options": [],
+    "accepted": [
+      "128"
+    ],
+    "explanation": "Tool names SHOULD be 1 to 128 characters long (inclusive), case-sensitive, and restricted to ASCII letters, digits, `_`, `-` and `.`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-TLS-008",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A server declares `\"capabilities\": { \"tools\": { \"listChanged\": true } }`. What does `listChanged: true` tell the client?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Clients may register their own tools on the server",
+        "why": "There is no protocol method for a client to add tools to a server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Its `tools/list` result changes on every call, so it must never be cached",
+        "why": "The opposite: the spec asks for deterministic ordering and adds `ttlMs` so clients can cache the list."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The server will send `notifications/tools/list_changed` when its set of tools changes",
+        "why": "Correct: the client can then re-fetch the list with `tools/list`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The server will push the complete updated tool list, with full schemas, inside each change notification",
+        "why": "The notification carries no list; the client calls `tools/list` again to get the new set."
+      }
+    ],
+    "explanation": "`listChanged` advertises that the server emits `notifications/tools/list_changed`. In 2026-07-28 it is delivered to clients that opened a `subscriptions/listen` stream with `toolsListChanged: true`. The notification is only a signal; the client responds by calling `tools/list` again.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TLS-009",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `book_flight` tool receives `departure_date: \"2023-01-05\"`, a date in the past. The arguments are well-formed and match the `inputSchema`. How should the server report the problem?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Return a JSON-RPC error with code `-32603` (Internal error)",
+        "why": "Nothing went wrong inside the server; this is a fixable input problem, and an internal error hides that from the model."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return a JSON-RPC error with code `-32602` (Invalid params), since an argument value is invalid",
+        "why": "Protocol errors are for malformed requests and unknown tools; the model is less likely to see them and recover."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Return a result with `isError: true` explaining the date must be in the future",
+        "why": "Correct: input validation and business-rule failures are tool execution errors, which the client SHOULD show to the model so it can retry."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return a successful result with an empty `content` array",
+        "why": "The model would think the booking worked; silent failure is the worst outcome."
+      }
+    ],
+    "explanation": "MCP has two error channels. Protocol errors (unknown tool, a request that fails the `CallToolRequest` schema, server failures) are JSON-RPC errors. Tool execution errors (API failures, input validation such as a wrong date format or out-of-range value, business logic) go in a normal result with `isError: true` and an actionable message, so the model can self-correct.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-010",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "In the 2026-07-28 spec's error-handling example, what JSON-RPC error code does a server return when `tools/call` names a tool it does not have? Type the number.",
+    "options": [],
+    "accepted": [
+      "-32602"
+    ],
+    "explanation": "An unknown tool is a protocol error, returned as a standard JSON-RPC error. The spec's example uses `-32602` (Invalid params) with a message such as `Unknown tool: invalid_tool_name`. Contrast that with a tool that exists but fails while running, which returns a result with `isError: true`.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:error-handling",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-011",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `get_weather` tool needs a required `city` string and an optional `units` that must be `celsius` or `fahrenheit`. Which `inputSchema` is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "```json\n{\"type\": \"object\",\n \"properties\": {\"city\": {\"type\": \"string\", \"required\": true},\n   \"units\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}}\n```",
+        "why": "In JSON Schema 2020-12 `required` is an array on the parent object; a boolean inside a property is old draft-03 style and fails meta-schema validation."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "```json\n{\"type\": \"object\",\n \"properties\": {\"city\": {\"type\": \"string\"},\n   \"units\": {\"type\": \"enum\", \"values\": [\"celsius\", \"fahrenheit\"]}},\n \"required\": [\"city\"]}\n```",
+        "why": "`enum` is a keyword, not a type, so `\"type\": \"enum\"` is not a valid schema."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "```json\n{\"type\": \"object\",\n \"properties\": {\"city\": {\"type\": \"string\"},\n   \"units\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}},\n \"required\": [\"city\"]}\n```",
+        "why": "Correct: `required` lists only `city`, and `enum` restricts `units` to the two allowed strings."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```json\n{\"type\": \"object\",\n \"properties\": {\"city\": {\"type\": \"string\"},\n   \"units\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}},\n \"required\": [\"city\", \"units\"]}\n```",
+        "why": "Listing `units` in `required` makes it mandatory, but the tool wants it optional."
+      }
+    ],
+    "explanation": "Tool input schemas default to JSON Schema 2020-12. Required properties are named in a `required` array on the object, and a closed set of values is expressed with `enum`. The invalid variants here fail the 2020-12 meta-schema, and the spec says schemas MUST be valid for their dialect.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://genai.acloudfan.com/150.mcp/50000.interview-questions/index.html",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-012",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A tool declares an `outputSchema`. Which result follows the 2026-07-28 spec?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`structuredContent` that conforms to the schema, plus the same JSON serialized in a `text` block",
+        "why": "Correct: structured data for clients that use it, and a text copy for backwards compatibility, which the spec says SHOULD be included."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A content block of type `json` that holds the structured object",
+        "why": "There is no `json` content type; structured data goes in the `structuredContent` field."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`structuredContent` only, with `content` omitted because the structured data already carries everything",
+        "why": "`content` is a required array on `CallToolResult`, and the text copy is recommended for older clients."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `text` block holding the JSON, with no `structuredContent`",
+        "why": "When an output schema is declared, servers MUST return structured results that conform to it."
+      }
+    ],
+    "explanation": "If `outputSchema` is present, servers MUST return `structuredContent` that conforms to it, and clients SHOULD validate against it. For backwards compatibility a tool that returns structured content SHOULD also return the serialized JSON in a text block. Note that `structuredContent` is server-produced data and has nothing to do with LLM \"structured outputs\".",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-013",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If a tool's annotations set `readOnlyHint: false` and omit `destructiveHint`, a client should assume the tool performs only additive, non-destructive updates.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The default for `destructiveHint` is `true`, so an unannotated mutating tool should be treated as possibly destructive."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `destructiveHint` defaults to `true`. The safe assumption for a tool that may write is that it may also destroy."
+      }
+    ],
+    "explanation": "Annotation defaults are deliberately cautious: `readOnlyHint` false, `destructiveHint` true, `idempotentHint` false, `openWorldHint` true. `destructiveHint` and `idempotentHint` only mean something when `readOnlyHint` is false. And even when set, annotations are hints that clients MUST treat as untrusted unless the server is trusted.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/schema",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-014",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does the 2026-07-28 spec say servers SHOULD return `tools/list` results in a deterministic order?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "So clients can detect changes by comparing positions instead of listening for notifications",
+        "why": "Change detection is what `notifications/tools/list_changed` and `ttlMs` are for."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "To let clients cache the list and raise LLM prompt-cache hit rates",
+        "why": "Correct: this is the reason the changelog and tools page give."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "So the model always calls the first listed tool when it is unsure",
+        "why": "Ordering is not a selection mechanism, and no such model behaviour is specified."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Because pagination cursors are numeric offsets into the list",
+        "why": "Cursors are opaque strings; clients must not assume they are offsets."
+      }
+    ],
+    "explanation": "If the underlying set of tools has not changed, the same request should return the same order. Tool definitions often sit at the front of a model prompt, so a stable order keeps the prompt prefix identical and improves prompt-cache hit rates, and it lets clients cache the list.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TLS-015",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A host connects to two servers that both expose a tool named `search`. What does the spec recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Let the most recently connected server's `search` replace the other one",
+        "why": "Silent shadowing hides a tool from the user and is exactly how a malicious server can hijack calls."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Disambiguate in the host, for example by prefixing names with a server identifier the host controls",
+        "why": "Correct: name uniqueness is only per server, so aggregators SHOULD implement a disambiguation strategy such as prefixing."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prefix each tool with the `serverInfo.name` that the server reports in each result's `_meta`",
+        "why": "The spec warns that `serverInfo.name` is not guaranteed to be unique and SHOULD NOT be relied on for disambiguation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ask one server to rename its tool through a protocol request",
+        "why": "There is no protocol method for renaming another party's tools."
+      }
+    ],
+    "explanation": "Tool names are unique only within one server. Clients and proxies that aggregate several servers SHOULD disambiguate, for example with a prefix derived from their own configuration (such as the key under which the user added the server). Self-reported `serverInfo.name` values can collide, so they are a poor key.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-016",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Under 2026-07-28, a `list_users` tool declares `\"outputSchema\": {\"type\": \"array\", \"items\": {...}}` and returns `\"structuredContent\": [{...}, {...}]`. Is that valid?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Yes: the output schema may be any JSON Schema 2020-12 and `structuredContent` may be any JSON value",
+        "why": "Correct: the spec's own `list_users` example returns an array."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only if the result also sets `isError: true`",
+        "why": "`isError` marks a failed call; it has nothing to do with the shape of structured data."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only if the array is also returned as an embedded `resource` block",
+        "why": "No such pairing exists; the recommended companion is a serialized text block."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No: `structuredContent` must always be a JSON object, so the array has to be wrapped under a key such as `users`",
+        "why": "Earlier revisions restricted it to an object; 2026-07-28 loosened it to any JSON value."
+      }
+    ],
+    "explanation": "SEP-2106 in the 2026-07-28 revision loosened `inputSchema` and `outputSchema` to allow any JSON Schema 2020-12 keywords and let `structuredContent` be any JSON value: object, array, string, number, boolean or null. Input schemas still need `type: \"object\"` at the root because arguments are always an object.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TLS-017",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of a typical tool round-trip in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The server returns the result and the client hands it back to the model",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The client sends `tools/list` and receives the tool definitions",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The host puts the definitions in the model's context and the model chooses a tool",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The client sends `tools/call` with the tool name and arguments",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "C",
+      "D",
+      "A"
+    ],
+    "explanation": "Discovery comes first (`tools/list`), then the model selects a tool from the definitions it was given, then the client invokes it with `tools/call`, and finally the result goes back to the model, which decides what to do next. Hosts SHOULD let a human see and deny the call before it runs.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 1
+  },
+  {
+    "id": "MCP-TLS-018",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Which description for a `search_orders` tool is most likely to make a model pick and use it correctly?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "\"The most powerful tool for anything about orders, customers, payments or shipping. ALWAYS call this tool first, before any other tool.\"",
+        "why": "Overclaims scope and tries to override the model's choice; this also looks like the tool-poisoning pattern hosts watch for."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "\"Calls GET /v2/orders with params q, lim and cur.\"",
+        "why": "Describes the backend, not the task; the model has to guess what `q`, `lim` and `cur` mean."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "\"Search a customer's orders by email or order number. Use for order status or delivery questions. Returns up to 20 orders, newest first.\"",
+        "why": "Correct: it states the purpose, when to use it, the inputs and the shape and limit of the output."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "\"Orders API wrapper.\"",
+        "why": "Says nothing about when to use the tool, what it accepts or what it returns."
+      }
+    ],
+    "explanation": "The description is the model's main input for tool selection. Good descriptions read like an explanation to a new colleague: what the tool does, when to use it, what the parameters mean and what comes back, including limits. Vague, backend-oriented or self-promoting descriptions lower selection accuracy.",
+    "reference": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-019",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "A client needs a display name for a tool. Order the sources it should try, from highest precedence to lowest.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`annotations.title`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The tool's top-level `title`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The tool's `name`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "A",
+      "C"
+    ],
+    "explanation": "The schema gives the display-name precedence for tools as `title`, then `annotations.title`, then `name`. `name` is the programmatic identifier used in `tools/call`; `title` is the human-friendly label.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/schema",
+    "roleLevel": 2
+  },
+  {
+    "id": "MCP-TLS-020",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which of these does the 2026-07-28 tools spec list as things servers MUST do? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Sanitize tool outputs",
+        "why": "Correct: outputs MUST be sanitized before they go back to the client."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Skip validation when the client has already checked arguments against `inputSchema`",
+        "why": "The client's check is not a security boundary; servers MUST validate regardless."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompt the user for confirmation before sensitive operations",
+        "why": "That is a client SHOULD; the server has no user interface of its own."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Rate limit tool invocations",
+        "why": "Correct: rate limiting is in the server MUST list."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Show tool inputs to the user before calling the server",
+        "why": "Also a client SHOULD, aimed at catching data exfiltration before the call is sent."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Validate all tool inputs",
+        "why": "Correct: a server MUST validate inputs; the model can send anything, whatever the schema says."
+      }
+    ],
+    "explanation": "Server MUSTs: validate all tool inputs, implement proper access controls, rate limit invocations and sanitize outputs. Client SHOULDs: confirm sensitive operations, show inputs before calling, validate results before passing them to the model, follow the `$ref` resolution rules, set timeouts and log tool usage. An input schema guides the model; it does not enforce anything on the server.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-021",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which of these failures should be returned as a JSON-RPC error response rather than as a tool result with `isError: true`? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The request's `arguments` field is a string instead of an object, so it fails the `CallToolRequest` schema",
+        "why": "Correct: malformed requests that fail the request schema are protocol errors."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `date` argument is a string but in `DD/MM/YYYY` instead of ISO 8601",
+        "why": "The spec lists a date in the wrong format as a tool execution error the model can fix."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The upstream weather API returns HTTP 503",
+        "why": "API failures are tool execution errors, reported with `isError: true` so the model can decide to retry or explain."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`tools/call` names a tool the server does not expose",
+        "why": "Correct: unknown tools are protocol errors."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The customer ID the model passed does not exist",
+        "why": "A business-logic failure; an actionable `isError` message lets the model look the customer up first."
+      }
+    ],
+    "explanation": "The split is about who can fix it. Structural problems (unknown tool, a request that fails the schema, server errors) are JSON-RPC errors, which clients MAY show the model. Problems the model can act on (API failures, validation of values, business rules) are tool execution errors with `isError: true`, which clients SHOULD show the model.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:error-handling",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewbaba.com/mcp-interview-questions/",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-022",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A host lets users install MCP servers from a public registry. To cut down on approval prompts, a developer proposes auto-approving any tool marked `readOnlyHint: true`. What is the right call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Ship it: the spec defines `readOnlyHint: true` to mean the tool does not modify its environment, so prompting adds no safety",
+        "why": "The field is defined that way, but it is a hint that clients MUST treat as untrusted unless the server is trusted."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Do not base approval on annotations from untrusted servers; only honour them for servers the user or admin has explicitly trusted",
+        "why": "Correct: annotations are not guaranteed to describe behaviour faithfully, so a malicious server could mark a destructive tool read-only."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ship it, but also require `destructiveHint: false`",
+        "why": "`destructiveHint` is meaningful only when `readOnlyHint` is false, and it is equally untrusted."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ship it, but only for tools that also set `idempotentHint: true`",
+        "why": "Adding a second untrusted hint does not make the first one trustworthy."
+      }
+    ],
+    "explanation": "Every field in `ToolAnnotations` is a hint, including `title`. The spec says clients MUST consider annotations untrusted unless they come from trusted servers and should never make tool-use decisions based on annotations from untrusted servers. Annotations are useful for UI and for policy on vetted servers, never as a replacement for authorization.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-023",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A model keeps calling a `find_tickets` tool wrongly. Which changes are most likely to improve how reliably it picks and calls the tool? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Rename the parameter `user` to `user_id`",
+        "why": "Correct: unambiguous parameter names remove a common source of wrong arguments."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return raw UUIDs and every internal field so the model has all the data",
+        "why": "Low-signal identifiers and noise make results harder to use; natural-language identifiers work better."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Constrain `status` to an `enum` of the allowed values",
+        "why": "Correct: a closed set in the schema stops the model from inventing values."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Delete the description to save context tokens",
+        "why": "The description is the model's main signal for when to use the tool."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Split it into one tool per REST endpoint of the ticketing API",
+        "why": "More, finer tools usually make selection harder and push orchestration onto the model."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Rewrite the description to say when to use the tool, what each field means and what it returns",
+        "why": "Correct: descriptions written as if for a new team member are the biggest lever on selection."
+      }
+    ],
+    "explanation": "Anthropic's tool-writing guidance: describe tools as you would to a new hire, use unambiguous parameter names (`user_id` rather than `user`), enforce strict input models, return high-signal fields, and consolidate workflows instead of mirroring every endpoint. Measure changes with evaluations rather than guessing.",
+    "reference": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-024",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are wrapping a CRM's REST API, which has about 60 endpoints, as an MCP server for a support agent. Which tool surface is the best starting point?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Expose every endpoint as a resource and no tools at all",
+        "why": "Resources are application-driven context; actions such as updating a case need tools."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A few task-level tools such as `get_customer_context` that combine related calls, added workflow by workflow",
+        "why": "Correct: consolidated tools match how the agent thinks about the task and keep context small."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "One tool per endpoint, generated automatically from the OpenAPI spec so coverage stays complete as the API evolves",
+        "why": "Sixty definitions crowd the context and leave the model to chain low-level calls itself."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A single `call_api(method, path, body)` tool so every endpoint is reachable",
+        "why": "No guardrails and no guidance: the model must know the API by heart, and any call is possible."
+      }
+    ],
+    "explanation": "More tools do not mean better outcomes. Start from the workflows the agent actually performs and give each a clear, distinct tool, for example `get_customer_context` instead of `get_customer_by_id` plus `list_transactions` plus `list_notes`. Grow the surface as evaluations show gaps.",
+    "reference": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+    "source": "interview:tools",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-025",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A `search_messages` tool returns long results that fill the model's context, but the model sometimes needs message IDs for follow-up calls such as `reply_to_thread`. Which changes address both concerns? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Return the results as a base64-encoded blob to shrink them",
+        "why": "Base64 inflates size and is unreadable to the model."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Support filtering and pagination with a sensible default limit",
+        "why": "Correct: bounding the result size is the main way to keep tool output from swamping context."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Replace user names in results with internal UUIDs, which are shorter and unambiguous",
+        "why": "Natural-language identifiers reduce hallucinated or mismatched IDs; UUIDs are low-signal for a model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Remove pagination and return everything at once so the model never has to call twice",
+        "why": "That makes the context problem worse."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Add a `response_format` parameter with `concise` and `detailed` values, where `detailed` includes the IDs",
+        "why": "Correct: the model asks for IDs only when it needs to follow up, and concise responses cost a fraction of the tokens."
+      }
+    ],
+    "explanation": "Token efficiency comes from returning high-signal fields, letting the agent choose the level of detail (for example a `response_format` enum) and limiting volume with filtering, pagination, range selection and truncation with sensible defaults. In Anthropic's example a concise response was about a third the size of the detailed one.",
+    "reference": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TLS-026",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An analyst asks an MCP data-warehouse tool for a query that matches two million rows. What should the tool return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "All rows in one `text` block so the model can do its own filtering and aggregation",
+        "why": "Far beyond any context window; tool output should be bounded."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A bounded first page with a cursor and total count, plus a `resource_link` to the full export",
+        "why": "Correct: it keeps context small, tells the model what it is missing, and offers the full data out of band."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The rows compressed and base64-encoded inside an `audio` content block",
+        "why": "Content types have meanings; abusing them hides data from the model and the user."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing special, because `tools/list` pagination already caps the size of every tool result the server sends back",
+        "why": "Protocol pagination covers list operations such as `tools/list`; it does not apply to a tool's own output."
+      }
+    ],
+    "explanation": "Large tool output should be paged, filtered or truncated with sensible defaults, and a truncated result should say so and steer the model toward narrower queries. For data the user needs in full, return a `resource_link` that the client can read separately rather than inlining it.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:system-design-data",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-027",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A tool's annotations contain only `\"readOnlyHint\": false`. Of the three hints `destructiveHint`, `idempotentHint` and `openWorldHint`, how many take a default value of `true`? Type a number.",
+    "options": [],
+    "accepted": [
+      "2",
+      "two"
+    ],
+    "explanation": "`destructiveHint` defaults to `true` and `openWorldHint` defaults to `true`; `idempotentHint` defaults to `false`. So a mutating tool with no other annotations should be treated as possibly destructive, not safe to retry, and possibly talking to external systems.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/schema",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TLS-028",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A third-party server publishes a tool whose `inputSchema` nests `anyOf`, `oneOf` and `$defs` thousands of levels deep, and your client's validator hangs on it. What does the spec recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Skip validation for this server's tools",
+        "why": "That trades a hang for accepting arguments and results that were never checked."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Apply bounds such as a maximum depth, a cap on subschemas or a per-validation time budget",
+        "why": "Correct: the spec says implementations SHOULD apply reasonable bounds so a schema cannot be a denial-of-service vector."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Convert the schema to draft-07 before validating, because draft-07 validators handle composition keywords far more cheaply",
+        "why": "Draft-07 has the same `anyOf`, `oneOf` and `allOf` keywords, and switching dialects does nothing to bound validation cost."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Reject any schema that uses composition keywords",
+        "why": "2026-07-28 explicitly allows any 2020-12 keyword, including `anyOf`, `oneOf`, `allOf` and `if`/`then`/`else`."
+      }
+    ],
+    "explanation": "Composition keywords and `$defs` make schemas expressive but potentially expensive. The JSON Schema usage rules say implementations SHOULD bound validation, for example by maximum depth, number of subschemas or a time budget, so a malicious schema cannot exhaust the validator.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/index",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TLS-029",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Under 2026-07-28, a server may return different `tools/list` results to two callers whose access tokens grant different scopes, but it must not change the list as a side effect of an earlier tool call on the same connection.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: the list MAY vary by the authorization on the request but MUST NOT vary per connection or as a side effect of other requests."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "This is exactly the rule: credentials are per-request input, so filtering by scope is allowed, while connection state is not."
+      }
+    ],
+    "explanation": "Servers MUST respond to `tools/list` with the tools currently available to the requesting client. The set MAY change over time and MAY depend on the authorization presented, but MUST NOT vary per connection or as a side effect of other requests. That follows from the removal of protocol sessions in 2026-07-28.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TLS-030",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each question a client might ask about a tool with the annotation that answers it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`readOnlyHint`",
+        "why": "If true, the tool does not modify its environment."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`destructiveHint`",
+        "why": "If true, the tool may perform destructive updates; meaningful only when not read-only."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`idempotentHint`",
+        "why": "If true, repeating a call with the same arguments has no additional effect."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`openWorldHint`",
+        "why": "If true, the tool may interact with an open world of external entities."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Will calling this change anything at all?",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "If it does change things, could it overwrite or delete existing data?",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Is it safe to repeat with the same arguments after a timeout?",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Can it reach things outside a closed domain, such as the public web?",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The four boolean hints, with defaults: `readOnlyHint` false, `destructiveHint` true, `idempotentHint` false, `openWorldHint` true. A web search tool is open-world; a memory tool is closed. All of them are hints for UI and policy, and clients must not trust them from untrusted servers.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/schema",
+    "source": "interview:tools",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-031",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order these steps for improving an MCP server's tools with evaluations.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Read the transcripts to see where the agent misused or misunderstood tools",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Write realistic, multi-step tasks, each paired with a verifiable outcome",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Refine descriptions, schemas and responses, then confirm the gains on a held-out task set",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run an agent on the tasks programmatically, recording accuracy, tool calls, tokens and tool errors",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "Anthropic's approach: generate realistic tasks grounded in real use (strong tasks may need many tool calls) with verifiable answers; run them in a simple agent loop and collect metrics beyond accuracy; read transcripts, not just scores; then refine the tools and check against held-out tasks so you are not overfitting to the evaluation.",
+    "reference": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-032",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a take-home, you add an MCP layer to an existing app. Which behaviour should the reviewer flag as a bug?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`create_note` returns `structuredContent` and also repeats the same JSON, serialized, in a `text` content block",
+        "why": "That is the recommended backwards-compatible shape."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`tools/list` returns the tools in the same order on every call",
+        "why": "Deterministic ordering is what the spec recommends."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`get_customer` with an unknown ID returns a JSON-RPC `-32603` error containing a stack trace",
+        "why": "Correct: a missing customer is a tool execution error, and it should come back as an `isError` result with an actionable message, not a protocol error that leaks internals."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A no-argument tool uses `{\"type\": \"object\", \"additionalProperties\": false}` as its input schema",
+        "why": "That is the recommended schema for a tool without parameters."
+      }
+    ],
+    "explanation": "Reviewers of MCP take-homes look at tool schemas and descriptions, error handling and result shapes. Turning a business failure into a protocol error hides it from the model (clients only MAY pass protocol errors on), and a stack trace in an error message leaks implementation details; servers MUST sanitize outputs.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.glassdoor.nl/Sollicitatiegesprek/Take-home-task-Implement-an-MCP-Model-Context-Protocol-layer-Final-Interview-Standard-behavioral-questions-such-as-QTN_9004562.htm",
+        "https://careers.dxc.com/vi/job-vi/23305847/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-033",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An internal host auto-runs every tool, waits indefinitely for results and sends tool arguments without showing them to anyone. Users report hung chats and one case of a model pasting a secret into a tool argument. Which two changes are client SHOULDs from the tools spec that address these reports? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Cache tool results by tool name to avoid repeat calls",
+        "why": "Tool results depend on arguments and live state; this neither fixes hangs nor leaks."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Hide `isError` results from the model so it does not get confused",
+        "why": "Clients SHOULD pass tool execution errors to the model so it can self-correct."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Show tool inputs to the user before calling the server",
+        "why": "Correct: the spec gives this as a guard against malicious or accidental data exfiltration."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retry every failed call automatically until it succeeds",
+        "why": "Blind retries can duplicate side effects and do nothing for exfiltration."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Implement timeouts for tool calls",
+        "why": "Correct: a timeout stops a slow or stuck server from hanging the conversation."
+      }
+    ],
+    "explanation": "Client SHOULDs in the tools spec: prompt for confirmation on sensitive operations, show tool inputs before calling (to avoid malicious or accidental exfiltration), validate results before passing them to the model, follow the `$ref` resolution rules, implement timeouts and log tool usage for audit.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "MCP-TLS-034",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A server ships a tool whose input schema contains `\"$ref\": \"https://schemas.example.com/address.json\"`. How should a 2026-07-28 client validating tool inputs handle it by default?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Treat the unresolved reference as an always-valid `true` schema so the call can still proceed without a network fetch",
+        "why": "Schemas that fail because of an unresolved external `$ref` SHOULD be rejected, not treated as permissive."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Fetch the remote schema once and cache it for later validations",
+        "why": "Implementations MUST NOT automatically dereference network `$ref`s; fetching would be an SSRF vector."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Strip the `$ref` and validate the remaining keywords",
+        "why": "Silently dropping part of a schema makes validation more permissive than the author intended."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Not dereference it; reject the schema as unresolvable unless an opt-in, allowlisted fetch mode is enabled",
+        "why": "Correct: remote fetching may exist only as an opt-in mode, off by default, with host allowlists, timeouts and size limits."
+      }
+    ],
+    "explanation": "JSON Schema 2020-12 allows `$ref` to an absolute URI, but MCP implementations MUST NOT auto-dereference network URIs. An opt-in fetch mode MUST be off by default and SHOULD enforce an allowlist (or at least reject loopback, link-local and private addresses), apply timeouts and size limits, and log fetched URIs. Unresolvable schemas SHOULD be rejected.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/basic/index",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TLS-035",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A `create_basket` / `add_item` server must keep a shopping cart across tool calls under 2026-07-28. Which design follows the spec's guidance?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Store the cart under the `Mcp-Session-Id` header value",
+        "why": "Protocol sessions and `Mcp-Session-Id` were removed in 2026-07-28."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep the cart in memory keyed by the client's TCP connection",
+        "why": "There is no per-connection state to rely on, and it breaks as soon as requests land on different replicas."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Return an opaque `basket_id` that later calls pass back, authorizing the caller against it each time",
+        "why": "Correct: an explicit, server-minted handle passed as an ordinary argument is the recommended pattern."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Encode the full cart contents as base64 JSON inside the handle, so the server stays stateless and needs no database",
+        "why": "Handles that encode structure invite parsing, guessing and tampering; the spec recommends opaque identifiers."
+      }
+    ],
+    "explanation": "MCP has no protocol-level session, so cross-call state uses explicit handles: a creation tool returns an ID, and later tools take it as an argument. Consider authorization (validate the caller against the handle every time), opacity, lifetime (say it in the creation tool's description) and expiry errors (return a tool execution error so the model can create a new handle).",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "https://www.datacamp.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-036",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "On an authenticated MCP server, user B calls `add_item` with a `basket_id` that belongs to user A. The ID is a random UUIDv4. What should happen?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Allow it, but set `destructiveHint: true` on `add_item`",
+        "why": "Annotations describe behaviour to clients; they do not enforce access control."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Reject it after checking the caller's authorization against the handle, which the server does on every call",
+        "why": "Correct: the spec says authenticated servers should validate authorization against the handle on each call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Reject it with a JSON-RPC error, because handle problems are always protocol errors",
+        "why": "Authorization still has to be checked; the point is the check, and handle failures such as expiry are tool execution errors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Allow it: a UUIDv4 is unguessable, so merely possessing the ID is proof enough that the caller owns the basket",
+        "why": "That reasoning applies only to unauthenticated servers; with authentication, a handle is a name, not a capability."
+      }
+    ],
+    "explanation": "For authenticated servers a handle is just a name: the server must check that the caller is allowed to use it on every call. Only on unauthenticated servers does the handle act as a bearer token, and then it needs high entropy (for example a UUIDv4) and a bounded lifetime.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "https://www.datacamp.com/blog/mcp-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-037",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your client validates tool results and shows them to the model. A tool returns a `resource_link` with URI `reports://q3/summary`, but that URI does not appear in the server's `resources/list` output. What is the right interpretation?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It is valid; the client can read the URI with `resources/read` when it needs the contents",
+        "why": "Correct: a resource link is a pointer the client may fetch or subscribe to, whether or not it is listed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The server is broken: any resource a tool links to must also be enumerated by `resources/list` first",
+        "why": "The spec explicitly says resource links returned by tools are not guaranteed to appear in `resources/list`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The link is only for display and can never be read",
+        "why": "Links exist so the client can fetch the contents later."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The client should treat the result as `isError: true`",
+        "why": "Nothing failed; an unlisted link is normal."
+      }
+    ],
+    "explanation": "Tools MAY return `resource_link` blocks pointing at resources, with optional name, description, MIME type and annotations. Such resources may be generated per call and need not be enumerable, so clients should not use `resources/list` membership to judge validity. Servers that embed or link resources SHOULD also implement the `resources` capability.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:tools",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-038",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent host connects to 30 servers exposing about 600 tools. The definitions take a large share of the context window and tool selection is getting worse. Which approach do the MCP client best practices recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Progressive discovery: a search step returns brief matches, and full schemas load only for chosen tools",
+        "why": "Correct: definitions enter context on demand, and provider-native tool search can serve the same role."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Merge all tools into one `invoke(tool_name, args)` tool",
+        "why": "The model then has no schemas or descriptions to choose and fill arguments with."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Load only the first page of each server's `tools/list`, since servers put their most important tools first",
+        "why": "Pagination is about transfer size, not relevance, and nothing says servers order tools by importance; useful tools on later pages disappear."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Cut every tool description to a few words so all 600 fit",
+        "why": "Descriptions are what the model selects on; gutting them lowers accuracy further."
+      }
+    ],
+    "explanation": "When tool definitions take a significant part of the context, clients should switch from loading everything up front to progressive discovery, typically a search layer that returns brief matches and a second step that loads full schemas for the chosen tools. The same idea extends to connecting servers on demand. Some model providers offer built-in tool search.",
+    "reference": "https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices",
+    "source": "interview:tools",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.igmguru.com/blog/mcp-interview-questions",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-039",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A `create_ticket` tool runs over Streamable HTTP. A response stream breaks after the server created the ticket but before the result arrived; the client re-issues the call, and a duplicate ticket appears. What is the robust fix under 2026-07-28?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Deduplicate on the JSON-RPC request `id`",
+        "why": "After a broken stream the client MUST re-issue the call as a new request with a new `id`, so the id cannot match."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Accept an `idempotency_key` argument and have the server return the existing ticket when a key repeats",
+        "why": "Correct: deduplication must live in the tool's own arguments and storage, because the protocol re-issues lost calls as new requests."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Resume the broken stream with `Last-Event-ID` so the server redelivers the original result instead of re-running the call",
+        "why": "SSE resumability and `Last-Event-ID` were removed in 2026-07-28."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Track the ticket under the caller's `Mcp-Session-Id`",
+        "why": "Protocol sessions and that header no longer exist."
+      }
+    ],
+    "explanation": "In 2026-07-28 a broken response stream loses the in-flight request, and clients MUST re-issue it as a new request with a new ID. Tools with side effects therefore need application-level idempotency: an idempotency key (or natural unique key) checked on the server. Only once that holds is `idempotentHint: true` an honest hint.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "source": "interview:idempotency",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-040",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are designing an MCP server that lets an internal assistant query the company data warehouse for analysts. Which two design choices are the safest? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Put the warehouse credentials in the tool description so the model can connect directly",
+        "why": "Descriptions are sent to the model and client; secrets must stay on the server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return whole tables so the model can filter them itself",
+        "why": "Unbounded results blow up context and leak data the user may not be entitled to."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Writes or schema changes as separate tools that require explicit human confirmation",
+        "why": "Correct: separating mutating tools lets the host confirm them, and the server still enforces authorization."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Read-only, purpose-built or parameterised query tools with row limits and cursors, run with the calling user's permissions",
+        "why": "Correct: bounded, least-privilege reads cover most analyst questions without exposing arbitrary SQL."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "One `execute_sql` tool on a superuser connection, relying on `readOnlyHint: true` to stop writes",
+        "why": "An annotation cannot stop a write; the database credential decides what is possible."
+      }
+    ],
+    "explanation": "Interviewers want least privilege and bounded output: read tools that are parameterised or purpose-built, limits and paging, per-user authorization enforced server-side, and mutating operations isolated behind human confirmation. Annotations are useful labels for the host's UI, never the control itself.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:design",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477288/mcp-interview-questions/",
+        "https://www.datacamp.com/blog/mcp-interview-questions",
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://www.hirist.tech/blog/top-mcp-interview-questions-answers-ai-agents-tool-calling/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-041",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "You are designing the MCP interface for a real-estate search app. Match each capability with the best fit.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A prompt",
+        "why": "A user-invoked template, such as a slash command."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A resource template",
+        "why": "Parameterised, URI-addressed context the application can attach."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A read-only tool",
+        "why": "An action the model can call on its own without side effects."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A tool that requires user confirmation",
+        "why": "A model-invoked action with real-world consequences."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A \"compare these two listings\" template the user picks from a menu",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Neighbourhood fact sheets addressed as `listings://area/{zip}`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Searching listings by price, bedrooms and area whenever the model needs to",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Submitting an offer on a property",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Prompts are user-controlled templates, resources are application-driven context identified by URIs (templates add parameters), and tools are model-controlled actions. Read-only searches can run freely; consequential actions such as submitting an offer need a human in the loop.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:design",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-042",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An IT helpdesk assistant uses an MCP server over the ticketing system with tools `search_incidents`, `get_incident`, `add_internal_note`, `reassign_incident` and `close_incident`. Which approval policy fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Run lookups freely, confirm reassign and close, and authorize every write on the server",
+        "why": "Correct: confirmation is reserved for consequential state changes, and the server still enforces permissions."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Require confirmation for every call, including searches, so nothing happens without the user",
+        "why": "Prompting on every read causes approval fatigue, and users start clicking through the prompts that matter."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Auto-approve close and reassign when the server marks them `destructiveHint: false`",
+        "why": "Annotations from a server are hints, and closing an incident is consequential whatever the hint says."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No confirmations: the user is authenticated, so whatever the agent does is on their behalf",
+        "why": "Authentication says who is acting, not that they meant this action; the spec wants a human able to deny calls."
+      }
+    ],
+    "explanation": "The tools spec recommends a human in the loop who can deny invocations, with confirmation prompts for operations that matter. Good policies distinguish reads from consequential writes, keep confirmations rare enough to be read, and never rely on the client alone: the server must enforce access control.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "source": "interview:system-design-helpdesk",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/",
+        "https://interviewdb.com/tool-use-mcp-ai-integrations/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-043",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Reviewing a new MCP server before launch, which two design choices are anti-patterns? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Tool names prefixed with the service, such as `jira_search` and `jira_create_issue`",
+        "why": "Namespacing by service is recommended; it helps the model and avoids collisions."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A `run_sql` tool described as \"Runs any SQL\", connected with admin credentials and no row limits",
+        "why": "Correct: unbounded power with no guardrails; one bad call can drop a table or dump sensitive data."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Saying \"carts expire after 24 hours of inactivity\" in the `create_cart` description",
+        "why": "The spec recommends stating handle lifetimes in the creation tool's description."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "200 tools auto-generated from an OpenAPI spec, one per operation, with descriptions copied from the summary lines",
+        "why": "Correct: a one-to-one endpoint wrapper floods context and leaves the model to orchestrate low-level calls."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Returning `isError: true` with \"Use ISO 8601 dates, e.g. 2026-10-23\" when a date cannot be parsed",
+        "why": "An actionable execution error is exactly the recommended way to let the model self-correct."
+      }
+    ],
+    "explanation": "Common MCP anti-patterns: mirroring every API endpoint as a tool, generic do-anything tools without guardrails, vague descriptions, protocol errors for fixable failures and unbounded output. Good signs: service prefixes, actionable error messages, stated handle lifetimes, bounded results.",
+    "reference": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+    "source": "interview:architecture",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.mlstack.cafe/blog/mcp-interview-questions-ai-agent-developer",
+        "https://cloudsoftsol.com/blog/mcp-interview-questions/"
+      ]
+    }
+  },
+  {
+    "id": "MCP-TLS-044",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A server enables or disables some tools when a feature flag flips. Clients cache `tools/list` for its `ttlMs`. Which design keeps clients correct under 2026-07-28?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `ttlMs` to 0 and expect every client to call `tools/list` again before each `tools/call` it sends",
+        "why": "It works, but it throws away caching and adds a round-trip to every call when a notification mechanism exists."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Roll out gradually by giving each new connection a different list",
+        "why": "The tool list MUST NOT vary per connection."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Put the complete new tool list in the `list_changed` notification",
+        "why": "The notification has no payload; clients call `tools/list` again."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Declare `listChanged`, notify listening clients on each flip, and keep a modest `ttlMs` as a fallback",
+        "why": "Correct: the notification gives prompt updates, and the TTL bounds staleness for everyone else."
+      }
+    ],
+    "explanation": "`ttlMs` and `cacheScope` let clients cache list results; `notifications/tools/list_changed` (delivered on a `subscriptions/listen` stream with `toolsListChanged: true`) tells listening clients to refetch early. Together they give fresh lists without polling, and the list itself stays the same for every caller with the same authorization.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 4
+  },
+  {
+    "id": "MCP-TLS-045",
+    "domain": 2,
+    "skill": "tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A 2025-11-25 server showed extra admin tools only after a `login` tool call on the same session. You are porting it to 2026-07-28. What is the right redesign?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keep the behaviour by tracking logins under `Mcp-Session-Id`",
+        "why": "Sessions and `Mcp-Session-Id` were removed in 2026-07-28."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "List admin tools only for requests whose credential scopes allow them, and authorize each call",
+        "why": "Correct: the list MAY vary by the authorization presented on the request, and per-call checks keep enforcement on the server."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "After `login`, send `notifications/tools/list_changed` and return the larger list to that connection only",
+        "why": "The list MUST NOT change as a side effect of other requests or vary per connection."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Always list the admin tools and trust the model not to call them without logging in",
+        "why": "Listing is fine, but trusting the model is not access control; every call still needs an authorization check."
+      }
+    ],
+    "explanation": "In 2026-07-28 credentials are per-request input and there is no connection state. A server can filter `tools/list` by the scopes on the request and must authorize each call, but it cannot unlock tools because of an earlier call. Login flows move to the transport's authorization layer.",
+    "reference": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "roleLevel": 5
+  }
+]

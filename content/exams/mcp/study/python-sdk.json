@@ -1,0 +1,51 @@
+{
+  "python-sdk": {
+    "summary": "The Python SDK 2.x (`mcp` 2.3) builds servers with `MCPServer` (renamed from FastMCP): decorators turn plain functions into tools, resources and prompts, type hints become JSON Schemas, and return annotations become output schemas. Know the two error channels, the per-request `Context`, lifespan state, how 2026-07-28 changes elicitation (resolvers and multi-round-trip instead of server push), and what multi-worker HTTP deployment needs.",
+    "points": [
+      "Imports: `from mcp.server import MCPServer` for servers and `from mcp import Client` for clients; there is no `from mcp import MCPServer`. `mcp.server.fastmcp` now raises `ModuleNotFoundError` pointing at the migration guide, and an unnamed server reports `mcp-server`.",
+      "`@mcp.tool()` derives the name from the function, the description from the docstring and the input schema from type hints. Parameters without defaults are required; `Annotated[int, Field(ge=1, le=50)]` adds `minimum`/`maximum`; `Literal[...]` becomes an enum. Arguments are validated by Pydantic (lax mode, so \"5\" becomes 5 but 2.5 fails for `int`) before the function runs, and failures return `is_error=True` text the model can act on.",
+      "The return annotation is the output schema. Scalars, lists, tuples and unions are wrapped as `{\"result\": ...}`; models, `TypedDict`s, dataclasses and `dict[str, ...]` are not. Lists become one text block per item. Return values are validated, a class with no body annotations silently becomes text-only, and `structured_output=False` opts out.",
+      "Errors: `ToolError` gives `is_error=True` with `Error executing tool <name>: <message>`; any other exception gives only `Error executing tool <name>` plus an ERROR traceback in the log; `MCPError` propagates as a JSON-RPC error that `Client.call_tool` raises (a v2 change). `ResourceNotFoundError` maps to `-32602` with the URI in `data`. Unknown tool names return `is_error=True` with `Unknown tool: <name>`.",
+      "`Context` is injected by annotation under any parameter name and never appears in the schema. It exposes `request_id`, `read_resource`, `report_progress` (a no-op unless the caller passed `progress_callback=`), `session`, `headers` and `request_context.lifespan_context`. `mcp.get_context()` was removed; pass `ctx` to helpers explicitly.",
+      "Lifespan: an `@asynccontextmanager` passed as `MCPServer(..., lifespan=...)` runs once around the server; its yielded object is `ctx.request_context.lifespan_context`, typed with `Context[AppCtx]`. Without one it is `{}`, never `None`.",
+      "Sync `def` handlers run on a worker thread in v2 (`asyncio.get_running_loop()` raises inside them); `async def` handlers stay on the event loop. A plain `def` tool must call `anyio.from_thread.check_cancelled()` to stop early; async cleanup after cancellation needs `anyio.move_on_after(..., shield=True)` in a `finally`.",
+      "Elicitation: `Annotated[T, Resolve(fn)]` resolvers returning `Elicit(...)` work on every era (pushed on 2025-11-25 sessions, returned as `InputRequiredResult` on 2026-07-28). `ctx.elicit()`/`ctx.elicit_url()` need a legacy back-channel and fail on 2026-07-28. Asking a client that did not declare the capability fails with `-32021`. Tools cannot combine `Resolve(...)` with their own `InputRequiredResult` return (`InvalidSignature`).",
+      "`requestState` is sealed and verified by default under a per-process random key, and bound to a TTL (600 s), the authenticated principal and the originating request. Multi-worker or restart-surviving deployments need `RequestStateSecurity(keys=[...])` and the same server name (the audience claim) on every instance; rotate with `[OLD, NEW]`, then `[NEW, OLD]`, then `[NEW]` after one TTL.",
+      "Running: `mcp.run()` is stdio and blocks; `run(transport=\"streamable-http\", port=...)` serves `/mcp`. Transport options go to `run()` or `streamable_http_app()`, never the constructor. Mounted apps need the host lifespan to enter `mcp.session_manager.run()`, and real hostnames need `transport_security=TransportSecuritySettings(allowed_hosts=[...])` or every request gets 421.",
+      "Client: `Client(x)` picks Streamable HTTP for a URL, a subprocess for `StdioServerParameters` (with an allow-listed environment, so pass `env=`), in-memory for a server object, and treats anything else as a transport. `mode=\"auto\"` probes `server/discover` and falls back to `initialize`; `mode=\"legacy\"` forces the handshake; a version pin sends nothing (pair it with `prior_discover=`). `Client(mcp, raise_exceptions=True)` is the test harness.",
+      "On 2026-07-28 change notifications travel only on `subscriptions/listen`: publish with `ctx.notify_tools_changed()` and friends, and share one `SubscriptionBus` across replicas. The protocol logging capability is deprecated; log with the standard `logging` module to stderr."
+    ],
+    "traps": [
+      "Writing `@mcp.tool` without parentheses: it raises `TypeError` at import.",
+      "Returning an error string from a tool: `is_error` stays false, so the model treats it as a successful answer. Raise `ToolError` instead.",
+      "Expecting `MCPError` raised in a tool to come back as an `is_error` result, as in v1; in v2 it is a JSON-RPC error and the model sees nothing.",
+      "Using `print()` in a stdio server; stdout is the protocol channel. Use `logging`.",
+      "Passing `port=` or `stateless_http=` to `MCPServer(...)`: transport options moved to `run()` and `streamable_http_app()`, and passing `instructions` positionally now lands in `title`.",
+      "Assuming `stateless_http=True` is needed to scale 2026-07-28 traffic; modern requests are sessionless anyway, and multi-round-trip retries still fail across workers without shared `requestState` keys.",
+      "Mounting `streamable_http_app()` in Starlette or FastAPI without entering `mcp.session_manager.run()` in the host lifespan, which fails with `Task group is not initialized`.",
+      "On the low-level `Server`, assuming the advertised `input_schema` is enforced or that exceptions become `is_error` results; neither happens."
+    ],
+    "docs": [
+      {
+        "title": "MCP Python SDK documentation",
+        "url": "https://py.sdk.modelcontextprotocol.io/"
+      },
+      {
+        "title": "Python SDK: Structured Output",
+        "url": "https://py.sdk.modelcontextprotocol.io/servers/structured-output/"
+      },
+      {
+        "title": "Python SDK: Multi-round-trip requests",
+        "url": "https://py.sdk.modelcontextprotocol.io/handlers/multi-round-trip/"
+      },
+      {
+        "title": "Python SDK: Deploy and scale",
+        "url": "https://py.sdk.modelcontextprotocol.io/run/deploy/"
+      },
+      {
+        "title": "Python SDK: Migration guide (v1 to v2)",
+        "url": "https://py.sdk.modelcontextprotocol.io/migration/"
+      }
+    ]
+  }
+}
