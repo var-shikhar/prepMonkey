@@ -1,0 +1,50 @@
+{
+  "evaluation": {
+    "summary": "Evaluate a RAG system per component: retrieval metrics say whether the right evidence came back and how well it was ranked; generation metrics say whether the answer stayed grounded and addressed the question. Know how each Ragas 0.4 metric is computed and which inputs it needs, compute IR metrics by hand, and treat LLM judges and golden sets as instruments that must themselves be validated.",
+    "points": [
+      "IR metrics per query, then averaged: precision@k = relevant in top k / k; recall@k = relevant in top k / all relevant; hit rate@k = 1 if any relevant item is in the top k; reciprocal rank = 1 / rank of the first relevant item (0 if none). A miss counts as 0 in the average, and items beyond the cut-off count as misses.",
+      "Recall@k, precision@k and hit rate ignore order within k; MRR, MAP and nDCG are order-aware. nDCG@k = DCG@k / ideal DCG@k with discount 1/log2(rank + 1); gains can be graded (linear rel or exponential 2^rel - 1, so state which). Two relevant chunks at ranks 2 and 4 give nDCG@5 of about 0.65.",
+      "Ragas faithfulness = response claims supported by the retrieved context / total response claims (inputs: user_input, response, retrieved_contexts). It checks grounding, not truth, and cannot penalise omissions. `FaithfulnesswithHHEM` swaps the LLM verdict for Vectara's open HHEM-2.1 classifier.",
+      "Ragas answer relevancy (`AnswerRelevancy` in `ragas.metrics.collections`, legacy name `ResponseRelevancy`): an LLM writes N questions from the response (`strictness`, default 3); the score is their mean cosine similarity with the user input, set to 0 when the generated questions are all flagged noncommittal. It ignores factual accuracy.",
+      "Ragas context precision is average precision over the retrieved list: sum of precision@k x v_k divided by the number of useful chunks retrieved. `[1, 1, 0]` scores 1.0 and `[0, 1, 1]` about 0.58. One useful chunk at rank 1 scores 1.0 even if most of the needed evidence is missing, so always pair it with context recall.",
+      "Context precision variants: `ContextPrecision` / `ContextPrecisionWithReference` (user_input, reference, retrieved_contexts), `ContextUtilization` / `ContextPrecisionWithoutReference` (judged against the response), and non-LLM or ID-based versions that compare against reference_contexts or reference_context_ids.",
+      "Context recall = reference claims supported by the retrieved context / total reference claims (user_input, retrieved_contexts, reference); it always needs a reference. `IDBasedContextRecall` = reference ids found among retrieved ids / reference ids, with no LLM involved.",
+      "Noise sensitivity (lower is better) needs user_input, response, reference and retrieved_contexts. It is the share of response claims that are incorrect against the reference and supported by relevant retrieved chunks (default mode) or by irrelevant ones (`mode=\"irrelevant\"`).",
+      "Reference-free metrics (faithfulness, answer relevancy, context utilization) can monitor sampled production traffic; reference-based ones (context recall, reference-based context precision, noise sensitivity, factual correctness with precision, recall or f1 modes) run on a golden set.",
+      "Ragas testset generation builds a knowledge graph from documents (split into nodes, extract headlines, summaries, entities and themes, embed, link nodes by similarity or entity overlap), generates personas and scenarios, and by default mixes single-hop specific, multi-hop abstract and multi-hop specific synthesizers equally. Each sample has user_input, reference_contexts and reference.",
+      "LLM judges show position, verbosity and self-enhancement biases (Zheng et al., 2023). Swap answer order and accept only consistent verdicts, keep the judge model and prompt pinned and blind to which system wrote the answer, and validate per class against human labels with chance-corrected agreement such as Cohen's kappa.",
+      "Release flow for prompt, chunking or model changes: offline golden-set run with per-question and per-slice comparison and a run-to-run noise estimate, then shadow traffic, then a small A/B test on online signals (thumbs-down, escalations, task completion), then full rollout with rollback ready."
+    ],
+    "traps": [
+      "High faithfulness does not mean correct answers: a response copied faithfully from a wrong or stale chunk scores 1.0. Check context recall and answer correctness against references.",
+      "Answer relevancy rewards on-topic answers even when they are false, and scores correct abstentions ('the documents don't say') as 0; evaluate unanswerable questions separately.",
+      "Hit rate equals recall only when each query has a single relevant chunk; for multi-evidence questions hit rate can be 1.0 while recall is 0.4.",
+      "Document-level relevance labels inflate retrieval scores; label gold chunk ids or spans at the granularity the generator consumes.",
+      "Raw judge-human agreement is misleading under class imbalance: 92% agreement can hide a judge that catches only 20% of unfaithful answers (kappa about 0.31).",
+      "A golden set written by reading the documents copies their wording and overstates retrieval quality; seed it from real production queries and report metrics per slice.",
+      "Comparing scores produced by different judge models or prompts, or on different question sets, compares rulers, not systems."
+    ],
+    "docs": [
+      {
+        "title": "Ragas: list of available metrics",
+        "url": "https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/"
+      },
+      {
+        "title": "Ragas: testset generation for RAG",
+        "url": "https://docs.ragas.io/en/stable/concepts/test_data_generation/rag/"
+      },
+      {
+        "title": "RAGAS: Automated Evaluation of Retrieval Augmented Generation (Es et al., 2023)",
+        "url": "https://arxiv.org/abs/2309.15217"
+      },
+      {
+        "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena (Zheng et al., 2023)",
+        "url": "https://arxiv.org/abs/2306.05685"
+      },
+      {
+        "title": "Discounted cumulative gain",
+        "url": "https://en.wikipedia.org/wiki/Discounted_cumulative_gain"
+      }
+    ]
+  }
+}
