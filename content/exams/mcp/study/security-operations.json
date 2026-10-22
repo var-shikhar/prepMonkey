@@ -1,0 +1,51 @@
+{
+  "security-operations": {
+    "summary": "MCP security is mostly about trust boundaries the protocol cannot enforce: tool definitions and results are untrusted input to the model, local servers are ordinary processes with your privileges, and remote servers face OAuth-era web attacks (confused deputy, SSRF, handle hijacking). Operationally, revision 2026-07-28 is stateless, so remote servers scale as plain HTTP services, with header-based routing, cache scopes and per-call audit.",
+    "points": [
+      "Tool poisoning hides directives in tool names or descriptions; tool shadowing aims them at another server's tools; a rug pull changes definitions after approval. All servers share one model context, so pin definitions, re-prompt on change and keep the roster small.",
+      "Annotations (`readOnlyHint`, `destructiveHint`) MUST be treated as untrusted unless they come from trusted servers. They never replace server-side access control.",
+      "Tools spec: servers MUST validate inputs, enforce access control, rate limit invocations and sanitize outputs. Clients SHOULD confirm sensitive operations, show tool inputs before calling, validate results before passing them to the LLM, set timeouts and log tool usage for audit.",
+      "Confused deputy: an OAuth proxy with a static third-party client ID, dynamic client registration and a third-party consent cookie can leak codes to an attacker's `redirect_uri`. Proxies MUST keep per-user, per-client consent checked before the third-party redirect, use exact redirect URI matching, set `state` only after consent (single-use, short-lived) and use `__Host-`, Secure, HttpOnly, SameSite=Lax cookies bound to the `client_id`.",
+      "SSRF in discovery: `resource_metadata`, `authorization_servers` and authorization server endpoints can point at internal hosts. Clients SHOULD require HTTPS (loopback only in development), block 10/8, 172.16/12, 192.168/16, 127/8, 169.254/16, fc00::/7 and fe80::/10, validate every redirect hop, pin DNS between check and use, and use egress proxies. Authorization servers fetching CIMD URLs face the same risk.",
+      "Malicious authorization URLs: allow only https (http only for loopback in development), reject `javascript:`, `data:` and `file:`, never open URLs through a shell, and use CSP. A local stdio proxy can turn that XSS into code execution, so sandbox and log spawned processes.",
+      "Local servers: stdio is not a sandbox. Client and server share one trust domain. One-click installs MUST show the exact untruncated command and require approval. Isolate servers in containers, give per-server narrowly scoped secrets, grant read-only narrow directories, deny network unless needed, and pin image digests (an `npx`/`uvx` pin fixes only the top-level package).",
+      "Streamable HTTP servers MUST validate `Origin` (403 if present and invalid) and SHOULD bind local servers to 127.0.0.1, both against DNS rebinding.",
+      "Handles: 2026-07-28 has no sessions. Servers MUST NOT treat a state handle as authentication. Use random, expiring handles bound server-side to the user taken from the verified token (`<user_id>:<handle>`). The same rules applied to `Mcp-Session-Id` in 2025-11-25.",
+      "Scaling: servers MUST NOT rely on earlier requests on a connection, so run stateless replicas behind ordinary load balancers with shared stores for handle state. In 2025-11-25, in-memory sessions behind round-robin produced 404s and forced re-initialization.",
+      "Gateways route and rate-limit on `Mcp-Method`/`Mcp-Name`. Servers MUST reject header-body mismatches (400, `-32020` HeaderMismatch), and intermediaries SHOULD reject versions that predate this validation. `cacheScope: \"public\"` lets shared caches serve any user, so use `private` for per-user or per-tenant results and still enforce access checks.",
+      "Registry and governance: the official MCP Registry stores metadata, verifies namespaces (GitHub, DNS or HTTP) and does not support private servers, so run your own registry for those. It assumes minimal moderation. Organisations need allowlists, a default isolation posture, central deployment of SaaS wrappers, config inventory, audit logs and a fleet incident plan."
+    ],
+    "traps": [
+      "Thinking pinning a package version stops tool poisoning or rug pulls. Definitions arrive at runtime and can change after approval.",
+      "Treating `readOnlyHint` from an untrusted server as a reason to skip confirmation or authorization.",
+      "Believing stdio isolates a local server. It is an ordinary child process with your files, environment and network.",
+      "Proposing `Mcp-Session-Id` sticky sessions for a 2026-07-28 deployment. Protocol sessions were removed; scale stateless replicas instead.",
+      "Trusting gateway policy on mirrored headers without the server's header-body check, which lets an attacker label a `delete_records` call as `get_weather`.",
+      "Marking per-tenant list results `cacheScope: \"public\"` behind a shared cache.",
+      "Treating a guessable or client-asserted handle or user ID as proof of identity.",
+      "Assuming the official MCP Registry vets servers for safety. It verifies namespaces, not behaviour."
+    ],
+    "docs": [
+      {
+        "title": "Security Best Practices (2026-07-28)",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
+      },
+      {
+        "title": "Local Server Security",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/local-server-security"
+      },
+      {
+        "title": "Streamable HTTP transport: security and request metadata",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http"
+      },
+      {
+        "title": "Tools: security considerations",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      },
+      {
+        "title": "The MCP Registry",
+        "url": "https://modelcontextprotocol.io/registry/about"
+      }
+    ]
+  }
+}
