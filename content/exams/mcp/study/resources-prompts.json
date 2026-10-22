@@ -1,0 +1,51 @@
+{
+  "resources-prompts": {
+    "summary": "Resources are application-driven context addressed by URIs; prompts are user-controlled message templates; completion helps users fill in prompt and template arguments. Around them sit the list utilities every primitive shares: opaque-cursor pagination and the `ttlMs`/`cacheScope` caching hints added in 2026-07-28. Know the control model, the exact error codes, and how caching interacts with notifications and authorization.",
+    "points": [
+      "Control model: tools are model-controlled, resources are application-driven (the host decides what to attach), prompts are user-controlled (the user picks them, often as slash commands). User-controlled is about who triggers a prompt; the server writes its content.",
+      "Resources have a unique RFC 3986 URI, a `name`, and optional `title`, `description`, `mimeType`, `size` and icons. `resources/read` returns `contents` items with `uri`, `mimeType` and either `text` or base64 `blob`, and MAY return several items (for example a directory's files).",
+      "Resource templates (`resources/templates/list`) use RFC 6570 URI templates such as `users://{id}/profile` to expose families of resources without enumerating them. `{var}` percent-encodes `/`; `{+var}` keeps it, which suits multi-segment paths.",
+      "Use `https://` only when the client can fetch the resource directly; otherwise use another scheme or a custom one that follows RFC 3986. `file://` resources need not map to a real filesystem, and servers MAY use XDG types like `inode/directory`.",
+      "Annotations on resources, templates and content blocks: `audience` (`user` and/or `assistant`), `priority` (0.0 to 1.0, 1 = effectively required) and `lastModified` (ISO 8601). They are hints for filtering, prioritising and sorting, not access control.",
+      "Resource not found is `-32602` in 2026-07-28 (was `-32002`; clients SHOULD still accept it). Servers MUST NOT return an empty `contents` array for a missing resource, and SHOULD use `-32603` for internal errors. Servers MUST validate URIs and sanitise `file://` paths against traversal.",
+      "A tool can return a `resource_link` (a pointer the client may read later, not necessarily in `resources/list`) or an embedded `resource` (contents inline). Link large or optional content; embed small content that is needed right away.",
+      "Per-resource change notifications in 2026-07-28: open `subscriptions/listen` with URIs in `resourceSubscriptions` (server capability `resources.subscribe`) and receive `notifications/resources/updated`. This replaces `resources/subscribe` from 2025-11-25. `list_changed` notifications only signal membership changes.",
+      "Prompts: `prompts/list` returns name, title, description and `arguments` (name, title, description, required). `prompts/get` returns `messages` with role `user` or `assistant` and one content block each (text, image, audio, resource link or embedded resource). Missing required arguments or an unknown name give `-32602`.",
+      "`completion/complete` takes a `ref` (`ref/prompt` by name or `ref/resource` by URI or template), the `argument` being typed and `context.arguments` with earlier choices. Results hold up to 100 `values`, an optional `total` and `hasMore`. The server declares `completions`; servers SHOULD rank and rate limit, clients SHOULD debounce.",
+      "Pagination for `tools/list`, `prompts/list`, `resources/list` and `resources/templates/list` uses an opaque `cursor`/`nextCursor`; the page size is the server's choice; a missing `nextCursor` ends the list, while an empty string is a valid cursor. Invalid cursors SHOULD get `-32602`.",
+      "Caching: `server/discover`, the four list methods and `resources/read` MUST carry `ttlMs` (>= 0) and `cacheScope` (`public` or `private`). The key is the method plus the relevant parameters; `input_required` results and MRTR retries are never cached; a missing or negative TTL means stale; notifications invalidate fresh entries; private caches MUST NOT cross authorization contexts."
+    ],
+    "traps": [
+      "Calling `resources/subscribe` on a 2026-07-28 server: subscriptions moved to `subscriptions/listen` with `resourceSubscriptions`.",
+      "Returning or checking for an empty `contents` array to mean not found; use `-32602` (accept `-32002` from older servers).",
+      "Treating `\"\"` as the end of pagination, or parsing cursors as offsets; cursors are opaque and only a missing `nextCursor` ends the list.",
+      "Marking per-user list or read results `cacheScope: \"public\"`: shared gateways may serve them to other users, and `cacheScope` never replaces access control.",
+      "Using `ttlMs` as a polling interval; it is a freshness hint checked on access, and any polling MUST use jitter and backoff.",
+      "Confusing `hasMore` (completion results) with `nextCursor` (list pagination).",
+      "Assuming read-only data must be a resource: if the model has to decide when to fetch it, a read-only tool is the reliable choice.",
+      "Treating prompt inputs as trusted because prompts are user-controlled; implementations MUST validate prompt inputs and outputs against injection and unauthorized access."
+    ],
+    "docs": [
+      {
+        "title": "MCP specification: Resources (2026-07-28)",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/resources"
+      },
+      {
+        "title": "MCP specification: Prompts (2026-07-28)",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/prompts"
+      },
+      {
+        "title": "MCP specification: Completion",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/completion"
+      },
+      {
+        "title": "MCP specification: Pagination",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/pagination"
+      },
+      {
+        "title": "MCP specification: Caching",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/caching"
+      }
+    ]
+  }
+}
