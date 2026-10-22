@@ -1,0 +1,2072 @@
+[
+  {
+    "id": "LGR-MEM-001",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In LangGraph, how is short-term memory scoped compared with long-term memory?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Short-term memory is scoped to one user across all threads; long-term memory is scoped to one thread",
+        "why": "This reverses the two. The thread is the unit of short-term memory, and long-term memory is what crosses threads."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Short-term memory is per-thread state saved by a checkpointer; long-term memory is kept in a store under namespaces readable from any thread",
+        "why": "This matches the memory overview: a checkpointer saves state per `thread_id`, and a store holds items under namespaces you choose."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Both are thread-scoped; long-term memory is just short-term memory kept for more days",
+        "why": "Long-term memory is not tied to a thread at all. It lives under namespaces such as `(user_id, \"memories\")`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both live in the model's context window; the only difference is how many tokens each is allowed to use before older content is dropped",
+        "why": "Both are stored outside the model. You load them into the prompt when you need them."
+      }
+    ],
+    "explanation": "The memory overview splits memory by recall scope. Short-term memory is part of graph state, saved by a checkpointer and keyed by `thread_id`. Long-term memory lives in a `BaseStore` (for example `InMemoryStore` or `PostgresStore`) under custom namespaces and can be recalled from any thread.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "source": "interview:memory",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://vfuturemedia.com/ai/langchain-langgraph-langsmith-interview-questions-2026-complete-guide-for-us-tech-interviews/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901",
+        "https://docs.langchain.com/oss/python/langgraph/memory"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-MEM-002",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Fill in the keyword argument that attaches a long-term memory store to a graph:\n\n```python\nstore = InMemoryStore()\ngraph = builder.compile(checkpointer=InMemorySaver(), ____=store)\n```",
+    "options": [],
+    "accepted": [
+      "store",
+      "store="
+    ],
+    "explanation": "`compile(store=...)` attaches a `BaseStore`. LangGraph then makes it available to nodes through `runtime.store`. The checkpointer and the store are separate arguments because they persist different things.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-MEM-003",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the shape of a namespace passed to `store.put(namespace, key, value)`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A single string with parts joined by slashes, such as `\"user_123/memories\"`",
+        "why": "Namespaces are not path strings. A string is not a tuple of labels."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An integer id that the store generates and returns to you",
+        "why": "You choose the namespace yourself; the store does not generate it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A tuple of strings of any length, such as `(user_id, \"memories\")`",
+        "why": "Namespaces are tuples of string labels, used much like folders, and can be as deep as you need."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `thread_id` from the run config, which the store reads for you",
+        "why": "The store never reads `thread_id`. Namespaces are independent of threads, which is why memories can cross threads."
+      }
+    ],
+    "explanation": "A namespace is a tuple of strings, such as `(user_id, \"memories\")`, and the key is a unique id inside it, like a folder and a file name. The value is a dict. Namespaces often contain user or org ids so data can be organised and searched hierarchically.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:store API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/memory",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-004",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Memories written to an `InMemoryStore` are still there after the Python process restarts.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The data lives in an in-process dictionary, so a restart loses it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `InMemoryStore` keeps items in a Python dict. It is meant for development and tests."
+      }
+    ],
+    "explanation": "`InMemoryStore` saves items to an in-memory dictionary. The docs recommend a database-backed store such as `PostgresStore` in production, because it survives restarts and can be shared by several workers.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-MEM-005",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A user says \"I'm vegetarian\" today. Next week, in a brand-new conversation with a new `thread_id`, the assistant should still know this. Where should the fact be saved?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "In the messages channel, because the checkpointer saves it",
+        "why": "The checkpointer saves state for this thread only. A new `thread_id` starts with empty state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "In the run config under `configurable`",
+        "why": "Config is supplied for each call and is not saved as memory."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "In a module-level Python list inside the node's file",
+        "why": "That is lost on restart and is shared by every user in the process."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "In the store, under a namespace that includes the user's id",
+        "why": "The store holds data across threads. A user-scoped namespace lets any later thread for that user find it."
+      }
+    ],
+    "explanation": "Use the checkpointer to continue a conversation. Use the store for facts that must outlive the conversation. Saving the preference under `(user_id, \"memories\")` lets any thread for that user read it again.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/persistence",
+    "source": "interview:checkpointer vs store",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://vfuturemedia.com/ai/langchain-langgraph-langsmith-interview-questions-2026-complete-guide-for-us-tech-interviews/",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-MEM-006",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 3,
+    "stem": "A thread's message history is growing towards the model's context limit. Which techniques does the LangGraph memory guide list for handling this? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Trim messages before the model call, for example with `trim_messages`",
+        "why": "Trimming picks the most recent messages to send to the model."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise `recursion_limit` so that more messages fit",
+        "why": "`recursion_limit` caps the number of super-steps. It has nothing to do with context size."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Delete messages from state with `RemoveMessage`",
+        "why": "Deleting removes messages from the thread's current state, so they are no longer sent."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Summarise earlier messages and replace them with the summary",
+        "why": "Summarising keeps the gist of older turns at the cost of an extra model call."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Start a new `checkpoint_ns` for every turn",
+        "why": "`checkpoint_ns` identifies subgraph checkpoints. Changing it does not manage history size."
+      }
+    ],
+    "explanation": "The guide lists trimming, deleting with `RemoveMessage`, summarising, managing checkpoints, and custom strategies such as filtering. All of them keep the conversation within the model's context window.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:message history management",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901",
+        "https://www.novelvista.com/blogs/ai-and-ml/generative-ai-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-MEM-007",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "`items = store.search((\"u1\", \"memories\"))` returns a list. How do you read the dict you originally passed to `put`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`items[0].value`",
+        "why": "Each result is an item whose `value` attribute holds the dict you stored."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`items[0]` itself, because search returns the stored dicts directly",
+        "why": "Search returns `Item`-style objects (`SearchItem`), not raw dicts."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`items[0].content`",
+        "why": "`content` is a message attribute. Store items use `value`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`items[0][\"data\"]`",
+        "why": "Items are not subscriptable by your field names. Your data sits inside `.value`."
+      }
+    ],
+    "explanation": "Store results carry `value` (your dict), `key`, `namespace`, `created_at` and `updated_at`. Search results also have a `score` when a semantic query was run. `.dict()` turns an item into a plain dictionary.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:store API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/memory",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-008",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each requirement with the LangGraph mechanism that meets it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Checkpointer",
+        "why": "Saves graph state per thread at each step."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Store",
+        "why": "Holds JSON documents under namespaces, readable from any thread."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Runtime context (`context_schema`)",
+        "why": "Per-call values such as `user_id` or a database handle, not saved in checkpoints."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`trim_messages` in the model node",
+        "why": "Picks a window of messages for one model call and leaves the saved history alone."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Resume today's conversation after the server crashed mid-run",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Remember a user's preferred language in every future conversation",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Tell a node which user is calling, without saving it in state",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Keep a single model call under the token limit while keeping the full history",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The checkpointer gives continuity and recovery inside a thread. The store gives cross-thread memory. Runtime context carries per-request dependencies, such as the user id used to build store namespaces. Trimming in the node limits what the model sees without changing what is saved.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/persistence",
+    "source": "interview:memory-layers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/",
+        "https://interviewbaba.com/langchain-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-009",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph is compiled with `store=store` and `context_schema=Context`. What is the recommended way for a node to reach the store and the caller's `user_id`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Read both from `state`, after adding `store` and `user_id` keys to the state schema and passing them in the input dict",
+        "why": "A store object in state would be checkpointed, and it cannot be serialised. Keep dependencies out of state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Import the global `store` variable and read `user_id` from an environment variable",
+        "why": "This ties the node to module globals and gives every caller the same id."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Add a `runtime: Runtime[Context]` parameter; use `runtime.store` and `runtime.context`",
+        "why": "LangGraph injects the `Runtime`. It carries the compiled store and the context passed to `invoke(..., context=...)`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `config[\"configurable\"][\"store\"]` inside the node",
+        "why": "The store is not placed in `configurable`. The documented path is the `Runtime` object."
+      }
+    ],
+    "explanation": "The add-memory guide recommends a `Runtime[Context]` parameter. `runtime.store` is the store passed to `compile`, and `runtime.context` is the value passed as `context=` at invoke time. The usual pattern builds the namespace from `runtime.context.user_id`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:runtime context",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-010",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nstore = InMemoryStore()\nstore.put((\"u1\", \"prefs\"), \"theme\", {\"color\": \"dark\", \"font\": \"mono\"})\nstore.put((\"u1\", \"prefs\"), \"theme\", {\"color\": \"light\"})\nprint(store.get((\"u1\", \"prefs\"), \"theme\").value)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'color': 'light', 'font': 'mono'}`",
+        "why": "`put` does not merge dicts. The second write replaces the whole value."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'color': 'light'}`",
+        "why": "The second `put` to the same namespace and key overwrites the item."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'color': 'dark', 'font': 'mono'}`",
+        "why": "A later `put` to the same key is not ignored."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises because the key already exists",
+        "why": "`put` is \"store or update\". An existing key is overwritten without error."
+      }
+    ],
+    "explanation": "`put(namespace, key, value)` stores the item, or replaces it if one already exists at that namespace and key. There is no field-level merge. To update one field, read the item, change the dict and write the whole value back.",
+    "reference": "https://reference.langchain.com/python/langgraph.store/base/BaseStore",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-011",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nstore = InMemoryStore()\nstore.put((\"u1\", \"prefs\"), \"theme\", {\"color\": \"dark\"})\nstore.put((\"u1\", \"memories\"), \"m1\", {\"text\": \"likes tea\"})\nstore.put((\"u12\", \"memories\"), \"m2\", {\"text\": \"likes coffee\"})\nprint(sorted(i.key for i in store.search((\"u1\",))))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['m1']`",
+        "why": "Search matches by namespace prefix, so `(\"u1\", \"prefs\")` is included as well."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[]`, because no item sits directly in the namespace `(\"u1\",)`",
+        "why": "`search` takes a namespace prefix, not an exact namespace."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`['m1', 'm2', 'theme']`",
+        "why": "Prefixes are compared label by label. `\"u12\"` is a different label from `\"u1\"`, not a longer version of it."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`['m1', 'theme']`",
+        "why": "Both `(\"u1\", \"prefs\")` and `(\"u1\", \"memories\")` start with the label `\"u1\"`; `(\"u12\", ...)` does not."
+      }
+    ],
+    "explanation": "`search(namespace_prefix, ...)` returns items in every namespace that starts with the given labels. The match compares whole labels, so `(\"u1\",)` covers `(\"u1\", \"prefs\")` and `(\"u1\", \"memories\")` but not `(\"u12\", \"memories\")`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:memory isolation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/deepagents/backends"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-012",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "`store.search(namespace)` is called without a `limit` argument. At most how many items does it return? Type the number.",
+    "options": [],
+    "accepted": [
+      "10"
+    ],
+    "explanation": "`limit` defaults to `10`. Anything beyond the limit is cut off without warning, so set a larger `limit` or page with `offset` when you list a whole namespace.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-013",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A store is created with `index={\"embed\": embed, \"dims\": 1536}`. What does `store.put(ns, \"cfg\", {\"system_info\": \"v2\"}, index=False)` do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It stores the item but skips embedding it, so it can still be fetched without being vector-ranked",
+        "why": "`index=False` turns off embedding for this item only. The item itself is stored as usual."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It raises an error, because a store created with an `index` config cannot hold any item that has no embedding vector",
+        "why": "Indexed and unindexed items can sit side by side in the same namespace."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It turns off semantic search for the whole store from now on",
+        "why": "The flag applies to this one `put`. Other items are still embedded."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It writes the item to a temporary area that is deleted at the end of the run",
+        "why": "`index` controls embedding only. It has nothing to do with lifetime (that is TTL)."
+      }
+    ],
+    "explanation": "The `index` argument to `put` controls embedding per item. `None` uses the store's configured `fields`, a list of paths embeds just those fields, and `False` skips embedding. The item can still be fetched with `get` or found by a search without a query.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-014",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In the LangGraph memory guide, \"semantic memory\" means memory retrieved by embedding similarity (semantic search).",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The guide separates the two terms explicitly."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Semantic memory is a psychology term for stored facts. Semantic search is one way of retrieving data, by meaning."
+      }
+    ],
+    "explanation": "Semantic memory is about what is stored (facts about a user or a domain). Semantic search is a retrieval technique based on embeddings. You can keep semantic memories and fetch them by key or with a filter, and you can use semantic search over episodic examples.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-015",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each kind of agent memory, as the LangGraph memory guide describes them, with an example.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Semantic memory",
+        "why": "Facts, such as facts about a user."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Episodic memory",
+        "why": "Experiences, such as past agent actions, often used as few-shot examples."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Procedural memory",
+        "why": "Rules and instructions, such as the agent's own system prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Short-term memory",
+        "why": "The ongoing conversation within one thread."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "\"The user is allergic to peanuts and lives in Pune\"",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Three earlier tool-call traces that solved similar refund requests, injected as examples",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A system prompt the agent rewrites after user feedback through reflection",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The last six turns of the chat that is happening now",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The guide maps human memory types onto agents: semantic memory holds facts, episodic memory holds experiences (often used as few-shot examples), and procedural memory holds instructions (often the prompt, refined by reflection). Thread-scoped history is short-term memory, kept in state by the checkpointer.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "source": "interview:memory architecture",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901",
+        "https://dev.to/kapusto/langchain-memory-vs-langgraph-choosing-the-right-framework-for-your-ai-application-5g41"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-016",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "You switch long-term memory from `InMemoryStore` to `PostgresStore.from_conn_string(DB_URI)` against a fresh database. What does the documentation tell you to do the first time?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing: tables are created on each `put`",
+        "why": "The docs explicitly call for a one-time setup step."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Call `store.setup()` once so it creates its tables",
+        "why": "The add-memory guide notes that you need to call `store.setup()` the first time you use the Postgres store."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pass `checkpointer=True` to `compile` so the store shares the checkpoint tables",
+        "why": "The store and the checkpointer are separate components, and `checkpointer=True` is a subgraph option."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run `CREATE EXTENSION vector` by hand; nothing else is needed",
+        "why": "pgvector matters only for semantic search, and it does not replace the setup step."
+      }
+    ],
+    "explanation": "`PostgresStore` (from `langgraph-checkpoint-postgres`) needs `store.setup()` once on first use to create its schema, just like `PostgresSaver`. Use `AsyncPostgresStore` in async graphs. Pass the store to `compile(store=...)`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-017",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps in order to give a graph's long-term memory semantic search and use it from a node.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Create an embeddings object or function, for example with `init_embeddings(...)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Create the store with `index={\"embed\": ..., \"dims\": ..., \"fields\": [...]}`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Compile the graph with `compile(store=store)`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Write memories with `store.put(namespace, key, value)`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Inside a node, call `runtime.store.search(namespace, query=..., limit=...)`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Semantic search must be configured when the store is created: the `index` config needs an embedder and the vector size. Items are embedded when they are written. Searching with `query=` then ranks the items in the namespace prefix by similarity.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:store API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/memory",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-018",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph is compiled with `compile(checkpointer=InMemorySaver())` only. A node calls `runtime.store.put((user_id, \"memories\"), key, value)`. What happens when the node runs?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LangGraph creates a default `InMemoryStore` for you",
+        "why": "Outside Agent Server, there is no default store in plain `compile`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The write is saved in the checkpoint instead",
+        "why": "The checkpointer does not stand in for the store."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It raises `AttributeError: 'NoneType' object has no attribute 'put'`",
+        "why": "`runtime.store` is `None` when no store was passed to `compile`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The call is silently skipped, and `search` later returns nothing",
+        "why": "Nothing is skipped quietly. The attribute access on `None` fails."
+      }
+    ],
+    "explanation": "When you compile a graph yourself, `runtime.store` is whatever was passed as `compile(store=...)`, and `None` otherwise. (The docs note that Agent Server and Studio provide a store automatically.) Fix this by compiling with both `checkpointer=` and `store=`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-019",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "A graph is compiled with `store=store`. Which of these give code inside the graph access to that store? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A node parameter `runtime: Runtime[...]`, then `runtime.store`",
+        "why": "This is the recommended way in the docs."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A node parameter annotated `store: BaseStore`",
+        "why": "LangGraph also injects the store into a parameter with this name and annotation. The memory guide's procedural-memory example uses it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`get_store()` from `langgraph.config`, called while the node runs",
+        "why": "`get_store()` returns the store of the graph that is currently running."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`state[\"store\"]`, without adding it to the schema",
+        "why": "The store is not a state key. Putting it in state would also try to checkpoint it."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`os.environ[\"LANGGRAPH_STORE\"]`",
+        "why": "No such variable exists. The store is an object passed to `compile`."
+      }
+    ],
+    "explanation": "The store passed to `compile` (or to `@entrypoint(store=...)`) is available through `Runtime.store`, through an injected `store: BaseStore` parameter, and through `langgraph.config.get_store()`. All three return the same object.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-020",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You save each user's semantic memory as one \"profile\" JSON document that an LLM rewrites on every update. The profile now has 60 fields, and updates sometimes drop facts or break the schema. According to the memory guide, what does switching to a collection of small memory documents trade?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Higher recall and simpler writes, at the cost of harder updates, deletes and search",
+        "why": "The guide says collections lose less information and give higher recall, but the model must now update or delete items and you must search the list."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It removes the need for search entirely, because every memory document is loaded into every prompt the agent sends",
+        "why": "Collections move complexity into search. They do not remove it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It guarantees the model never over-inserts duplicates",
+        "why": "The guide warns that some models over-insert and others over-update, and suggests tools such as Trustcall and evaluation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It requires one thread per memory document",
+        "why": "Store documents are not tied to threads."
+      }
+    ],
+    "explanation": "A profile is a single document that the model must regenerate or patch, which becomes error-prone as it grows. A collection lets each memory stay narrow and easy to create, so less is lost. The cost is that updating, deleting and searching across many items gets harder, and the model may lack the overall context a profile gives.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "source": "interview:long-term-memory-design",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "Gupshup",
+        "Kin"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-021",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print after the fourth call?\n\n```python\ndef chat(state: MessagesState):\n    window = trim_messages(state[\"messages\"], strategy=\"last\",\n                           token_counter=len, max_tokens=3)\n    return {\"messages\": [AIMessage(f\"saw {len(window)}\")]}\n\ngraph = (StateGraph(MessagesState).add_node(chat).add_edge(START, \"chat\")\n         .compile(checkpointer=InMemorySaver()))\ncfg = {\"configurable\": {\"thread_id\": \"t1\"}}\nfor text in [\"a\", \"b\", \"c\", \"d\"]:\n    out = graph.invoke({\"messages\": [{\"role\": \"user\", \"content\": text}]}, cfg)\nprint(out[\"messages\"][-1].content, len(graph.get_state(cfg).values[\"messages\"]))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`saw 3 3`",
+        "why": "Trimming affects only the local `window` list. The node never asks to remove anything from state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`saw 7 8`",
+        "why": "`token_counter=len` counts one per message, so `max_tokens=3` keeps three messages."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`saw 3 8`",
+        "why": "The model sees three messages, but the thread still holds all four user and four AI messages."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`saw 3 4`",
+        "why": "Nothing in the graph deletes the AI replies either. All eight messages stay in state."
+      }
+    ],
+    "explanation": "`trim_messages` returns a new list for this call only. State changes only through what the node returns, and it returns just the new AI message, which `add_messages` appends. The checkpoint keeps growing: 8 messages after four turns. To shrink stored history, return `RemoveMessage` updates or summarise.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:message-trimming-removal",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-022",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nstore = InMemoryStore()\nfor i, (score, tag) in enumerate([(1, \"x\"), (3, \"y\"), (5, \"x\")]):\n    store.put((\"f\",), f\"k{i}\", {\"score\": score, \"tag\": tag})\n\nprint([i.key for i in store.search((\"f\",), filter={\"score\": {\"$gte\": 3}, \"tag\": \"x\"})])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['k1', 'k2']`",
+        "why": "That ignores the `tag` condition. Filter conditions are combined with AND."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['k0', 'k2']`",
+        "why": "That is the result of the tag condition alone; `k0` fails `score >= 3`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[]`, because the filter only supports plain equality",
+        "why": "The store supports comparison operators such as `$gte`, `$gt`, `$lt`, `$lte`, `$ne` and `$eq`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`['k2']`",
+        "why": "Only `k2` has `score >= 3` and `tag == \"x\"`."
+      }
+    ],
+    "explanation": "`search(filter=...)` matches on the item's value. A plain value means equality; a dict of `$`-operators applies comparisons. All keys must match. `InMemoryStore` copies PostgreSQL JSONB behaviour here, so the same filter works on `PostgresStore`.",
+    "reference": "https://reference.langchain.com/python/langgraph.store/base/BaseStore",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-023",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nstore = InMemoryStore()\nstore.put((\"acme\", \"u1\", \"memories\"), \"m1\", {\"text\": \"likes tea\"})\nstore.put((\"acme\", \"u1\", \"prefs\"), \"lang\", {\"value\": \"fr\"})\nstore.put((\"acme\", \"u2\", \"memories\"), \"m1\", {\"text\": \"likes coffee\"})\nstore.put((\"acme\", \"shared\"), \"policy\", {\"text\": \"refunds in 30 days\"})\nstore.put((\"globex\", \"u1\", \"memories\"), \"m1\", {\"text\": \"likes juice\"})\nprint(store.list_namespaces(prefix=(\"acme\",), max_depth=2))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`[('acme', 'shared'), ('acme', 'u1'), ('acme', 'u2')]`",
+        "why": "Every namespace under `acme` is cut to two labels, and duplicates are merged."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[('acme', 'u1', 'memories'), ('acme', 'u1', 'prefs'), ('acme', 'u2', 'memories'), ('acme', 'shared')]`",
+        "why": "Without `max_depth` you would get the full paths. `max_depth=2` cuts them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`[('acme', 'shared')]`",
+        "why": "`max_depth` does not drop deeper namespaces. It truncates them."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[('acme', 'u1'), ('acme', 'u2'), ('globex', 'u1')]`",
+        "why": "The `prefix` filter excludes `globex`, and `('acme', 'shared')` matches."
+      }
+    ],
+    "explanation": "`list_namespaces(prefix=..., suffix=..., max_depth=..., limit=100, offset=0)` lists namespaces, not items. `max_depth` truncates deeper paths to that many labels and removes duplicates. This is useful for walking a tenant to find its users before listing or deleting their items.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:tenant-isolation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/Aaronxvc/cohere_sales_agent",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026"
+      ],
+      "companies": [
+        "Cohere"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-024",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A support bot uses the customer's email address as the user id: `namespace = (email, \"memories\")`. Every `store.put` for `alice@example.com` fails. What is the cause, and what is a sound fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Namespaces are limited to 16 characters; hash the email to make it shorter",
+        "why": "The store has no such length limit on labels."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The `@` symbol is reserved in namespace labels; URL-encode the email address before building the namespace",
+        "why": "`@` is allowed. The rejected character is the period."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Labels cannot contain `.`, so `put` raises `InvalidNamespaceError`; use an opaque user id",
+        "why": "The store rejects any label containing `.`, and an internal user id also avoids putting personal data in keys."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Emails must be passed as the `key`, not in the namespace",
+        "why": "Moving the email to the key would give every user one shared namespace."
+      }
+    ],
+    "explanation": "`BaseStore` checks namespace labels: each must be a non-empty string without `.` (and for `put`, the root label cannot be `\"langgraph\"`). An email therefore raises `InvalidNamespaceError`. A stable internal id, such as a UUID taken from your auth layer, avoids the problem and keeps personal data out of the namespace.",
+    "reference": "https://reference.langchain.com/python/langgraph.store/base/BaseStore",
+    "source": "interview:tenant-isolation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/Aaronxvc/cohere_sales_agent",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026"
+      ],
+      "companies": [
+        "Cohere"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-025",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In a store holding items under `(\"u12\", \"memories\")`, a call to `store.search((\"u1\",))` also returns those items, because `\"u12\"` starts with `\"u1\"`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Prefix matching works on whole labels, not on characters within a label."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. `(\"u1\",)` matches namespaces whose first label equals `\"u1\"`. `\"u12\"` is a different label."
+      }
+    ],
+    "explanation": "Namespace prefix matching compares the tuples label by label. `(\"u1\",)` covers `(\"u1\", ...)` but never `(\"u12\", ...)`. The risk to watch for is a namespace that is too short, such as searching `(org_id,)`, which covers every user in the org.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:memory isolation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/deepagents/backends"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-026",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "To expire scratch memories automatically, a developer writes `store.put(ns, key, value, ttl=60)` against `InMemoryStore()`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The item is stored and deleted 60 seconds later",
+        "why": "TTL is not supported by `InMemoryStore`, and TTL values are minutes, not seconds."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises `NotImplementedError` because `InMemoryStore` does not support TTL",
+        "why": "`put` checks `supports_ttl` and raises when a TTL is given to a store that lacks it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The item is stored, and the TTL is quietly ignored",
+        "why": "It is not ignored. `ttl=None` is the only value accepted without TTL support."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The item expires after 60 reads",
+        "why": "TTL is time-based. Reads can refresh the timer but are not counted."
+      }
+    ],
+    "explanation": "`BaseStore.put` raises `NotImplementedError` when `ttl` is set on a store whose `supports_ttl` is `False`. `InMemoryStore` is one of those stores. Stores that support TTL (for example `SqliteStore` from `langgraph-checkpoint-sqlite`) accept a TTL per item or a `TTLConfig` with `default_ttl`, `refresh_on_read` and `sweep_interval_minutes`.",
+    "reference": "https://reference.langchain.com/python/langgraph.store/base/TTLConfig",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-027",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "In a store's `TTLConfig`, `default_ttl` and the `ttl` argument to `put` are given in which unit of time? Type one word.",
+    "options": [],
+    "accepted": [
+      "minutes",
+      "minute",
+      "min",
+      "mins"
+    ],
+    "explanation": "Store TTLs are in minutes (`sweep_interval_minutes` is minutes too). The timer counts from the last access, and by default `get` and `search` refresh it (`refresh_on_read` defaults to `True`). Pass `refresh_ttl=False` on a read to leave it alone.",
+    "reference": "https://reference.langchain.com/python/langgraph.store/base/TTLConfig",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-028",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A custom graph uses `class State(MessagesState): summary: str`. Once the thread has more than six messages, `summarize_conversation` runs. It asks the model to extend any existing summary, then returns `{\"summary\": response.content, \"messages\": [RemoveMessage(id=m.id) for m in state[\"messages\"][:-2]]}`. What does the thread's state hold afterwards?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The full history plus a `summary` key, because `RemoveMessage` only hides messages from the model",
+        "why": "Under `add_messages`, `RemoveMessage` deletes those messages from the current state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only the `summary` key; `messages` is empty",
+        "why": "The slice `[:-2]` keeps the two most recent messages."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The two newest messages, plus the new text in the `summary` key",
+        "why": "Older messages are deleted from state, the summary carries their gist, and the next model call combines both."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The two newest messages, with the summary appended as a new `AIMessage` in `messages`",
+        "why": "The summary is written to a separate `summary` key, not added to the message list."
+      }
+    ],
+    "explanation": "The documented pattern keeps a running summary in its own state key, uses the previous summary as context for the next one, and deletes all but the latest messages with `RemoveMessage`. The model node then puts the summary into its prompt. History shrinks for good, so information is condensed rather than dropped.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:message history management",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901",
+        "https://www.novelvista.com/blogs/ai-and-ml/generative-ai-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-029",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each history-management technique with its main trade-off.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`trim_messages` before the model call",
+        "why": "Cheap and deterministic. Older turns drop out of the prompt, but the saved state keeps growing."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return `RemoveMessage` updates",
+        "why": "Shrinks the thread's current state permanently. Removed content is gone from what later steps see."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Summarise older turns",
+        "why": "Keeps the gist of older turns. Costs an extra model call and can lose exact details."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Offload facts to the store",
+        "why": "Moves durable facts out of the thread so any later thread can retrieve them."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "You need the simplest fix for context-length errors and can accept that old turns fall out of the prompt",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "You must cut the thread's stored state size, not just the prompt",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Users refer back to points from 50 turns ago, and you can afford an extra LLM call",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Users expect the assistant to know their preferences in new conversations",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Trimming changes only what is sent to the model. Deleting changes the state itself. Summarising keeps a lossy version of older context at the cost of an extra model call. Moving facts to the store turns them into cross-thread memory. Production agents often combine these.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:message history management",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901",
+        "https://www.novelvista.com/blogs/ai-and-ml/generative-ai-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-MEM-030",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Memories are written \"in the hot path\": the agent decides what to save before it answers. According to the memory guide, which are real trade-offs of this approach? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "New memories are available immediately, and users can be told when something was saved",
+        "why": "Real-time availability and transparency are the advantages the guide lists."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Deciding what to save adds latency, and the agent must split its attention between memory and the task",
+        "why": "The guide names extra latency and the multitasking burden, which can lower memory quality."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Memories written this way are only visible in the current thread",
+        "why": "Store writes are visible from any thread that reads the same namespace."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The hot path removes the need to decide how often memories are written",
+        "why": "How often to write is mainly a concern for background writing. The hot path brings other costs."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Hot-path writes cannot use semantic search, because embeddings are only computed by background jobs",
+        "why": "Embeddings are computed when an item is `put` into an indexed store, wherever that call happens."
+      }
+    ],
+    "explanation": "Hot-path writes make memories available right away and visible to the user, but they cost latency and can lower quality because the agent multitasks. Background writes keep latency off the response and separate memory logic from the app, but you must decide when to run them, and other threads may see new context late.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "source": "interview:long-term-memory-design",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "Gupshup",
+        "Kin"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-031",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about `store.search(namespace_prefix, ...)` are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Results beyond `limit` are cut off with no overflow signal, so page with `offset` to list everything",
+        "why": "The docs warn that truncation is silent."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Without `query` or `filter`, it lists the items under the namespace prefix",
+        "why": "A bare search enumerates the namespace, up to `limit`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Default ordering differs by backend: insertion order for `InMemoryStore`, most recently updated first for `PostgresStore`",
+        "why": "The docs say not to rely on the order across implementations."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Without an `index` config, `query=` still ranks results by similarity using a built-in default embedder",
+        "why": "There is no default embedder. Without an index, the store cannot run vector search."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A `filter` value such as `{\"tag\": \"x\"}` matches any item whose `tag` contains `\"x\"` as a substring",
+        "why": "A plain filter value means equality, not substring matching."
+      }
+    ],
+    "explanation": "`search` matches by namespace prefix, cuts results at `limit` (default 10) without saying so, and orders results differently per backend. Sort on `updated_at` if order matters. Semantic ranking requires an `index` config, and filters use equality or `$` comparison operators.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:store API",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/memory",
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-032",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps of a model node that uses long-term memory in the hot path.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Read `user_id` from `runtime.context` and build the namespace `(user_id, \"memories\")`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Search that namespace using the latest user message as the query",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add the retrieved memory values to the system prompt",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call the model with the system prompt and the thread's messages",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "If the user asked to remember something, write it with `runtime.store.put`",
+        "why": ""
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Return the model response as a state update",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "explanation": "This is the add-memory guide's pattern: namespace from runtime context, semantic search on the latest message, memories added to the system message, the model call, an optional store write, then the new message returned for `add_messages` to append.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:memory architecture",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901",
+        "https://dev.to/kapusto/langchain-memory-vs-langgraph-choosing-the-right-framework-for-your-ai-application-5g41"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-033",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An assistant stores facts with `runtime.store.put((config[\"configurable\"][\"thread_id\"], \"memories\"), ...)`. Users say it remembers facts within a conversation but forgets them as soon as they start a new chat. What is wrong?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`InMemoryStore` only keeps data for the current thread",
+        "why": "The store has no notion of threads. It is losing nothing here."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The namespace uses `thread_id`, so each new chat reads an empty one; use the user's id",
+        "why": "Using the thread id makes long-term memory as narrow as short-term memory."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Writes inside a node are discarded unless the node returns them",
+        "why": "Store writes happen at once and do not depend on the node's return value."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The checkpointer must be removed, because it overrides the store",
+        "why": "The checkpointer and the store work together and do not conflict."
+      }
+    ],
+    "explanation": "Long-term memory is useful because its namespace outlives a thread. Build it from a stable identity, such as `runtime.context.user_id` (and the tenant), not from `thread_id`. Leave conversation-scoped data in checkpointed state.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/persistence",
+    "source": "interview:checkpointer-vs-store",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-034",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A user explicitly asks \"remember that my invoices go to finance@acme\" and expects the bot to confirm and use it in the next message of the same chat. The team also runs a nightly job that extracts preferences from transcripts. Where should this particular write happen?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "In the nightly job only, to keep latency off the response",
+        "why": "The user expects to see it saved and used right away. A nightly delay breaks that."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Nowhere: the checkpointer already keeps it for the rest of the chat, which is enough",
+        "why": "The user asked for it to be remembered, which implies future conversations as well."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "In the run config, so every later call carries it",
+        "why": "Config is not persisted. The client would have to resend it on every call."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "In the hot path, for example a save-memory tool or node that writes to the store before replying",
+        "why": "Hot-path writes are immediately available and visible to the user, which is what this request needs."
+      }
+    ],
+    "explanation": "Explicit \"remember this\" requests suit hot-path writes: the memory is available at once and you can tell the user it was saved. Implicit extraction across many conversations suits background jobs. Both can write to the same store namespace.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "source": "interview:long-term-memory-design",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://github.com/mykin-ai/ML-coding-challenge-2024",
+        "https://blog.promptlayer.com/the-agentic-system-design-interview-how-to-evaluate-ai-engineers/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "Gupshup",
+        "Kin"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-035",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\ndef embed(texts):\n    return [[1.0, 0.0] if \"pizza\" in t else [0.0, 1.0] for t in texts]\n\nstore = InMemoryStore(index={\"embed\": embed, \"dims\": 2, \"fields\": [\"text\"]})\nns = (\"u1\", \"memories\")\nstore.put(ns, \"a\", {\"text\": \"I love pizza\"})\nstore.put(ns, \"b\", {\"text\": \"I am a plumber\"})\nstore.put(ns, \"c\", {\"text\": \"pizza on Fridays\"}, index=False)\nstore.put(ns, \"d\", {\"note\": \"pizza place on 5th street\"})\n\nhits = store.search(ns, query=\"pizza\", limit=4)\nprint([(h.key, h.score) for h in hits])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`[('a', 1.0), ('c', 1.0), ('d', 1.0), ('b', 0.0)]`",
+        "why": "`c` was stored with `index=False`, and `d` has no `text` field, so neither has a vector to score."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[('a', 1.0), ('b', 0.0)]`",
+        "why": "With `limit=4`, `InMemoryStore` fills the remaining places with unscored items."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`[('a', 1.0), ('b', 0.0), ('c', None), ('d', None)]`",
+        "why": "Only `a` and `b` were embedded. `c` and `d` fill the remaining places with `score=None`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[('a', 1.0), ('c', None)]`",
+        "why": "`b` was embedded too. It scores `0.0` against the query and is still returned."
+      }
+    ],
+    "explanation": "Only fields listed in `fields` are embedded, and `index=False` skips an item entirely. When a query matches fewer embedded items than `limit`, `InMemoryStore` adds unscored items with `score=None`. With `limit=2`, the same search returns only `a` and `b`. Do not treat `None` scores as relevant results.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-MEM-036",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "A tenant's user asks you to erase everything the assistant remembers about them. Memories live in the store under `(tenant_id, user_id, <kind>)` for several kinds. Which steps are needed to remove that user's store data reliably? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Find the user's namespaces with `list_namespaces(prefix=(tenant_id, user_id))`",
+        "why": "This finds every kind of memory the user has without hard-coding the list."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Page through each namespace with `search(..., limit=..., offset=...)`, because results past `limit` are cut off silently",
+        "why": "Without paging, a bare search stops at 10 items, and the rest survive."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Call `store.delete(namespace, key)` for every item found",
+        "why": "The store API deletes one key at a time; there is no delete-by-namespace method."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `store.delete((tenant_id, user_id))` with no key to drop the whole subtree",
+        "why": "`delete` requires a key and removes a single item."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Return `RemoveMessage(id=REMOVE_ALL_MESSAGES)` from a node, which also clears the store",
+        "why": "That changes a thread's `messages` state. The store is untouched."
+      }
+    ],
+    "explanation": "`BaseStore` offers `put`, `get`, `search`, `delete(namespace, key)` and `list_namespaces`. To erase a user, list their namespaces by prefix, page through each one and delete every key. Thread data is separate and must be removed through the checkpointer, for example with `delete_thread`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "source": "interview:tenant-isolation",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/Aaronxvc/cohere_sales_agent",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026"
+      ],
+      "companies": [
+        "Cohere"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-MEM-037",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A memory tool is defined as `save_memory(user_id: str, text: str)`, and the model fills in `user_id` from the conversation. In a multi-tenant deployment, why is this a security problem, and what is the right design?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Tool arguments are not saved in checkpoints, so the memory is lost; save the id in state instead",
+        "why": "Persistence is not the problem here. Who controls the id is."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The model may type the id inconsistently across turns; normalise it to lower case and strip whitespace before every write",
+        "why": "Normalising does not stop a prompt-injected or hallucinated id from reaching another user's data."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Namespaces must not contain user ids; use one shared namespace with a `user_id` filter",
+        "why": "A shared namespace plus a filter that the model could also set has the same flaw."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The model (or an injection) can pick any id; take it from authenticated runtime context",
+        "why": "Tenant and user scoping must come from trusted server-side context, never from text the model generates."
+      }
+    ],
+    "explanation": "Isolation must be enforced where data is accessed. Build the namespace from authenticated values passed as runtime context (`context=...` at invoke time, read through `runtime.context` in nodes or the tool runtime in tools), so the model cannot address another tenant's memories.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:agent-platform-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.scribd.com/document/972008695/Take-Home-AI-Engineer-Assessment",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-MEM-038",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Two threads for the same user run at the same moment. Each reads the profile at `(user_id, \"profile\")`, key `\"main\"`, asks the model to add one fact, and `put`s the result. Afterwards, only one of the two new facts is in the profile. What explains this, and which redesign avoids it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A lost update, since `put` overwrites with no version check; store facts as separate items or use one writer",
+        "why": "Read-modify-write on one document races. Separate items or a single writer remove the race."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The checkpointer rolled back one of the two threads after a conflict; give both threads the same `thread_id` so they share state",
+        "why": "Store writes are not checkpointed state. Sharing a thread would mix two conversations."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`InMemoryStore` drops concurrent writes; switch to `PostgresStore` and keep the same code",
+        "why": "Any backend overwrites on `put`. The race is in the read-modify-write logic."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The profile hit the default `limit` of 10 fields",
+        "why": "`limit` applies to search results, not to the fields in a document."
+      }
+    ],
+    "explanation": "`put` replaces the item at a namespace and key, and its signature has no compare-and-set or version argument. A shared profile that several writers update by read-modify-write will lose updates. The memory guide's collection approach (narrow, separate documents) or one background writer per user avoids this.",
+    "reference": "https://reference.langchain.com/python/langgraph.store/base/BaseStore",
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-MEM-039",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "This helper returns the newest memory. It passes every unit test with `InMemoryStore`, but in production on `PostgresStore` it returns the oldest memory. Why?\n\n```python\ndef latest_memory(store, user_id):\n    items = store.search((user_id, \"memories\"), limit=100)\n    return items[-1] if items else None\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`PostgresStore` ignores `limit` above 10",
+        "why": "`limit` is respected. The order of results is what differs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`PostgresStore` returns items sorted alphabetically by key, and since the keys are random UUIDs the order looks arbitrary",
+        "why": "The docs say Postgres orders by `updated_at` descending, not by key."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Default order differs by backend (newest last in memory, newest first in Postgres); sort on `updated_at`",
+        "why": "The code relied on an ordering that is not part of the contract."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Timestamps in Postgres are in UTC, so newer items appear older",
+        "why": "Time zones do not reverse the order of results."
+      }
+    ],
+    "explanation": "The stores guide warns that default ordering depends on the backend: `InMemoryStore` returns insertion order, while `PostgresStore`/`AsyncPostgresStore` return the most recently updated first. Sort explicitly on `updated_at` (and page past `limit`) when order matters.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/stores",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-MEM-040",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A voice assistant has a strict p95 latency budget. It should learn preferences from conversations, and new memories may reach other threads a few minutes late. Users often send bursts of messages. Which memory-writing design fits every constraint?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A save-memory tool the model calls before every reply",
+        "why": "Hot-path writes add reasoning latency on every turn, which breaks the p95 budget."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A background task that runs after a quiet period and is rescheduled when new messages arrive",
+        "why": "This keeps latency off the response and avoids redoing work during bursts, at the cost of a short delay."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep everything in the thread's messages and never write long-term memory",
+        "why": "Then nothing carries over to new threads, which the product needs."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run memory extraction once a month in a batch job over all transcripts, then load the results into the store",
+        "why": "That misses the \"a few minutes late\" requirement by a wide margin."
+      }
+    ],
+    "explanation": "Background writing removes memory latency from the main app and separates memory logic, but you must choose when to trigger it. The memory guide suggests scheduling after a set period (rescheduling if new events occur), a cron schedule, or manual triggers. Debouncing during bursts avoids extracting the same facts again.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "source": "interview:memory architecture",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901",
+        "https://dev.to/kapusto/langchain-memory-vs-langgraph-choosing-the-right-framework-for-your-ai-application-5g41"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-MEM-041",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "`SummarizationMiddleware(model=summ, trigger=(\"messages\", 6), keep=(\"messages\", 2))` runs `before_model` on this history. How many of the original messages are preserved after the summary?\n\n```python\nmsgs = [HumanMessage(\"h1\", id=\"1\"), AIMessage(\"a1\", id=\"2\"), HumanMessage(\"h2\", id=\"3\"),\n        AIMessage(\"\", id=\"4\", tool_calls=[{\"name\": \"t\", \"args\": {}, \"id\": \"c1\"}]),\n        ToolMessage(\"r\", tool_call_id=\"c1\", id=\"5\"), AIMessage(\"a3\", id=\"6\")]\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "2: the `ToolMessage` and the final `AIMessage`",
+        "why": "Keeping only those would leave a tool result without the AI message that requested it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "1: only the final `AIMessage`, so the tool exchange is fully summarised",
+        "why": "The middleware moves the cutoff earlier to keep the pair, not later."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "6: summarisation does not run because the trigger needs more than 6 messages",
+        "why": "The trigger is met at 6 messages (the check is \"fewer than\" the value)."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "3: the tool-calling `AIMessage`, its `ToolMessage` and `a3`",
+        "why": "The cutoff for `keep=2` would split a tool call from its result, so it moves back to include the requesting `AIMessage`."
+      }
+    ],
+    "explanation": "The middleware finds a cutoff that never splits an AI tool call from its `ToolMessage`. If the cutoff lands on a tool result, it moves back to the matching `AIMessage`. The update it returns is `RemoveMessage(id=REMOVE_ALL_MESSAGES)`, then a `HumanMessage` holding the summary, then the preserved messages.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:create_agent and middleware",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/middleware",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-MEM-042",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A node removes every message except the last one with `RemoveMessage`, after a user pasted a card number. Compliance asks whether the card number is now gone from the thread's persisted data (`InMemorySaver` here, Postgres in production). What is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Yes: `RemoveMessage` rewrites every earlier checkpoint of the thread, so the card number no longer exists anywhere in the saved history",
+        "why": "Earlier checkpoints are snapshots and are not rewritten."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Only from current state; older checkpoints keep it until you call `delete_thread`",
+        "why": "Removal is a new state update. History keeps the older snapshots until they are deleted."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is gone only if the node also calls `store.delete` for the thread",
+        "why": "Thread state is held by the checkpointer, not the store."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It was never persisted, because messages are kept only in the model's context",
+        "why": "The checkpointer saves the `messages` channel at each step."
+      }
+    ],
+    "explanation": "`RemoveMessage` changes the latest state through the `add_messages` reducer. Earlier checkpoints still hold the old messages, and `get_state_history` returns them. To erase data, delete the thread's checkpoints with `delete_thread`, and remove any store items separately.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-MEM-043",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are moving a prototype's long-term memory to production. Which changes are sound? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use `PostgresStore` (or `AsyncPostgresStore` in async graphs) and run `setup()` once",
+        "why": "This gives durable, shared storage and is the documented production path."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Build namespaces from the authenticated tenant and user ids passed as runtime context",
+        "why": "This keeps data isolated per tenant and per user."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Configure `index` with `dims` equal to the embedding model's output size, and list only the fields worth embedding",
+        "why": "The vector size must match the model, and embedding only useful fields reduces cost and noise."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Use `thread_id` as the first namespace label so every conversation has its own memories",
+        "why": "That turns long-term memory back into thread-scoped memory."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Keep user facts in a state key with an `operator.add` reducer instead of the store",
+        "why": "State is thread-scoped, so those facts would never reach a new conversation."
+      }
+    ],
+    "explanation": "Production long-term memory needs a durable backend (`PostgresStore` with `setup()`), namespaces scoped by identity, and an index config that matches the embedding model (`dims`, `fields`). Thread-scoped designs defeat the purpose of the store.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:checkpointer-vs-store",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-MEM-044",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "For a long-running assistant, which pieces of information belong in the long-term store rather than in thread state saved by the checkpointer? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The user's dietary restrictions, needed in every future conversation",
+        "why": "This is a semantic fact that must cross threads."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Instructions the agent refined from user feedback, used by all its future runs",
+        "why": "This is procedural memory, kept under a namespace such as `(\"agent_instructions\",)`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Examples of past resolved tickets, retrieved as few-shot examples for similar requests",
+        "why": "This is episodic memory, searched across conversations."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The tool results from the step that is running now",
+        "why": "Working data for the current run belongs in thread state."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The approval payload waiting on an `interrupt()` in this thread",
+        "why": "A paused interrupt is part of the thread's checkpointed state."
+      }
+    ],
+    "explanation": "Anything that must be available in other threads (facts, refined instructions, reusable examples) belongs in the store. Working data, paused interrupts and the running conversation belong in checkpointed thread state.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/memory",
+    "source": "interview:memory-layers",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/",
+        "https://interviewbaba.com/langchain-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-MEM-045",
+    "domain": 3,
+    "skill": "memory-store",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Order what `SummarizationMiddleware.before_model` does on a turn where summarisation fires.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Count the tokens and messages in state and check them against `trigger`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Choose a cutoff from `keep`, moved so it never splits an AI tool call from its `ToolMessage`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Ask the summary model to summarise the messages before the cutoff",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return `RemoveMessage(id=REMOVE_ALL_MESSAGES)`, a summary `HumanMessage`, then the preserved messages",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "The middleware checks the trigger thresholds, chooses a safe cutoff from the `keep` policy, generates the summary, and returns an update that replaces the history. Unlike trimming inside a model call, this rewrites the thread's saved messages.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/short-term-memory",
+    "source": "interview:create_agent and middleware",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langchain/middleware",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 4
+  }
+]

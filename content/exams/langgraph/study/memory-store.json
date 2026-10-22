@@ -1,0 +1,51 @@
+{
+  "memory-store": {
+    "summary": "LangGraph has two memory layers. Short-term memory is thread-scoped graph state (usually `messages`) saved by a checkpointer and keyed by `thread_id`. Long-term memory is JSON documents in a `BaseStore` under namespaces you choose, readable from any thread. Know the store API (`put`/`get`/`search`/`delete`/`list_namespaces`) and its sharp edges, how to configure semantic search, how nodes reach the store, how to keep history inside the context window (trim, delete, summarise), the semantic/episodic/procedural split, hot-path versus background writes, and how to isolate tenants. Targets langgraph 1.2 / langgraph-checkpoint 4.x / langchain 1.4.",
+    "points": [
+      "Attach memory at compile time with `builder.compile(checkpointer=..., store=...)`. Nodes reach the store through `runtime: Runtime[Context]` as `runtime.store` (recommended), through an injected `store: BaseStore` parameter, or through `langgraph.config.get_store()`. If no store was compiled in, `runtime.store` is `None`. Agent Server and Studio provide a store automatically.",
+      "A namespace is a tuple of non-empty strings, such as `(tenant_id, user_id, \"memories\")`. Labels may not contain `.` (so raw emails fail with `InvalidNamespaceError`), and `put` rejects the root label `\"langgraph\"`. The key is unique inside the namespace, and the value is a JSON-serialisable dict.",
+      "`put(namespace, key, value, index=None, *, ttl=...)` stores or overwrites the whole value. There is no merge and no compare-and-set. `get(namespace, key)` returns an `Item` (`value`, `key`, `namespace`, `created_at`, `updated_at`) or `None`. `delete(namespace, key)` removes one item; there is no delete-by-namespace.",
+      "`search(namespace_prefix, *, query=None, filter=None, limit=10, offset=0)` matches namespaces by prefix, label by label: `(\"u1\",)` covers `(\"u1\", \"prefs\")` but not `(\"u12\", ...)`. Results past `limit` are cut off without warning, so page with `offset`. Filters use equality or `$eq/$ne/$gt/$gte/$lt/$lte`, combined with AND.",
+      "Default result order depends on the backend: `InMemoryStore` uses insertion order (newest last), while `PostgresStore`/`AsyncPostgresStore` use `updated_at` descending. Sort on `updated_at` yourself when order matters. `list_namespaces(prefix=, suffix=, max_depth=, limit=100)` lists namespaces and truncates them to `max_depth` labels.",
+      "Semantic search needs an index config when the store is created: `index={\"embed\": <Embeddings | function | \"provider:model\">, \"dims\": N, \"fields\": [\"$\"]}`. `fields` takes JSON paths (`\"text\"`, `\"a.b\"`, `\"msgs[*].content\"`). `put(..., index=False)` skips embedding one item, and `index=[...]` overrides the fields for one item. Search results then carry a `score`.",
+      "Without an index config there is no vector search. With one, `InMemoryStore` fills leftover `limit` places with unembedded items that have `score=None`. Each item appears once, scored by its best-matching field.",
+      "Production: `PostgresStore.from_conn_string(DB_URI)` (or `AsyncPostgresStore`) from `langgraph-checkpoint-postgres`, with `store.setup()` called once. `InMemoryStore` is a process-local dict for tests and development. TTL is in minutes (`TTLConfig`: `default_ttl`, `refresh_on_read` defaulting to `True`, `sweep_interval_minutes`). Only stores with `supports_ttl` accept it; `InMemoryStore` raises `NotImplementedError` for `ttl=`, while `SqliteStore` supports it.",
+      "Short-term history management: `trim_messages` inside the model node limits only what the model sees, so the checkpoint keeps growing. `RemoveMessage` updates shrink the current state. Summarising (a `summary` key plus deleting all but the last few messages, or `SummarizationMiddleware` in `create_agent`) keeps the gist at the cost of an extra model call. Keep histories valid: start on a user turn and never orphan a `ToolMessage`.",
+      "`SummarizationMiddleware(model, trigger=..., keep=(\"messages\", 20))` runs in `before_model`. When the trigger is met, it chooses a cutoff that never splits an AI tool call from its result and returns `RemoveMessage(id=REMOVE_ALL_MESSAGES)`, a summary `HumanMessage` and the preserved messages, which rewrites the saved history.",
+      "Memory types in the LangGraph guide: semantic (facts, stored as one profile document or as a collection of small documents), episodic (experiences, often used as few-shot examples), and procedural (instructions, such as a prompt refined through reflection and stored under a namespace like `(\"agent_instructions\",)`). Semantic memory is not the same thing as semantic search.",
+      "Writing memories: in the hot path, memories are available immediately and visible to the user, but writing adds latency and the agent multitasks. In the background, the main app keeps its latency and memory logic is separate, but you must choose triggers (after a quiet period with rescheduling, a cron schedule, or manual) and accept that other threads see new memories late."
+    ],
+    "traps": [
+      "Keying long-term memory by `thread_id` makes it disappear in every new conversation. Key it by the user's (and tenant's) identity from runtime context.",
+      "Letting the model supply `user_id` as a tool argument lets a prompt injection read or write another user's memories. Build namespaces from authenticated server-side context.",
+      "Searching too short a prefix, such as `(tenant_id,)`, returns every user's memories in that tenant. Prefix matching is by label, so `\"u1\"` never matches `\"u12\"`.",
+      "Assuming `trim_messages` shrinks stored history. It only changes the list passed to the model, so the checkpoint keeps every message.",
+      "Treating `RemoveMessage` as erasure. Earlier checkpoints still hold the content until you call the checkpointer's `delete_thread`, and store items must be deleted separately.",
+      "Using read-modify-write on one shared profile document from concurrent threads. `put` overwrites the whole value, so updates are lost.",
+      "Relying on `items[-1]` or `items[0]` as \"latest\": the order differs between `InMemoryStore` and `PostgresStore`, and `limit` (default 10) truncates silently.",
+      "Using emails or dotted ids as namespace labels: a `.` in any label raises `InvalidNamespaceError`."
+    ],
+    "docs": [
+      {
+        "title": "LangGraph memory overview",
+        "url": "https://docs.langchain.com/oss/python/langgraph/memory"
+      },
+      {
+        "title": "Add and manage memory",
+        "url": "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      },
+      {
+        "title": "Stores",
+        "url": "https://docs.langchain.com/oss/python/langgraph/stores"
+      },
+      {
+        "title": "Persistence: checkpointer vs store",
+        "url": "https://docs.langchain.com/oss/python/langgraph/persistence"
+      },
+      {
+        "title": "BaseStore reference",
+        "url": "https://reference.langchain.com/python/langgraph.store/base/BaseStore"
+      }
+    ]
+  }
+}

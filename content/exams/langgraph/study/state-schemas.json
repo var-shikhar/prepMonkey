@@ -1,0 +1,45 @@
+{
+  "state-schemas": {
+    "summary": "State is the shared memory every node reads and the only thing nodes change. Each key is a channel with its own reducer, so you need to know how updates merge, how messages are matched by id, what each schema type validates, and what belongs in state rather than in config or runtime context.",
+    "points": [
+      "A node receives the current state and returns a partial update (a dict with only the keys it changes), and LangGraph merges each returned key into its channel. A returned key that is not in the schema has no channel and is silently dropped.",
+      "A key without a reducer is overwritten by the latest value. `Annotated[list, operator.add]` (or any `(old, new) -> merged` function) combines updates instead, and the reducer also applies to values passed in the `invoke` input.",
+      "`add_messages` appends new messages, gives an id to any message that lacks one, replaces a stored message whose id matches, and converts dicts, `(role, content)` tuples and bare strings into message objects.",
+      "To delete messages, return `RemoveMessage(id=...)` through `add_messages`. `RemoveMessage(id=REMOVE_ALL_MESSAGES)` clears the whole list. With plain `operator.add`, a `RemoveMessage` just gets appended.",
+      "`MessagesState` is a ready-made schema with one key, `messages`, annotated with `add_messages`. Subclass it to add more keys.",
+      "`Overwrite(value)` from `langgraph.types` bypasses the reducer for one write and replaces the whole value. Two `Overwrite` writes to the same key in one super-step raise `InvalidUpdateError`.",
+      "If two nodes in the same super-step write to a key that has no reducer, you get `InvalidUpdateError` because LangGraph cannot pick a winner. Give the key a reducer or have the branches write to different keys.",
+      "`TypedDict` schemas get no runtime type checks. A `dataclass` adds field defaults. A Pydantic `BaseModel` validates and coerces node inputs, but node return values are not validated and graph output is a plain dict, not a model instance.",
+      "`StateGraph(State, input_schema=In, output_schema=Out)` filters what `invoke` accepts and returns. A node's type hint (`def n(state: Private)`) decides which channels it receives. Keys outside the output schema still show up in `stream_mode=\"values\"`.",
+      "Per-run dependencies such as a user id or a database client belong in runtime context. Declare `context_schema=Ctx`, call `invoke(..., context={...})`, and read `runtime.context` in a node that has a `runtime: Runtime[Ctx]` parameter. Context is never checkpointed.",
+      "With a checkpointer, every call on the same `thread_id` starts from the saved state. Reducer keys therefore keep accumulating across calls, and that includes the values you pass as input.",
+      "In JS (`@langchain/langgraph` 1.x), the docs define state with `StateSchema` and Zod fields. Keys that need a reducer use `ReducedValue`, and the message list uses `MessagesValue`."
+    ],
+    "traps": [
+      "Using `operator.add` for messages. Edits that reuse an id get duplicated instead of replaced, and `RemoveMessage` does nothing useful.",
+      "Expecting a `TypedDict` schema to catch a misspelt key or a wrong type. The misspelt write is silently dropped, and value types are never checked.",
+      "Putting clients, locks or secrets in state. Checkpoints would have to serialise them, and they leak into storage. Put them in runtime context.",
+      "Forgetting that the reducer also runs on the input. Re-sending the full history to a thread that has a checkpointer duplicates messages unless the ids match.",
+      "Assuming a Pydantic state validates node outputs or makes `invoke` return a model instance. It does neither.",
+      "Parallel branches that write the same plain key fail with `InvalidUpdateError` only when they land in the same super-step, so the bug can show up after an unrelated edge change."
+    ],
+    "docs": [
+      {
+        "title": "Graph API overview: state and reducers",
+        "url": "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      },
+      {
+        "title": "Use the Graph API",
+        "url": "https://docs.langchain.com/oss/python/langgraph/use-graph-api"
+      },
+      {
+        "title": "Add memory (trimming and deleting messages)",
+        "url": "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      },
+      {
+        "title": "Graph API overview (JavaScript)",
+        "url": "https://docs.langchain.com/oss/javascript/langgraph/graph-api"
+      }
+    ]
+  }
+}

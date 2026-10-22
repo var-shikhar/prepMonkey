@@ -1,0 +1,2104 @@
+[
+  {
+    "id": "LGR-AGT-001",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "A hand-written agent routes with `builder.add_conditional_edges(\"agent\", tools_condition)`. The model's latest `AIMessage` has no tool calls. What string does `tools_condition` return? Type it exactly.",
+    "options": [],
+    "accepted": [
+      "__end__",
+      "'__end__'",
+      "\"__end__\"",
+      "END"
+    ],
+    "explanation": "`tools_condition` looks at the last message in state. If it is an `AIMessage` with at least one entry in `tool_calls`, it returns `\"tools\"`; otherwise it returns `\"__end__\"`, which is the value of the `END` constant. That is how the loop stops: the model answers without asking for a tool.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:prebuilt components",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://reference.langchain.com/javascript/langchain-langgraph/prebuilt/toolsCondition",
+        "https://reference.langchain.com/python/langgraph.prebuilt/prebuilt/chat_agent_executor/create_react_agent"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-AGT-002",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A `StateGraph(MessagesState)` has a model node `agent` and a `ToolNode` added as `\"tools\"`. Which wiring gives the standard tool-calling loop, where the model sees each tool result and the run ends when the model stops asking for tools?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`add_edge(\"agent\", \"tools\")` and `add_edge(\"tools\", END)`",
+        "why": "The tools always run exactly once and the model never sees their results, so it cannot use them in an answer."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`add_edge(START, \"agent\")`, `add_conditional_edges(\"agent\", tools_condition)` and `add_edge(\"tools\", \"agent\")`",
+        "why": "The router sends tool calls to `tools`, the results flow back to the model, and a reply without tool calls goes to `END`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`add_edge(\"agent\", \"tools\")` and `add_edge(\"tools\", \"agent\")`",
+        "why": "With no conditional edge there is no exit: the graph cycles until it hits the recursion limit."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`add_conditional_edges(\"tools\", tools_condition)` and `add_edge(\"agent\", \"tools\")`",
+        "why": "The condition is on the wrong node: after `tools` the last message is a `ToolMessage`, so the run ends before the model reads the result."
+      }
+    ],
+    "explanation": "The ReAct loop as a graph is two nodes and a cycle: the model node, a conditional edge (`tools_condition`) that goes either to the tool node or to `END`, and a normal edge from the tool node back to the model. The cycle ends when the model replies without tool calls.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:toolnode-tools-condition",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-AGT-003",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In LangGraph 1.2, `from langgraph.prebuilt import create_react_agent` fails with an `ImportError`, because the function was removed in LangGraph 1.0.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It was deprecated in 1.0, not removed; the import still works."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: it still imports and runs, but emits a `LangGraphDeprecatedSinceV10` warning pointing to `langchain.agents.create_agent`."
+      }
+    ],
+    "explanation": "In the installed source, `create_react_agent` carries `@deprecated(..., category=LangGraphDeprecatedSinceV10)` with a message saying it has moved to `langchain.agents` and should be imported as `create_agent`. The warning says it was deprecated in V1.0 and will be removed in V2.0. The LangGraph v1 migration guide lists the same replacement.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langgraph-v1",
+    "source": "interview:create_agent and middleware",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langchain/agents",
+        "https://reference.langchain.com/python/langgraph.prebuilt/prebuilt/chat_agent_executor/create_react_agent"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-004",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Using the definitions in LangGraph's \"Workflows and agents\" guide, which of these systems is an agent rather than a workflow?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A graph that always runs extract, then validate, then summarise, with each of the three steps its own LLM call and prompt",
+        "why": "Every run follows the same predetermined path, which the guide calls a workflow (prompt chaining)."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A graph that runs three LLM calls in parallel and merges their outputs in an aggregator node",
+        "why": "Parallelisation with a fixed fan-out and fan-in is a workflow pattern; the code decides the path."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A graph where one LLM call classifies a ticket and a conditional edge sends it to one of three fixed handlers",
+        "why": "Routing picks one of several predefined paths once; the guide lists it as a workflow pattern."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A graph where the model picks `search`, `calculator` or a reply on each turn, until it stops calling tools",
+        "why": "The model decides its own process and tool usage at run time, which is the guide's definition of an agent."
+      }
+    ],
+    "explanation": "The guide separates workflows, which have predetermined code paths and run in a set order, from agents, which are dynamic and decide their own process and tool usage. Prompt chaining, parallelisation, routing, orchestrator-worker and evaluator-optimizer are workflows; a model calling tools in a loop is an agent.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:agent-fundamentals",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.in/Interview/Infosys-AI-Engineer-Interview-Questions-EI_IE7927.0,7_KO8,19.htm",
+        "https://www.reddit.com/r/developersIndia/comments/1oq5fdi/got_an_interview_tomorrow_for_a_generative_ai",
+        "https://x.com/aryyann8/status/2009314129878896960"
+      ],
+      "companies": [
+        "Infosys"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-AGT-005",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "How do LangChain and LangGraph relate in the 1.x releases?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "LangGraph is the orchestration runtime underneath; LangChain's `create_agent` runs on it, and LangGraph also works alone",
+        "why": "That matches the LangGraph overview: LangChain components appear throughout the docs, but they are not required."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LangGraph replaced LangChain, which is now deprecated",
+        "why": "Both are maintained; LangChain is the agent framework and LangGraph the runtime under it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LangChain is the runtime, and LangGraph is a tool for drawing diagrams of chains",
+        "why": "It is the other way round: LangGraph executes graphs with checkpointing and streaming."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "They are separate stacks with separate runtimes, so a `create_agent` agent cannot use LangGraph checkpointers or streaming",
+        "why": "`create_agent` returns a compiled LangGraph graph and accepts a `checkpointer`."
+      }
+    ],
+    "explanation": "The LangGraph overview describes LangGraph as a low-level orchestration framework and runtime focused on durable execution, streaming, human-in-the-loop and persistence. LangChain is the agent framework (models, tools, `create_agent`), and its agents run on LangGraph. You can use LangGraph with plain functions and any SDK.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/overview",
+    "source": "interview:langgraph-vs-langchain",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.co.uk/Interview/Milestone-Interview-E264894-RVW103395430.htm",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://www.glassdoor.fr/Entretien/Capgemini-Entretien-E3803-RVW101720117.htm"
+      ],
+      "companies": [
+        "Milestone",
+        "Capgemini",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-AGT-006",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A `ToolNode` runs after the model returned an `AIMessage` with one tool call whose id is `call_1`. What does the node add to the state?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A new `AIMessage` whose text is the tool's output",
+        "why": "Tool results are `ToolMessage`s; an `AIMessage` is something the model produced."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It replaces the model's `AIMessage` with the tool's output, so the history keeps only the result",
+        "why": "The `add_messages` reducer appends; the tool-call message stays in history."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `ToolMessage` holding the tool's output with `tool_call_id=\"call_1\"`, appended to `messages`",
+        "why": "The id ties the result to the request, which providers require on the next model call."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A new state key named after the tool, holding the raw return value",
+        "why": "`ToolNode` writes to the messages key (`messages` by default), not to a key per tool."
+      }
+    ],
+    "explanation": "For each tool call in the last `AIMessage`, `ToolNode` runs the tool and returns a `ToolMessage` with the result and the matching `tool_call_id` under the messages key, which you can change with `messages_key`. With `MessagesState` the reducer appends them, so the model sees each request next to its result.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:tool-calling agent loop",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-AGT-007",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each need with the prebuilt piece that provides it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`ToolNode`",
+        "why": "Prebuilt node that executes the tool calls in the last `AIMessage`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`tools_condition`",
+        "why": "Routing function that returns `\"tools\"` or `\"__end__\"`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`create_agent`",
+        "why": "Prebuilt model-and-tools loop, customised with middleware."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ToolRuntime`",
+        "why": "Injected tool parameter carrying state, context, store and the tool call id."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Run the tool calls the model just requested and turn each result into a `ToolMessage`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Decide, after the model node, whether to run tools or finish",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Get a complete tool-calling agent from one function call",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Let a tool read graph state without the model seeing that parameter",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`ToolNode` and `tools_condition` (both in `langgraph.prebuilt`) are the building blocks of a hand-written loop. `create_agent` (in `langchain.agents`) packages the whole loop. `ToolRuntime` is injected into tools at call time and left out of the schema the model sees.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:prebuilt components",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://reference.langchain.com/javascript/langchain-langgraph/prebuilt/toolsCondition",
+        "https://reference.langchain.com/python/langgraph.prebuilt/prebuilt/chat_agent_executor/create_react_agent"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-AGT-008",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `langchain.agents.create_agent(model, tools)` return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A compiled LangGraph graph, so `invoke`, `stream`, checkpointers and threads work as for any graph",
+        "why": "It is a `CompiledStateGraph` with `model` and `tools` nodes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An `AgentExecutor` that runs the classic ReAct prompt loop with the model and tools you passed in",
+        "why": "`AgentExecutor` is legacy and lives in `langchain-classic`; `create_agent` builds a graph."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A plain Python function that returns the final answer as a string",
+        "why": "Its `invoke` returns state with a `messages` list, not a string."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A LangChain runnable chain (an LCEL pipeline) that cannot be given a checkpointer or a thread id",
+        "why": "`create_agent` takes `checkpointer=` directly, because the result is a LangGraph graph."
+      }
+    ],
+    "explanation": "`type(create_agent(model, [add])).__name__` is `CompiledStateGraph`, and its nodes are `__start__`, `model`, `tools` and `__end__`, plus a node for each middleware hook. Everything you know about compiled graphs (stream modes, persistence, interrupts, use as a subgraph) applies to it.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/agents",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-009",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this builder is compiled?\n\n```python\nbuilder = StateGraph(MessagesState)\nbuilder.add_node(\"agent\", call_model)\nbuilder.add_node(\"action\", ToolNode(tools))\nbuilder.add_edge(START, \"agent\")\nbuilder.add_conditional_edges(\"agent\", tools_condition)\nbuilder.add_edge(\"action\", \"agent\")\ngraph = builder.compile()\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It compiles, and tool calls are routed to `action` because it is the only `ToolNode` node registered in this graph",
+        "why": "Routing is by name; LangGraph does not look for nodes of a particular type."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It compiles, and the first tool call fails at run time with `KeyError: 'tools'`",
+        "why": "The check happens earlier, in `compile()`, and the error is a `ValueError`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It compiles, but the model's tool calls are ignored and every run ends after `agent`",
+        "why": "There is no silent fallback; the missing target is reported."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`compile()` raises a `ValueError` saying the `tools_condition` branch found unknown target `'tools'`",
+        "why": "`tools_condition` is typed to return `\"tools\"` or `\"__end__\"`, so compile checks those targets, and `tools` does not exist."
+      }
+    ],
+    "explanation": "`tools_condition` returns the literal string `\"tools\"`. Either add the `ToolNode` under the name `\"tools\"` (its default name), or pass a path map: `add_conditional_edges(\"agent\", tools_condition, {\"tools\": \"action\", \"__end__\": END})`. Running the code above raises `ValueError: At 'agent' node, 'tools_condition' branch found unknown target 'tools'` from `compile()`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:toolnode-tools-condition",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-010",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "A tool raises `ValueError(\"kaboom\")` inside a `ToolNode`. Match each `handle_tool_errors` setting with what happens.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`handle_tool_errors=True`",
+        "why": "Catch everything and use the default error template."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`handle_tool_errors=\"try again\"`",
+        "why": "Catch everything and send this fixed text."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`handle_tool_errors=(KeyError,)`",
+        "why": "Catch only the listed exception types."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`handle_tool_errors=handler`, where `def handler(e: ValueError) -> str: return f\"handled {e}\"`",
+        "why": "Catch the types named in the handler's annotation and use its return value."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "An error `ToolMessage` with content `Error: ValueError('kaboom')` followed by `Please fix your mistakes.`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "An error `ToolMessage` whose content is exactly `try again`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The `ValueError` propagates and the graph run fails",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "An error `ToolMessage` whose content is `handled kaboom`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "All four outcomes come from running a `ToolNode` with each setting. `True` and a string catch every exception; a tuple of types catches only those types, so a `ValueError` escapes; a callable catches the types it is annotated with. A caught error comes back as a `ToolMessage` with `status=\"error\"` so the model can react.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:tool-error-handling",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what"
+      ],
+      "companies": [
+        "Future Research"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-011",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Older tools in your codebase take `state: Annotated[dict, InjectedState]` and `store: Annotated[BaseStore, InjectedStore()]`. What does the current LangChain tools guide recommend for new tools?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Declare `state` as a normal argument so the model passes in the state it needs",
+        "why": "The model would then have to invent the state; injected values must stay out of the model's schema."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Read the state from `config[\"configurable\"][\"state\"]`",
+        "why": "State is not placed in `configurable`; `ToolRuntime` is the documented route."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "One `runtime: ToolRuntime` parameter, hidden from the model, that exposes state, store, context and the tool call id",
+        "why": "The guide calls the older annotations legacy patterns and points to `ToolRuntime` as the single interface."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Keep module-level globals that the model node refreshes with the current state and the store client right before every tool call",
+        "why": "Globals break with concurrent runs and parallel tool calls; injected runtime data is per call."
+      }
+    ],
+    "explanation": "The tools guide says older examples used `InjectedState`, `InjectedStore`, `get_runtime()` or `InjectedToolCallId`, and recommends `ToolRuntime` instead. `ToolNode` fills a parameter named `runtime` and typed `ToolRuntime` at call time and leaves it out of the tool schema. The older annotations still work in `langgraph-prebuilt` 1.1.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-012",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are migrating a LangGraph agent built with `create_react_agent` to `create_agent`. Which changes does the migration require? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Stream consumers that filter on `metadata[\"langgraph_node\"] == \"agent\"` must use `\"model\"`",
+        "why": "The model node was renamed from `agent` to `model`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`tools=ToolNode([...], handle_tool_errors=fn)` becomes a plain list of tools, and the error handling moves to a `wrap_tool_call` middleware",
+        "why": "`create_agent` no longer accepts `ToolNode` instances, and tool error handling moved to middleware."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A state class based on `AgentStatePydantic` must become a `TypedDict` subclass of `langchain.agents.AgentState`",
+        "why": "`create_agent` supports only `TypedDict` state; Pydantic and dataclass state are gone."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass `model.bind_tools(tools)` as the model so the tools are bound only once",
+        "why": "`create_agent` does not accept pre-bound models; pass the plain model and the tools list."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Replace the checkpointer with a LangChain memory class, because the result is no longer a LangGraph graph",
+        "why": "The result is still a compiled LangGraph graph and takes `checkpointer=` as before."
+      }
+    ],
+    "explanation": "The LangChain v1 migration table lists the changes: import from `langchain.agents`, `prompt` renamed to `system_prompt`, hooks replaced by middleware, `TypedDict`-only custom state, no pre-bound models, tool error handling in `wrap_tool_call`, `ToolStrategy`/`ProviderStrategy` for structured output, and the streaming node name changed from `\"agent\"` to `\"model\"`.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "source": "interview:migration",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-013",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "After moving from `create_react_agent` to `create_agent`, a chat UI that streams with `stream_mode=\"messages\"` keeps only chunks whose `metadata[\"langgraph_node\"]` is `\"agent\"`, and now shows nothing. Which node name should the filter use? Type it.",
+    "options": [],
+    "accepted": [
+      "model",
+      "\"model\"",
+      "'model'"
+    ],
+    "explanation": "`create_agent` names its model node `model`, while `create_react_agent` called it `agent`. Streaming a `create_agent` graph in `messages` mode with a fake chat model shows every LLM chunk tagged `langgraph_node: \"model\"`. The migration guide lists this rename explicitly.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "source": "interview:create_agent and middleware",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langchain/agents",
+        "https://reference.langchain.com/python/langgraph.prebuilt/prebuilt/chat_agent_executor/create_react_agent"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-014",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The model returns one `AIMessage` with three tool calls. How does a `ToolNode` handle them?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It runs only the first call and leaves the other two for the model to request again on its next turn",
+        "why": "Every tool call in the message is executed; skipping some would leave calls without results."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It runs them one per super-step, so the graph takes three steps to finish them",
+        "why": "All calls run inside the single execution of the tool node."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "All three run in that one node execution, in parallel, giving one `ToolMessage` per call in call order",
+        "why": "The docs say `ToolNode` handles parallel tool execution."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It merges the three results into one `ToolMessage`",
+        "why": "Each call gets its own `ToolMessage` with its own `tool_call_id`."
+      }
+    ],
+    "explanation": "`ToolNode` runs the calls concurrently (a thread pool for sync tools) and returns the results in the order of the calls. In a local test, three calls to a tool that sleeps for one second finished in about one second and came back as `['0', '1', '2']`. Because the calls run at the same time, tools that depend on each other's effects should not be requested in the same turn.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:tool-calling",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://github.com/Celesca/ai-product-research-assistant"
+      ],
+      "companies": [
+        "QuanXAI"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-015",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In the LangGraph agentic RAG tutorial, what decides whether the graph goes to `generate_answer` or `rewrite_question` after retrieval?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The `ToolNode` that runs the retriever, which drops any results scoring below a similarity threshold and then routes onward",
+        "why": "The `ToolNode` only runs the tool and returns its output; it makes no relevance decision."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A `grade_documents` conditional edge on `retrieve` that asks a model, via structured output, if the documents are relevant",
+        "why": "The function returns `\"generate_answer\"` or `\"rewrite_question\"`, typed with `Literal`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The `generate_query_or_respond` model, which calls a second tool to approve the documents",
+        "why": "That node only decides whether to retrieve or to answer directly."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The vector store, which raises an exception when nothing relevant is found",
+        "why": "Retrieval always returns something; judging relevance is the grader's job."
+      }
+    ],
+    "explanation": "The tutorial's graph runs `generate_query_or_respond`, then, if there are tool calls, `retrieve` (a `ToolNode` with the retriever tool), then a conditional edge `grade_documents` that routes to `generate_answer` or to `rewrite_question`, which loops back to `generate_query_or_respond`. Grading with structured output (a `binary_score` of yes or no) keeps the routing decision machine-readable.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/agentic-rag",
+    "source": "interview:agentic-rag",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/AsharAhmad/govgpt-agentic-rag",
+        "https://github.com/nazar-zhcet26/DGE-assignment",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR"
+      ],
+      "companies": [
+        "GovGPT",
+        "DGE"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-016",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "In the agentic RAG graph from the LangGraph tutorial, the first retrieval returns irrelevant chunks and the second returns relevant ones. Put the events in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`rewrite_question` adds a `HumanMessage` with an improved question",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`generate_query_or_respond` returns an `AIMessage` with a retriever tool call",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`generate_answer` writes the reply and the graph ends",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`retrieve` adds a `ToolMessage` with chunks, and the grader routes to `rewrite_question`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`generate_query_or_respond` calls the retriever again, and the grader routes to `generate_answer`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "E",
+      "C"
+    ],
+    "explanation": "The model first decides to retrieve. The `ToolNode` runs the retriever, and the `grade_documents` edge judges the chunks irrelevant and routes to `rewrite_question`. Its edge leads back to `generate_query_or_respond`, which retrieves again; this time the grader routes to `generate_answer`, whose edge leads to `END`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/agentic-rag",
+    "source": "interview:agentic-rag",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/AsharAhmad/govgpt-agentic-rag",
+        "https://github.com/nazar-zhcet26/DGE-assignment",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR"
+      ],
+      "companies": [
+        "GovGPT",
+        "DGE"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-017",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps for building a hand-written tool-calling agent with LangGraph in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add `START -> model`, conditional edges from `model` with `tools_condition`, and `tools -> model`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`compile()` the builder and `invoke` it with a user message",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Define the tools and bind them to the chat model with `bind_tools`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Create `StateGraph(MessagesState)` and add the model node and `ToolNode(tools)` as `\"tools\"`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "D",
+      "A",
+      "B"
+    ],
+    "explanation": "Tools come first, because the model must be bound to them and the `ToolNode` executes them. Nodes must exist before edges refer to them, and `compile()` validates the structure before the first run.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:tool-calling",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-AGT-018",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In LangChain 1.x you can pass a configured `ToolNode([...], handle_tool_errors=...)` as the `tools` argument of `create_agent`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "That worked with `create_react_agent`, but `create_agent` no longer accepts `ToolNode` instances."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: pass a list of tools and move custom error handling into a `wrap_tool_call` middleware."
+      }
+    ],
+    "explanation": "The migration guide says the `tools` argument of `create_agent` takes `BaseTool` instances, typed callables and provider tool dicts, and no longer accepts `ToolNode`. In langchain 1.4.7, passing a `ToolNode` fails with `TypeError: 'ToolNode' object is not iterable`.",
+    "reference": "https://docs.langchain.com/oss/python/migrate/langchain-v1",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-019",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "You built agents with a provider SDK and a hand-written `while` loop. An interviewer asks what LangGraph would give you that you would otherwise build yourself. Which answers are accurate? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "State saved by a checkpointer at every step, so a thread can resume after a crash or a long pause",
+        "why": "Persistence and durable execution are core LangGraph features."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Interrupts that pause a run for human approval and resume it later, plus streaming of steps and tokens",
+        "why": "Human-in-the-loop and streaming are built into the runtime."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Higher answer accuracy, because LangGraph rewrites your prompts for the model",
+        "why": "LangGraph does not abstract or rewrite prompts; quality still depends on your prompts and model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No need to write tool functions, because LangGraph generates tools from your API docs",
+        "why": "You still define the tools; LangGraph orchestrates the calls to them."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "No need for tests, because `compile()` checks that every path through the graph behaves correctly",
+        "why": "`compile()` checks structure (nodes, edges, targets), not the behaviour of your nodes or the model."
+      }
+    ],
+    "explanation": "The LangGraph overview says it does not abstract prompts or architecture; its value is infrastructure: persistence, durable execution, human-in-the-loop, streaming, memory and deployment. A hand-rolled loop works for a demo, but resuming, pausing for approval and streaming progress are what teams end up rebuilding.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/overview",
+    "source": "interview:framework-choice",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LocalLLaMA/comments/1ow3anq/rejected_for_not_using_langchainlanggraph/",
+        "https://github.com/alexeygrigorev/ai-engineering-field-guide/blob/main/interview/05-trends.md",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-020",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A tool run by `ToolNode` returns `Command(update={\"lang\": \"fr\"})`, with no `messages` key. `ToolNode` adds the matching `ToolMessage` for that tool call automatically.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Only plain return values are wrapped in a `ToolMessage`; a `Command` is passed through as is."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `ToolNode` raises a `ValueError` because the tool call has no matching `ToolMessage` in `Command.update`."
+      }
+    ],
+    "explanation": "Running it raises `ValueError: Expected to have a matching ToolMessage in Command.update for tool 'setlang_bad', got: []`. Every tool call in the history must have a `ToolMessage`, so a tool returning a `Command` that targets the current graph should include `ToolMessage(content=..., tool_call_id=runtime.tool_call_id)` in `update[\"messages\"]`. The requirement is lifted only for `graph=Command.PARENT`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-021",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The graph is `START -> tools` with `ToolNode([add, boom])` and the default `handle_tool_errors`. `boom` always raises `ValueError(\"kaboom\")`. What happens on this call?\n\n```python\ngraph.invoke({\"messages\": [AIMessage(content=\"\", tool_calls=[\n    {\"name\": \"add\", \"args\": {\"a\": \"x\", \"b\": 1}, \"id\": \"c1\"},\n    {\"name\": \"boom\", \"args\": {\"x\": 1}, \"id\": \"c2\"},\n])]})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`invoke` raises `ValueError: kaboom`, and no `ToolMessage` is written for either call",
+        "why": "The bad `add` arguments alone would become an error message, but `boom`'s runtime exception fails the whole node."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Two error `ToolMessage`s come back, one for the bad arguments and one for the exception",
+        "why": "The default handler converts only invalid-argument errors; it re-raises other exceptions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An error `ToolMessage` comes back for `add`, and `boom` is skipped",
+        "why": "Nothing is skipped: `boom` runs and its exception escapes the node."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`invoke` raises a Pydantic `ValidationError` for `add` before `boom` runs",
+        "why": "Argument validation errors are caught by the default handler and turned into an error `ToolMessage`."
+      }
+    ],
+    "explanation": "The default `handle_tool_errors` is a function that returns a message for `ToolInvocationError` (the model sent arguments that fail the schema) and re-raises everything else. The calls run in parallel inside one node, so when `boom` raises, the node fails and none of its outputs are applied. Set `handle_tool_errors` (or wrap the tool) deliberately if runtime errors should reach the model.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:tool-error-handling",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what"
+      ],
+      "companies": [
+        "Future Research"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-022",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the last message in the result?\n\n```python\n@tool(return_direct=True)\ndef status(order_id: str) -> str:\n    \"\"\"Order status.\"\"\"\n    return f\"Order {order_id} shipped\"\n\n# model is scripted to return: 1) a tool call to status(order_id=\"7\")\n#                               2) AIMessage(\"Your order 7 has shipped!\")\ndef agent(state): return {\"messages\": [model.invoke(state[\"messages\"])]}\n\nb = StateGraph(MessagesState)\nb.add_node(\"agent\", agent)\nb.add_node(\"tools\", ToolNode([status]))\nb.add_edge(START, \"agent\")\nb.add_conditional_edges(\"agent\", tools_condition)\nb.add_edge(\"tools\", \"agent\")\nresult = b.compile().invoke({\"messages\": [HumanMessage(\"Where is order 7?\")]})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`ToolMessage(\"Order 7 shipped\")`, because `return_direct=True` makes the graph end right after the tool runs",
+        "why": "That is what `create_agent` does; this graph's edges know nothing about `return_direct`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `ValueError`, because `return_direct` tools are not allowed in a `ToolNode`",
+        "why": "`ToolNode` runs the tool normally; the flag is simply not acted on here."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`AIMessage(\"Your order 7 has shipped!\")`, because the `tools -> agent` edge sends the result back to the model",
+        "why": "In a hand-written graph, the topology decides the route, so the tool flag has no effect."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`AIMessage(\"\")`, because `tools_condition` notices the `return_direct` flag on the tool and routes straight to `END`",
+        "why": "`tools_condition` only checks whether the last message has tool calls."
+      }
+    ],
+    "explanation": "`return_direct` is honoured by the routing inside `create_agent`, which ends the run when every tool in the batch has the flag set. In your own `StateGraph`, the static edge from `tools` back to `agent` decides what happens, so the model runs again. To short-circuit in a custom graph, write a conditional edge after `tools` that checks which tools ran.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-023",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A `create_agent` agent has two tools: `status`, declared with `@tool(return_direct=True)`, and `other`, a normal tool. In its first turn the model calls both tools in one `AIMessage`; its next reply is a plain answer. How many times is the model called in this run? Type a number.",
+    "options": [],
+    "accepted": [
+      "2",
+      "two"
+    ],
+    "explanation": "`return_direct` only ends the loop when every tool call in the batch has `return_direct=True`. Here `other` does not, so after both tools run the agent goes back to the model with both `ToolMessage`s, and the model's plain answer ends the run: two model calls. With only `status` called, the run would end after the tool, with one model call.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-024",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A custom node calls a `ToolNode` itself. The tool `who` reads `runtime.state[\"user_id\"]`, and the state schema has a `user_id` field holding `\"u1\"`. What happens?\n\n```python\ntool_node = ToolNode([who])\n\ndef custom(state: State):\n    return tool_node.invoke({\"messages\": state[\"messages\"]})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The tool raises `KeyError: 'user_id'`, because the `ToolNode` was given only `messages`",
+        "why": "Tools see only the state passed to the `ToolNode`; pass `state` itself to expose `user_id`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The tool returns `\"u1\"`, because `ToolRuntime` always reads the full graph state from the checkpointer",
+        "why": "`ToolRuntime.state` is whatever input the `ToolNode` was given, not a fresh read of graph state."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`ToolNode` refuses to run outside a graph and raises `RuntimeError`",
+        "why": "It can be invoked from inside another node; the problem is the input it was given."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The tool receives `user_id=None` and returns `\"None\"`",
+        "why": "Nothing is defaulted: indexing a missing key raises."
+      }
+    ],
+    "explanation": "The workflows guide notes that tools can access only the state values passed to the `ToolNode`. Added directly as a graph node, it receives the full state. Invoked manually, it sees only what you pass, so call `tool_node.invoke(state)`. Running the code above raises `KeyError: 'user_id'`, and `tool_node.invoke(state)` returns `u1`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-025",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "A tool declares `runtime: ToolRuntime`. Match each need with the attribute that serves it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`runtime.state`",
+        "why": "The graph state passed to the `ToolNode`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`runtime.context`",
+        "why": "Per-run context passed with `invoke(..., context=...)`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`runtime.store`",
+        "why": "The long-term `BaseStore` the graph was compiled with."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`runtime.tool_call_id`",
+        "why": "The id of the tool call being executed."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Read a `cart` list that an earlier node wrote into graph state",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Read the caller's organisation id, supplied per request and never saved in checkpoints",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Save a user preference that must survive into future threads",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Build the `ToolMessage` that goes inside a returned `Command`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`ToolRuntime` bundles `state`, `context`, `store`, `stream_writer`, `config`, `tool_call_id` and the list of `tools`. It differs from the `Runtime` object injected into graph nodes, which has no `state` or `tool_call_id`. State is per thread and checkpointed, context is per run and not persisted, and the store spans threads.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-026",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your team uses `create_agent` everywhere. Which requirements justify hand-writing a `StateGraph` instead? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The flow is mostly fixed: always classify, then look up the account, then branch to one of three specialist sub-flows, with the model used only inside some steps",
+        "why": "That is a workflow with required steps and branches; graph topology guarantees the order, where a tool loop would leave it to the model."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Retrieved documents must be graded, with a bounded rewrite-and-retry loop and a parallel web-search branch",
+        "why": "That is custom topology (conditional loops and parallel branches) beyond a model-and-tools loop."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The agent must remember earlier turns of the conversation",
+        "why": "`create_agent` accepts a `checkpointer`; pass a `thread_id` to keep history."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "One tool must pause for human approval before it runs",
+        "why": "`HumanInTheLoopMiddleware` handles that on `create_agent`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The final answer must be a validated Pydantic object",
+        "why": "`response_format=` on `create_agent` returns `structured_response`."
+      }
+    ],
+    "explanation": "`create_agent` covers memory (checkpointer), approval (middleware), typed output (`response_format`), custom state (`state_schema`) and runtime context (`context_schema`). Drop to a hand-written `StateGraph` when the shape of the flow must be guaranteed: required deterministic steps, custom loops, parallel branches. The two can be combined, because a `create_agent` graph can be a node inside your graph.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/agents",
+    "source": "interview:prebuilt-vs-custom",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-027",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You built the tutorial's agentic RAG graph. For an out-of-scope question, the grader marks every retrieval as irrelevant. What happens, and what is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LangGraph detects that the same nodes keep repeating with the same inputs and stops the run after three laps",
+        "why": "There is no cycle detection; only the recursion limit stops a loop."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`generate_answer` runs automatically after the first failed grade",
+        "why": "The grader routes to `rewrite_question` every time it says no."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It loops until `GraphRecursionError`, paying for LLM calls on every lap; add a retry counter in state and a fallback route",
+        "why": "The tutorial's loop has no cap, so you must add the stop condition yourself."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The `ToolNode` caches the first retrieval for the thread, so the extra laps cost nothing beyond a few milliseconds each",
+        "why": "`ToolNode` does not cache; every lap runs the retriever and two or three model calls."
+      }
+    ],
+    "explanation": "The tutorial wires `rewrite_question -> generate_query_or_respond` with no counter. A grader that never says yes keeps the graph cycling until `recursion_limit` is reached, which at the default limit means hundreds of laps or more. Add a counter field, increment it in `rewrite_question`, and make the grader route to a fallback (say \"I don't know\", or search the web) once it reaches a small cap.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/agentic-rag",
+    "source": "interview:agentic-rag",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/AsharAhmad/govgpt-agentic-rag",
+        "https://github.com/nazar-zhcet26/DGE-assignment",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR"
+      ],
+      "companies": [
+        "GovGPT",
+        "DGE"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-028",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A take-home asks for this: a writer drafts a clinical note, an LLM judge scores it from 1 to 10 with feedback, and the writer revises until the score is at least 8, with at most two revisions. Which LangGraph design fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`create_agent` with a `judge` tool, and a system prompt telling the model to call it until the score reaches 8",
+        "why": "The model can skip the judge or stop early; the cap and threshold are only requests in a prompt."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Three drafts generated in parallel with `Send`, returning the longest one",
+        "why": "No evaluation happens, and length is not quality."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A single node that calls the writer and the judge in a Python `while` loop until the score reaches 8 or two revisions have happened",
+        "why": "It works, but each revision is hidden inside one step, with no per-revision checkpoint, streaming or trace."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Evaluator-optimizer: a generator node, an evaluator node with structured `score` and `feedback`, a revision counter, and a conditional edge back",
+        "why": "The loop and its cap live in the graph, so they hold on every run."
+      }
+    ],
+    "explanation": "LangGraph's workflows guide describes the evaluator-optimizer pattern: one LLM call generates, another evaluates, and feedback loops back until the result is acceptable. Structured output makes the score and feedback machine-readable for the routing function, and the counter in state enforces the revision limit.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:critique-loop",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/reonrash/AI-Agent-Deployment-Engineer-Takehome",
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://github.com/rak-shi/kasparro-ai-agentic-content-generation-system-Rakshitha_Valipireddy"
+      ],
+      "companies": [
+        "Hippocratic AI",
+        "Cerina Health",
+        "Kasparro"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-029",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A team on langchain 1.4 wants its LangGraph agent to call tools exposed by an internal MCP server. What does the current LangChain MCP documentation recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Install `langchain[mcp]`, get tools from `await adapter.list_tools()` inside `async with MCPAdapter(target)`, and pass them on",
+        "why": "`MCPAdapter` (beta, in `langchain.mcp`) adapts the server's tools into standard LangChain tools."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`create_agent(model, mcp_servers=[url])`, which connects to the server on every model call",
+        "why": "`create_agent` has no such parameter; MCP tools are loaded and passed in like any other tools."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep using `MultiServerMCPClient` from `langchain-mcp-adapters`, which is still the recommended and actively developed package",
+        "why": "The docs say `langchain.mcp` replaces the standalone package, and give a migration guide."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing: the model connects to the MCP server itself, so no tools are defined on your side",
+        "why": "Your application still runs the tools; the model only emits tool calls."
+      }
+    ],
+    "explanation": "The MCP page says `langchain.mcp`, built on FastMCP, requires `langchain[mcp]>=1.4.0`, is in beta, and replaces `langchain-mcp-adapters` (`MultiServerMCPClient` becomes `MCPAdapter`, `get_tools()` becomes `list_tools()`). The adapter infers the transport from the target: an http(s) URL, a script `Path` for stdio, an in-process FastMCP server or an `MCPConfig` dict.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/mcp",
+    "source": "interview:MCP integration",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/deepagents/overview"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-030",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks how LangGraph's model of an agent system differs from conversation-centred or role-based frameworks such as AutoGen or CrewAI. Which answer describes LangGraph accurately?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LangGraph supports only single agents, so collaboration must be built in another framework",
+        "why": "LangGraph supports multi-agent graphs, subgraphs and handoffs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LangGraph agents coordinate only by exchanging free-form chat messages with each other, with no shared state object",
+        "why": "Nodes share a typed state object updated through reducers."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "You define explicit state and a graph of nodes and edges, and the runtime checkpoints that state at every step",
+        "why": "Explicit state plus control flow you write, persisted by the runtime, is LangGraph's distinguishing model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "LangGraph only works with LangChain chat models, so it cannot call other SDKs",
+        "why": "Nodes are plain functions; any SDK can be called inside them."
+      }
+    ],
+    "explanation": "LangGraph is low-level: you decide the state schema and the control flow, and the runtime provides persistence, streaming and interrupts. Higher-level frameworks give you agent personas or conversations and decide more of the flow for you. The trade-off is control and auditability against speed of setup.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/overview",
+    "source": "interview:framework comparison",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.com.hk/Interview/AIONOS-Interview-E10535851-RVW104218243.htm",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901"
+      ],
+      "companies": [
+        "AIONOS"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-031",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Your agent can call tools in a loop and some tools write to production systems. Which safeguards belong in the design? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Bound the loop with a model-call or step limit and a graceful fallback",
+        "why": "Without a bound, a confused model can loop until the recursion limit, costing money and time."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Pause for human approval before irreversible tools run",
+        "why": "Interrupt-based approval is how LangGraph puts a person in front of risky actions."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Validate tool arguments against a schema and return errors to the model instead of crashing",
+        "why": "Schema-checked arguments and error `ToolMessage`s let the model correct itself safely."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set temperature to 0, which guarantees the same tool choices and so makes limits unnecessary",
+        "why": "Low temperature reduces variety but guarantees nothing; limits are still needed."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Give the model every available tool so it never lacks a capability",
+        "why": "More tools make selection harder and widen what an injected prompt can do."
+      }
+    ],
+    "explanation": "An agent differs from a single LLM call in that the model chooses actions repeatedly, so its failure modes are loops, wrong or malformed tool calls and unsafe side effects. Bounded steps, validation with recoverable errors, human approval for high-impact tools and a minimal tool set address them.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:agent fundamentals and safeguards",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.fishbowlapp.com/post/hi-fishes-i-wanted-to-understand-about-the-interview-process-for-generative-ai-roles-what-kind-of-coding-questions-are",
+        "https://www.novelvista.com/blogs/ai-and-ml/generative-ai-interview-questions",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-032",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Tool calls never run in this graph, and the run ends right after `log`. Why?\n\n```python\ndef log(state):\n    return {\"messages\": [AIMessage(\"logged\")]}  # audit note\n\nb.add_edge(START, \"agent\")\nb.add_edge(\"agent\", \"log\")\nb.add_conditional_edges(\"log\", tools_condition)\nb.add_edge(\"tools\", \"agent\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`tools_condition` reads only the last message, and the audit `AIMessage` has no tool calls, so it routes to `END`",
+        "why": "The appended note hides the model's tool-call message from the router."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`log` must return a `Command` for routing to work after it",
+        "why": "A conditional edge after a normal node works fine; the problem is what the router sees."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`ToolNode` only runs tool calls found in the first message of the list",
+        "why": "It reads the last message too, which is why the audit note also breaks it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`tools_condition` ignores `AIMessage`s that were not produced by a chat model, so it skips the model's tool-call message",
+        "why": "It does not check where a message came from; only whether `tool_calls` is non-empty."
+      }
+    ],
+    "explanation": "Both `tools_condition` and `ToolNode` work on the last message in the list. Running this graph ends with `[human, ai (tool call), ai \"logged\"]` and no `ToolMessage`. Route directly from the model node, and keep audit data in a separate state key or in tracing rather than in the message list.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-033",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "A hand-written loop starts from one `HumanMessage`. The model first returns two tool calls (`p1`, `p2`) in one `AIMessage`, then a plain answer. Put the final `messages` list in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`ToolMessage` with `tool_call_id=\"p2\"`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`HumanMessage` with the question",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`AIMessage` with the final answer and no tool calls",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`AIMessage` with tool calls `p1` and `p2`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`ToolMessage` with `tool_call_id=\"p1\"`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "E",
+      "A",
+      "C"
+    ],
+    "explanation": "`add_messages` appends in order. The tool node returns the `ToolMessage`s in the order of the tool calls, even though the calls ran concurrently. The model then sees both results and answers without tool calls, which ends the loop.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-AGT-034",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate adds this error handler to a `create_agent` agent, and `lookup` fails. What ends up in `messages`, and what is wrong?\n\n```python\n@wrap_tool_call\ndef on_error(request, handler):\n    try:\n        return handler(request)\n    except Exception as e:\n        return f\"error {e}\"\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `ToolMessage` with content `error ...` and `status=\"error\"`, because the agent wraps returned strings; the handler is fine",
+        "why": "A bare string is not turned into a `ToolMessage`; the handler must build one itself."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A `HumanMessage` with `error ...`, so the tool call has no matching `ToolMessage`; return a `ToolMessage` instead",
+        "why": "In langchain 1.4.7 the string is coerced to a `HumanMessage`, leaving the model's tool call without its required result."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The exception still propagates, because `wrap_tool_call` handlers cannot catch tool errors",
+        "why": "Catching around `handler(request)` is the documented way to handle tool errors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing is added and the agent ends with the model's tool-call message as the final answer",
+        "why": "The returned string is added to state and the loop continues to the model."
+      }
+    ],
+    "explanation": "`wrap_tool_call` handlers must return a `ToolMessage` or a `Command`. Running this handler with a failing tool produces `[Human, AI (tool call), Human \"error kaboom\", AI ...]`: the string becomes a `HumanMessage`. The docs' error-handling examples build `ToolMessage(content=..., tool_call_id=request.tool_call[\"id\"])`, because every tool call in the history needs a matching `ToolMessage`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-035",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your agent uses tools from `MCPAdapter`. One server asks the user for input in the middle of a tool call (MCP elicitation). The agent was built with `create_agent(model, tools)` and nothing else. What does the documentation say you need?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Register an `on_elicitation` callback on the client, so your code can answer each server request synchronously in-process",
+        "why": "That was the `langchain-mcp-adapters` API; `langchain.mcp` drives elicitation through interrupts."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Nothing: the adapter answers elicitation requests with default values",
+        "why": "The adapter pauses the run so a person can answer; it does not invent answers."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A checkpointer and a stable `thread_id`: elicitation pauses the run with an interrupt that you resume with `Command`",
+        "why": "Elicitation is on by default and needs persistence to pause and resume."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch the server to MCP sampling, which `MCPAdapter` answers automatically",
+        "why": "The adapter answers only elicitation; sampling and roots requests raise an error."
+      }
+    ],
+    "explanation": "The MCP tools page says the adapter surfaces elicitation as a LangGraph `interrupt()`. Your application shows the request, then resumes the same thread with `Command(resume={\"responses\": {key: answer}})`. Resuming needs a checkpointer and the same `thread_id`, exactly as for any other interrupt.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/mcp/tools",
+    "source": "interview:MCP integration",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/deepagents/overview"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-036",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "With `langchain.mcp`, how are errors from MCP tools handled? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "When a server returns a result with `isError=True`, the agent gets a `ToolMessage` with `status=\"error\"` carrying the server's message",
+        "why": "The model can read the failure and recover."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A transport or session failure, such as an unreachable server, raises instead of becoming a message",
+        "why": "Connection problems are infrastructure failures and surface as exceptions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Passing `handle_tool_errors=False` to the adapter makes server-reported errors raise",
+        "why": "The docs say this flag was removed; the behaviour is fixed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Logging and rewriting MCP calls is done with `tool_interceptors` on the adapter",
+        "why": "Interceptors are gone; use a `@wrap_tool_call` middleware, which sees MCP and non-MCP tools alike."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Errors are silently dropped so the agent continues as if the tool returned nothing",
+        "why": "Server errors become error messages and transport errors raise; nothing is dropped."
+      }
+    ],
+    "explanation": "The MCP tools page and the migration guide from `langchain-mcp-adapters` say error handling is no longer a flag: `isError=True` becomes `ToolMessage(status=\"error\")`, and transport failures raise. Tool interception moves to LangChain's `@wrap_tool_call` middleware, where the MCP origin of a tool is in `request.tool.metadata[\"mcp\"]`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/mcp/tools",
+    "source": "interview:MCP integration",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/deepagents/overview"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-037",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "A support agent reads customer emails (untrusted text) and has two tools: `issue_refund(amount)` and `run_sql(query)`. Which controls limit the damage from a prompt-injected email? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Take the customer id from `runtime.context`, set by your authenticated API, instead of from a tool argument the model fills in",
+        "why": "The model cannot be talked into acting for another customer if it never chooses the id."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Pause with an interrupt for human approval before `issue_refund` runs above a threshold",
+        "why": "A person reviews high-impact actions no matter what the model was told."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Run `run_sql` under a read-only database role limited to the tables it needs",
+        "why": "Least privilege bounds what any injected query can do."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add a line to the system prompt telling the model to ignore instructions found in emails, and rely on that",
+        "why": "Prompt instructions help but are not a security boundary; injections can still succeed."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Set `handle_tool_errors=True` so any policy violation becomes a message to the model",
+        "why": "That only changes how exceptions are reported; it prevents nothing."
+      }
+    ],
+    "explanation": "Treat retrieved and user-supplied content as data, and put the real controls outside the model: identity and scope from server-side context (`ToolRuntime.context` is hidden from the model), approval gates on irreversible tools, and least-privilege credentials. The agentic RAG tutorial's prompt also tells the model to treat context as data only, but that is a mitigation, not a guarantee.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/tools",
+    "source": "interview:tool-security",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/go-fig-ai/take-home-inbox-triage",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://github.com/Jatin29AFK/refundpilot-ai-agent"
+      ],
+      "companies": [
+        "Go Fig AI",
+        "Cohere",
+        "Mistral"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-038",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A lending team describes its flow: a KYC check must always run first, then a credit-bureau API call, then an LLM drafts an explanation for the customer; customers may also ask follow-up questions in free text. Which architecture fits these constraints best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A ReAct-style prompt agent with KYC, bureau and drafting as tools, and the required order spelled out step by step in the system prompt",
+        "why": "The order becomes a request the model may break; KYC could be skipped."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`create_agent` with the three steps as tools and a `ModelCallLimitMiddleware` to stop runaway loops",
+        "why": "Call limits bound cost, but the model still decides whether and when KYC runs."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "An explicit state machine: deterministic KYC and bureau nodes, an LLM drafting node, and an agent node only for follow-ups",
+        "why": "Required steps are guaranteed by edges, and model autonomy is used only where judgement is needed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Three separate microservices called from the frontend, with no shared state",
+        "why": "This loses the persisted, auditable record of each application's progress."
+      }
+    ],
+    "explanation": "ReAct prompting and native function calling both leave the order of actions to the model. When the process has mandatory, auditable steps, encode them as graph nodes and edges, and use LLM or agent steps inside the graph where flexibility is needed. Mixing deterministic and agentic steps in one graph is the core strength described in the LangGraph overview.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/overview",
+    "source": "interview:agent-architectures",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://towardsai.com/p/machine-learning/40-generative-ai-interview-questions-that-actually-get-asked-in-2026-with-answers",
+        "https://interviewbaba.com/agentic-ai-interview-questions/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-039",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A service must sort 2 million invoices a day into five categories and write the label to a database, with a p95 latency budget of 300 ms and no follow-up questions. As the staff engineer, what do you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `create_agent` agent with a `classify` tool and a checkpointer, so every invoice decision is auditable and resumable",
+        "why": "The loop adds at least one extra model round trip and checkpoint writes for a task with no decisions to make."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "One model call with structured output (a `Literal` of the five labels) in plain service code; no agent loop",
+        "why": "The task is a fixed single step; an agent or graph runtime adds cost and latency without benefit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A supervisor with one sub-agent per category",
+        "why": "Multi-agent coordination multiplies model calls and latency for a single-label task."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A LangGraph graph with a checkpointer per invoice, so a failed classification can resume mid-run",
+        "why": "There is nothing to resume in a one-step call; a simple retry is enough."
+      }
+    ],
+    "explanation": "Agents suit open-ended tasks where the model must choose actions. A deterministic, single-step, high-volume task with a tight latency budget is better served by a direct call with structured output. LangGraph earns its place when you need loops, branching, persistence, pauses or streaming of multi-step work.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:when not to use LangGraph",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://blog.gopenai.com/agentic-ai-interview-q-and-a-e5f5ee724901"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-AGT-040",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are reviewing a hand-written agent graph that uses `ToolNode`. Which review comments are correct? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A state key that several parallel tool calls may update through `Command` needs a reducer",
+        "why": "Two tool calls updating a plain key in the same step raise `InvalidUpdateError`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A node that calls `tool_node.invoke(...)` itself should pass the full state, or tools that read custom keys through `runtime.state` will fail",
+        "why": "Tools see only what the `ToolNode` was given."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Don't set `handle_tool_errors=True` to cover network outages: let implementation bugs surface, and retry transient failures",
+        "why": "Catching everything hides bugs and turns outages into model retries."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put `tools_condition` on the `tools` node so the loop ends once the tools have run",
+        "why": "After the tools node the last message is a `ToolMessage`, so the model never sees the results."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A tool that returns `Command` can leave out the `ToolMessage` when its update touches only custom keys",
+        "why": "`ToolNode` raises `ValueError` unless the update has a matching `ToolMessage`."
+      }
+    ],
+    "explanation": "Running two parallel tool calls that each return `Command(update={\"lang\": ...})` for a key without a reducer raises `InvalidUpdateError`. Manual `ToolNode` calls expose only the state you pass in. The LangChain migration guide's error-handling example says to handle only runtime errors from bad inputs, to retry network failures, and to let implementation errors bubble up.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-041",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Requirements for a support agent: memory across turns, a hidden per-request `user_id`, human approval before `refund`, summarisation of long threads, and a typed final answer. A teammate wants to hand-write a `StateGraph`. What is your assessment?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A hand-written graph is required, because `create_agent` cannot pause for approval",
+        "why": "`HumanInTheLoopMiddleware` pauses `create_agent` with an interrupt."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use `create_agent`, but put `user_id` into the message history, because `create_agent` has no per-request runtime context",
+        "why": "`context_schema` plus `invoke(..., context=...)` passes per-request data that the model does not see."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Deep Agents is required, because only it can summarise long conversations",
+        "why": "`SummarizationMiddleware` works on a plain `create_agent` agent."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`create_agent` covers it all: checkpointer, `context_schema`, approval and summarisation middleware, and `response_format`",
+        "why": "Every requirement maps to a built-in parameter or middleware, so a custom graph would only add code to maintain."
+      }
+    ],
+    "explanation": "Prefer the prebuilt agent when the flow really is a model-and-tools loop and the remaining needs are cross-cutting: memory, context, approvals, context management, typed output. Drop to a `StateGraph` when the topology itself must change, for example with required deterministic steps, custom loops or parallel branches.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/agents",
+    "source": "interview:prebuilt-vs-custom",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-042",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Constraints for a RAG assistant: answer only from internal documents with citations; search the web only after internal retrieval has failed grading twice; every hop must appear as a separate, auditable step. Which design satisfies all three?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`create_agent` with `internal_search` and `web_search` tools, plus a system prompt telling the model to try internal search twice first",
+        "why": "The model may call the web first or skip grading; the rule is not enforced."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A custom graph: retriever `ToolNode`, grading edge, rewrite node with a counter, a `web_search` node reached at count 2, cited answer",
+        "why": "Each rule is enforced by edges and state, and each hop is its own checkpointed step."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A two-node retrieve-then-generate graph that always calls both internal and web search in parallel",
+        "why": "This uses the web on every question, breaking the internal-first rule."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "One node that runs internal search, grades the results, retries and falls back to the web inside a Python loop",
+        "why": "The logic is correct, but the hops are hidden inside one step, which fails the audit requirement."
+      }
+    ],
+    "explanation": "This extends the tutorial's agentic RAG graph with a counter and a fallback branch. Rules that must always hold go into graph structure and state; the model decides only what the graph leaves open. Structured output for the answer makes the citations machine-checkable.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/agentic-rag",
+    "source": "interview:agentic-rag",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/AsharAhmad/govgpt-agentic-rag",
+        "https://github.com/nazar-zhcet26/DGE-assignment",
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR"
+      ],
+      "companies": [
+        "GovGPT",
+        "DGE"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-043",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens in this graph? `flaky` fails once with `ConnectionError` and then succeeds.\n\n```python\nbuilder.add_node(\n    \"tools\",\n    ToolNode([charge_card, flaky_inventory], handle_tool_errors=False),\n    retry_policy=RetryPolicy(max_attempts=3, retry_on=ConnectionError),\n)\n# the model calls charge_card and flaky_inventory in one AIMessage\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Only `flaky_inventory` is retried, because a `RetryPolicy` on a `ToolNode` applies to each tool call separately",
+        "why": "The policy is attached to the node, so the whole node is re-run."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The run fails immediately, because `RetryPolicy` cannot be used on a `ToolNode`",
+        "why": "`retry_policy` works on any node, including a `ToolNode`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The whole node is retried, so `charge_card` runs twice and may charge the card twice",
+        "why": "In a local run, both tools' call counters reached 2."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`charge_card`'s first result is cached, so only `flaky_inventory` runs again",
+        "why": "Within one node attempt nothing is saved; a retry re-executes every call in the batch."
+      }
+    ],
+    "explanation": "A node-level `RetryPolicy` retries the node, and a `ToolNode` executes every tool call in the batch, so successful side-effecting calls repeat. Put retries around the specific tool (inside it, or with a `wrap_tool_call` wrapper, which `ToolNode` accepts), and design side-effecting tools to be idempotent, for example with an idempotency key.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-AGT-044",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A `ToolNode` uses `handle_tool_errors=True`. After a refactor, `get_balance` has a bug that raises `KeyError` on every call. In production, runs don't crash, but token costs jump and runs end with vague apologies. What is going on, and what is the better setting?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The model ignores tool errors, so the bug never shows; switch to `handle_tool_errors=False` so the model gets more detail",
+        "why": "The model does see the errors, which is why it keeps retrying; `False` makes every error raise instead."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`KeyError` is special-cased by `ToolNode` and always swallowed",
+        "why": "No exception type is special-cased; `True` catches everything."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The recursion limit is too low for the model to finish its retries; raise it so the agent can eventually work around the bug",
+        "why": "More laps only spend more tokens on a call that cannot succeed."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`True` turns the bug into an error `ToolMessage`, so the model retries a call that can never succeed; catch only specific types",
+        "why": "Implementation bugs should raise and alert, not become model feedback."
+      }
+    ],
+    "explanation": "By default, `ToolNode` returns error messages only for `ToolInvocationError` (bad arguments from the model) and re-raises other exceptions. `True` catches everything, which hides real bugs behind the model's retry behaviour. The LangChain migration guide's example likewise says to let implementation errors bubble up.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+    "source": "interview:tool-error-handling",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what"
+      ],
+      "companies": [
+        "Future Research"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-AGT-045",
+    "domain": 3,
+    "skill": "agents-tools",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Twelve product teams are starting agent projects, and you are setting the platform standard. Which policy is most defensible?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Default to `create_agent`, and hand-write `StateGraph`s where custom topology is needed; a `create_agent` graph can be a node later",
+        "why": "Teams start fast and can still move to a custom graph without changing runtimes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Mandate hand-written `StateGraph`s for every agent, so that all twelve teams share one pattern and one set of review rules",
+        "why": "Every team then rebuilds the same loop, error handling and middleware-style features by hand."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Standardise on `create_react_agent`, since it has been around longer",
+        "why": "It is deprecated in LangGraph 1.x and scheduled for removal in 2.0."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Forbid mixing the two approaches, because a `create_agent` graph cannot be embedded inside another LangGraph graph",
+        "why": "A compiled `create_agent` graph can be added as a node; the docs suggest naming agents for that use."
+      }
+    ],
+    "explanation": "LangChain's docs position `create_agent` as the configurable harness for the common loop and LangGraph as the low-level runtime for bespoke orchestration. Because both run on the same runtime (checkpointers, streaming, interrupts, deployment), a standard of \"prebuilt by default, custom graph when the topology demands it\" keeps teams fast without locking them in.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/agents",
+    "source": "interview:framework-choice",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LocalLLaMA/comments/1ow3anq/rejected_for_not_using_langchainlanggraph/",
+        "https://github.com/alexeygrigorev/ai-engineering-field-guide/blob/main/interview/05-trends.md",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026"
+      ]
+    },
+    "roleLevel": 5
+  }
+]

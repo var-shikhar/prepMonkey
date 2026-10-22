@@ -1,0 +1,51 @@
+{
+  "deployment": {
+    "summary": "LangSmith Deployment (formerly LangGraph Platform) runs LangGraph graphs on the Agent Server (older docs and images say LangGraph Server). It exposes three API resources: assistants (configuration), threads (state) and runs (work), plus crons and a store, backed by Postgres for durable data and Redis for signals and streaming. Know how `langgraph.json` and the LangGraph CLI (`dev`, `up`, `build`, `deploy`, `validate`) package an app, how to drive it with `langgraph-sdk` and RemoteGraph, double-texting strategies, webhooks, custom auth, how it scales, the deployment topologies (Cloud, hybrid, full self-hosted, standalone), and debugging in LangSmith Studio (formerly LangGraph Studio). Targets langgraph 1.2, langgraph-sdk 0.4.8 and langgraph-cli 0.4.37.",
+    "points": [
+      "`langgraph.json` needs `graphs` (graph ID -> `./path/file.py:variable`, where the variable is a compiled graph or a factory) and `dependencies` (directories or package names, not the string `requirements.txt`), unless `source: {\"kind\": \"uv\"}` installs from `uv.lock`. Optional keys include `env` (a path or a mapping), `python_version` (3.11 to 3.13), `store` (`index` for semantic search, `ttl`), `checkpointer` (`backend`, `ttl`, `serde`), `auth`, `http`, `webhooks`, `api_version` and `image_distro`. `langgraph validate` checks the file.",
+      "CLI: `langgraph dev` (needs `langgraph-cli[inmem]`, no Docker, hot reload, port 2024, state pickled to a local directory, connects to Studio). `langgraph up` (Docker stack with Postgres and Redis, port 8123, license key for production). `langgraph build -t` (image), `langgraph dockerfile` (regenerate it after every config change), `langgraph deploy` (build and push to Cloud; creates or updates a deployment revision). JS: `npx @langchain/langgraph-cli`.",
+      "Every graph ID gets a default assistant, so clients pass `\"agent\"` or an assistant UUID as `assistant_id`. Assistants version configuration separately from code. Each `assistants.update` creates a new version from the full payload (no merge), and `assistants.set_latest(id, version)` promotes or rolls back. Assistants are not in open-source LangGraph.",
+      "A run pairs an assistant with an optional thread. `thread_id=None` makes it stateless. `runs.create` returns at once with status `pending`, `runs.join` blocks and returns the final thread state, `runs.wait` creates a run and blocks, `runs.stream` streams (the server's `messages-tuple` mode matches the open-source `messages` mode). `runs.cancel(action=\"interrupt\"|\"rollback\")`: interrupt keeps the run, rollback deletes it and its checkpoints.",
+      "Double texting (`multitask_strategy`): `enqueue` (default) runs inputs in order, `reject` returns HTTP 409 and keeps the first run, `interrupt` stops the first run (status `interrupted`, partial state kept, so handle half-finished tool calls), `rollback` deletes the first run, input included. The queue never runs two runs on one thread at once.",
+      "Crons: `crons.create_for_thread` reuses one thread, and `crons.create` (stateless) makes a thread per run and deletes it after (`on_run_completed=\"delete\"` default, or `\"keep\"` plus TTL). Schedules are in UTC, the input is the same every time, and you must delete unused crons to stop LLM charges.",
+      "Webhooks: pass `webhook=` on create, stream or wait runs and crons. One POST arrives at completion with the Run fields plus `values`, `webhook_sent_at` and `error`. Secure them with a URL token or `webhooks.headers` (`${{ env.LG_WEBHOOK_* }}`), restrict them with `webhooks.url` (`allowed_domains`, `require_https`), or turn them off with `http.disable_webhooks`.",
+      "Custom auth: `auth.path` points to a `langgraph_sdk.Auth`. `@auth.authenticate` runs on every request and returns `identity` (available as `ctx.user` and as `config[\"configurable\"][\"langgraph_auth_user\"]`). `@auth.on`, `@auth.on.<resource>` and `@auth.on.<resource>.<action>` authorize; the most specific match wins. Handlers stamp `value[\"metadata\"]` and return filter dicts (`$eq`, `$contains`), `None`/`True` to allow, or `False` for 403. Runs inherit thread access. Store handlers validate or rewrite `value[\"namespace\"]`.",
+      "Architecture: API servers handle requests, and queue workers execute graphs and write checkpoints. Postgres holds assistants, threads, runs, crons, checkpoints and the store, and backs the queue with exactly-once claims. Redis holds only ephemeral data (wake-ups, cancellation, stream pub/sub). The server injects the checkpointer and store, so do not compile your own into the graph.",
+      "Scaling: request concurrency grows with API replicas; run concurrency = queue workers x `N_JOBS_PER_WORKER` (default 10). Workers needed = throughput x average run seconds / `N_JOBS_PER_WORKER`. Containers are stateless, so no sticky sessions are needed. Crashed runs are requeued by a sweeper (every 2 minutes) after the heartbeat lapses. Use `durability=\"exit\"`, stateless runs, TTLs and `/join` instead of polling to cut load.",
+      "Topologies: Cloud (LangChain runs everything, with GitHub CI/CD), hybrid (LangChain-hosted control plane with Agent Servers and data in your VPC), full self-hosted (you run the control plane, data plane and LangSmith; Enterprise license), standalone server (Agent Server plus your own Postgres and Redis, no control plane; use Kubernetes with the Helm chart, never scale-to-zero serverless).",
+      "Clients and tracing: RemoteGraph gives a deployed graph the compiled-graph interface (`invoke`, `stream`, `get_state`), can be added as a subgraph node, and is only for other deployments (calling the same deployment can deadlock). `distributed_tracing=True` plus a server graph that applies `langsmith-trace` joins traces across services. Studio has graph mode and chat mode (needs `MessagesState`), Edit node state then Fork, Re-run from here, assistants, threads and dataset experiments."
+    ],
+    "traps": [
+      "Assuming `langgraph dev` behaves like production: it uses your local environment, so a package missing from the declared dependencies only fails under `langgraph up` or in the deployed image.",
+      "Sending a partial payload to `assistants.update`: there is no merge, so fields you leave out disappear from the new version.",
+      "Believing the default multitask strategy is `reject` or `interrupt`: it is `enqueue`. Also, `interrupt` keeps partial progress while `rollback` deletes the first run entirely.",
+      "Compiling a `PostgresSaver` or `InMemorySaver` into a graph you deploy: the server injects its own checkpointer and store and needs to manage them.",
+      "Using RemoteGraph to call another graph on the same deployment instead of composing it as a subgraph: it ties up run slots and can deadlock.",
+      "Scoping store namespaces in both the auth handler and the application code: data gets scoped twice and reads miss. Pick one layer.",
+      "Adding API replicas to fix runs that sit in `pending`: run capacity comes from queue workers x `N_JOBS_PER_WORKER`, not API servers.",
+      "Running standalone servers on scale-to-zero serverless platforms, or forgetting to delete crons and set TTLs, which loses tasks or piles up cost and data."
+    ],
+    "docs": [
+      {
+        "title": "Agent Server",
+        "url": "https://docs.langchain.com/langsmith/agent-server"
+      },
+      {
+        "title": "LangGraph CLI and configuration file",
+        "url": "https://docs.langchain.com/langsmith/cli"
+      },
+      {
+        "title": "Double texting",
+        "url": "https://docs.langchain.com/langsmith/double-texting"
+      },
+      {
+        "title": "Authentication and access control",
+        "url": "https://docs.langchain.com/langsmith/auth"
+      },
+      {
+        "title": "Configure Agent Server for scale",
+        "url": "https://docs.langchain.com/langsmith/agent-server-scale"
+      }
+    ]
+  }
+}

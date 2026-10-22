@@ -1,0 +1,2070 @@
+[
+  {
+    "id": "LGR-SSC-001",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks you to name the three building blocks of a LangGraph application. Which description is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "State is the shared data, nodes return updates to it, and edges pick the next node",
+        "why": "This is how the docs describe a graph: state holds the data, nodes do the work, edges choose what runs next."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Prompts, chains and retrievers, which are composed with the `|` operator",
+        "why": "That describes LCEL composition in LangChain, not the parts of a LangGraph graph."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Agents, tools and memory, where every graph must contain at least one LLM call and one tool node",
+        "why": "A graph can be pure Python with no model at all; agents and tools are things you build with graphs, not their building blocks."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Threads, runs and assistants, which are created when the graph is compiled",
+        "why": "Those are Agent Server resources used at deployment time, not the parts you define in a graph."
+      }
+    ],
+    "explanation": "A `StateGraph` is defined by a state schema, the nodes that read that state and return partial updates, and the edges (fixed or conditional) that choose the next node. The interviewer wants to hear that nodes communicate only through shared state, not by calling each other.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-nodes-edges",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-SSC-002",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this graph return?\n\n```python\nfrom typing_extensions import TypedDict\nfrom langgraph.graph import StateGraph, START\n\nclass State(TypedDict):\n    count: int\n    name: str\n\ndef bump(state: State):\n    return {\"count\": state[\"count\"] + 1}\n\nbuilder = StateGraph(State)\nbuilder.add_node(\"bump\", bump)\nbuilder.add_edge(START, \"bump\")\nprint(builder.compile().invoke({\"count\": 0, \"name\": \"ada\"}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'count': 1}`",
+        "why": "Keys a node does not return are not deleted; the node returned a partial update."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'count': 1, 'name': 'ada'}`",
+        "why": "Only `count` is updated; `name` keeps the value from the input."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'count': 1, 'name': None}`",
+        "why": "Untouched keys keep their old value; LangGraph never resets them to `None`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An `InvalidUpdateError`, because the node did not return every key",
+        "why": "Partial updates are the normal contract; a node may return any subset of keys."
+      }
+    ],
+    "explanation": "A node returns only the keys it wants to change. Each returned key is applied through that key's reducer (here the default, which replaces the value), and every other key is left as it was. That is why nodes should return small partial dicts rather than copying the whole state.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:nodes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-SSC-003",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In a LangGraph state schema, a key declared without a reducer is overwritten by each new value a node returns for it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: with no reducer, the default behaviour is to replace the stored value with the update."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It is true. Without a reducer the update replaces the old value; appending needs a reducer such as `operator.add`."
+      }
+    ],
+    "explanation": "Each key has its own reducer. When none is given, the update simply replaces the current value. To accumulate values instead, declare the key with `Annotated[list, operator.add]` or another reducer.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:reducers",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-SSC-004",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "The prebuilt `MessagesState` from `langgraph.graph` defines exactly one key, annotated with the `add_messages` reducer. What is that key called? Type the key name.",
+    "options": [],
+    "accepted": [
+      "messages",
+      "\"messages\"",
+      "'messages'"
+    ],
+    "explanation": "`MessagesState` has a single `messages` key typed as a list of messages with the `add_messages` reducer. Subclass it to add your own fields, for example `class State(MessagesState): documents: list[str]`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-SSC-005",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "order",
+    "select": 1,
+    "stem": "You want nodes to read a per-request `user_id` without putting it into graph state. Put the steps in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Define a dataclass such as `Ctx` with a `user_id` field",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pass it when building the graph: `StateGraph(State, context_schema=Ctx)`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Give the node a `runtime: Runtime[Ctx]` parameter and read `runtime.context.user_id`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `graph.invoke(inputs, context={\"user_id\": \"u1\"})`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Runtime context is declared with `context_schema` on the `StateGraph`, read in nodes through the injected `Runtime` object, and supplied per call with the `context=` argument. It keeps dependencies such as user ids, model names or database connections out of the checkpointed state.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-006",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each requirement with the state schema type that fits it best.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`TypedDict`",
+        "why": "Plain typed dict: the main documented schema, with no runtime validation."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`dataclass`",
+        "why": "Typed class that supports default values for fields."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pydantic `BaseModel`",
+        "why": "Recursive runtime validation and coercion of the graph input, at a speed cost."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`MessagesState` subclass",
+        "why": "Ready-made `messages` key with the `add_messages` reducer, plus your own fields."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A lightweight schema for an internal workflow where speed matters and inputs are trusted",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Fields such as `retries: int = 0` should have defaults when callers omit them",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Untrusted API input such as `{\"age\": \"42\"}` must be coerced to the declared types or rejected",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A chat agent that also tracks `documents: list[str]`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The docs present `TypedDict` as the default, recommend a `dataclass` when you want default values, and offer Pydantic for recursive validation while warning that it is slower. `MessagesState` is the shortcut for chat graphs: subclass it to add keys next to `messages`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-schema-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-007",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A node using `add_messages` returns an `AIMessage` whose `id` matches a message already in `state[\"messages\"]`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The new message is appended, so the list now holds two messages with the same id",
+        "why": "That is what `operator.add` would do; `add_messages` matches on id."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `ValueError` is raised because message ids must be unique",
+        "why": "Matching ids are the intended way to edit a message, not an error."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The existing message is replaced in place with the new one",
+        "why": "`add_messages` appends new ids and replaces messages whose id already exists, keeping their position."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The update is ignored because the message already exists",
+        "why": "The existing message is not kept; it is replaced with the new content."
+      }
+    ],
+    "explanation": "`add_messages` is an upsert keyed on message id: unknown ids are appended, known ids replace the stored message where it sits. This is what makes human edits of a message possible. With `operator.add` the edited copy would be appended next to the original.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:add-messages",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-SSC-008",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "According to the LangGraph docs, which schema type should you choose when you want state fields to have default values?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`TypedDict` with `total=False`",
+        "why": "`total=False` only makes keys optional for type checkers; it does not supply a value at runtime."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An `Enum` subclass",
+        "why": "An enum defines a set of constants, not a record of state fields."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A plain `dict` passed to `StateGraph(dict)`",
+        "why": "A plain dict gives no field declarations, so there is nothing to attach defaults to."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A `dataclass`",
+        "why": "The docs say to use a dataclass when you want default values in your state."
+      }
+    ],
+    "explanation": "A `dataclass` field such as `count: int = 0` means a node can read `state.count` even when the caller never sent it. With a `TypedDict`, an omitted key without a reducer is simply absent, so `state[\"count\"]` raises `KeyError`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-009",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nimport operator\nfrom typing import Annotated\nfrom typing_extensions import TypedDict\nfrom langgraph.graph import StateGraph, START\n\nclass State(TypedDict):\n    total: Annotated[int, operator.add]\n\nbuilder = StateGraph(State)\nbuilder.add_node(\"a\", lambda s: {\"total\": 5})\nbuilder.add_edge(START, \"a\")\nprint(builder.compile().invoke({\"total\": 1}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{'total': 6}`",
+        "why": "The input 1 is folded into the channel through the reducer, then the node's 5 is added: 1 + 5."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'total': 5}`",
+        "why": "With a reducer, the node's 5 is added to the existing value rather than replacing it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'total': 1}`",
+        "why": "The node's update is not discarded; it goes through `operator.add`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'total': 11}`",
+        "why": "The input is applied once, not twice; there is no extra addition of the original value."
+      }
+    ],
+    "explanation": "Graph input is written to channels through the same reducers as node updates. The `total` channel starts at 0, the input adds 1, and the node adds 5. Reducers are not only for parallel branches: they define how every write to that key combines with the current value.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:reducers",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-010",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about the `add_messages` reducer are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It converts dict input such as `{\"role\": \"user\", \"content\": \"hi\"}` into LangChain message objects",
+        "why": "The docs note that it deserializes dicts into message objects, so you read `.content` afterwards."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It gives an id to any incoming message that does not already have one",
+        "why": "Messages without an id are assigned a generated id, which later edits and removals rely on."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A message whose id is already in the list replaces the stored one",
+        "why": "Matching ids are replaced in place rather than appended."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It drops a new message whose text matches an existing message",
+        "why": "Matching is by id only; two messages with identical text but different ids are both kept."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It sorts the list by message timestamp after every update",
+        "why": "There is no sorting; new messages are appended in the order they arrive."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "It trims the history to the model's context window automatically",
+        "why": "Trimming is a separate job (for example `trim_messages` or summarisation); the reducer keeps everything."
+      }
+    ],
+    "explanation": "`add_messages` appends, upserts by id, assigns ids to messages that lack one, and coerces dicts and tuples into message objects. It never trims or deduplicates by content, which is why long conversations still need an explicit trimming or summarising strategy.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:add-messages",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-011",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This state uses `operator.add` instead of `add_messages`. The input has two messages with ids `h1` and `a1`, and the node runs once. What is in `messages` afterwards?\n\n```python\nclass State(TypedDict):\n    messages: Annotated[list[AnyMessage], operator.add]\n\ndef cleanup(state):\n    first = state[\"messages\"][0]\n    return {\"messages\": [RemoveMessage(id=first.id), AIMessage(\"new\", id=\"n\")]}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Two messages: `a1` and `n`",
+        "why": "That is the result under `add_messages`, which interprets `RemoveMessage`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Four items: `h1`, `a1`, a `RemoveMessage` object, and `n`",
+        "why": "`operator.add` just concatenates lists, so the `RemoveMessage` is stored as an ordinary item."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Three messages: `a1`, `n`, and a copy of `h1`",
+        "why": "Nothing is copied; the original list is concatenated with the two returned items."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `ValueError` saying `RemoveMessage` needs the `add_messages` reducer",
+        "why": "No check is made; the plain list reducer accepts any object."
+      }
+    ],
+    "explanation": "`RemoveMessage` is an instruction that only `add_messages` understands. The docs say that for `RemoveMessage` to work, the key must use the `add_messages` reducer (as `MessagesState` does). With `operator.add`, it silently becomes junk in the history, which then breaks the next model call.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:message history management",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-012",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "To clear an entire conversation, a node returns `{\"messages\": [RemoveMessage(id=____)]}` using a constant imported from `langgraph.graph.message`. Type the constant's name.",
+    "options": [],
+    "accepted": [
+      "REMOVE_ALL_MESSAGES"
+    ],
+    "explanation": "`RemoveMessage(id=REMOVE_ALL_MESSAGES)` tells `add_messages` to drop every stored message. Messages that follow it in the same update are kept, so you can clear the history and add a summary in one return value.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "source": "interview:message history management",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/add-memory"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-013",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your nodes need the current `user_id` and a database client. They must not be saved in checkpoints. Where should they go?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add `user_id` and `db` keys to the state `TypedDict` and pass them in the input",
+        "why": "State is checkpointed, so the id is persisted and the client would have to be serialized."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use module-level globals that each request overwrites",
+        "why": "Globals are shared across concurrent requests, so one user's id can leak into another user's run."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Declare a `context_schema` and read them from `runtime.context` in the node",
+        "why": "Runtime context holds per-run dependencies that are not part of state and are not checkpointed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Store them in the long-term memory store under the thread id",
+        "why": "The store is for durable memories across threads, not for wiring per-request dependencies into nodes."
+      }
+    ],
+    "explanation": "The docs describe runtime context as the place for non-state dependencies such as model names or database connections. You declare `StateGraph(State, context_schema=Ctx)`, pass `context=` to `invoke`, and read `runtime.context` in nodes. State should hold only data the workflow produces and must be able to resume from.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:runtime context",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/add-memory",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-014",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A chat endpoint calls the same compiled graph (with a checkpointer) on every message, but each call starts from an empty history. What is the bug?\n\n```python\ngraph.invoke({\"messages\": [user_msg], \"thread_id\": session_id})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The checkpointer only saves state at the end of a run, so history is lost between calls",
+        "why": "Checkpoints are written after every super-step; that is not why history is missing."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The graph has to be compiled again for every session id",
+        "why": "One compiled graph serves every thread; the thread is chosen per call through config."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`messages` must be passed as a plain string so the reducer can append it",
+        "why": "A list of messages is the normal input; the input format is not the problem."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`thread_id` must go in the config as `{\"configurable\": {\"thread_id\": session_id}}`, not in the input",
+        "why": "The checkpointer finds a thread through the config; a `thread_id` key in the input is just data (or dropped)."
+      }
+    ],
+    "explanation": "Threads are addressed through config, not state: `graph.invoke(inputs, {\"configurable\": {\"thread_id\": ...}})`. Keys that are not in the state schema are dropped from the input, so the session id silently disappears. Without a thread id in config, a checkpointer has no thread to continue.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-vs-config",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-015",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A `TypedDict` state schema makes LangGraph check at runtime that each node's update matches the declared types.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false: `TypedDict` annotations are for type checkers and documentation, not runtime checks."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: `TypedDict` does no runtime validation, so a node can write a string into an `int` key without any error."
+      }
+    ],
+    "explanation": "`TypedDict` is a static typing construct. LangGraph uses its keys to create channels and its `Annotated` metadata to find reducers, but it does not validate values. If you need runtime validation of the input, use a Pydantic model and accept its cost.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-schema-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-016",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "With this `TypedDict` state and no `retries` in the input, what happens when `check` runs?\n\n```python\nclass State(TypedDict):\n    query: str\n    retries: int\n\ndef check(state: State):\n    return {\"retries\": state[\"retries\"] + 1}\n\n# START -> check\ngraph.invoke({\"query\": \"hi\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The node raises `KeyError: 'retries'`",
+        "why": "The node receives only keys that have values, and `retries` was never set."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`retries` is `None`, so the node raises `TypeError` on `None + 1`",
+        "why": "The key is not present at all, so the error comes from the lookup, not the addition."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`retries` defaults to 0, so the result has `retries: 1`",
+        "why": "A `TypedDict` key has no default; an unset key without a reducer is simply absent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "LangGraph rejects the input with a validation error before the node runs",
+        "why": "`TypedDict` input is not validated, so nothing stops the run before the node."
+      }
+    ],
+    "explanation": "Nodes get a dict containing only channels that hold a value. A plain `TypedDict` key without a reducer and without input is missing, so index access raises `KeyError`. Use `state.get(\"retries\", 0)`, a dataclass default, or make sure the input sets it.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-017",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In the JavaScript package `@langchain/langgraph` 1.x, how do the current docs define a state with a chat history key and a custom reducer?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A TypeScript `interface` passed as a generic to `new StateGraph<State>()`, with reducers inferred from the declared field types at compile time",
+        "why": "Interfaces are erased at runtime, so LangGraph could not find reducers from them."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`new StateSchema({ messages: MessagesValue, tags: new ReducedValue(z.array(z.string()).default(() => []), { reducer: ... }) })`",
+        "why": "The JS graph API docs define state with `StateSchema`, use `MessagesValue` for messages and `ReducedValue` with a zod schema for custom reducers."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A Python-style `TypedDict` imported from `@langchain/langgraph/typing`",
+        "why": "There is no such module; `TypedDict` is a Python construct."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A plain object literal, with reducers registered later via `graph.addReducer(\"tags\", fn)`",
+        "why": "There is no `addReducer` method; reducers are declared on the state fields themselves."
+      }
+    ],
+    "explanation": "The JS docs mirror Python's `Annotated` reducers with explicit value types: `MessagesValue` plays the role of `add_messages`, `ReducedValue` attaches a reducer to a zod schema, and `UntrackedValue` holds data that is not checkpointed. Interviewers who ask about JS parity want to hear that reducers live on the schema in both languages.",
+    "reference": "https://docs.langchain.com/oss/javascript/langgraph/graph-api",
+    "source": "interview:JS/TS parity",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://app.unpkg.com/@langchain/langgraph@1.0.0/files/README.md",
+        "https://reference.langchain.com/javascript/langchain-langgraph/prebuilt/toolsCondition",
+        "https://docs.langchain.com/oss/javascript/langchain/test/unit-testing"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-018",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each way of writing a list-valued key with what happens when a node returns `[\"x\"]` for it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "No reducer",
+        "why": "The stored value becomes exactly `[\"x\"]`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Annotated[list, operator.add]`",
+        "why": "`[\"x\"]` is concatenated onto the stored list."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Annotated[list[AnyMessage], add_messages]`",
+        "why": "Each message is appended, or replaces a stored one with the same id."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Returning `Overwrite([\"x\"])` for a key with a reducer",
+        "why": "The reducer is bypassed and the value becomes `[\"x\"]`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A `current_plan` that each planner run should replace",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "An append-only audit log collected from parallel workers",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Chat history where a human can edit an earlier message",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Resetting an accumulated `errors` list to a fresh value once",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Without a reducer a key holds the last value written. `operator.add` concatenates, `add_messages` appends or upserts by id, and `Overwrite` (from `langgraph.types`) skips the reducer for one write. Picking the right reducer per key is the core state-design decision.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:reducers",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-019",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "For a graph built on `MessagesState`, which of these are accepted as the `messages` value in `graph.invoke({\"messages\": ...})`? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`[{\"role\": \"user\", \"content\": \"hi\"}]`",
+        "why": "Dicts with `role` and `content` are converted into message objects."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`\"hi\"`",
+        "why": "A bare string is converted into a single `HumanMessage`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`[(\"user\", \"hi\")]`",
+        "why": "A (role, content) tuple is also converted into a message."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[{\"content\": \"hi\"}]`",
+        "why": "A message dict without `role` (or `type`) raises `ValueError` because the reducer cannot tell what kind of message it is."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`42`",
+        "why": "An integer is not a message-like value, and conversion raises `NotImplementedError`."
+      }
+    ],
+    "explanation": "`add_messages` coerces message-like input: message objects, strings, (role, content) tuples and dicts with a role. A dict missing its role, or a non-message value, fails during conversion, before any node runs.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-SSC-020",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A node returns `{\"anwser\": text}` (a typo for the `answer` key in a `TypedDict` state). What happens when the graph runs?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compilation fails because the node returns an undeclared key",
+        "why": "Nodes are not inspected at compile time, so the typo cannot be caught then."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An `InvalidUpdateError` is raised when the node returns",
+        "why": "That error is raised for non-dict returns and conflicting writes, not for unknown keys."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The unknown key is silently dropped, so `answer` never gets a value",
+        "why": "There is no channel named `anwser`, so the write goes nowhere and no error is raised."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The key is added to the state dynamically, so the output has both `answer` and `anwser`",
+        "why": "State keys come from the schema; the graph has no channel for an undeclared key."
+      }
+    ],
+    "explanation": "Channels are created from the schema, and writes to keys outside it are discarded without an error, just like unknown keys in the input. A typo in an update therefore surfaces later as a missing value. Unit-test nodes on their returned dicts, or use a dataclass or Pydantic state so the key names are checked by your editor and type checker.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-021",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put these events in the order they happen when you call `graph.invoke(inputs)` on a graph whose first node returns a partial update.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keys in `inputs` that are not in the input schema are dropped",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Each remaining input value is written to its channel through that key's reducer",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The first node runs and returns a partial dict",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Each returned key is merged with its current value by that key's reducer",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Nodes in the next super-step receive the updated state",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Input is filtered by the input schema and then written through the reducers, exactly like a node update. Node updates are applied at the end of the super-step, and only then can the next super-step's nodes read them. This explains both why `operator.add` keys accumulate input values and why parallel nodes cannot see each other's writes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-022",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Two nodes run in parallel from `START`, and each returns `{\"x\": [...]}`. The key is declared as `x: list` with no reducer. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The last node to finish wins, so `x` holds one of the two lists",
+        "why": "LangGraph does not pick a winner by timing; it refuses the ambiguous update."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The two lists are concatenated because both updates arrive in the same step",
+        "why": "Concatenation needs a reducer such as `operator.add`; plain keys accept a single value."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The writes are queued and applied in two consecutive super-steps",
+        "why": "Writes from one super-step are applied together at its end, not spread across steps."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "An `InvalidUpdateError` is raised: the key can receive only one value per step",
+        "why": "A key without a reducer can take one write per super-step; two writes are a conflict."
+      }
+    ],
+    "explanation": "In LangGraph 1.2 the error reads: `At key 'x': Can receive only one value per step. Use an Annotated key to handle multiple values.` A plain key is a last-value channel, and two writes in the same super-step have no defined order, so the runtime raises instead of guessing.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:reducers-parallel-writes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-023",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Two parallel branches both write to `results` and the run fails with `InvalidUpdateError`. Which changes fix it while keeping both branches' output? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Declare `results: Annotated[list, operator.add]`",
+        "why": "A merging reducer lets the key accept several writes in one super-step."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Have each branch write its own key, such as `search_results` and `db_results`, and combine them in the next node",
+        "why": "Distinct keys mean no key receives two writes in the same step."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Declare a custom reducer that merges dicts: `Annotated[dict, merge]`",
+        "why": "Any binary reducer that combines old and new values resolves the conflict."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap both branches' values in `Overwrite(...)`",
+        "why": "Only one `Overwrite` per key is allowed per super-step, so this raises the same kind of error."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Add `defer=True` to both branch nodes",
+        "why": "`defer` delays when a node runs; it does not let one key take two writes in a step."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Add `time.sleep()` to one branch so it finishes later",
+        "why": "Both branches are still in the same super-step, and their writes are applied together at its end."
+      }
+    ],
+    "explanation": "A key can take several writes per super-step only if it has a reducer. Either give it one, or design the state so parallel branches write different keys. Timing tricks do nothing, because writes are applied when the whole super-step ends.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:reducers-parallel-writes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-024",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Two runs of this graph start with `{\"items\": [1, 2]}`. The only difference is what node `n` returns. What are the two outputs?\n\n```python\nclass State(TypedDict):\n    items: Annotated[list, operator.add]\n\n# run 1: n returns {\"items\": []}\n# run 2: n returns {\"items\": Overwrite([])}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Run 1: `[1, 2]`; run 2: `[]`",
+        "why": "`[1, 2] + []` is unchanged, while `Overwrite` bypasses the reducer and sets the value directly."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run 1: `[]`; run 2: `[]`",
+        "why": "An empty list passed through `operator.add` changes nothing, so run 1 keeps the items."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Run 1: `[1, 2]`; run 2: `[1, 2]`",
+        "why": "`Overwrite` is not merged through the reducer; it replaces the value."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run 1: `[]`; run 2: an error, because `Overwrite` cannot be used on reducer keys",
+        "why": "`Overwrite` exists precisely for keys that have a reducer."
+      }
+    ],
+    "explanation": "The docs warn that merging reducers do not clear fields: returning `[]` to an `operator.add` key leaves it unchanged. `Overwrite` (from `langgraph.types`, JSON form `{\"__overwrite__\": ...}`) sets the channel directly for that one write.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:overwrite-reducer",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-025",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `invoke` return here?\n\n```python\nclass In(TypedDict):\n    question: str\nclass Out(TypedDict):\n    answer: str\nclass Overall(TypedDict):\n    question: str\n    answer: str\n    notes: str\nclass Priv(TypedDict):\n    scratch: str\n\ndef a(s: In) -> Priv:\n    return {\"scratch\": s[\"question\"].upper(), \"notes\": \"n\"}\ndef b(s: Priv) -> Out:\n    return {\"answer\": s[\"scratch\"] + \"!\"}\n\ng = StateGraph(Overall, input_schema=In, output_schema=Out)\n# START -> a -> b\nprint(g.compile().invoke({\"question\": \"hi\"}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'question': 'hi', 'answer': 'HI!', 'notes': 'n'}`",
+        "why": "That is the overall state; the output schema filters it down to `answer`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'answer': 'HI!'}`",
+        "why": "`invoke` returns only the keys of the output schema."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'question': 'hi', 'answer': 'HI!', 'notes': 'n', 'scratch': 'HI'}`",
+        "why": "That is every channel, as `stream_mode=\"values\"` would show it, not the `invoke` result."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `KeyError`, because `scratch` is not in `Overall`",
+        "why": "Node `a` declares `Priv` in its type hints, so LangGraph adds a private `scratch` channel."
+      }
+    ],
+    "explanation": "The graph's channels are the union of all schemas, including private schemas used in node signatures. `input_schema` filters what callers can send, and `output_schema` filters what `invoke` returns. Streaming with `stream_mode=\"values\"` still shows every channel, including private ones.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:input-output-schemas",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-026",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about input, output and private schemas are true in LangGraph 1.2? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`invoke` returns only the keys declared in `output_schema`",
+        "why": "The output schema filters the final result."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`stream(..., stream_mode=\"values\")` still emits private channels such as `scratch`",
+        "why": "The docs warn that private channels are not hidden from `stream` in values mode."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A node annotated `def b(state: Priv)` receives only the keys of `Priv`",
+        "why": "The node's type hint selects which channels it is given."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Writing to a key that only appears in a private schema raises an error unless it is also in `output_schema`",
+        "why": "Private channels are writable by any node; they are just not returned by `invoke`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`input_schema` validates the types of the values passed to `invoke`",
+        "why": "For `TypedDict` schemas it only filters keys; it does not check value types."
+      }
+    ],
+    "explanation": "Use input and output schemas to give callers a small, stable contract while the graph keeps internal keys. Do not rely on them for secrecy in streams: values mode emits all channels, so filter with `output_keys` or use updates mode.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:input-output-schemas",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-027",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The graph state is a Pydantic model with `a: int`. What happens on `graph.invoke({\"a\": \"42\"})` and on `graph.invoke({\"a\": \"abc\"})`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both runs fail, because strings are never accepted for an `int` field",
+        "why": "Pydantic's default (lax) mode coerces numeric strings such as `\"42\"`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both runs succeed, and the first node sees the strings unchanged",
+        "why": "The input is validated against the model, so values are coerced or rejected."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The first node sees `a == 42`; the second call raises a `ValidationError` before any node runs",
+        "why": "Pydantic coerces `\"42\"` to 42 and rejects `\"abc\"` while building the first node's input."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The first run succeeds; the second stores `\"abc\"` and fails only when a node does arithmetic",
+        "why": "Validation happens on input, so the bad value never reaches a node."
+      }
+    ],
+    "explanation": "With a Pydantic state, the graph input is run through the model, so Pydantic's coercion rules apply. The docs list the caveats: validation errors do not say which node failed, the output is a dict rather than a model instance, and recursive validation costs time.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:state-schema-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-028",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each value with where it belongs in a LangGraph application.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`config[\"configurable\"]`",
+        "why": "Identifies the thread and checkpoint for persistence."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Runtime context (`context=` / `runtime.context`)",
+        "why": "Per-run dependencies that nodes read but that are not checkpointed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Graph state",
+        "why": "Data the workflow produces and needs to resume."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Top-level config key",
+        "why": "Run-wide execution settings such as `recursion_limit` or `max_concurrency`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`thread_id`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The signed-in user's id and an HTTP client",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The draft answer a reviewer node will critique",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A cap on super-steps for this one run",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Keep a clean split: config addresses the thread, context carries dependencies, state carries the workflow's own data, and execution limits are top-level config keys (`recursion_limit` and `max_concurrency` do not go inside `configurable`). Interviewers use this to check you will not checkpoint secrets or clients.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-vs-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-029",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many times is `merge` called during this run? Type a number.\n\n```python\ndef merge(left, right):\n    return {**left, **right}\n\nclass State(TypedDict):\n    meta: Annotated[dict, merge]\n\n# START -> a, where a returns {\"meta\": {\"b\": 2}}\ngraph.invoke({\"meta\": {\"a\": 1}})\n```",
+    "options": [],
+    "accepted": [
+      "2",
+      "two"
+    ],
+    "explanation": "The reducer runs once for the input write (`merge({}, {'a': 1})`, the channel starting from an empty dict) and once for the node's update (`merge({'a': 1}, {'b': 2})`). The final value is `{'a': 1, 'b': 2}`. Reducers apply to every write, including the initial input.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-030",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are building a turn-based multi-agent simulation in one shared state. Which fields should use an appending reducer rather than the default replace behaviour? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`events`: the replayable log of every action taken",
+        "why": "An append-only history must keep every entry, including ones written in the same step."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`utterances`: each agent's lines, collected when several agents speak in the same super-step",
+        "why": "Parallel writers to one key need a merging reducer, or the step raises `InvalidUpdateError`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`current_scene`: where the story is right now",
+        "why": "Only the latest scene matters, so replacing the value is correct."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`active_speaker`: whose turn it is",
+        "why": "A single current value; appending would build a meaningless list."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`turn`: the turn counter updated by one moderator node",
+        "why": "One writer replacing an integer needs no reducer."
+      }
+    ],
+    "explanation": "Use a reducer for history-like fields and fields with several writers per super-step. Use the default replace behaviour for current values. Getting this wrong either loses history or fills state with stale lists.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:multi-agent-simulation-take-home",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/jkbrooks/context-engineering-takehome/main/00_BASE_PROBLEM.md",
+        "https://github.com/jerichosuguru/AI-Coworker-Engine"
+      ],
+      "companies": [
+        "Edtronaut"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-031",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Values passed with `graph.invoke(inputs, config, context={...})` are saved in the thread's checkpoint along with the state.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false: context is supplied per run and does not appear in the checkpointed state."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: runtime context is not part of state, so `get_state()` does not show it and you must pass it again on every call."
+      }
+    ],
+    "explanation": "Checkpoints hold channel values (state), not runtime context. That is the point of context: credentials, clients and user ids stay out of persistence. The flip side is that every invoke or resume must supply the context again.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-vs-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-032",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Each run starts with two messages (ids `1` and `2`). A node then returns `AIMessage(\"edited\", id=\"2\")`. How many messages are in the list after the node runs, with `add_messages` and with `operator.add`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "3 with `add_messages`, 2 with `operator.add`",
+        "why": "This swaps the two behaviours."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "3 with both reducers",
+        "why": "`add_messages` matches on id, so it does not grow the list."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "2 with both reducers",
+        "why": "`operator.add` is list concatenation and knows nothing about ids."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "2 with `add_messages`, 3 with `operator.add`",
+        "why": "`add_messages` replaces the message with id `2`; `operator.add` appends the edited copy."
+      }
+    ],
+    "explanation": "This is the classic way interviewers check you understand why chat state uses `add_messages`: id-based upserts make edits, tool-call rewrites and removals possible. `operator.add` is fine for plain append-only lists.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:add-messages",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-033",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Neither run passes `count` in its input. What does each one return?\n\n```python\n@dataclass\nclass DState:\n    q: str\n    count: int = 0\n\nclass TState(TypedDict):\n    q: str\n    count: int\n\ndef inc(s):\n    c = s.count if hasattr(s, \"count\") else s[\"count\"]\n    return {\"count\": c + 1}\n\n# two graphs, each START -> inc\nd_graph.invoke({\"q\": \"x\"})\nt_graph.invoke({\"q\": \"x\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The dataclass graph returns `count: 1`; the `TypedDict` graph raises `KeyError: 'count'`",
+        "why": "The dataclass default supplies 0; the `TypedDict` node gets a dict without `count`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both return `count: 1`",
+        "why": "A `TypedDict` has no defaults, so the second graph has no `count` to read."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Both raise, because `count` was not in the input",
+        "why": "The dataclass field has a default, so the first graph works."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The dataclass graph raises; the `TypedDict` graph returns `count: 1`",
+        "why": "This is the wrong way round: only the dataclass provides a default."
+      }
+    ],
+    "explanation": "A dataclass node receives an instance (use attribute access), with field defaults filled in. A `TypedDict` node receives a dict with only the channels that hold values. If optional fields need defaults, the docs recommend a dataclass.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-SSC-034",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Two parallel nodes both return `{\"items\": Overwrite([...])}` for a key declared `Annotated[list, operator.add]`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both values are concatenated, because the key has a reducer",
+        "why": "`Overwrite` bypasses the reducer, so there is nothing to concatenate with."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "An `InvalidUpdateError` is raised: only one `Overwrite` value per super-step",
+        "why": "The docs and the runtime allow one `Overwrite` per key in a super-step."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The later write wins, so `items` holds one node's list",
+        "why": "LangGraph does not pick a winner; two overwrites in one step are a conflict."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both are ignored and `items` keeps its old value",
+        "why": "The writes are not silently dropped; the step fails."
+      }
+    ],
+    "explanation": "`Overwrite` means \"set this exact value\". Two different exact values in the same super-step cannot both hold, so the runtime raises `InvalidUpdateError` (\"Can receive only one Overwrite value per super-step\"). Reset a list from exactly one node, or after the parallel branches join.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-035",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The state is a Pydantic model with `a: int`. What does this graph print?\n\n```python\nclass P(BaseModel):\n    a: int\n\ndef n1(s): return {\"a\": \"7\"}\ndef n2(s):\n    print(repr(s.a))\n    return {\"a\": \"bad\"}\n\n# START -> n1 -> n2\nprint(graph.invoke({\"a\": 1}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`7`, then a `ValidationError` for `'bad'`",
+        "why": "The final output is not run through the model, so `'bad'` is returned as is."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`'7'`, then `{'a': 'bad'}`",
+        "why": "Building n2's input instance runs Pydantic coercion, so it sees the int 7."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`7`, then `{'a': 'bad'}`",
+        "why": "n2's input is built through the model, coercing `\"7\"` to 7; n2's own return is not validated, and the output is a plain dict."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`7`, then `P(a='bad')`",
+        "why": "The docs note that graph output is a dict, not a Pydantic instance."
+      }
+    ],
+    "explanation": "Pydantic state validates the values used to build a node's input, but node return values are not checked when written, and the final output is a plain dict. The last node in a graph can therefore write values that violate the model. Validate model output inside the node that produces it.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:state-schema-types",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://eastondev.com/blog/en/posts/ai/20260424-langgraph-agent-architecture/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-036",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An extraction node calls an LLM with `with_structured_output(Invoice)` and writes the result into state. The graph state is a Pydantic model. Which design keeps invalid records out of state?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rely on the Pydantic state schema, which validates every node's update before it is stored",
+        "why": "Node updates are not validated on write, so a bad value can enter state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Add `retry_policy` to the graph so validation errors are retried forever",
+        "why": "Unbounded retries hide the problem and cost money; you also need a defined failure path."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Parse the model's free-text answer with a regex in the next node",
+        "why": "Regex parsing of prose is the fragile approach that structured output exists to avoid."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Validate inside the extraction node and, on failure, write an error flag that a conditional edge routes to a retry or fallback node",
+        "why": "Validation at the point of creation, plus explicit routing, keeps state clean and makes the failure path visible."
+      }
+    ],
+    "explanation": "Structured output gives you a typed object, but the graph will store whatever a node returns. Interviewers want validation inside the node, a bounded retry, and a routed fallback rather than bad data flowing downstream.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:structured-output",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://github.com/ncapek/ai_engineer_interview_2025",
+        "https://github.com/rak-shi/kasparro-ai-agentic-content-generation-system-Rakshitha_Valipireddy",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/"
+      ],
+      "companies": [
+        "Future Research",
+        "Kasparro",
+        "Gupshup"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-037",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "What is the order of messages after this call?\n\n```python\nhistory = [HumanMessage(\"1\", id=\"1\"), AIMessage(\"2\", id=\"2\"), HumanMessage(\"3\", id=\"3\")]\nadd_messages(history, [\n    AIMessage(\"4\", id=\"4\"),\n    AIMessage(\"2b\", id=\"2\"),\n    RemoveMessage(id=\"1\"),\n    HumanMessage(\"5\"),\n])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`2b`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`3`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`4`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`5`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "`add_messages` replaces id `2` in its original position, removes id `1`, and appends the genuinely new messages (`4`, then `5`, which gets a generated id) in the order given. A replaced message never moves to the end, so edits keep the conversation's order.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-SSC-038",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A summarisation node builds `RemoveMessage` objects from ids it read earlier, but another node removed some of those messages first. What happens when the update is applied with `add_messages`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A `ValueError` is raised: it is attempting to delete a message with an id that does not exist",
+        "why": "Removing an id that is not in the list is an error."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Missing ids are skipped and the rest are removed",
+        "why": "`add_messages` does not skip unknown ids for removal."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The `RemoveMessage` objects are appended to the history instead",
+        "why": "That is what a plain list reducer would do; `add_messages` interprets them."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The whole history is cleared as a fallback",
+        "why": "Only `REMOVE_ALL_MESSAGES` clears everything."
+      }
+    ],
+    "explanation": "`add_messages` raises `ValueError: Attempting to delete a message with an ID that doesn't exist` for unknown removal ids. Compute removals from the state the node actually received, and make sure only one node owns message deletion. The docs also warn that the remaining history must still be valid for the provider (for example, tool calls followed by their tool results).",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/add-memory",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-039",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Threads are paused at an interrupt in node `review`. You deploy a new version that renames the state key `draft` to `text`, and `publish` now reads `state[\"text\"]`. What happens when a paused thread is resumed?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LangGraph migrates `draft` to `text` automatically because the types match",
+        "why": "There is no automatic migration; channels are matched by name."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`publish` raises `KeyError: 'text'`, because the old value lives under a channel the new schema no longer has",
+        "why": "The new graph has no `draft` channel, and `text` was never written for this thread."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The old checkpoint is rejected by the checkpointer when it is loaded with the new schema, so the resume fails before any node runs at all",
+        "why": "The checkpoint loads; the old `draft` value is simply not visible under the new schema."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`text` defaults to an empty string and the run completes",
+        "why": "`TypedDict` keys have no defaults, so the read fails."
+      }
+    ],
+    "explanation": "Checkpoints store values by channel name. A rename strands old values, and resumed nodes run the new code against the old data. Safe changes are additive: add a new optional key, read it with a fallback to the old key, and remove the old key only after in-flight threads have finished or been migrated.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:schema-migration",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-SSC-040",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are reviewing the state schema of a production RAG agent that uses a checkpointer. Which changes are good practice? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Store document ids or URLs in state instead of full page text, and fetch content when needed",
+        "why": "State is checkpointed every super-step, so large blobs add storage and serialization cost on every step."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Expose a narrow `input_schema` and `output_schema` while keeping internal keys private",
+        "why": "Callers get a stable contract and internal keys can change freely."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Pass the vector-store client and tenant id through `context_schema`",
+        "why": "Clients and per-request ids are dependencies, not workflow data."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Keep the HTTP client object in state so every node can reach it",
+        "why": "Checkpointers serialize state, and a client object is not serializable."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Switch every schema to Pydantic, because validation makes graphs faster",
+        "why": "The docs say Pydantic validation is slower than `TypedDict` or dataclasses."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Put `thread_id` in state so nodes can log it",
+        "why": "The thread id belongs in config; nodes can read it from config or runtime info."
+      }
+    ],
+    "explanation": "Lean state means cheaper checkpoints and easier migrations. Keep dependencies in context, keep big payloads behind references, and give callers a narrow input and output contract.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:state-schema-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://raw.githubusercontent.com/jkbrooks/context-engineering-takehome/main/00_BASE_PROBLEM.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://schoolofcoreai.com/interview-prep/tools/langgraph-interview-questions",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "Future Research"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-041",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A map step uses `Send` to start one `worker` per document, and each worker returns `{\"results\": [summary]}` where `results: list` has no reducer. The unit test with one document passes, but production runs with five documents fail. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`Send` cannot target the same node more than once per step",
+        "why": "Sending many tasks to one node is exactly the map-reduce pattern."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Production uses a checkpointer, which forbids lists in state",
+        "why": "Lists are ordinary state values."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Five workers write `results` in the same super-step, and a key without a reducer raises `InvalidUpdateError`",
+        "why": "One worker makes one write, which is fine; several writers in one step need a reducer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Each worker receives the whole parent state rather than its payload, so it overwrites `results` with a stale copy of the list",
+        "why": "A `Send` worker receives only the payload it was sent."
+      }
+    ],
+    "explanation": "Tests with a single fan-out item hide reducer bugs. All `Send` tasks from one step run in the same super-step, so their writes to a shared key conflict unless the key is `Annotated[list, operator.add]` (or similar). Test map-reduce with at least two items.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:parallelism",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-042",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "This graph uses a checkpointer. What do the two calls print?\n\n```python\nclass State(TypedDict):\n    total: Annotated[int, operator.add]\n\n# START -> a, where a returns {\"total\": 5}\ncfg = {\"configurable\": {\"thread_id\": \"t\"}}\nprint(app.invoke({\"total\": 1}, cfg))\nprint(app.invoke({\"total\": 1}, cfg))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'total': 6}` then `{'total': 6}`",
+        "why": "The second call continues the same thread, so it starts from the stored 6, not from 0."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'total': 6}` then `{'total': 11}`",
+        "why": "The second input of 1 is also added through the reducer, not only the node's 5."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'total': 6}` then `{'total': 7}`",
+        "why": "Node `a` runs again on the second call and adds another 5."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`{'total': 6}` then `{'total': 12}`",
+        "why": "Second run: stored 6, plus input 1, plus node 5."
+      }
+    ],
+    "explanation": "On an existing thread, new input is merged into the saved state through the reducers, and the graph runs again. Re-sending a counter or a full message list each turn double-counts. Send only the new delta (for example, just the new user message).",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-043",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What do `a`, `b` and `c` receive in this graph?\n\n```python\nclass In(TypedDict):\n    question: str\nclass Overall(TypedDict):\n    question: str\n    answer: str\n    notes: str\n\ndef a(s: In):       return {\"notes\": \"from-a\"}\ndef b(s: Overall):  return {\"answer\": s[\"notes\"]}\n\ng = StateGraph(Overall, input_schema=In)\n# START -> a -> b\ng.compile().invoke({\"question\": \"q\", \"notes\": \"from-caller\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`a` sees only `question`; `b` reads `from-a`",
+        "why": "The input schema drops `notes`; `a` writes it, and `b` reads that value."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`a` sees `question` and `notes`; `b` reads `from-caller`",
+        "why": "`notes` is not in the input schema, so the caller's value never enters state."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`a` sees only `question`; `b` raises `KeyError: 'notes'`",
+        "why": "`a` writes `notes` before `b` runs, so the key exists."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Compilation fails because `a` writes a key outside its own annotation",
+        "why": "Nodes may write any channel in the graph; their annotation only limits what they read."
+      }
+    ],
+    "explanation": "The input schema is a filter on what callers can set, and a node's annotation limits what it reads, not what it may write. Here the caller cannot inject `notes`, and only nodes can produce it.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:input-output-schemas",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-044",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate puts a `threading.Lock` (standing in for any client object) into graph state and compiles with `InMemorySaver`. What happens on `invoke`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It works, because `InMemorySaver` keeps the live Python objects in a dict in memory and never needs to serialize them",
+        "why": "`InMemorySaver` still serializes checkpoints with the default serializer."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises `TypeError: Type is not msgpack serializable` when the checkpoint is written",
+        "why": "The default serializer cannot encode the lock, so writing the checkpoint fails."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The key is dropped silently from the checkpoint and the run continues",
+        "why": "Serialization failures raise; they are not silently skipped."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It fails at compile time, because state schemas reject non-JSON types",
+        "why": "Schemas are not inspected for serializability at compile time."
+      }
+    ],
+    "explanation": "Every checkpointer, including the in-memory one, serializes state, so state must hold serializable data. Clients, locks and connections belong in runtime context. This failure also only appears once you add a checkpointer, which is why it surprises teams moving from a prototype to production.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:state-schema-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/melmallow/spotter",
+        "https://raw.githubusercontent.com/jkbrooks/context-engineering-takehome/main/00_BASE_PROBLEM.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://schoolofcoreai.com/interview-prep/tools/langgraph-interview-questions",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "Future Research"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-SSC-045",
+    "domain": 1,
+    "skill": "state-schemas",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Three parallel branches append findings to `findings: Annotated[list, operator.add]`, and a report node prints them in list order. Which statements are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The order of the three branches' entries in `findings` is not guaranteed to be consistent between runs",
+        "why": "The docs warn that updates from a parallel super-step may not be ordered consistently."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "If the report needs a stable order, each branch should include an ordering key that the report sorts by",
+        "why": "This is the remedy the docs suggest: write values that carry their own order."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Entries always follow the order of the `add_edge` calls that created the branches",
+        "why": "Edge declaration order is not a documented ordering guarantee."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Each branch sees the entries written by the other branches in the same step",
+        "why": "Writes become visible only after the super-step ends."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`operator.add` lets the last branch overwrite the first two",
+        "why": "`operator.add` concatenates, so all three branches' entries are kept."
+      }
+    ],
+    "explanation": "Reducers make concurrent writes safe, not ordered. When order matters, carry an explicit key (a source index or timestamp) and sort when reading, instead of relying on finishing order.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:parallelism",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 5
+  }
+]

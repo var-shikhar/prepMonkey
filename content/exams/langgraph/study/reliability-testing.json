@@ -1,0 +1,51 @@
+{
+  "reliability-testing": {
+    "summary": "Production LangGraph means runs that survive crashes, flaky APIs and runaway loops, and that you can test and evaluate cheaply. Know when checkpoints are written (durability modes), what re-runs on resume or retry, how RetryPolicy, timeouts, error handlers and node caching behave in 1.2, how the recursion limit works, and how to test graphs with fakes, partial execution and evaluations.",
+    "points": [
+      "Durable execution: checkpoints are saved at super-step boundaries, never mid-function. On resume (or a retry) the affected node runs again from its first line, so side effects inside nodes must be idempotent: idempotency keys, upserts, read-before-write.",
+      "Durability modes are passed per run (`invoke(..., durability=...)`): `\"exit\"` saves only when the run exits (success, error or interrupt), which is fastest but loses progress if the process dies; `\"async\"` (default) saves each step in the background; `\"sync\"` saves each step before the next starts. `checkpoint_during=True/False` is deprecated and maps to `async`/`exit`.",
+      "Functional API and `@task`: on resume the entrypoint replays from the top and completed task results are restored from the checkpoint. A task that raised or never finished runs again, so task bodies with side effects still need idempotency. Put non-deterministic values (time, random) inside tasks.",
+      "`RetryPolicy` defaults: `max_attempts=3` (including the first try), `initial_interval=0.5`, `backoff_factor=2.0`, `max_interval=128`, `jitter=True` (adds a random amount up to 1 s), `retry_on=default_retry_on`. `retry_policy` can also be a list of policies; the first one whose `retry_on` matches is used.",
+      "`default_retry_on` retries any exception except `ValueError`, `TypeError`, `ArithmeticError`, `ImportError`, `LookupError`, `NameError`, `SyntaxError`, `RuntimeError`, `ReferenceError`, `StopIteration`, `StopAsyncIteration`, `OSError` and their subclasses. Built-in `ConnectionError` is explicitly retried. `httpx`/`requests` HTTP errors are retried only for 5xx, so 429 needs a custom `retry_on`.",
+      "Timeouts (1.2+): `add_node(..., timeout=60 | timedelta | TimeoutPolicy(run_timeout, idle_timeout, refresh_on))` works for async nodes only; sync nodes with a timeout are rejected at compile time. `NodeTimeoutError` is retryable by default, the clock resets per attempt, and a timed-out attempt's writes are discarded. With `refresh_on=\"heartbeat\"` only `runtime.heartbeat()` resets the idle clock.",
+      "Error handlers (1.2+): `add_node(..., error_handler=fn)` runs after retries are exhausted (or immediately if none apply), receives `error: NodeError` (`node`, `error`), and returns an update or a `Command(goto=...)`. A plain update ends the run there; route onward with `Command`. `interrupt()` bypasses retries and handlers. `set_node_defaults(...)` sets graph-wide defaults; per-node values win, and subgraphs do not inherit them.",
+      "Node caching: `cache_policy=CachePolicy(key_func=..., ttl=...)` on the node plus `cache=InMemoryCache()` (or `SqliteCache`) on `compile()`. The default key hashes the whole node input, and `ttl=None` never expires. Hits show `'__metadata__': {'cached': True}` in `updates` mode. The cache is shared across threads; `graph.clear_cache()` empties it.",
+      "`recursion_limit` is a top-level config key that caps super-steps per run. Exceeding it raises `GraphRecursionError` (a `RecursionError`). With a checkpointer, the progress up to the limit is saved and can be resumed with `invoke(None, config)` and a higher limit. `RemainingSteps` (and `IsLastStep`) managed values let routers wind down before the limit; `config[\"metadata\"][\"langgraph_step\"]` gives the current step.",
+      "Graceful shutdown (1.2+): pass `control=RunControl()` to `invoke`/`stream`, call `request_drain(reason)` (for example on SIGTERM); the run stops at the next super-step boundary, raises `GraphDrained`, and resumes with `invoke(None, config)`. Nodes can check `runtime.drain_requested`. `runtime.execution_info.node_attempt` (1-indexed) lets a node switch to a fallback on retries.",
+      "Testing: build and compile the graph per test with a fresh `InMemorySaver`; test one node with `compiled.nodes[\"name\"].invoke(state)` (bypasses the checkpointer); test a section with `update_state(cfg, values, as_node=<previous node>)` then `invoke(None, cfg, interrupt_after=<last node>)`; script models with `GenericFakeChatModel`; use `AsyncMock` for awaited dependencies; keep live-LLM tests behind a pytest marker and assert on structure.",
+      "Evaluation and cost: a compiled graph is a runnable you can pass to LangSmith `evaluate`/`aevaluate`; evaluate trajectories or intermediate steps from the output state, single nodes via `app.nodes[...]`, and use `num_repetitions` for noisy agents. Cut latency by fanning out independent work with `Send`, using smaller models for routing, caching repeated deterministic nodes, and never blocking the event loop inside async nodes."
+    ],
+    "traps": [
+      "Assuming resume continues from the failing line: the whole node re-runs, so a charge, email or insert before the failure can happen twice.",
+      "Expecting `durability=\"sync\"` to prevent duplicate side effects: it only controls when checkpoints are written between steps.",
+      "Setting `cache_policy` without passing `cache=` to `compile()`: nothing is ever cached.",
+      "Assuming `RetryPolicy()` retries everything: `ValueError`, `KeyError`, built-in `TimeoutError`, `requests` connection errors (they are `OSError`s) and HTTP 429 are not retried by default.",
+      "Returning a plain dict from an `error_handler` and expecting the node's normal edges to run next: the run ends unless the handler returns `Command(goto=...)`.",
+      "A custom cache `key_func` that leaves out the tenant or another input the output depends on: the cache is shared across threads, so results leak between users.",
+      "Running two `invoke` calls on the same `thread_id` at once: both start from the same checkpoint and one update is lost. Serialise runs per thread.",
+      "Calling blocking I/O (`time.sleep`, `requests`) inside async nodes: parallel branches run one after another and node timeouts cannot cancel the work."
+    ],
+    "docs": [
+      {
+        "title": "Fault tolerance (retries, timeouts, error handlers, graceful shutdown)",
+        "url": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance"
+      },
+      {
+        "title": "Checkpointers and durability modes",
+        "url": "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      },
+      {
+        "title": "Graph API: recursion limit, node caching, idempotency",
+        "url": "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      },
+      {
+        "title": "Test LangGraph applications",
+        "url": "https://docs.langchain.com/oss/python/langgraph/test"
+      },
+      {
+        "title": "LangSmith: evaluate a graph",
+        "url": "https://docs.langchain.com/langsmith/evaluate-graph"
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "human-in-the-loop": {
+    "summary": "`interrupt()` pauses a running graph, saves state through the checkpointer and hands a payload to the caller. `Command(resume=...)` on the same `thread_id` continues it. The interrupted node restarts from its first line, so most interview questions come down to re-execution, matching resume values to calls, and where side effects may safely go.",
+    "points": [
+      "Requirements: a checkpointer passed to `compile()` (durable, such as `SqliteSaver` or `PostgresSaver`, in production), a `thread_id` in `config[\"configurable\"]`, and an `interrupt(payload)` call with a JSON-serializable payload. Without a checkpointer the first run still returns `__interrupt__`, but `Command(resume=...)` raises `RuntimeError`.",
+      "Where pauses show up: the default `invoke()` result has a `__interrupt__` list of `Interrupt(value, id)`. With `version=\"v2\"` you get a `GraphOutput` whose `.interrupts` holds them, and `stream_events(..., version=\"v3\")` exposes `stream.interrupted` and `stream.interrupts`. `get_state(config).next` names the paused node.",
+      "Resume with `graph.invoke(Command(resume=value), config)`: `value` becomes the return value of `interrupt()`. `Command(resume=...)` is the only `Command` form meant as graph input. A plain dict sent to a paused thread starts a new run from `START`, and `invoke(None, config)` re-runs the node, which pauses again.",
+      "On resume the whole interrupted node runs again from its first line. Code before `interrupt()` repeats, so make it idempotent (for example an upsert), move side effects after the call, or put them in a separate later node.",
+      "Several `interrupt()` calls in one node are matched to resume values strictly by index. A node with N sequential interrupts starts N+1 times. Never skip, reorder or loop interrupt calls in ways that can differ between runs.",
+      "Validation loops: call `interrupt()` once per node run, keep the re-prompt text in state, and loop back with a conditional edge. A `while True` loop around `interrupt()` replays every earlier iteration on each resume.",
+      "Parallel interrupts (fan-out branches pausing in the same step) are resumed with a map, `Command(resume={interrupt.id: value})`. A bare value with several pending interrupts raises `RuntimeError`. A partial map finishes the answered branches, and the others pause again.",
+      "Static breakpoints, `interrupt_before` / `interrupt_after`, pause at node boundaries. You can set them on `compile()` or pass them to `invoke()` for one run, and you continue with `invoke(None, config)`. The docs recommend them for debugging, and `interrupt()` for human-in-the-loop. You can edit state at a breakpoint with `update_state` before continuing.",
+      "Subgraphs: interrupts propagate to the top-level graph however deep they are. If a subgraph is called inside a node, both the parent node and the subgraph node re-run from their tops on resume. `get_state(config, subgraphs=True).tasks[0].state` shows the paused subgraph's snapshot.",
+      "Approval in tools: call `interrupt()` at the top of the tool, before the side effect, and read edited arguments from the resume payload. To approve or reject, return `Command(goto=...)` from the node based on the decision, annotated `Command[Literal[...]]`.",
+      "`HumanInTheLoopMiddleware` (in `create_agent`) is built on `interrupt()`. In the default `batched` mode its `after_model` hook raises one interrupt with `action_requests` and `review_configs`, answered with `{\"decisions\": [...]}` in the same order. `per_call` mode raises one interrupt per gated call, answered by id. The decisions are `approve`, `edit`, `reject` and `respond`.",
+      "`interrupt(payload, response_schema=Model)` (langgraph>=1.2.12) validates the resume value with Pydantic, a TypedDict or a dataclass and returns the typed object. An invalid value raises `ValidationError` and the thread stays paused. A raw JSON Schema dict is only shown to clients and is not used for validation. In the Functional API, completed `@task` results are restored on resume rather than re-run."
+    ],
+    "traps": [
+      "Wrapping `interrupt()` in `try/except Exception` swallows `GraphInterrupt` (an `Exception` subclass), so the graph never pauses.",
+      "Branching on `if decision:` when the resume value is a dict: `{\"approved\": False}` is truthy, so the action goes through.",
+      "Resuming with a new `thread_id` does not raise an error. It starts an empty thread that pauses again, and the original thread stays paused.",
+      "`InMemorySaver` loses paused threads when the process restarts, so approvals that wait for hours need a database-backed saver.",
+      "Renaming or removing the node a thread is paused in is not supported. In LangGraph 1.2 the resume silently does nothing (`next == ()`).",
+      "In batched HITL mode, even auto-approved tool calls from the same model turn wait for the review. A `when` predicate runs again on resume, and if it flips to `False` a `reject` is ignored.",
+      "Calling a node function that uses `interrupt()` directly in a unit test raises `RuntimeError` (no runnable context). Test through the compiled graph with `InMemorySaver`."
+    ],
+    "docs": [
+      { "title": "LangGraph: Interrupts", "url": "https://docs.langchain.com/oss/python/langgraph/interrupts" },
+      { "title": "LangChain: Human-in-the-loop middleware", "url": "https://docs.langchain.com/oss/python/langchain/human-in-the-loop" },
+      { "title": "LangGraph: Functional API (determinism and idempotency)", "url": "https://docs.langchain.com/oss/python/langgraph/functional-api" },
+      { "title": "LangGraph: Subgraphs", "url": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs" },
+      { "title": "LangGraph: Graph API (re-execution and graph migrations)", "url": "https://docs.langchain.com/oss/python/langgraph/graph-api" }
+    ]
+  }
+}

@@ -1,0 +1,2076 @@
+[
+  {
+    "id": "LGR-HIL-001",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A node calls `interrupt()` to wait for a manager's approval. Which two things must be in place for the pause to be resumable later?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A checkpointer on `compile()` and a `thread_id` in the config",
+        "why": "The checkpointer saves state at the pause; the `thread_id` tells it which saved state to load on resume."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `RetryPolicy` on the node, and a `recursion_limit` in the config",
+        "why": "Retries and the recursion limit govern failures and loop depth, not pausing for input."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `Store` passed to `compile()`, and a `user_id` in the config",
+        "why": "A store holds long-term, cross-thread data; pause and resume depend on thread checkpoints."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`stream_mode=\"updates\"`, and an `interrupt_before` list on `compile()`",
+        "why": "The stream mode only changes what you see; `interrupt()` needs no static breakpoint list."
+      }
+    ],
+    "explanation": "The interrupts guide lists the requirements: a checkpointer to persist graph state (a durable one in production), a thread ID in the config so the runtime knows which state to resume, and the `interrupt()` call itself with a JSON-serializable payload. The `thread_id` is the persistent cursor: reuse it to resume, change it and you start a new, empty thread.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-resume",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-HIL-002",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "When a graph is resumed with `Command(resume=...)`, execution continues from the line immediately after the `interrupt()` call, so code earlier in the node does not run again.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "LangGraph does not snapshot the Python stack mid-function, so it cannot jump back into the middle of a node."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: the node that called `interrupt()` restarts from its first line, and this time `interrupt()` returns the resume value instead of pausing."
+      }
+    ],
+    "explanation": "`interrupt()` pauses by raising a special exception that the runtime catches. Checkpoints are saved at super-step boundaries, not mid-function, so on resume the whole node runs again from the top. Any code before the `interrupt()` call, including side effects, executes a second time. That is why side effects before an interrupt must be idempotent, or moved after it or into another node.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-reexecution",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-HIL-003",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "You call `graph.invoke(inputs, config)` with the default output format and a node pauses on `interrupt(\"Approve?\")`. Under which key of the returned dict do you find the pending `Interrupt` objects? Type the key.",
+    "options": [],
+    "accepted": [
+      "__interrupt__",
+      "\"__interrupt__\"",
+      "'__interrupt__'"
+    ],
+    "explanation": "With the default `invoke()` API the result dict carries a `__interrupt__` key holding a list of `Interrupt` objects, each with a `value` (the payload you passed) and an `id`. With `version=\"v2\"` you get a `GraphOutput` whose `interrupts` attribute holds them instead, and with `stream_events(..., version=\"v3\")` they appear on `stream.interrupts`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:testing-interrupts",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-HIL-004",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "```python\ndef approval_node(state):\n    approved = interrupt(\"Do you approve this action?\")\n    return {\"approved\": approved}\n```\n\nThe graph pauses here and is later resumed with `graph.invoke(Command(resume=True), config)` on the same thread. What is the value of `approved` on the resumed run?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The string `\"Do you approve this action?\"`",
+        "why": "That is the payload sent out to the caller, not what comes back in."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`True`",
+        "why": "The value passed to `Command(resume=...)` becomes the return value of `interrupt()`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`None`, because the node already returned before pausing",
+        "why": "The node never returned; it was suspended inside `interrupt()` and re-runs on resume."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `Command` object that the node must unpack",
+        "why": "The node receives the plain resume value, not the `Command` wrapper."
+      }
+    ],
+    "explanation": "`interrupt(payload)` sends `payload` out (under `__interrupt__` or on `stream.interrupts`). On resume, the node re-runs from the top and the same `interrupt()` call returns whatever you passed as `Command(resume=...)`. Any JSON-serializable value works; with a typed `response_schema` it is validated first.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:human-in-the-loop",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/go-fig-ai/take-home-inbox-triage",
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://github.com/Jatin29AFK/refundpilot-ai-agent"
+      ],
+      "companies": [
+        "Go Fig AI",
+        "Curling AI",
+        "Cerina Health"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-HIL-005",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two names from `langgraph.types` do you need to pause a graph for human input and then continue it? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`interrupt`",
+        "why": "Called inside a node (or tool) to pause and surface a payload."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`Command`",
+        "why": "`Command(resume=value)` is passed as the graph input to continue the paused thread."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Send`",
+        "why": "`Send` dispatches a node with custom input for map-reduce fan-out; it does not pause anything."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`RetryPolicy`",
+        "why": "Configures automatic retries of a failing node, not human input."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`CachePolicy`",
+        "why": "Caches node results by input; unrelated to pausing."
+      }
+    ],
+    "explanation": "`from langgraph.types import interrupt, Command` is the whole API surface for dynamic human-in-the-loop: `interrupt()` pauses inside a node, and `graph.invoke(Command(resume=...), config)` resumes. `Command(resume=...)` is the only `Command` form intended as graph input; `update`, `goto` and `graph` are for returning from nodes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-HIL-006",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph is compiled with `interrupt_before=[\"execute\"]` and a checkpointer. `graph.invoke(inputs, config)` returns with the thread paused before `execute`. You have checked the state and want to let it continue. What do you call?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`graph.invoke(inputs, config)` again, re-sending the original input dict",
+        "why": "Passing a new input dict starts a fresh run from `START` on that thread instead of continuing."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`graph.resume(config)`",
+        "why": "There is no `resume()` method on a compiled graph."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`graph.invoke(None, config)` with the same `thread_id`",
+        "why": "Passing `None` as input continues from the saved checkpoint until the next breakpoint or the end."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`graph.invoke(None, {})`",
+        "why": "Without the original `thread_id` there is no saved checkpoint to continue from."
+      }
+    ],
+    "explanation": "Static breakpoints set with `interrupt_before` / `interrupt_after` (at compile time or per invocation) need a checkpointer. You continue by invoking with `None` as the input and the same config, which runs until the next breakpoint. `Command(resume=...)` is meant for dynamic `interrupt()` calls; at a static breakpoint there is no `interrupt()` waiting for a value.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:breakpoints",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-007",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which `interrupt()` payload follows the interrupts guide's advice for a graph that may later run on a database-backed checkpointer?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`interrupt({\"question\": \"Approve?\", \"validator\": validate_amount})`",
+        "why": "Functions cannot be serialized; the guide shows this exact case as one that fails."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`interrupt({\"question\": \"Approve?\", \"client\": http_client})`",
+        "why": "Live client objects are complex instances that cannot be reliably serialized."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`interrupt(lambda: \"Approve?\")`",
+        "why": "A lambda is a function; send the question text itself, not a callable."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`interrupt({\"question\": \"Approve refund?\", \"amount\": 900})`",
+        "why": "A dict of plain values is JSON-serializable and safe with any checkpointer."
+      }
+    ],
+    "explanation": "The payload is stored in the checkpoint and sent to the caller, so keep it to simple, JSON-serializable values: strings, numbers, booleans, and dicts or lists of those. Functions and class instances may work with one checkpointer and fail with another. Keep validation logic in the node, and send only the data a reviewer needs to see.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-gotchas",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-HIL-008",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "An agent built with `create_agent` uses `HumanInTheLoopMiddleware`. Match each reviewer situation with the decision type to send back.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`approve`",
+        "why": "Run the tool call exactly as the model proposed it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`edit`",
+        "why": "Run the tool, but with arguments the reviewer changed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`reject`",
+        "why": "Do not run the tool; return feedback to the model as an error tool result."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`respond`",
+        "why": "Skip the tool and return the human's reply as a successful tool result."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The drafted email is fine and should go out as written",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The email is fine but must go to a different recipient",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The agent must not delete these rows, and should be told why",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The tool is an `ask_user` placeholder and the human types the answer",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The middleware supports four decisions. `approve` executes the original call, `edit` executes it with `edited_action` arguments, `reject` skips it and adds a `ToolMessage` with status `error` explaining the refusal, and `respond` skips it and returns the human's `message` as a successful tool result. The docs warn not to use `respond` to deny side-effecting tools, because the model will think the tool succeeded.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/human-in-the-loop",
+    "source": "interview:hitl-tool-approval",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/arpitkath/agentic-ai-interview-roadmap/main/questions/advanced.md",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-009",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nlog = []\n\ndef review(state):\n    log.append(\"fetch draft\")\n    answer = interrupt(\"Approve?\")\n    log.append(f\"got {answer}\")\n    return {\"out\": answer}\n\ngraph = (StateGraph(State).add_node(\"review\", review)\n         .add_edge(START, \"review\").compile(checkpointer=InMemorySaver()))\nconfig = {\"configurable\": {\"thread_id\": \"1\"}}\ngraph.invoke({}, config)\ngraph.invoke(Command(resume=\"yes\"), config)\nprint(log)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`['fetch draft', 'fetch draft', 'got yes']`",
+        "why": "The first run appends once and pauses; the resumed run re-executes the whole node, appending again before `interrupt()` returns."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['fetch draft', 'got yes']`",
+        "why": "That assumes resume continues after the `interrupt()` line, but the node restarts from the top."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`['fetch draft', 'got None', 'fetch draft', 'got yes']`",
+        "why": "The first run never gets past `interrupt()`; it pauses there rather than returning `None`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`['got yes']`",
+        "why": "The resumed run starts at the first line of the node, so the first append runs again."
+      }
+    ],
+    "explanation": "Resuming re-runs the interrupted node from its first line. On the first run, `fetch draft` is logged and `interrupt()` raises to pause. On resume the node runs again, logs `fetch draft` a second time, and this time `interrupt()` returns `\"yes\"`. Anything before `interrupt()` must therefore be safe to repeat.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-reexecution",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-010",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An approval node must send the graph to `proceed` when the reviewer approves and to `cancel` otherwise, with no separate routing function. Which implementation does this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "```python\ndef approval(state):\n    ok = interrupt({\"details\": state[\"action\"]})\n    return \"proceed\" if ok else \"cancel\"\n```",
+        "why": "A node must return a state update or a `Command`; returning a bare node name is how routing functions behave, not nodes."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "```python\ndef approval(state) -> Command[Literal[\"proceed\", \"cancel\"]]:\n    ok = interrupt({\"details\": state[\"action\"]})\n    return Command(goto=\"proceed\" if ok else \"cancel\")\n```",
+        "why": "The resume value drives a `Command(goto=...)`, and the type hint lets LangGraph draw both possible edges."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "```python\ndef approval(state):\n    target = interrupt(\"Type proceed or cancel\")\n    return Command(goto=target, resume=True)\n```",
+        "why": "`resume` belongs in graph input, not in a node's return value, and letting the reviewer type a node name is fragile."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "```python\ndef approval(state):\n    ok = interrupt({\"details\": state[\"action\"]})\n    graph.invoke(Command(goto=\"proceed\" if ok else \"cancel\"))\n```",
+        "why": "Invoking the graph from inside its own node starts a separate run; routing is done by returning a `Command`."
+      }
+    ],
+    "explanation": "The interrupts guide's approve-or-reject pattern returns `Command(goto=...)` from the node that called `interrupt()`, annotated `Command[Literal[\"proceed\", \"cancel\"]]` so the graph knows the possible destinations. The caller resumes with `Command(resume=True)` to approve or `Command(resume=False)` to reject.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:approve-reject-routing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-011",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does the first `invoke` return?\n\n```python\ndef ask(state):\n    try:\n        name = interrupt(\"Your name?\")\n    except Exception as e:\n        name = f\"error: {type(e).__name__}\"\n    return {\"name\": name}\n\ngraph = (StateGraph(State).add_node(\"ask\", ask)\n         .add_edge(START, \"ask\").compile(checkpointer=InMemorySaver()))\nprint(graph.invoke({}, {\"configurable\": {\"thread_id\": \"1\"}}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'__interrupt__': [Interrupt(value='Your name?', ...)]}`",
+        "why": "That is what you would get without the `try/except`; here the pause signal never reaches the runtime."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It raises `GraphInterrupt` out of `invoke`",
+        "why": "The exception is caught inside the node, so nothing propagates."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{'name': 'error: GraphInterrupt'}`",
+        "why": "`interrupt()` pauses by raising `GraphInterrupt`, an `Exception` subclass, so the broad `except` swallows it and the node completes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'name': None}`",
+        "why": "`interrupt()` never returns `None` on a first run; it raises."
+      }
+    ],
+    "explanation": "`interrupt()` works by raising `GraphInterrupt`, which subclasses `Exception` (via `GraphBubbleUp`). A broad `except Exception` catches it, so the graph never pauses and the node returns its fallback. The guide's fix: keep `interrupt()` outside error-prone `try` blocks, or catch only specific exception types such as a network error.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-gotchas",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-012",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`interrupt_before` and `interrupt_after` can be passed to `graph.invoke()` for a single run, not only to `compile()`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: the docs show them both at compile time and as run-time arguments to `invoke`, which can change on every call."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "They are also accepted per invocation, which is handy for a one-off debugging run."
+      }
+    ],
+    "explanation": "Static breakpoints can be set at compile time (`builder.compile(interrupt_before=[...], interrupt_after=[...], checkpointer=...)`) or at run time (`graph.invoke(inputs, config, interrupt_before=[...])`). Either way a checkpointer is required, and you continue with `graph.invoke(None, config)`. The docs recommend static breakpoints for debugging and `interrupt()` for human-in-the-loop.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:static-vs-dynamic-interrupts",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-013",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "In LangGraph 1.2.12 and later, which keyword argument of `interrupt()` takes a Pydantic model, `TypedDict` or dataclass so the resume value is validated and clients can render a typed form? Type the argument name.",
+    "options": [],
+    "accepted": [
+      "response_schema"
+    ],
+    "explanation": "`interrupt(payload, response_schema=Decision)` converts the type to JSON Schema and exposes it as `Interrupt.response_schema`, separately from `value`. On resume, the value is validated (Pydantic coercion rules apply) and `interrupt()` returns the validated object, such as a model instance. Studio renders the schema as typed input fields.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-014",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "An `interrupt()` raised deep inside nested subgraphs propagates up to the top-level graph, so the caller sees it in the parent's result and resumes it through the parent graph's thread.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: the subgraphs guide states that interrupts propagate to the top-level graph regardless of nesting."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "Nesting does not hide interrupts; only subgraph state inspection is limited when the subgraph is called through a tool or other indirection."
+      }
+    ],
+    "explanation": "You always drive the top-level graph: the interrupt shows up in its `__interrupt__`, and `graph.invoke(Command(resume=...), parent_config)` resumes it. What can be limited is inspecting the subgraph's own state with `get_state(config, subgraphs=True)`, which needs LangGraph to discover the subgraph statically (added as a node or called inside a node), not called from inside a tool.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-015",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A `review` node shows an LLM draft to an editor, who may rewrite it before the graph moves on to `publish`. Which approach follows the interrupts guide's review-and-edit pattern?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`review` calls `interrupt()`, and the client continues with `Command(update={\"draft\": edited_text})` as the graph input",
+        "why": "The docs warn that `Command(resume=...)` is the only `Command` form meant as graph input."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`review` calls `input()` so the editor types the new draft into the server console",
+        "why": "That blocks a worker process and does not survive restarts; `interrupt()` persists the pause instead."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Compile with `interrupt_after=[\"publish\"]` so the editor can fix the draft right after it is published",
+        "why": "Pausing after publishing is too late, and static breakpoints are meant for debugging."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`review` returns `{\"draft\": interrupt({\"content\": state[\"draft\"]})}`; the client resumes with `Command(resume=edited_text)`",
+        "why": "The edited text comes back as the return value of `interrupt()`, and the node writes it into state."
+      }
+    ],
+    "explanation": "Review-and-edit is just `interrupt()` with the content in the payload. The reviewer's version is passed as `Command(resume=...)`, `interrupt()` returns it, and the node returns it as a state update. Passing `Command(update=...)` as graph input is explicitly discouraged; `update`, `goto` and `graph` are for returning from nodes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:human-in-the-loop",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/go-fig-ai/take-home-inbox-triage",
+        "https://github.com/Curling-AI/hiring-challenge-alpha",
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://github.com/Jatin29AFK/refundpilot-ai-agent"
+      ],
+      "companies": [
+        "Go Fig AI",
+        "Curling AI",
+        "Cerina Health"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-016",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A graph whose node calls `interrupt(\"Approve?\")` was compiled with `builder.compile()` and no checkpointer. What happens in LangGraph 1.2? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The first `graph.invoke(inputs)` returns normally, with the pending interrupt under `__interrupt__`",
+        "why": "The first run pauses and returns without error, which makes the bug easy to miss."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`graph.invoke(Command(resume=\"yes\"))` raises `RuntimeError: Cannot use Command(resume=...) without checkpointer`",
+        "why": "With nothing saved there is no paused state to resume."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`compile()` raises immediately because the graph contains an `interrupt()` call",
+        "why": "LangGraph cannot see `interrupt()` calls inside node code at compile time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The resume works within the same Python process, because state is kept in memory by default",
+        "why": "There is no default in-memory checkpointer; you must pass one such as `InMemorySaver()`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The node blocks until someone resumes it, holding the request open",
+        "why": "`interrupt()` never blocks; it raises, and the run returns to the caller."
+      }
+    ],
+    "explanation": "Without a checkpointer nothing is saved at the pause. The first call still surfaces the `Interrupt`, so the UI may even show the approval prompt, but the resume then fails with `RuntimeError: Cannot use Command(resume=...) without checkpointer`. Compile with a checkpointer (durable in production) and pass the same `thread_id` on both calls.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:checkpointing",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/melmallow/spotter",
+        "https://agentswarms.fyi/blog/agentic-ai-interview-questions-2026",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "Future Research",
+        "Cerina Health",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-017",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put these steps of one human-in-the-loop round trip in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A node calls `interrupt(payload)`, which raises to suspend the run",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The checkpointer saves the thread's state and the payload is returned to the caller under `__interrupt__`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The client calls `graph.invoke(Command(resume=value), config)` with the same `thread_id`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The node runs again from its first line and `interrupt()` now returns `value`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "`interrupt()` raises a special exception; the runtime catches it, saves state through the checkpointer and hands the payload to the caller. The graph then waits indefinitely. Resuming with `Command(resume=value)` on the same thread loads the checkpoint and re-runs the interrupted node from the top, where the same `interrupt()` call returns `value`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-resume",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-HIL-018",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "In which of these places can `interrupt()` be called and pause the run? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Inside a node function of a `StateGraph` compiled with a checkpointer",
+        "why": "The standard place for a dynamic interrupt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Inside a `@tool` function that the graph executes, for example through `ToolNode`",
+        "why": "The interrupts guide shows approval logic living inside the tool itself."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Inside a node of a subgraph that the parent graph runs",
+        "why": "The interrupt propagates to the top-level graph, which is resumed as usual."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "At the top level of a pytest test, to simulate a pause before invoking the graph",
+        "why": "Outside a running graph there is no runnable context; it raises `RuntimeError: Called get_config outside of a runnable context`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "In the `compile()` call, as `compile(interrupt=...)`, to pause every node",
+        "why": "`compile()` has no `interrupt` argument; static pauses use `interrupt_before` / `interrupt_after`."
+      }
+    ],
+    "explanation": "`interrupt()` reads the current run's config to find the checkpointer and resume values, so it only works while a graph (or `@entrypoint`) is executing: in nodes, in tools run by the graph, and in subgraphs, from which it propagates up. Called anywhere else it raises a `RuntimeError` about the missing runnable context.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-019",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A node calls `name = interrupt(\"Name?\")` and then `age = interrupt(\"Age?\")`. Starting from a fresh thread, you invoke once, resume with `\"Ann\"`, then resume with `30`, after which the graph finishes. How many times in total does the node function start executing? Type a number.",
+    "options": [],
+    "accepted": [
+      "3",
+      "three"
+    ],
+    "explanation": "Run 1 starts the node and pauses at the first `interrupt()`. Resume 1 restarts the node: the first `interrupt()` returns `\"Ann\"` from the task's resume list and the second pauses. Resume 2 restarts it again: both calls return their stored values (matched by index) and the node completes. That is three starts, and any code above the first `interrupt()` ran three times.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:multiple-interrupts",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/interrupts",
+        "https://docs.langchain.com/oss/python/langgraph/functional-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-020",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A form-filling graph must keep asking for an age until the user gives a positive integer, and the team wants no code to run more than once per resume. Which design does the interrupts guide recommend?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "One `interrupt()` per node run, with the re-prompt text stored in state and a conditional edge that loops back to the node until `age` is set",
+        "why": "Each resume runs the node once and calls `interrupt()` once; the loop lives in the graph, not inside the node."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `while True:` loop inside one node that calls `interrupt()` until the answer is valid",
+        "why": "Each resume replays every earlier loop iteration, so the work inside the loop grows with every bad answer."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Validate on the client only, and resume with whatever the user typed",
+        "why": "Server-side validation is still needed; clients can send anything."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Catch the validation error around `interrupt()` with `except Exception` and call `interrupt()` again",
+        "why": "A broad `except` also swallows the pause signal, so the graph stops pausing correctly."
+      }
+    ],
+    "explanation": "The guide warns against `while True` + `interrupt()` loops: because the node restarts on every resume, the first resume replays one iteration, the second replays two, and so on. Its pattern stores a `pending_question` in state, calls `interrupt()` exactly once per node run, returns the new question when the answer is invalid, and uses `add_conditional_edges` to route back until a valid value is collected.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-021",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Nodes `a` and `b` fan out from `START` and each calls `interrupt()`. The first `invoke` returns two `Interrupt` objects. The client then calls `graph.invoke(Command(resume=\"approved\"), config)`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both interrupts receive `\"approved\"`, since one bare value is applied to every pending interrupt",
+        "why": "LangGraph will not guess that one value is meant for every pending interrupt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises `RuntimeError` asking for interrupt ids; resume with `{i.id: value}` pairs",
+        "why": "With several pending interrupts the resume value must be a map from interrupt id to value."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only the first interrupt in the list is resumed; the other stays pending",
+        "why": "A bare value is not assigned to one of several interrupts by position."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The resume value is ignored and both nodes pause again with new interrupt ids",
+        "why": "It fails loudly rather than silently re-pausing."
+      }
+    ],
+    "explanation": "When parallel branches interrupt in the same step, pair each response with its interrupt by id: `Command(resume={interrupt.id: answer, ...})`. In LangGraph 1.2 a bare value raises `RuntimeError: When there are multiple pending interrupts, you must specify the interrupt id when resuming`. Ids come from the `Interrupt` objects in `__interrupt__` (or `stream.interrupts`).",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:multiple-interrupts",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/interrupts",
+        "https://docs.langchain.com/oss/python/langgraph/functional-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-022",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The frontend sends the reviewer's decision as a JSON object. What does the second `invoke` return?\n\n```python\ndef approval(state) -> Command[Literal[\"proceed\", \"cancel\"]]:\n    decision = interrupt({\"question\": \"Refund $900?\"})\n    return Command(goto=\"proceed\" if decision else \"cancel\")\n\n# proceed returns {\"status\": \"refunded\"}, cancel returns {\"status\": \"cancelled\"}\ngraph.invoke({}, config)\nprint(graph.invoke(Command(resume={\"approved\": False}), config))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'status': 'cancelled'}`",
+        "why": "That would need the code to read `decision[\"approved\"]`; it tests the whole dict instead."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It raises `TypeError` because `goto` needs a boolean",
+        "why": "`goto` receives a node name string; the bug is in how the condition is computed."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{'status': 'refunded'}`",
+        "why": "A non-empty dict is truthy, so `if decision` routes to `proceed` even though the reviewer said no."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The graph pauses again because the payload shape does not match",
+        "why": "Without a `response_schema`, resume values are passed through unvalidated."
+      }
+    ],
+    "explanation": "`interrupt()` returns exactly what was resumed, here the dict `{\"approved\": False}`. Any non-empty dict is truthy, so the refund goes through. Read the field explicitly (`decision[\"approved\"] is True`), or declare `response_schema=` with a typed model so the value is validated and returned as a typed object.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:approve-reject-routing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-023",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a hand-written `StateGraph` agent, a reviewer must approve each `send_email` tool call and may change the subject before it is sent. Which design meets that?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compile with `interrupt_after=[\"tools\"]` so the reviewer sees each email after the tool node runs",
+        "why": "The email has already been sent by then; the review is too late."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Send the email, then call `interrupt()` so the reviewer can confirm it was correct",
+        "why": "The side effect happens before approval, and it also re-runs when the node restarts on resume."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add \"always ask the user before emailing\" to the system prompt",
+        "why": "A prompt instruction is not an enforced control; the model can still call the tool."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Inside `send_email`, call `response = interrupt({...to, subject, body...})` first, then send using `response.get(\"subject\", subject)` only if `response[\"action\"] == \"approve\"`",
+        "why": "The pause comes before the side effect, and the resume payload can override the arguments."
+      }
+    ],
+    "explanation": "The interrupts guide's tool pattern puts `interrupt()` at the top of the tool, before any side effect. The resume value carries the decision and any edited fields (`Command(resume={\"action\": \"approve\", \"subject\": \"Updated subject\"})`), and the tool falls back to the model's arguments for fields the reviewer did not change. Because the tool re-runs from the top on resume, nothing before the `interrupt()` should have side effects.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:hitl-tool-approval",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/arpitkath/agentic-ai-interview-roadmap/main/questions/advanced.md",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-024",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Thread `A` is paused on `interrupt()`. A bug in the API layer generates a new UUID for the resume call, so it runs `graph.invoke(Command(resume=\"yes\"), {\"configurable\": {\"thread_id\": \"B\"}})`. What happens in LangGraph 1.2?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`B` runs from `START` on empty state and pauses with a new interrupt; `A` stays paused",
+        "why": "A new `thread_id` is a brand-new, empty thread; the resume value does not reach thread `A`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Thread `A` resumes, because LangGraph finds the most recent paused thread",
+        "why": "Threads are only located by `thread_id`; there is no search for paused threads."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises because thread `B` has no checkpoint",
+        "why": "No error is raised, which is why the bug is easy to miss."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both threads resume, because the resume value is broadcast to every thread that shares the checkpointer",
+        "why": "Resume values are scoped to one thread."
+      }
+    ],
+    "explanation": "The `thread_id` is the pointer to saved state: reusing it resumes that checkpoint, and a new value starts a new thread with empty state. Here thread `B` runs from the beginning, reaches the same `interrupt()` and pauses with a new interrupt, while `A` still has `next == ('review',)` and waits indefinitely. Store the `thread_id` with the approval request and resume with that exact value.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-resume",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-025",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A thread is paused on a dynamic `interrupt()` in node `review`. Someone copies the static-breakpoint idiom and calls `graph.invoke(None, config)` on the same thread. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`review` continues and `interrupt()` returns `None`",
+        "why": "`None` as input is not a resume value; there is still no value for the pending interrupt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`review` runs again from the top and pauses again on the same `interrupt()`, returning a new `__interrupt__`",
+        "why": "With no resume value supplied, the node re-executes and the interrupt fires again."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises `InvalidUpdateError` because `None` is not a valid input",
+        "why": "`None` is a valid input meaning \"continue from the checkpoint\"."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The pending interrupt is discarded and the graph moves on to the node after `review`, as at a static breakpoint",
+        "why": "Nothing skips the interrupted node; it has not finished."
+      }
+    ],
+    "explanation": "`invoke(None, config)` continues from the checkpoint, which for a static breakpoint means running the next node. For a dynamic interrupt the next task is the interrupted node itself, so it re-runs, finds no resume value, and pauses again. Answer dynamic interrupts with `Command(resume=...)`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-026",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A parent node calls a subgraph as a function, and the subgraph's node calls `interrupt()`. What is printed after resuming?\n\n```python\nparent_runs = 0\n\ndef sub_node(s):\n    return {\"v\": interrupt(\"value?\")}\nsub = (StateGraph(S).add_node(\"sub_node\", sub_node)\n       .add_edge(START, \"sub_node\").compile())\n\ndef parent_node(s):\n    global parent_runs\n    parent_runs += 1\n    return {\"v\": sub.invoke({\"v\": \"\"})[\"v\"]}\n\ngraph = (StateGraph(S).add_node(\"parent_node\", parent_node)\n         .add_edge(START, \"parent_node\").compile(checkpointer=InMemorySaver()))\ngraph.invoke({\"v\": \"\"}, config)\nprint(graph.invoke(Command(resume=\"ok\"), config), parent_runs)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'v': 'ok'} 1`",
+        "why": "The parent node does not resume mid-function; it restarts from its first line."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'v': ''} 2`",
+        "why": "The resume value does reach the subgraph's `interrupt()` call."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{'v': 'ok'} 2`",
+        "why": "On resume the parent node re-runs from the top (incrementing again) and the subgraph re-runs its node, where `interrupt()` returns `\"ok\"`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises because the subgraph was compiled without its own checkpointer",
+        "why": "A subgraph compiled with the default `checkpointer=None` inherits the parent's checkpointer."
+      }
+    ],
+    "explanation": "When a subgraph is invoked inside a node, the parent resumes from the beginning of the node that invoked the subgraph, and the subgraph resumes from the beginning of the node that called `interrupt()`. So code in both places before the pause runs again: here `parent_runs` ends at 2. Keep side effects out of the parent node's code before `sub.invoke(...)`, or make them idempotent.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:interrupt-semantics",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-027",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each need with the pausing mechanism that fits it best.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`interrupt()` inside the node",
+        "why": "Dynamic pause that can depend on values computed inside the node."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`compile(interrupt_before=[\"node\"])`",
+        "why": "Static breakpoint before a node, on every run of that compiled graph."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`graph.invoke(..., interrupt_after=[\"node\"])`",
+        "why": "Static breakpoint set for one invocation only."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`HumanInTheLoopMiddleware(interrupt_on={...})`",
+        "why": "Approval policy for tool calls in a `create_agent` agent."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Pause only when a computed refund amount exceeds a limit, and show the amount to the reviewer",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "While developing, always stop before `execute_sql` to inspect state step by step",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Reproduce a bug once by stopping right after `planner`, without changing the deployed graph",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Require approval for `delete_rows` calls in an agent built with `create_agent`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`interrupt()` is dynamic: it can sit anywhere in node logic and be conditional. Static breakpoints pause only at node boundaries; set them at compile time for every run, or pass them to `invoke` for one run. The docs recommend static breakpoints for debugging rather than human-in-the-loop. In `create_agent`, `HumanInTheLoopMiddleware` turns a per-tool policy into `interrupt()` calls for you.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:breakpoints",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-028",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "During development you want to stop before node `b`, correct a value in state by hand, and then let `b` run with the corrected state. Put the steps in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compile with `interrupt_before=[\"b\"]` and a checkpointer",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `graph.invoke(inputs, config)`; it returns with `get_state(config).next == ('b',)`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Call `graph.update_state(config, {\"field\": corrected_value})`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `graph.invoke(None, config)` so `b` runs with the edited state",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Static breakpoints need a checkpointer and are set at compile (or invoke) time. The first run stops before `b`, which `get_state(config).next` confirms. `update_state` writes a new checkpoint with your change, and `next` is still `('b',)`. Invoking with `None` continues from that checkpoint, so `b` sees the corrected value.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:time-travel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://agenticaiquestions.com/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-029",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A node creates an audit record and then calls `interrupt()` for approval. Each resume creates a duplicate record. Which changes stop the duplicates? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Move the record creation after the `interrupt()` call, so it only runs once the decision has arrived",
+        "why": "Code after `interrupt()` runs only on the run that receives the resume value."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Move the record creation into a separate node that runs after the approval node",
+        "why": "A completed node is not re-run when a later node resumes."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Make the write idempotent, for example an upsert keyed by `thread_id` and action",
+        "why": "Re-running an idempotent write leaves the same single record."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap the `interrupt()` call in `try/except Exception` so the node is not interrupted twice",
+        "why": "That swallows the pause signal; the graph stops pausing at all."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Pass `durability=\"sync\"` to `invoke` so the record is checkpointed before the pause",
+        "why": "Durability controls when checkpoints are persisted; the node still restarts from the top on resume."
+      }
+    ],
+    "explanation": "On resume the interrupted node re-runs from its first line, so everything before `interrupt()` repeats. The interrupts guide lists three fixes: use idempotent operations (upserts) before the interrupt, place side effects after it, or separate them into their own node. Swallowing the exception breaks the pause, and checkpoint timing does not change where the node restarts.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:durable execution and idempotency",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://docs.langchain.com/langgraph-platform/why-langgraph"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-030",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are writing a pytest for a graph whose `approve` node calls `interrupt()`. Which test exercises the pause and the resume correctly?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Call `approve({\"amount\": 900})` directly and assert it returns the payload",
+        "why": "Outside a running graph `interrupt()` raises `RuntimeError: Called get_config outside of a runnable context`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Compile without a checkpointer to keep the test fast, then resume with `Command(resume=True)`",
+        "why": "Resuming without a checkpointer raises `RuntimeError`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Mock `langgraph.types.interrupt` so it returns `True`, run the graph once with any `thread_id`, and assert that it finishes on the first `invoke` call without ever pausing",
+        "why": "That never checks the pause, the payload or the resume path, which is what you need to test."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Compile with `InMemorySaver()` and a fixed `thread_id`, assert on `__interrupt__` and `get_state(config).next`, then resume with `Command(resume=True)` and assert the final state",
+        "why": "This drives the real pause and resume on a throwaway in-memory checkpointer."
+      }
+    ],
+    "explanation": "Test interrupts end to end on the compiled graph with `InMemorySaver` and a fixed `thread_id`. Assert on the pending interrupt (its `value`, and `next` in the snapshot), then resume with `Command(resume=...)` on the same config and assert on the final state. `interrupt()` needs a runnable context, so calling the node function directly is not enough.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:testing-interrupts",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-031",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Approvals in a staging service can wait for hours. The graph uses `InMemorySaver`. The pod restarts overnight, and in the morning a manager clicks Approve, which calls `Command(resume=True)` with the correct `thread_id`. What happens, and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The thread is gone (`next == ()`); switch to a durable saver such as `SqliteSaver` or `PostgresSaver`",
+        "why": "In-memory checkpoints die with the process; a database-backed saver survives restarts."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The run resumes normally because the `thread_id` is correct",
+        "why": "The `thread_id` points into the saver, and an in-memory saver lost everything on restart."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LangGraph rebuilds the thread by replaying the LLM provider's request logs, so only the last node runs again",
+        "why": "There are no such logs; state lives only in the checkpointer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises `GraphRecursionError`; the fix is a higher `recursion_limit`",
+        "why": "The recursion limit caps super-steps in one run and has nothing to do with restarts."
+      }
+    ],
+    "explanation": "The interrupts guide says to use a durable checkpointer in production for exactly this reason. With `SqliteSaver` (or `PostgresSaver`), a new process that compiles the same graph against the same database sees the thread still paused (`next == ('review',)`) and `Command(resume=...)` continues it. `InMemorySaver` is for tests and prototypes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:durable-hitl-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-032",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Graph `a -> b -> c` is compiled with `interrupt_before=[\"b\"]` and `interrupt_after=[\"b\"]` and a checkpointer. You call `invoke(inputs, config)` once and then `invoke(None, config)` twice. Order what happens.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`a` runs, then the run stops with `next == ('b',)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`b` runs",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The run stops with `next == ('c',)`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`c` runs and the thread finishes with `next == ()`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "`interrupt_before` stops before `b` executes; the first `invoke(None, ...)` runs `b` and then `interrupt_after` stops again with `c` next. The second `invoke(None, ...)` runs `c` to the end. Static breakpoints pause only at node boundaries, which is why they suit step-by-step debugging.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-HIL-033",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each tool policy with the `interrupt_on` value for that tool in `HumanInTheLoopMiddleware`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`False`",
+        "why": "Auto-approve: the tool never pauses."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`True`",
+        "why": "Pause with the default config, all four decisions allowed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{\"allowed_decisions\": [\"approve\", \"reject\"]}`",
+        "why": "Pause, but the reviewer cannot edit or respond."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{\"allowed_decisions\": [...], \"when\": predicate}`",
+        "why": "Pause only for calls where the predicate returns `True`."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`read_orders` is read-only and should run without review",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "`send_email` needs review, and the reviewer may approve, edit, reject or respond",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "`execute_sql` needs review, but reviewers may only approve or reject the exact query",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`transfer_funds` needs review only when `amount` is above a limit",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`interrupt_on` maps tool names to `True` (interrupt with the default config), `False` (auto-approve) or an `InterruptOnConfig` dict. `allowed_decisions` restricts the reviewer to a subset of `approve`, `edit`, `reject` and `respond`, and the optional `when` predicate receives a `ToolCallRequest` so you can gate on the call's arguments (it needs `langchain>=1.3.3`).",
+    "reference": "https://docs.langchain.com/oss/python/langchain/human-in-the-loop",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-HIL-034",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Take-home: a hand-written `StateGraph` support agent with a `ToolNode` exposes `lookup_order` and `issue_refund`. Refunds above 10,000 rupees need a manager's approval and the manager may lower the amount; smaller refunds and all lookups must run without delay. Which design meets every constraint?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compile with `interrupt_before=[\"tools\"]` so every tool batch waits for a manager",
+        "why": "This also stops lookups and small refunds, and static breakpoints are meant for debugging."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Inside `issue_refund`, if `amount > 10_000` call `decision = interrupt({...})` before any payment code, use `decision.get(\"amount\", amount)`, and refund only if approved",
+        "why": "The condition depends only on the call's arguments, so it is the same on re-run, the pause precedes the side effect, and the manager can edit the amount."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tell the model in the system prompt to ask for approval before large refunds",
+        "why": "A prompt is not an enforced control; nothing stops the model from calling the tool."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Issue the refund, then `interrupt()` so the manager can reverse it if needed",
+        "why": "Money moves before approval, and the refund re-runs when the tool restarts on resume."
+      }
+    ],
+    "explanation": "A conditional `interrupt()` is fine when the condition is deterministic across re-runs, as an argument threshold is. Putting it at the top of the tool means nothing irreversible happens before the decision, and reading overrides from the resume payload supports editing. Static breakpoints cannot pause selectively, and prompt instructions are not a control.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:support-agent-take-home",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.aced.io/experiences/lang-chain-forward-deployed-engineer-interview-8c2ffb",
+        "https://www.aced.io/questions?company=lang-chain",
+        "https://www.reddit.com/r/ycombinator/comments/1jnfijm/what_is_your_interview_assignment_for_ai_engineers/",
+        "https://github.com/selvamsmk/spur-live-chat-agent"
+      ],
+      "companies": [
+        "LangChain",
+        "Spur"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-035",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\ncalls = 0\n\ndef ask_age(state):\n    global calls\n    question = \"Age?\"\n    while True:\n        calls += 1\n        answer = interrupt(question)\n        if isinstance(answer, int) and answer > 0:\n            return {\"age\": answer}\n        question = f\"{answer!r} is invalid. Age?\"\n\n# compiled with InMemorySaver, same config throughout\ngraph.invoke({}, config)\nfor v in [\"abc\", -5, 30]:\n    graph.invoke(Command(resume=v), config)\nprint(calls)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`4`",
+        "why": "That counts one loop iteration per call, but each resume replays all earlier iterations from the top of the node."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`6`",
+        "why": "This misses that the final resume also replays the two earlier iterations before the valid answer."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`9`",
+        "why": "The calls add 1, then 2, then 3, then 3 iterations: each resume re-runs the node and replays every earlier `interrupt()` from the resume list."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`12`",
+        "why": "That overcounts: the final resume replays two earlier iterations and then accepts `30` on the third, so it adds 3, not 6."
+      }
+    ],
+    "explanation": "Start: 1 iteration, pause. Resume `\"abc\"`: the node restarts, iteration 1 gets `\"abc\"`, iteration 2 pauses (total 3). Resume `-5`: iterations 1 and 2 replay, iteration 3 pauses (total 6). Resume `30`: iterations 1 to 3 replay and the third answer, `30`, is valid (total 9). This growth is why the guide recommends one `interrupt()` per node run and a conditional edge for validation loops.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:multiple-interrupts",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/interrupts",
+        "https://docs.langchain.com/oss/python/langgraph/functional-api"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-036",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "```python\ndef collect(state):\n    name = interrupt(\"What's your name?\")\n    if state.get(\"needs_age\"):\n        age = interrupt(\"What's your age?\")\n    city = interrupt(\"What's your city?\")\n    return {\"name\": name, \"city\": city}\n```\n\nWhile this thread is paused at the city question, another node's update flips `needs_age` from `False` to `True`, and the user's city is then resumed. Why can `city` end up with the wrong value?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Resume values are matched by the question text, and the two prompts are too similar",
+        "why": "Matching is not by payload; it is by the order in which `interrupt()` calls occur."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Each `interrupt()` call gets a random id, so the resume map cannot be matched after a state change",
+        "why": "Sequential interrupts in one node are matched by position, not by a resume map."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`interrupt()` cannot be called inside an `if` statement",
+        "why": "It can, as long as the same calls happen in the same order on every re-run."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Resume values are matched to `interrupt()` calls by their position in the node, so the newly reached age call consumes a stored answer meant for another question",
+        "why": "Matching is strictly index-based per task, so changing which calls run changes which value each call receives."
+      }
+    ],
+    "explanation": "LangGraph keeps a list of resume values for the task running a node and matches each `interrupt()` call to that list by index as the node re-runs. Conditionally skipping, adding or reordering calls between runs shifts the indexes. Keep the sequence of `interrupt()` calls identical on every execution, and branch with separate nodes and edges instead.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:multiple-interrupts",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/interrupts",
+        "https://docs.langchain.com/oss/python/langgraph/functional-api"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-037",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Parallel nodes `a` and `b` both interrupt (with payloads `question_a` and `question_b`). The client answers only one of them. What does the second call return?\n\n```python\nr = graph.invoke({\"vals\": []}, config)\nints = r[\"__interrupt__\"]   # [question_a, question_b]\nprint(graph.invoke(Command(resume={ints[0].id: \"yes\"}), config))\n```\n\n(`vals` uses an `operator.add` reducer; each node returns `{\"vals\": [f\"<node>:{answer}\"]}`.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{'vals': ['a:yes']}` plus a `__interrupt__` entry still holding `question_b`",
+        "why": "Node `a` completes with its answer; `b` re-runs and pauses again, waiting for its own resume."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'vals': ['a:yes', 'b:yes']}`",
+        "why": "The value is mapped to one interrupt id only; it is not copied to the other."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises because every pending interrupt id must appear in the map",
+        "why": "A partial map is accepted."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'vals': []}` plus both interrupts again, because the step only commits when every branch finishes",
+        "why": "Writes from the branch that finished are kept, so `a`'s update is applied."
+      }
+    ],
+    "explanation": "Resuming by id lets clients answer interrupts independently. The answered branch finishes and its write is applied; the unanswered branch re-runs and surfaces its interrupt again. A later `Command(resume={id_b: ...})` finishes the run. A bare (non-map) resume value with several pending interrupts would raise instead.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-038",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent's model returns three tool calls in one turn: `send_email` (gated), `delete_rows` (gated) and `read` (`interrupt_on` value `False`). At the moment the agent pauses for review, which statement is true?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "In both modes `read` has already run, because auto-approved tools never wait",
+        "why": "That holds for `per_call` but not for the default batched mode."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "In the default `batched` mode nothing has run yet, because the pause happens in `after_model` before any tool executes; in `per_call` mode `read` may already have run",
+        "why": "Batched review raises one interrupt from the `after_model` hook; per-call review pauses each gated call as it starts inside the tool chain."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "In `per_call` mode nothing runs until all gated calls are decided, because they share one interrupt",
+        "why": "`per_call` raises one interrupt per gated call, and ungated calls proceed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "In `batched` mode `read` runs only if it appears before the gated calls in the model's list",
+        "why": "Order in the list does not matter; the whole turn waits in batched mode."
+      }
+    ],
+    "explanation": "In batched mode, the middleware's `after_model` hook inspects the model's tool calls, builds one `HITLRequest` with `action_requests` and `review_configs`, and calls `interrupt()` before the tool node runs. So even auto-approved calls in that turn wait. In `per_call` mode, `after_model` does nothing; each gated call pauses as it starts, with its own interrupt answered by id, while ungated calls run.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/human-in-the-loop",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-039",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Design review: refund approvals arrive from a web UI hours or days later, any worker may handle the click, and a refund must never be paid twice. Which elements are required? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A durable checkpointer (for example `PostgresSaver`) shared by every worker",
+        "why": "Any worker can then load the paused thread; in-memory state would be lost or local to one process."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Store the run's `thread_id` with the approval ticket and resume with exactly that id",
+        "why": "The `thread_id` is the only pointer back to the paused checkpoint."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Call `interrupt()` before the payment call, and make the payment idempotent (for example with an idempotency key)",
+        "why": "The node re-runs on resume, so nothing before the pause may pay, and an idempotency key guards against a retry after a crash mid-call."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Keep the request handler waiting on `input()` until the manager responds",
+        "why": "That ties up a worker indefinitely and dies with the process."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Generate a fresh `thread_id` for the resume call so retries cannot collide",
+        "why": "A new `thread_id` starts an empty thread; the paused run is never resumed."
+      }
+    ],
+    "explanation": "A durable HITL flow needs: a persistent checkpointer reachable from every worker, a stable `thread_id` stored alongside the approval request, and side effects placed after the `interrupt()` (or in a later node) and written idempotently, because nodes re-run on resume and a task can also re-run after a crash. `interrupt()` itself never blocks, so no process waits during the hours in between.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "source": "interview:durable-hitl-design",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-HIL-040",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Several threads are paused on `interrupt()` in a node named `review`. You deploy a new version in which the node is renamed `human_review` (same function), and resume one thread with `Command(resume=\"ok\")` on the same checkpointer. What happens in LangGraph 1.2, and what do the docs say about this change?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The thread resumes in `human_review` because LangGraph matches nodes by function",
+        "why": "Checkpoints refer to node names, not function objects."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It raises a clear error naming the missing node, which the docs recommend catching and handling by re-routing the paused thread",
+        "why": "No error is raised, which is what makes this dangerous."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Nothing resumes (`next == ()`, saved state returned, no node runs); the docs list renaming nodes as unsupported for interrupted threads",
+        "why": "The pending task points to a node that no longer exists, so the pause is silently lost."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It works, because the docs say every topology change, including renaming nodes, is supported for every existing thread",
+        "why": "Full topology changes are supported only for threads that are not interrupted."
+      }
+    ],
+    "explanation": "The graph migrations section says: for threads at the end of the graph you can change the whole topology, but for interrupted threads every change except renaming or removing nodes is supported. Adding nodes or optional state keys is safe. Renaming the interrupted node drops the pending task, so drain paused threads first or keep the old node name.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:graph-migration",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-HIL-041",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A node calls `interrupt({\"question\": \"approve?\"}, response_schema=Decision)`, where `Decision` is a Pydantic model with a required `approved: bool`. Which statements are accurate? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Resuming with `{\"approved\": \"maybe\"}` raises `pydantic.ValidationError`, nothing is saved, and the thread stays paused so a corrected `Command(resume=...)` can be sent",
+        "why": "Validation happens before the answer is saved, so you can retry on the same thread."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Resuming with `{\"approved\": \"true\"}` makes `interrupt()` return `Decision(approved=True)`",
+        "why": "Pydantic coercion applies and the node receives the validated model instance."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Passing a plain JSON Schema dict as `response_schema` validates resume values in the same way",
+        "why": "A JSON Schema dict is exposed unchanged but resume values are not validated against it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The schema replaces the payload, so `Interrupt.value` becomes the JSON Schema",
+        "why": "The schema is exposed separately as `Interrupt.response_schema`; `value` stays the payload."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Invalid resume values are passed through unchanged, and the node must re-validate them",
+        "why": "With a Pydantic model, invalid input is rejected before the node runs."
+      }
+    ],
+    "explanation": "With a Pydantic model, `TypedDict` or dataclass, LangGraph validates the resume value and `interrupt()` returns the typed object. Pydantic's coercion rules apply, so `\"true\"` becomes `True`. Invalid input raises `ValidationError` and the interrupt stays pending. A raw JSON Schema dict is surfaced for clients to render a form but is not used for validation. `response_schema` requires `langgraph>=1.2.12`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-042",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An agent uses `HumanInTheLoopMiddleware` in the default batched mode with `send_email` and `delete_rows` gated and `read` set to `False`. One model turn proposes all three calls, and the agent pauses. The client resumes with `Command(resume={\"decisions\": [{\"type\": \"approve\"}]})`, meaning to approve the email. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The email is approved and `delete_rows` is rejected by default",
+        "why": "Missing decisions are not filled in with a default."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The email is approved and `delete_rows` stays pending for a second resume call",
+        "why": "Batched mode has one interrupt for the whole turn; it is answered in a single list."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises because `read` also needs a decision, so three are expected",
+        "why": "Auto-approved tools are not in `action_requests` and take no decision."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It raises `ValueError`: the number of decisions (1) must match the calls under review (2), one per `action_requests` entry in order",
+        "why": "Batched review expects exactly one decision per gated call, in the order of the interrupt's `action_requests`."
+      }
+    ],
+    "explanation": "In batched mode the middleware's single interrupt lists only the gated calls in `action_requests` (here two), and the resume must contain a `decisions` list with one entry per action, in the same order. In langchain 1.4.7 a short list raises `ValueError: Number of human decisions (1) does not match number of hanging tool calls (2).` Send `[{\"type\": \"approve\"}, {\"type\": \"reject\", \"message\": \"...\"}]` instead, or use `per_call` mode to answer each call separately by interrupt id.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/human-in-the-loop",
+    "source": "interview:hitl-tool-approval",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/arpitkath/agentic-ai-interview-roadmap/main/questions/advanced.md",
+        "https://docs.langchain.com/oss/python/langgraph/interrupts"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-043",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "`transfer_funds` is gated with `{\"allowed_decisions\": [\"approve\", \"reject\"], \"when\": lambda req: is_business_hours() is False}` so that only after-hours transfers need review. A transfer is paused at 21:58, and the reviewer rejects it at 22:05, after a config change moved the business-hours cutoff to 22:30. What does the HITL guide say happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The predicate runs again on resume and now returns `False`, so the tool runs and the reviewer's `reject` is ignored",
+        "why": "A `when` predicate must return the same result for the same call; if it flips to `False`, the call is auto-approved."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The rejection is applied, because the review was requested at 21:58 while the transfer still counted as after-hours",
+        "why": "The predicate is evaluated again on resume, and it now says no review is needed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The middleware raises a `ValueError` for every single-call turn",
+        "why": "The docs mention a `ValueError` in batched mode only when the result changes for some calls but not others."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The thread re-pauses and asks the reviewer again",
+        "why": "When the predicate returns `False`, there is no pause; the tool simply runs."
+      }
+    ],
+    "explanation": "The guide states that the `when` predicate runs again when the agent resumes, so it must return the same result for the same call. If it returns `False` on resume, the tool runs and the reviewer's answer is ignored, even a `reject`. Base predicates on the call's arguments, or on values captured in state, rather than wall-clock time or mutable config.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/human-in-the-loop",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-044",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Thread `1` is paused on `interrupt(f\"Publish {s['topic']}?\")` in node `gate` after being started with `{\"topic\": \"draft A\"}`. The client mistakenly sends `graph.invoke({\"topic\": \"draft B\"}, config)` to the same thread instead of a `Command(resume=...)`. Which statements describe the result in LangGraph 1.2? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A new run starts from `START` with the new input applied to the thread's state",
+        "why": "A plain input dict is a new run on the thread, not an answer to the pending interrupt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The run pauses again at `gate`, now asking `Publish draft B?`, with `next == ('gate',)`",
+        "why": "The node re-runs on the updated state and hits the same `interrupt()`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The dict is treated as the resume value, so `interrupt()` returns `{\"topic\": \"draft B\"}`",
+        "why": "Only `Command(resume=...)` supplies resume values."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It raises because a paused thread only accepts `Command(resume=...)`",
+        "why": "No error is raised; the pending question is simply replaced."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Both questions remain pending and must be answered with a resume map",
+        "why": "Only the new interrupt is pending afterwards."
+      }
+    ],
+    "explanation": "Sending a normal input to a paused thread starts a new run on that thread: the input is applied to the saved state and the graph executes from `START`. Here it reaches `gate` again and pauses with a new interrupt about draft B, so the original question is effectively abandoned. Clients must distinguish \"answer the pending interrupt\" (`Command(resume=...)`) from \"new user turn\" (a plain dict).",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-HIL-045",
+    "domain": 2,
+    "skill": "human-in-the-loop",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print (all output, in order)?\n\n```python\nsent = []\n\n@task\ndef charge_card(amount: int) -> str:\n    sent.append(amount)\n    return \"charged\"\n\n@entrypoint(checkpointer=InMemorySaver())\ndef checkout(amount: int):\n    print(\"starting checkout\")\n    receipt = charge_card(amount).result()\n    ok = interrupt({\"receipt\": receipt})\n    return {\"ok\": ok}\n\nconfig = {\"configurable\": {\"thread_id\": \"c1\"}}\ncheckout.invoke(100, config)\nprint(checkout.invoke(Command(resume=True), config), sent)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`starting checkout` then `{'ok': True} [100]`",
+        "why": "The `print` is not inside a task, so it repeats when the entrypoint replays on resume."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`starting checkout`, `starting checkout`, then `{'ok': True} [100]`",
+        "why": "The entrypoint replays from the top (printing twice), but `charge_card` is a completed task whose result is restored, so it ran once."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`starting checkout`, `starting checkout`, then `{'ok': True} [100, 100]`",
+        "why": "The completed task's result is restored from the checkpoint on replay, so the card is not charged again."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`starting checkout` then `{'ok': True} [100, 100]`",
+        "why": "Both parts are reversed: the print repeats and the task does not."
+      }
+    ],
+    "explanation": "On resume, the Functional API replays the entrypoint from its start, restoring completed `@task` results from the checkpointer instead of recomputing them. Plain code in the entrypoint (the `print`) runs again; the task does not. That is why the docs say to put side effects and non-deterministic work in tasks when using human-in-the-loop. Tasks called from Graph API nodes are checkpointed the same way.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/functional-api",
+    "source": "interview:durable execution and idempotency",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://docs.langchain.com/langgraph-platform/why-langgraph"
+      ]
+    },
+    "roleLevel": 3
+  }
+]

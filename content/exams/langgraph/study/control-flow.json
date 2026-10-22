@@ -1,0 +1,50 @@
+{
+  "control-flow": {
+    "summary": "A LangGraph graph is nodes that return partial updates, wired by static edges, conditional edges, `Send` and `Command`, and executed by the Pregel runtime in super-steps. Know who runs in which step, how fan-in really behaves, how `Command` interacts with static edges, and how subgraphs exchange state.",
+    "points": [
+      "`add_edge(START, n)` sets the entry and `add_edge(n, END)` marks a terminal node; `set_entry_point`/`set_finish_point` are older equivalents. `START` can only be an edge source and `END` only a target, compile fails without an edge from `START`, and a node with no outgoing edge simply ends the run.",
+      "`add_node(fn)` names the node after the function. Names must be unique; `__start__`/`__end__` and the characters `:` and `|` are reserved. A compiled graph can itself be added as a node.",
+      "Conditional edges: `add_conditional_edges(src, route, path_map_or_list)`. The router returns a node name, a list of names, `END` or `Send` objects. With a path map, an unmapped return raises `KeyError` at run time; without one, an unknown name is dropped with a warning and the run ends quietly.",
+      "Execution follows the Pregel / bulk synchronous parallel model: plan (pick triggered nodes), execute in parallel (writes invisible to siblings), update channels through reducers. Parallel siblings read the same pre-step snapshot; checkpoints are saved at step boundaries.",
+      "A super-step is transactional: if one parallel branch raises, none of that step's updates are applied. With a checkpointer the successful branches' writes are saved and are not re-run when the thread resumes.",
+      "Fan-in: separate edges run the target once per step in which a branch finishes (twice for unequal branch lengths); `add_edge([a, b], d)` runs `d` once after all listed nodes, and never if one is skipped; `defer=True` runs `d` once after all pending work in the whole graph.",
+      "`Send(node, payload)` starts one invocation per object with only the payload as input, all in the next super-step. It can come from any conditional edge (including from `START`) or from `Command.goto`. Workers write back to shared keys, so those keys need reducers. Cap parallelism with the top-level config key `max_concurrency`.",
+      "`Command(update=..., goto=...)` writes state and routes in one return value; `goto` accepts names, lists, `END` and `Send`. Annotate `-> Command[Literal[...]]` (or pass `destinations=` to `add_node`) for correct drawings. `Command` adds dynamic edges, so static edges from the same node still run.",
+      "Use conditional edges for pure routing over existing state and `Command` when a node must both update and route. `Command(resume=...)` is the only `Command` meant as graph input.",
+      "Subgraphs: add a compiled subgraph directly with `add_node` when it shares state keys with the parent; call it inside a wrapper node that maps state in and out when schemas differ (for example private per-agent message histories). `Command(graph=Command.PARENT)` hands off to a node of the closest parent graph.",
+      "Node granularity: checkpoints fall at node boundaries, so smaller nodes repeat less work after failures and allow per-node retry policies and visible intermediate results. A node can instead wrap several operations in `@task` calls, whose results are checkpointed.",
+      "Graph API vs Functional API: both compile to `Pregel`. `@entrypoint` plus `@task` keep plain Python control flow, save task results into the entrypoint's checkpoint and expose `previous`/`entrypoint.final`; the Graph API gives explicit shared state, a drawable structure and a checkpoint after each super-step."
+    ],
+    "traps": [
+      "Returning `Command(goto=...)` from a node that also has `add_edge` to another node runs both destinations; the same holds for `Command.PARENT` handoffs from a subgraph node.",
+      "A list-form join silently never runs when a conditional fan-out skips one of its sources; use separate edges plus `defer=True` there.",
+      "An empty `Send` list schedules nothing, so an aggregator reachable only through the workers never runs.",
+      "`defer=True` waits for unrelated branches too, adding their latency to the aggregator.",
+      "A compiled subgraph with no shared keys added directly as a node receives none of its inputs; wrap it in a node function instead.",
+      "Assigning `state[\"x\"] = ...` inside a node is lost, while mutating a nested list in place leaks through a shared reference; always return the changes.",
+      "`max_concurrency` (like `recursion_limit`) is a top-level config key; inside `configurable` it does nothing."
+    ],
+    "docs": [
+      {
+        "title": "Graph API overview",
+        "url": "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      },
+      {
+        "title": "Use the graph API",
+        "url": "https://docs.langchain.com/oss/python/langgraph/use-graph-api"
+      },
+      {
+        "title": "Subgraphs",
+        "url": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs"
+      },
+      {
+        "title": "LangGraph runtime (Pregel)",
+        "url": "https://docs.langchain.com/oss/python/langgraph/pregel"
+      },
+      {
+        "title": "Choosing between Graph and Functional APIs",
+        "url": "https://docs.langchain.com/oss/python/langgraph/choosing-apis"
+      }
+    ]
+  }
+}

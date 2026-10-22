@@ -1,0 +1,36 @@
+{
+  "checkpointing": {
+    "summary": "A checkpointer saves a snapshot of graph state at every super-step and groups the snapshots into threads keyed by `thread_id`. That one mechanism gives you conversation memory, human-in-the-loop pauses, recovery after failures and time travel. Know what a `StateSnapshot` contains, how replay differs from forking with `update_state`, what pending writes save you, and how backend, serializer and state size decide whether persistence holds up in production. Targets langgraph 1.2 / langgraph-checkpoint 4.x.",
+    "points": [
+      "Compile with `graph.compile(checkpointer=...)` and pass `{\"configurable\": {\"thread_id\": ...}}` on every call. Without a thread id, a graph with a checkpointer raises `ValueError`. A new thread id starts with empty state, and the same id continues from the latest checkpoint, with new input merged through the reducers.",
+      "Backends: `InMemorySaver` (in `langgraph-checkpoint`; tests and experiments only; lost on restart and not shared between processes), `SqliteSaver`/`AsyncSqliteSaver` (`langgraph-checkpoint-sqlite`; local development) and `PostgresSaver`/`AsyncPostgresSaver` (`langgraph-checkpoint-postgres`; production). Call `checkpointer.setup()` once on first use of Postgres. Manual psycopg connections need `autocommit=True` and `row_factory=dict_row`.",
+      "A linear `START -> a -> b -> END` run writes 4 checkpoints: input (step -1, next `__start__`), step 0 (next `a`), step 1 (next `b`) and step 2 (next `()`). `step` keeps counting across runs on the same thread.",
+      "`StateSnapshot` fields: `values`, `next` (empty means finished), `config` (`thread_id`, `checkpoint_ns`, `checkpoint_id`), `metadata` (`source` is `input`, `loop` or `update`, plus `step`), `created_at`, `parent_config` (None for the first) and `tasks` (each with `name`, `error`, `interrupts`, and `state` when you pass `subgraphs=True`).",
+      "`get_state(config)` returns the latest snapshot, or a specific one when `checkpoint_id` is in the config. `get_state_history(config, filter=..., before=..., limit=...)` yields every checkpoint on the thread, newest first.",
+      "Replay is `graph.invoke(None, snapshot.config)`: nodes before the checkpoint are skipped, and nodes after it re-execute, including LLM calls, API calls and interrupts. New checkpoints are appended. Replaying from the final checkpoint is a no-op.",
+      "Fork: `fork_config = graph.update_state(snapshot.config, values, as_node=None)` writes a new checkpoint (source `update`) that branches from the chosen one, then `invoke(None, fork_config)` continues. Values go through reducers, so a list with `operator.add` gets appended to. Nothing is rolled back or deleted.",
+      "`as_node` makes the update count as that node's output, so execution resumes at its successors. Set it on a fresh thread (for example to seed state in tests), when parallel nodes wrote in the last step, or to skip nodes.",
+      "Pending writes: as each task in a super-step finishes, its writes are saved and linked to the in-progress checkpoint. If a sibling fails, resuming with `invoke(None, config)` re-runs only the failed task. After a failure, `get_state` shows the failed node in `next` and the error on its task.",
+      "Serialization: the default `JsonPlusSerializer` (msgpack plus extensions) handles LangChain messages, datetimes, enums, sets, Pydantic models and dataclasses. Arbitrary classes raise `TypeError: Type is not msgpack serializable` unless you pass `JsonPlusSerializer(pickle_fallback=True)`. Encrypt with `serde=EncryptedSerializer.from_pycryptodome_aes()` (reads `LANGGRAPH_AES_KEY`; needs `pycryptodome`).",
+      "Subgraph `compile(checkpointer=...)`: `None` (default) is per-invocation (interrupts within a call, fresh each call, safe for parallel calls); `True` is per-thread (memory across calls, no parallel or repeated calls to the same instance); `False` is stateless (no checkpoints and no state inspection). Subgraph checkpoints live in the namespace `\"node:<id>\"`, and the root graph's namespace is `\"\"`.",
+      "Storage cost is roughly threads x checkpoints per thread x checkpoint size. By default every channel's full value is written at each super-step, so keep blobs out of state (store references), delete expired threads with `delete_thread`, and consider `DeltaChannel` (beta, langgraph>=1.2) for append-heavy channels. A custom saver implements `put`, `put_writes`, `get_tuple` (latest and by id), `list` and `delete_thread`."
+    ],
+    "traps": [
+      "Putting `thread_id` in the input dict instead of `config[\"configurable\"]`: the key is dropped, and every call starts an empty thread.",
+      "`InMemorySaver` behind several workers or across restarts: each process has its own memory, so threads disappear or split between replicas.",
+      "Expecting `update_state` to roll back or overwrite: it appends a checkpoint, and reducer keys accumulate instead of being replaced.",
+      "Treating replay as reading from a cache: nodes after the checkpoint really run again, so non-idempotent side effects fire again and LLM outputs can differ.",
+      "Tuples in state come back as lists once loaded from a checkpoint, so code can break on the second turn or after a resume even though the first run worked.",
+      "Calling `prune` on the bundled `InMemorySaver` or `SqliteSaver`: they inherit the base method, which raises `NotImplementedError`.",
+      "A per-thread subgraph (`checkpointer=True`) exposed as a tool and called in parallel: the calls collide in one namespace.",
+      "Reading `next == ()` as \"thread does not exist\": a finished thread also has an empty `next`; check `values` or the history."
+    ],
+    "docs": [
+      { "title": "LangGraph: Checkpointers", "url": "https://docs.langchain.com/oss/python/langgraph/checkpointers" },
+      { "title": "LangGraph: Use time-travel", "url": "https://docs.langchain.com/oss/python/langgraph/use-time-travel" },
+      { "title": "LangGraph: Subgraphs (subgraph persistence)", "url": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs" },
+      { "title": "LangGraph: Add memory (production checkpointers)", "url": "https://docs.langchain.com/oss/python/langgraph/add-memory" },
+      { "title": "LangGraph: Persistence", "url": "https://docs.langchain.com/oss/python/langgraph/persistence" }
+    ]
+  }
+}
