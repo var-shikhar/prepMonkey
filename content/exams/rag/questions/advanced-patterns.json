@@ -1,0 +1,2042 @@
+[
+  {
+    "id": "RAG-ADV-001",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What most clearly distinguishes *agentic* RAG from a classic single-pass RAG pipeline?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "An LLM decides at run time whether to retrieve, what to search for and whether to search again",
+        "why": "Correct. In an agent the model directs its own process and tool use in a loop, instead of following one fixed retrieve-then-generate path."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It always uses a larger vector index and a bigger top-k than a single-pass pipeline would",
+        "why": "Index size and k are tuning choices available to any pipeline. They say nothing about who controls the flow."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It retrieves once, generates once and returns the answer without any further model calls",
+        "why": "That is the single-pass pipeline itself: a fixed code path with exactly one retrieval and one generation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It replaces retrieval with fine-tuning, so the model answers from its weights instead of from documents",
+        "why": "Agentic RAG still retrieves; it just lets the model decide how and when. Fine-tuning is a separate technique."
+      }
+    ],
+    "explanation": "Anthropic's *Building effective agents* draws the line between workflows (LLMs and tools orchestrated through predefined code paths) and agents (systems where the LLM dynamically directs its own process and tool use). Agentic RAG puts retrieval behind that loop: the model can skip retrieval, reformulate, query several sources, check what came back and try again. The price is more model calls, more latency and less predictable behaviour, which is why interviewers follow up with \"when is it the wrong choice?\"",
+    "reference": "https://www.anthropic.com/engineering/building-effective-agents",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://www.hirist.tech/blog/top-rag-interview-questions-and-answers/",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-002",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a parent-document (small-to-big) retrieval setup, what is embedded in the vector index and what is handed to the LLM?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The large parent sections are embedded, and the small child chunks are given to the LLM so that each prompt stays as short as possible",
+        "why": "This is backwards. Large chunks give blurry vectors; the point is to match on small units and read the larger one."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both are embedded and the LLM receives whichever of the two scores higher for the query",
+        "why": "Parents are not normally embedded at all. They are looked up by id from the matched child, not ranked against it."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Small child chunks are embedded for precise matching; each match is mapped to its larger parent, which the LLM reads",
+        "why": "Correct. Search granularity (small) is decoupled from context granularity (large) through a child-to-parent id mapping."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only the document title is embedded, and the whole document is always passed to the LLM",
+        "why": "That is a much coarser document-level scheme. Small-to-big keeps fine-grained child vectors so matching stays precise."
+      }
+    ],
+    "explanation": "Small chunks produce focused vectors that match a specific question well, but a lone sentence or paragraph often lacks the context needed to answer. Large chunks have the context but their vectors are diluted. Small-to-big gets both: index children (often a few hundred tokens), store a parent id on each, and after retrieval swap each hit for its parent section or document. Parents live in a document store keyed by id.",
+    "reference": "https://www.zeroentropy.dev/concepts/parent-document-retrieval/",
+    "source": "interview:chunking",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rrl35s/companies_want_genai_architects_but_interview_for/",
+        "https://www.topgenaijobs.com/blog/rag-interview-questions",
+        "https://pub.towardsai.net/40-generative-ai-interview-questions-that-actually-get-asked-in-2026-with-answers-b4c647f1e2e8",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-003",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does a ColBERT index store for each passage?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "One 768-dimensional vector per passage taken from the `[CLS]` token output, exactly as a standard bi-encoder stores it",
+        "why": "That is a single-vector bi-encoder. ColBERT's defining choice is to keep per-token vectors."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only a sparse bag of weighted vocabulary terms, like an inverted index",
+        "why": "That describes BM25 or learned sparse models such as SPLADE, not ColBERT's dense token vectors."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Nothing: passages are encoded together with each query at search time",
+        "why": "That is a cross-encoder. ColBERT encodes documents offline so their token vectors can be precomputed."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A small vector (128 dimensions in the paper) for every non-punctuation token, precomputed offline",
+        "why": "Correct. Each passage becomes a matrix of normalised token embeddings, so the index holds far more vectors than a single-vector index."
+      }
+    ],
+    "explanation": "ColBERT (Khattab and Zaharia, 2020) encodes queries and documents separately with BERT, projects each token's output to 128 dimensions, L2-normalises it, and on the document side drops punctuation embeddings. Documents are encoded once at indexing time. Scoring happens later through MaxSim between query token vectors and document token vectors. The storage consequence, one vector per token instead of one per passage, is the first trade-off interviewers ask about.",
+    "reference": "https://arxiv.org/abs/2004.12832",
+    "source": "interview:retrieval",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://ather-techie.github.io/rag-interview-system/",
+        "https://github.com/landedjobs/rag-engineer-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-004",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Microsoft GraphRAG groups the entities in its extracted knowledge graph into a hierarchy of communities using the Leiden algorithm, applied recursively.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. The default dataflow runs Hierarchical Leiden on the entity graph, re-clustering until a community-size threshold is reached, which gives community levels of different granularity."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It is true. GraphRAG's community detection step is Hierarchical Leiden, and the resulting levels are what community reports and global search are built on."
+      }
+    ],
+    "explanation": "GraphRAG's indexing pipeline chunks documents into text units, has an LLM extract entities and relationships, merges and summarises their descriptions, then clusters the graph with the Hierarchical Leiden algorithm. Each community gets an LLM-written report (an executive overview plus its key entities, relationships and claims). Those reports, at a chosen level of the hierarchy, are what global search reads.",
+    "reference": "https://microsoft.github.io/graphrag/index/default_dataflow/",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/agentic-ai-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-005",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which of these questions is *multi-hop*?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Which city is the headquarters of the firm that audited Infosys's FY2024 accounts?",
+        "why": "Correct. You must first find the auditor, then look up that firm's headquarters; the second lookup depends on the first answer."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "What is the notice period stated in the employee handbook?",
+        "why": "One fact from one passage. A single retrieval can answer it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Summarise the refund policy page in three bullet points",
+        "why": "This needs one document, summarised. It is a summarisation task, not a chain of dependent lookups."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Translate the onboarding guide's first paragraph into Hindi",
+        "why": "A transformation of known text; no retrieval chain is involved."
+      }
+    ],
+    "explanation": "A multi-hop question needs two or more facts, usually in different documents, where a later lookup depends on an earlier answer (a *bridge* entity). A single retrieval with the original question tends to fetch passages for the first hop only, because nothing in the question names the bridge entity. Techniques such as decomposition, interleaved retrieval (IRCoT) and graph-based retrieval exist for this.",
+    "reference": "https://arxiv.org/abs/2212.10509",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477248/hebbia-interview-guide/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://buildml.substack.com/p/top-interview-questions-on-rag-for",
+        "https://www.interviewbit.com/varsity/blog/?p=127",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "Hebbia"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-006",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In Self-RAG, what are *reflection tokens*?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Hidden-state vectors copied from the retriever into the generator's attention layers",
+        "why": "Reflection tokens are ordinary vocabulary items the model outputs, not internal vectors passed between models."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Special tokens the generator emits to decide when to retrieve and to grade relevance, support and usefulness",
+        "why": "Correct. The paper defines Retrieve, IsRel, IsSup and IsUse tokens, added to the vocabulary and predicted by the trained generator."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tokens that a separate GPT-4 judge appends to every generated answer at inference time to flag likely hallucinations",
+        "why": "GPT-4 was only used to create training labels. At inference the generator produces the reflection tokens without any external judge."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Padding tokens that mark where retrieved passages start and end inside the prompt",
+        "why": "Delimiters are formatting. Reflection tokens carry decisions and critiques that steer decoding."
+      }
+    ],
+    "explanation": "Self-RAG (Asai et al., 2023) expands the vocabulary with four reflection token types: **Retrieve** (yes/no/continue: should I retrieve now?), **IsRel** (is this passage relevant?), **IsSup** (is my output fully, partially or not supported by it?) and **IsUse** (1 to 5 usefulness). A critic model inserts them into training data offline and the generator learns to predict them with a normal next-token objective. At inference they control when retrieval happens and which candidate continuation is kept.",
+    "reference": "https://arxiv.org/abs/2310.11511",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-007",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "ColBERT scores a query against a document by taking, for each query token vector, its maximum similarity over all document token vectors and summing those maxima. What is this operator called in the paper? (one word)",
+    "options": [],
+    "accepted": [
+      "MaxSim",
+      "maxsim",
+      "Maxsim",
+      "MAXSIM",
+      "Max-Sim",
+      "max-sim"
+    ],
+    "explanation": "ColBERT's late interaction is a sum of MaxSim operators: S(q,d) = sum over query tokens i of max over document tokens j of (q_i . d_j). With L2-normalised vectors the dot product is cosine similarity. The operator has no trainable parameters, which is why document vectors can be precomputed and the interaction stays cheap compared with a cross-encoder.",
+    "reference": "https://arxiv.org/abs/2004.12832",
+    "source": "interview:retrieval",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://ather-techie.github.io/rag-interview-system/",
+        "https://github.com/landedjobs/rag-engineer-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-008",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What structure does RAPTOR build over a corpus before retrieval?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A knowledge graph of entities and relationships extracted by an LLM from every chunk, then clustered into communities",
+        "why": "That is Microsoft GraphRAG. RAPTOR clusters text chunks by embedding, not an entity graph."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A tree whose leaves are text chunks and whose higher nodes are LLM summaries of clusters of the nodes below",
+        "why": "Correct. RAPTOR recursively embeds, clusters and summarises, building levels of increasing abstraction from the bottom up."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A list of hypothetical questions generated for every chunk and embedded instead of the chunk text",
+        "why": "That is hypothetical-question indexing, a different technique. RAPTOR keeps chunks and adds summary nodes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An inverted index that maps each token to the passages containing it",
+        "why": "That is the structure behind BM25 and other lexical search, not RAPTOR."
+      }
+    ],
+    "explanation": "RAPTOR (Sarthi et al., 2024) splits text into roughly 100-token leaf chunks, embeds them (SBERT in the paper), clusters similar chunks with Gaussian mixture models after UMAP reduction, and has an LLM summarise each cluster. The summaries are embedded and clustered again, recursively, until a tree of summaries forms. Retrieval can then return a leaf for a detail question or a high-level summary for a question that spans the whole document.",
+    "reference": "https://arxiv.org/abs/2401.18059",
+    "roleLevel": 1
+  },
+  {
+    "id": "RAG-ADV-009",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "How does *sentence-window* retrieval differ from *parent-document* retrieval?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Sentence-window embeds single sentences and expands each hit to its neighbouring sentences; parent-document maps each hit to a predefined parent block",
+        "why": "Correct. The window is built around the matched sentence on the fly, while the parent is a fixed section or document chosen at indexing time."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Sentence-window embeds whole documents, while parent-document embeds single sentences",
+        "why": "Both embed small units. They differ in how the context returned to the LLM is chosen."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Sentence-window only works with BM25, while parent-document only works with dense vectors",
+        "why": "Neither depends on the retriever type; both are mappings applied after any retriever finds a small unit."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "They are two names for the same technique, with no difference in what is returned",
+        "why": "They are close relatives but return different context: a fixed parent versus a window centred on the hit."
+      }
+    ],
+    "explanation": "Both patterns decouple what is matched from what is read. Sentence-window retrieval indexes each sentence and stores its surrounding sentences (say, k before and after); at query time the matched sentence is replaced by that window, so context is centred on the hit. Parent-document retrieval indexes child chunks that each carry the id of a predefined parent (a section, a large chunk or the whole document) and returns that parent. Windows adapt to where the match is; parents respect document structure.",
+    "reference": "https://www.zeroentropy.dev/concepts/parent-document-retrieval/",
+    "source": "interview:chunking",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rrl35s/companies_want_genai_architects_but_interview_for/",
+        "https://www.topgenaijobs.com/blog/rag-interview-questions",
+        "https://pub.towardsai.net/40-generative-ai-interview-questions-that-actually-get-asked-in-2026-with-answers-b4c647f1e2e8",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-010",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In Corrective RAG (CRAG), the retrieval evaluator scores every retrieved document below the lower threshold. What does CRAG do next?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It passes the documents to the generator anyway, with an instruction to ignore anything irrelevant",
+        "why": "That is exactly what CRAG avoids. The Incorrect action discards the retrieved documents."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It reranks the same documents with a cross-encoder and keeps the top three",
+        "why": "Reordering bad candidates still leaves only bad candidates. CRAG goes to a different knowledge source."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It answers from the model's parametric knowledge and appends a disclaimer",
+        "why": "CRAG does not fall back to the bare model; it seeks new external evidence."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It discards them, rewrites the question into search keywords and uses web search results instead",
+        "why": "Correct. This is the Incorrect action: drop the retrieved set, rewrite the query, search the web, then refine the results."
+      }
+    ],
+    "explanation": "CRAG (Yan et al., 2024) adds a lightweight retrieval evaluator (fine-tuned T5-large) that scores each question-document pair. If at least one document is above the upper threshold the action is **Correct** (refine the retrieved documents). If all are below the lower threshold it is **Incorrect**: discard them, have an LLM rewrite the question into keyword queries and use web search, with the same refinement on the results. Anything in between is **Ambiguous** and combines both sources.",
+    "reference": "https://arxiv.org/abs/2401.15884",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-011",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "How does *late chunking* produce chunk embeddings?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It runs the whole document through the transformer once, then mean-pools the token embeddings inside each chunk's span",
+        "why": "Correct. Chunk boundaries are applied after the transformer and just before pooling, so every chunk vector is computed with the full document in view."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It splits the text into chunks first and embeds each chunk separately with a larger model",
+        "why": "That is ordinary (naive) chunking with a different model. Late chunking reverses the order of splitting and encoding."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It asks an LLM to write a short context for each chunk and prepends it before embedding",
+        "why": "That is Anthropic's Contextual Retrieval, which changes the chunk text. Late chunking changes how vectors are pooled."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It delays chunking until query time and then splits and embeds only the documents that the first-stage retriever returns",
+        "why": "\"Late\" refers to the position in the embedding computation, not to query time. Chunk vectors are still built at indexing time."
+      }
+    ],
+    "explanation": "In naive chunking each chunk is encoded alone, so a chunk saying \"Its more than 3.85 million inhabitants...\" has no idea that \"it\" is Berlin. Late chunking (Günther et al., Jina AI, 2024) tokenises the whole document (up to the model's limit, 8,192 tokens for jina-embeddings-v2), runs the transformer once so every token embedding attends to the full text, maps each chunk's character boundaries to token spans and mean-pools within each span. You still get one vector per chunk, but each carries document context.",
+    "reference": "https://arxiv.org/abs/2409.04701",
+    "source": "interview:chunking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-012",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about Microsoft GraphRAG's default indexing pipeline are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "An LLM extracts entities and relationships from each text unit, and their descriptions are then merged and summarised",
+        "why": "Correct. Extraction runs per text unit, and duplicates across chunks are merged into a single concise description per entity and relationship."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Communities found in the entity graph each get an LLM-written report that summarises their key entities, relationships and claims",
+        "why": "Correct. Community reports are generated at indexing time and are what global search later reads."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "You must supply a hand-built ontology that lists every allowed entity and relationship type before indexing",
+        "why": "GraphRAG extracts the graph from raw text with an LLM. You can tune prompts and entity types, but no hand-built ontology is required."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Claim (covariate) extraction is always on and cannot be disabled",
+        "why": "The docs state claim extraction is optional and turned off by default."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Community reports are written at query time, so indexing makes no LLM calls",
+        "why": "Indexing is the LLM-heavy part: extraction, description summaries and community reports are all produced before any query."
+      }
+    ],
+    "explanation": "GraphRAG's default dataflow: chunk documents into text units (1,200 tokens by default), extract entities and relationships with an LLM, summarise each entity's and relationship's merged descriptions, optionally extract claims, cluster with Hierarchical Leiden, write a report per community, then embed entity descriptions, text units and community reports. Nearly all LLM cost is paid at indexing time, which is the main cost interviewers want you to name.",
+    "reference": "https://microsoft.github.io/graphrag/index/default_dataflow/",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/agentic-ai-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-013",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each question asked of a GraphRAG index to the query method that GraphRAG's documentation recommends for it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Global search",
+        "why": "Map-reduce over community reports; suited to questions about the dataset as a whole."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Local search",
+        "why": "Starts from entities related to the query, then gathers their relationships, linked text units and reports."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "DRIFT search",
+        "why": "Local search primed with the most relevant community reports, which generates and answers follow-up questions."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Basic search",
+        "why": "Plain vector RAG over the top-k text units, provided for comparison."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "\"What are the five main themes across all 3,000 customer interviews?\"",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "\"What did the filings say about the supplier contract between Acme and Tata Steel?\"",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "\"How is Acme exposed to supply-chain risk?\" where you want broad community context about Acme refined through follow-up sub-questions",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A baseline that answers from the most similar raw chunks only, to compare against the graph methods",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Global search answers corpus-wide questions by mapping over community reports at a chosen level and reducing the highest-rated points; plain vector search fails there because nothing in \"main themes\" points at specific chunks. Local search anchors on entities similar to the query and pulls connected entities, relationships, covariates, text units and reports into one context window. DRIFT starts from the top-K relevant community reports, produces an initial answer and follow-up questions, then refines them with local search. Basic search is top-k vector RAG over text units.",
+    "reference": "https://microsoft.github.io/graphrag/query/overview/",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/agentic-ai-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-014",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In IRCoT (interleaving retrieval with chain-of-thought), what is used as the search query for each retrieval after the first one?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The original question, re-issued with a larger k each time",
+        "why": "Re-issuing the question cannot find the bridge entity that only appears once reasoning has progressed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The final answer the model predicts, embedded as a hypothetical document",
+        "why": "That resembles HyDE. IRCoT queries with intermediate reasoning, not a predicted final answer."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The most recently generated chain-of-thought sentence",
+        "why": "Correct. Each reason step keeps only the first new CoT sentence, and that sentence becomes the next retrieval query."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A list of keywords extracted from all the paragraphs retrieved so far",
+        "why": "IRCoT does not build queries from retrieved text; the reasoning drives what is fetched next."
+      }
+    ],
+    "explanation": "IRCoT (Trivedi et al., 2022) first retrieves K paragraphs with the question. It then alternates: generate the next CoT sentence from the question, the paragraphs so far and the CoT so far; use that sentence as the next query; add the new paragraphs. Because a CoT sentence like \"The film was directed by X\" names the bridge entity, the next search can find facts about X. The paper reports retrieval gains of up to 21 points and QA gains of up to 15 points on multi-hop benchmarks.",
+    "reference": "https://arxiv.org/abs/2212.10509",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477248/hebbia-interview-guide/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://buildml.substack.com/p/top-interview-questions-on-rag-for",
+        "https://www.interviewbit.com/varsity/blog/?p=127",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "Hebbia"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-015",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "The original ColBERT stores each token vector as 128 dimensions at 16-bit precision. How many bytes does one token vector take before ColBERTv2's compression? (number only)",
+    "options": [],
+    "accepted": [
+      "256",
+      "256 bytes",
+      "256 B"
+    ],
+    "explanation": "128 dimensions x 2 bytes = 256 bytes per token vector, which is the figure the ColBERTv2 paper contrasts with its residual compression: a 4-byte centroid id plus 16 bytes (1 bit per dimension) or 32 bytes (2 bits per dimension), so 20 or 36 bytes. Multiply by every token in the corpus and you see why late-interaction indexes are large.",
+    "reference": "https://arxiv.org/abs/2112.01488",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-ADV-016",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "At inference time, Self-RAG calls its separate critic model to grade each retrieved passage and each generated segment.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "This is false. The critic only labels training data offline; at inference the generator predicts the reflection tokens itself."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct, it is false. The critic (Llama 2 7B, trained on GPT-4-generated labels) inserts reflection tokens into the training corpus. The trained generator then emits Retrieve, IsRel, IsSup and IsUse tokens on its own, so no extra model runs at inference."
+      }
+    ],
+    "explanation": "Self-RAG trains in two stages: a critic learns to predict reflection tokens from GPT-4-labelled examples, and is used to annotate a large training corpus offline. The generator (7B or 13B Llama 2) is then trained on that corpus with a standard next-token objective over the expanded vocabulary. This differs from CRAG, which does run its separate evaluator on every query.",
+    "reference": "https://arxiv.org/abs/2310.11511",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-ADV-017",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An agentic RAG service lets the model call `search` and `fetch_page` until it decides it has enough to answer. On some questions it keeps searching until the HTTP request times out after 60 seconds. Which control is missing?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A larger top-k for each `search` call, so that the model finds the passages it needs within fewer iterations",
+        "why": "It might shorten some runs, but nothing still stops a run that never converges. The loop has no bound."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A hard limit on steps (and spend) per request, with a defined terminal response when the limit is hit",
+        "why": "Correct. A stopping condition such as a maximum number of iterations keeps the loop under control and turns a timeout into a graceful \"could not find this\" answer."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A lower temperature, so the model produces the same tool calls every time",
+        "why": "Determinism makes the loop reproducible, not finite. A model that loops at temperature 0 loops every time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Streaming the final answer token by token to the client",
+        "why": "Streaming improves perceived latency once an answer exists. Here no answer is ever produced."
+      }
+    ],
+    "explanation": "Agents that decide for themselves when to stop need an external backstop. Anthropic's guidance notes that it is common to include stopping conditions, such as a maximum number of iterations, to maintain control. In practice you cap steps, tokens or cost per request, and define what the system returns at the cap: a partial answer with what was found, an honest refusal or an escalation. Then you read the traces to see why those questions never converge.",
+    "reference": "https://www.anthropic.com/engineering/building-effective-agents",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476824/ai-engineer-interview-rag-agents-evals/",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.analyticsvidhya.com/blog/2026/02/agentic-ai-interview-questions-and-answers/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-018",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of IRCoT's retrieval procedure for a multi-hop question in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use the newly generated sentence as the query and add the retrieved paragraphs to the collected set",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A separate reader model answers the question from all collected paragraphs",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Retrieve K paragraphs using the question as the query",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Repeat until the reasoning contains \"answer is:\" or the step limit is reached",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Generate the next chain-of-thought sentence from the question, the paragraphs and the reasoning so far",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "E",
+      "A",
+      "D",
+      "B"
+    ],
+    "explanation": "IRCoT starts with one retrieval using the question, then alternates a reason step (keep only the first new CoT sentence) with a retrieve step (query with that sentence, add results). It stops when the CoT says \"answer is:\" or after a maximum number of steps (8 in the paper, with at most 15 paragraphs collected). The paper found extracting the answer from the retrieval-time CoT was worse than using a separate QA reader over all collected paragraphs.",
+    "reference": "https://arxiv.org/abs/2212.10509",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-ADV-019",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "RAPTOR's paper compares two ways of querying its summary tree: tree traversal (top-down, layer by layer) and collapsed tree (all nodes from every layer searched together). Which performed better, and why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Tree traversal, because starting from the root guarantees the most relevant leaves are always reached",
+        "why": "A wrong turn near the root is never undone, and the ratio of summary to detail is fixed by the traversal settings."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both performed identically, so the choice only affects latency",
+        "why": "The paper reports a consistent quality gap, not a tie."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Collapsed tree, because it can pick nodes at whatever level of detail each question needs",
+        "why": "Correct. Searching all layers at once lets a detail question take leaves and a thematic question take summaries, within a token budget."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Collapsed tree, because it skips the summary nodes and searches only the leaf chunks",
+        "why": "Collapsed tree includes summary nodes from every layer; skipping them would throw away RAPTOR's whole contribution."
+      }
+    ],
+    "explanation": "In collapsed-tree retrieval RAPTOR flattens every node (leaves and summaries) into one set, ranks them by cosine similarity to the query and adds nodes until a token budget is reached (2,000 tokens, roughly the top 20 nodes, in the main experiments). On QASPER it consistently beat tree traversal, which the authors attribute to its flexibility in matching the granularity of the question.",
+    "reference": "https://arxiv.org/abs/2401.18059",
+    "roleLevel": 2
+  },
+  {
+    "id": "RAG-ADV-020",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A small-to-big retriever indexes 200-token child chunks; each child points to a 1,500-token parent section. For one query the top 6 children belong to parents P1, P1, P2, P3, P3, P3. If you swap each child for its parent and deduplicate parents before building the prompt, how many retrieved tokens does the LLM receive?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "1,200 tokens",
+        "why": "That is the child text only (6 x 200). Small-to-big sends the parents, not the children."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "4,500 tokens",
+        "why": "Correct. Six hits collapse to three distinct parents, and 3 x 1,500 = 4,500 tokens."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "9,000 tokens",
+        "why": "That is 6 x 1,500, which sends P1 twice and P3 three times. Without deduplication you pay for and confuse the model with repeated sections."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "10,200 tokens",
+        "why": "That adds children and undeduplicated parents (1,200 + 9,000). The children are already inside their parents."
+      }
+    ],
+    "explanation": "Small-to-big multiplies the context: here the prompt grows from 1,200 child tokens to 4,500 parent tokens even after deduplication, and to 9,000 without it. Two consequences interviewers probe: always deduplicate by parent id (several children of one section often match together), and cap parents by a token budget rather than a fixed k, because parent size, not child count, drives generation cost and latency.",
+    "reference": "https://www.zeroentropy.dev/concepts/parent-document-retrieval/",
+    "source": "interview:chunking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.reddit.com/r/LangChain/comments/1rrl35s/companies_want_genai_architects_but_interview_for/",
+        "https://www.topgenaijobs.com/blog/rag-interview-questions",
+        "https://pub.towardsai.net/40-generative-ai-interview-questions-that-actually-get-asked-in-2026-with-answers-b4c647f1e2e8",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-021",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You are sizing a ColBERTv2 index for 1 million passages averaging 120 indexed tokens each. Using ColBERTv2's 2-bit residual compression (36 bytes per token vector) and ignoring centroids and metadata, roughly how large are the token vectors?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "About 30.7 GB",
+        "why": "That is the uncompressed size at 256 bytes per vector (120 million x 256 bytes). The question asks for the 2-bit compressed form."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "About 3.1 GB",
+        "why": "That is roughly a single-vector bi-encoder index: 1 million passages x 768 float32 dimensions. ColBERT stores a vector per token."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "About 36 MB",
+        "why": "That would be 36 bytes per passage. ColBERT stores one vector per token, so multiply by 120 million vectors."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "About 4.3 GB",
+        "why": "Correct. 1,000,000 x 120 = 120 million vectors, and 120,000,000 x 36 bytes = 4.32 GB."
+      }
+    ],
+    "explanation": "Storage is the headline cost of late interaction. 120 million token vectors at 256 bytes (128 dims, 16-bit) is 30.72 GB; ColBERTv2 stores each as a 4-byte centroid id plus a 2-bit-per-dimension residual (32 bytes), 36 bytes total, giving 4.32 GB (2.4 GB at 1 bit). The paper reports the MS MARCO index shrinking from 154 GiB to 16 to 25 GiB, a 6 to 10x reduction. A one-vector-per-passage index is smaller still.",
+    "reference": "https://arxiv.org/abs/2112.01488",
+    "source": "interview:retrieval",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://ather-techie.github.io/rag-interview-system/",
+        "https://github.com/landedjobs/rag-engineer-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-022",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A colleague says: \"CRAG is just reranking with a different model.\" What is the strongest correction?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "CRAG's evaluator triggers actions: it can discard the whole retrieved set and go to web search, and it filters strips inside documents",
+        "why": "Correct. A reranker only reorders the candidates it is given. CRAG decides whether the candidates are usable at all and corrects them."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "CRAG uses a larger model than rerankers, so its scores are more accurate",
+        "why": "CRAG's evaluator is deliberately small (T5-large, about 0.77B parameters). Size is not the difference."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "CRAG runs before retrieval, while rerankers run after retrieval",
+        "why": "CRAG's evaluator also runs after retrieval, on the retrieved documents. The difference is what it does with the scores."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "CRAG only works with BM25 retrievers, while rerankers work with any retriever",
+        "why": "CRAG is described as plug-and-play with RAG-based approaches; it does not depend on a lexical retriever."
+      }
+    ],
+    "explanation": "A reranker's output is an ordering of the same candidates, so if all of them are wrong it confidently passes wrong context forward. CRAG's evaluator produces a confidence that selects an action: Correct (keep and refine by decomposing into strips and filtering), Incorrect (discard, rewrite the query, web search) or Ambiguous (combine both). Even in the Correct case it removes noisy strips inside relevant documents, which reranking at document level cannot do.",
+    "reference": "https://arxiv.org/abs/2401.15884",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-023",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Compared with a fixed retrieve-then-generate pipeline, which two costs does an agentic RAG loop add? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Latency and token cost that vary per request, because the number of model and tool calls is decided at run time",
+        "why": "Correct. Agentic systems trade latency and cost for task performance, and the trade is no longer fixed per request."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Harder testing and debugging, because the same question can take different paths through tools",
+        "why": "Correct. Non-deterministic paths make regressions harder to reproduce; you need traces of every step and evaluations over paths, not just answers."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It can no longer cite sources, because tool results are not documents",
+        "why": "Tool and search results can be tracked and cited like any retrieved chunk. Citation is a design choice, not something agents forbid."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It requires fine-tuning the LLM on tool calls before it can work",
+        "why": "General-purpose models support tool use through prompting and tool definitions; fine-tuning is optional."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It cannot use a vector database, because agents must use web search",
+        "why": "Vector search is one of the most common tools an agent is given."
+      }
+    ],
+    "explanation": "Agents earn their keep when a task really needs dynamic, multi-step retrieval. In return you accept more LLM calls (cost), longer and more variable latency, and behaviour that is harder to predict, test and debug. Anthropic's advice is to find the simplest solution possible and only increase complexity when needed, so interviewers expect you to justify the loop with evidence.",
+    "reference": "https://www.anthropic.com/engineering/building-effective-agents",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://www.hirist.tech/blog/top-rag-interview-questions-and-answers/",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-024",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A support bot answers questions such as *\"What is the API rate limit on the Pro plan?\"* over product docs that change daily. Hybrid retrieval already answers 94% of an evaluation set correctly. A teammate proposes moving to GraphRAG. What is the best response?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Adopt it, because GraphRAG local search is known to answer single-fact lookups more accurately than any vector or hybrid retriever",
+        "why": "There is no such general result. GraphRAG's reported advantage is on global sensemaking questions over a whole corpus."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Adopt it, but only use global search, since it reads every community report",
+        "why": "Global search map-reduces over all reports, which is the most expensive mode and is aimed at corpus-wide themes, not one rate limit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Adopt it, because daily updates are cheap: GraphRAG only re-embeds the changed text units",
+        "why": "Changed text must also go through LLM entity extraction, and communities and their reports may need rebuilding. Updates are not just re-embedding."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Decline: single-fact lookups do not need its LLM-heavy indexing, and daily changes would keep re-running extraction and reports",
+        "why": "Correct. You would pay for LLM extraction, summaries and community reports, and their staleness, without targeting the failure mode you have."
+      }
+    ],
+    "explanation": "GraphRAG was built for query-focused summarisation, questions like \"what are the main themes?\" where plain vector search has nothing to anchor on, and for questions that connect many entities. Its index costs many LLM calls (entity and relationship extraction per chunk, description summaries, a report per community). For single-fact lookups that hybrid retrieval already handles, that cost buys little, and frequently changing content makes it worse.",
+    "reference": "https://arxiv.org/abs/2404.16130",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-025",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Both late chunking and Anthropic's Contextual Retrieval try to stop a chunk from losing its document context. Which statement correctly separates them?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Late chunking needs an LLM call per chunk at indexing time, while Contextual Retrieval needs none",
+        "why": "It is the other way round. Contextual Retrieval asks an LLM to write context per chunk; late chunking only needs one embedding-model pass per document."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Both rewrite the chunk text, so both improve a BM25 index as well as the vector index",
+        "why": "Late chunking leaves the chunk text unchanged. Only Contextual Retrieval alters the text that BM25 indexes."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Contextual Retrieval adds text to each chunk, so it helps BM25 too; late chunking only changes how dense vectors are pooled",
+        "why": "Correct. Contextual BM25 indexes the context-enriched text, while late chunking's benefit lives entirely in the embeddings."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Late chunking works with any embedding model at all, while Contextual Retrieval only works with long-context mean-pooling models",
+        "why": "Late chunking is the one tied to long-context, mean-pooling embedding models. Contextual Retrieval works with any embedding model."
+      }
+    ],
+    "explanation": "Contextual Retrieval prepends a 50 to 100-token, LLM-written context to every chunk before both embedding and BM25 indexing, so lexical search also benefits (Anthropic reports the largest gain when both are combined). Late chunking keeps chunk text as is and encodes the whole document once, then pools token embeddings per chunk span: no LLM calls, but it needs a long-context model that uses mean pooling, and it does nothing for a lexical index.",
+    "reference": "https://arxiv.org/abs/2409.04701",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.datacamp.com/blog/rag-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://aixfunda.substack.com/p/rag-interview-questions-and-answers-6ee"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-026",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Late chunking only works after you fine-tune the embedding model specifically for it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "This is false. The paper applies late chunking to existing long-context, mean-pooling models without extra training; fine-tuning is an optional improvement."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct, it is false. Late chunking is a change to where pooling happens and can be used with any long-context embedding model that uses mean pooling. The authors also propose optional span-pooling fine-tuning, which gave relatively small gains."
+      }
+    ],
+    "explanation": "The method needs no training: tokenise the full text, run the transformer, then mean-pool token embeddings over each chunk's token span. Its requirement is architectural, a long context window and mean pooling, not a special training run. Gains were largest for small chunks and vanished on synthetic tasks where surrounding context is irrelevant.",
+    "reference": "https://arxiv.org/abs/2409.04701",
+    "source": "interview:chunking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-027",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "An analyst asks: *\"Across our 40 vendor contracts, which ones allow termination with less than 30 days' notice?\"* Top-10 chunk retrieval returns clauses from only 7 contracts. Which two approaches fix this? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise k to 40 so that, on average, one chunk per contract comes back",
+        "why": "Similarity does not spread evenly across documents. Some contracts will contribute several chunks and others none, so coverage is still not guaranteed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Map-reduce: filter to the 40 contracts, ask the model the question per contract, then combine the per-contract answers",
+        "why": "Correct. Every contract is examined, which turns a coverage problem into 40 bounded calls plus an aggregation step."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Extract the termination notice period from each contract at ingest into a structured field, then query that field",
+        "why": "Correct. A precomputed field turns the question into an exact filter over all contracts, cheap and complete at query time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Increase the chunk size so each chunk holds a whole contract",
+        "why": "Whole-contract vectors are diluted and still only the top few are returned; it does not ensure all 40 are checked."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Add a cross-encoder reranker over the top 10",
+        "why": "Reranking reorders the 10 candidates. Contracts that were never retrieved stay missing."
+      }
+    ],
+    "explanation": "Questions that need every matching document (all, which ones, count, compare across) are coverage problems, and top-k similarity search is the wrong tool: it returns the most similar chunks, not one per document. Fix it by examining each document (map-reduce over a metadata-filtered set) or by extracting the needed attribute at ingest so the question becomes a structured query. Increasing k or reranking only reshuffles a sample.",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477248/hebbia-interview-guide/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://buildml.substack.com/p/top-interview-questions-on-rag-for",
+        "https://www.interviewbit.com/varsity/blog/?p=127",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "Hebbia"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-028",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A ColBERT query has two token vectors q1 and q2. Their dot products with the token vectors of two documents are:\n\n```text\nDoc A tokens:  a1    a2    a3\nq1             0.90  0.20  0.10\nq2             0.30  0.40  0.20\n\nDoc B tokens:  b1    b2\nq1             0.70  0.60\nq2             0.75  0.50\n```\n\nWhat is Doc B's MaxSim score, and which document ranks first?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "0.75, and Doc A ranks first because its single best match (0.90) is the highest in the table",
+        "why": "That scores each document by its one best pair. MaxSim takes the best match for every query token and sums them."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "1.45, and Doc B ranks first",
+        "why": "Correct. Doc B: max(0.70, 0.60) + max(0.75, 0.50) = 0.70 + 0.75 = 1.45. Doc A: 0.90 + 0.40 = 1.30."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "2.55, and Doc B ranks first",
+        "why": "That sums every cell. MaxSim keeps only the maximum per query token, otherwise long documents would win just by having more tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "1.30, and the two documents tie",
+        "why": "1.30 is Doc A's score. Doc B scores 1.45, so there is no tie."
+      }
+    ],
+    "explanation": "MaxSim: for each query token take its maximum similarity over the document's tokens, then sum over query tokens. Doc A has one excellent match for q1 but only 0.40 for q2, giving 1.30; Doc B matches both query tokens well, giving 1.45. This is the behaviour late interaction is designed for: every part of the query must find support somewhere in the document.",
+    "reference": "https://arxiv.org/abs/2004.12832",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-ADV-029",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each advanced RAG pattern to how it works.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Self-RAG",
+        "why": "Trains the generator to emit tokens that decide retrieval and critique passages and its own output."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Corrective RAG (CRAG)",
+        "why": "Adds a separate lightweight evaluator whose confidence chooses between refining, web search or both."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "RAPTOR",
+        "why": "Builds a tree of recursive cluster summaries over chunks and retrieves across its levels."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "IRCoT",
+        "why": "Alternates chain-of-thought steps and retrieval, querying with each new reasoning sentence."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The generator itself outputs Retrieve, IsRel, IsSup and IsUse tokens",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A fine-tuned T5-large scores documents; low scores trigger query rewriting and web search",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Chunks are clustered with Gaussian mixtures and summarised, then the summaries are clustered again",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Each new reasoning sentence becomes the query for the next retrieval",
+        "answer": "D"
+      }
+    ],
+    "explanation": "These four are often confused in interviews. Self-RAG puts the control signals inside the generator's vocabulary. CRAG bolts an external evaluator onto any RAG pipeline and acts on its confidence. RAPTOR changes the index (a summary tree), not the query loop. IRCoT changes the query loop for multi-hop questions, letting reasoning decide what to fetch next.",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-ADV-030",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You deploy a Self-RAG model and find it retrieves on too few queries for your fact-heavy domain. How can you make it retrieve more often without retraining?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Lower the threshold on the normalised probability of the Retrieve=Yes token, so retrieval fires at lower confidence",
+        "why": "Correct. Self-RAG supports a threshold on Retrieve=Yes (0.2 by default for most tasks in the paper); lowering it triggers retrieval more often."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise the weight on the IsUse token in segment scoring",
+        "why": "IsUse weights change which candidate continuation wins after retrieval, not whether retrieval is triggered."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Remove the IsSup token from the vocabulary",
+        "why": "Removing a reflection token requires retraining and would weaken support checking, not increase retrieval."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Increase the beam width of the segment-level beam search",
+        "why": "Beam width controls how many candidate continuations are kept. The retrieve decision comes from the Retrieve token."
+      }
+    ],
+    "explanation": "Self-RAG lets you tune behaviour at inference. Retrieval can be triggered when the probability of Retrieve=Yes, normalised over the Retrieve outputs, exceeds a threshold (0.2 by default, 0 for ALCE). Separately, candidate segments are ranked by generation probability plus a weighted sum of IsRel, IsSup and IsUse probabilities (default weights 1.0, 1.0, 0.5), with a segment-level beam search (width 2 by default). Retrieval frequency is a threshold change; output preferences are weight changes.",
+    "reference": "https://arxiv.org/abs/2310.11511",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-031",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "In CRAG's knowledge refinement, a retrieved document is split into small units that the evaluator scores individually, and low-scoring units are filtered out before the rest are recomposed. What does the paper call these units? (knowledge ____)",
+    "options": [],
+    "accepted": [
+      "strips",
+      "strip",
+      "knowledge strips",
+      "knowledge strip"
+    ],
+    "explanation": "CRAG's decompose-then-recompose step splits retrieved text into knowledge strips, scores every strip with the retrieval evaluator, drops those below a filter threshold and joins the rest in order. The paper's motivation: even a relevant document contains noisy strips that would distract the generator.",
+    "reference": "https://arxiv.org/abs/2401.15884",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-032",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the main stages of Microsoft GraphRAG's default indexing pipeline.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Detect a hierarchy of communities with Hierarchical Leiden",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Split documents into text units",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Have an LLM write a report for each community",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Merge and summarise the descriptions of each entity and relationship",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Have an LLM extract entities and relationships from each text unit",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "E",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "Text units come first because extraction runs per chunk. Extraction produces many descriptions for the same entity across chunks, so they are merged and summarised into one. The resulting graph is clustered with Hierarchical Leiden, and only then can each community get an LLM-written report. Embeddings of entity descriptions, text units and reports are produced at the end.",
+    "reference": "https://microsoft.github.io/graphrag/index/default_dataflow/",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-033",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does cache-augmented generation (CAG) do instead of retrieval, and what breaks it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It caches the answers to previous questions and serves them to semantically similar new questions; it breaks when questions are novel",
+        "why": "That is a semantic answer cache, a production optimisation. CAG preloads knowledge, not previous answers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It caches retrieved chunks per user so later queries skip the vector search; it breaks when users share chunks",
+        "why": "CAG removes the retriever entirely rather than caching its results."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It preloads the whole knowledge set into a long-context model and reuses the precomputed cache for every query; it breaks when the knowledge is too large for the window or changes often",
+        "why": "Correct. Retrieval disappears, but every document change means recomputing the cache, and everything must fit in the context."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It fine-tunes the model on the knowledge set so retrieval is no longer needed; it breaks when the model forgets",
+        "why": "CAG changes no weights. It relies on the context window and the model's cached runtime state."
+      }
+    ],
+    "explanation": "The 2024 paper *Don't Do RAG: When Cache-Augmented Generation is All You Need for Knowledge Tasks* proposes loading all relevant resources into a long-context model ahead of time and caching its runtime state, so queries need no retrieval step: no retrieval latency and no document-selection errors. The authors position it for knowledge bases of limited, manageable size. Large, fast-changing or permission-partitioned corpora still need RAG.",
+    "reference": "https://arxiv.org/abs/2412.15605",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewquery.com/guides/tiger-analytics-ai-engineer",
+        "https://www.datacamp.com/blog/rag-interview-questions",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.analyticsvidhya.com/blog/2026/02/agentic-ai-interview-questions-and-answers/"
+      ],
+      "companies": [
+        "Tiger Analytics"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-034",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A trace from an agentic RAG run shows:\n\n```text\nstep 3  search(query=\"EU refund window\")  -> []\nstep 4  search(query=\"EU refund window\")  -> []\nstep 5  search(query=\"EU refund window\")  -> []\n...\nstep 25 max_steps reached, returning HTTP 500\n```\n\nThe refund policy is indexed under \"cancellation period (Europe)\". Which change fixes the root cause and the user-facing failure together?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise `max_steps` to 50 so the agent has more chances to find the document",
+        "why": "The agent repeats the same call with the same result; more steps only make the failure slower and more expensive."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise the sampling temperature so the model varies its query wording",
+        "why": "Randomness might eventually produce a different query, but it also destabilises every other step and still leaves the cap ending in an error."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Return an explicit \"no results for <query>; try other terms\" observation, treat an identical repeated call as no progress, and end with a graceful answer when the cap is hit",
+        "why": "Correct. The agent gets a signal it can act on (reformulate), the loop detects non-progress early, and the cap produces a defined response instead of a 500."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Increase the retriever's top-k from 5 to 50 for every search call",
+        "why": "The search already returns nothing for this wording; a larger k does not change what an empty result tells the model."
+      }
+    ],
+    "explanation": "Two problems hide in this trace. The tool returns a bare empty list, giving the model no hint that it should rephrase, so it repeats itself. And the controls are crude: the loop does not notice identical calls with identical results, and the cap ends in an error. Good agent design gives the model clear ground truth from the environment at each step, detects no-progress patterns, and defines a terminal state (partial answer, honest \"I could not find this\", escalation) for when budgets run out.",
+    "reference": "https://www.anthropic.com/engineering/building-effective-agents",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476824/ai-engineer-interview-rag-agents-evals/",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.analyticsvidhya.com/blog/2026/02/agentic-ai-interview-questions-and-answers/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-035",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A single-pass RAG FAQ bot meets its p95 target of 1.5 s and scores well on its evaluation set. Leadership wants to rebuild it as an agentic system. Which finding would best justify the change?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Competitors have announced agentic assistants, and the team wants to keep up",
+        "why": "Market pressure is not evidence that your users' questions need a loop. Agents add cost and latency that must be paid for in quality."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The LLM provider has released a model with stronger tool-use benchmarks",
+        "why": "Better tool use makes an agent more feasible, not necessary. The question is whether your failures need multi-step retrieval."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Average answer length is shorter than users would like",
+        "why": "Answer length is a prompt and generation issue; an agent loop does not address it."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Failure analysis shows a sizeable share of failed questions need several dependent lookups or a second tool that one retrieval cannot provide",
+        "why": "Correct. That is a failure mode a fixed single pass cannot fix and an agent loop can, which is the evidence needed to accept its costs."
+      }
+    ],
+    "explanation": "\"Find the simplest solution possible, and only increase complexity when needed\" is the guiding rule. A single-pass pipeline that meets its latency and quality targets should only gain an agent loop when you can show failures that need dynamic, multi-step behaviour: dependent lookups, choosing among sources or tools, checking and retrying. Even then, routing just those queries to the agent keeps the cheap path for the rest.",
+    "reference": "https://www.anthropic.com/engineering/building-effective-agents",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://www.hirist.tech/blog/top-rag-interview-questions-and-answers/",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.datacamp.com/blog/langchain-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-036",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You adopt late chunking with an embedding model whose maximum input is 8,192 tokens, but many of your documents are 30,000 tokens long. What does the late chunking paper propose for such documents?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Truncate each document at 8,192 tokens; the first window carries enough context for every chunk",
+        "why": "Truncation means tokens past the limit are never encoded, so most of each document gets no chunk vectors at all."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Split the document into macro chunks that fit the limit, include some overlapping tokens as extra context, and late-chunk each macro chunk",
+        "why": "Correct. This is long late chunking: each macro chunk is encoded with neighbouring context, and the overlap tokens are used as context only."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Fall back to naive chunking for every long document, because late chunking provides no benefit at all once a document exceeds the model limit",
+        "why": "The paper does not give up on long documents; it extends the method with macro chunks so most of the context benefit remains."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise the model's maximum sequence length to 32,768 in its config so the whole document fits",
+        "why": "Changing a config value does not teach the model to handle positions it was not trained for; quality beyond the trained length is not assured."
+      }
+    ],
+    "explanation": "Late chunking needs the text that provides context to pass through the transformer together with the chunk. For documents longer than the model's window, the paper's *long late chunking* splits the token sequence into macro chunks within the limit and adds overlapping tokens from the neighbouring segment as supplementary context. Chunk embeddings are pooled within each macro chunk as usual. Context across macro-chunk boundaries is partly preserved by the overlap, not fully.",
+    "reference": "https://arxiv.org/abs/2409.04701",
+    "source": "interview:chunking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-ADV-037",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which three statements correctly place ColBERT-style late interaction between a single-vector bi-encoder and a cross-encoder? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Document token vectors are computed offline, so unlike a cross-encoder it does not run the transformer over each query-document pair at search time",
+        "why": "Correct. Only the query is encoded at search time; documents were encoded at indexing."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It keeps one vector per token, so its index is much larger than a one-vector-per-passage index",
+        "why": "Correct. Storage, and the cost of gathering candidate embeddings, are its main price."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Token-level matching usually makes it more effective than single-vector retrieval, without cross-encoder cost",
+        "why": "Correct. That is the paper's claim: BERT-based reranking quality at far lower cost (61 ms vs 10,700 ms on MS MARCO reranking)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Query and document tokens attend to each other through full cross-attention inside BERT",
+        "why": "That is the cross-encoder. ColBERT encodes them separately and lets them interact only through MaxSim."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Its MaxSim interaction layer has many trainable parameters that must be retrained for each corpus",
+        "why": "MaxSim has no trainable parameters; the learned parts are the BERT encoder and the projection layer."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "It cannot be used for end-to-end retrieval, only for reranking a BM25 list",
+        "why": "The paper does both: reranking and end-to-end retrieval through a vector-similarity index over token embeddings."
+      }
+    ],
+    "explanation": "Bi-encoders compress a passage into one vector (cheap, small index, lossy). Cross-encoders read query and passage together (most expressive, but a full forward pass per pair). ColBERT encodes separately, keeps every token vector and scores with MaxSim: much cheaper than a cross-encoder (the paper reports over 170x faster and about 13,900x fewer FLOPs than BERT reranking) and typically stronger than single-vector retrieval, at the cost of a much larger index.",
+    "reference": "https://arxiv.org/abs/2004.12832",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-038",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A team adds small-to-big retrieval: 150-token children, parents are whole sections of up to 3,000 tokens, top-8 children. Answer quality drops and cost rises. Which two causes are most likely? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Several of the top 8 children come from the same section, so the same parent is sent more than once",
+        "why": "Correct. Without deduplication by parent id, repeated sections waste budget and push other evidence out."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Up to 8 x 3,000 = 24,000 tokens of parents dilute the relevant passages and inflate cost",
+        "why": "Correct. Parent size, not child count, drives context length; a token budget or smaller parents is needed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The child chunks must be embedded with a different model from the one used for the parents",
+        "why": "Parents are not embedded at all in this pattern; they are fetched by id."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Parents must also be embedded and searched, otherwise the children cannot be mapped to them",
+        "why": "The mapping is a stored parent id on each child, a simple lookup, not a second vector search."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "150-token children are too small to embed, so their vectors are random",
+        "why": "Short chunks embed fine; their precision is the reason small-to-big exists. They lack context, which the parent supplies."
+      }
+    ],
+    "explanation": "Small-to-big shifts the risk from the retriever to the context. Each match can pull in a section many times its size, and matches cluster within sections. Production versions deduplicate by parent, cap total parent tokens, choose parents at a sensible structural level (a subsection rather than a whole chapter) and sometimes fall back to a window around the child when the parent is too large.",
+    "reference": "https://www.zeroentropy.dev/concepts/parent-document-retrieval/",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-039",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "GraphRAG global search over a large corpus gives thorough answers but takes too long and costs too much per question. Users mostly ask broad, theme-level questions. What is the most appropriate adjustment?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to local search, since it is cheaper per question and reads far fewer community reports than global search does",
+        "why": "Local search anchors on entities matched to the query. Theme questions name no specific entity, so it loses exactly the corpus-wide view users want."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Run global search at a coarser, more summarised community level, accepting somewhat less detailed answers",
+        "why": "Correct. The docs note that more detailed levels give more thorough answers but need more time and LLM resources, because there are more reports to map over."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to basic search with a larger top-k over text units",
+        "why": "Vector search over chunks has nothing in a theme question to anchor on; that failure is why global search exists."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Skip the reduce step and return the map-step outputs directly",
+        "why": "The map outputs are many partial, rated point lists; without reduce there is no single filtered, coherent answer."
+      }
+    ],
+    "explanation": "Global search maps an LLM over chunks of community reports from one level of the hierarchy, each producing rated points, then reduces the top-rated points into a final answer. Its cost scales with the number of reports at the chosen level. Coarser levels have fewer, more summarised reports: faster and cheaper, less detailed. That level choice is the main dial.",
+    "reference": "https://microsoft.github.io/graphrag/query/global_search/",
+    "roleLevel": 5
+  },
+  {
+    "id": "RAG-ADV-040",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does CRAG define an *Ambiguous* action that combines refined retrieved documents with web search results, instead of forcing every query into Correct or Incorrect?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Web search is cheaper than the local index, so using it more often lowers cost",
+        "why": "Web search adds a query-rewriting LLM call and external calls; it is not the cheaper path."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Doubling the context always improves accuracy because the generator sees more text",
+        "why": "More text can add noise; that is why CRAG filters strips. The Ambiguous action is about evaluator uncertainty, not volume."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The T5-large evaluator cannot output scores between the two thresholds",
+        "why": "The evaluator outputs a continuous score; the thresholds are what turn it into three actions."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The evaluator is imperfect, so when its confidence sits between the thresholds, using both sources hedges against a wrong call",
+        "why": "Correct. The paper describes Ambiguous as a soft middle ground that reduces dependence on the evaluator's accuracy."
+      }
+    ],
+    "explanation": "CRAG's action depends on a learned evaluator with two thresholds (dataset-specific, for example 0.59 and -0.99 on PopQA). A wrong Correct verdict passes bad context; a wrong Incorrect verdict throws away good context. When the score is in between, CRAG keeps the refined internal knowledge and adds refined web knowledge, letting the generator use whichever is right. In your own pipeline this is an argument for a middle band rather than a single hard cut-off.",
+    "reference": "https://arxiv.org/abs/2401.15884",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-041",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements correctly compare Self-RAG and CRAG? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Self-RAG builds its retrieval and critique signals into the generator through training, while CRAG adds an external evaluator to an unchanged generator",
+        "why": "Correct. Self-RAG's generator predicts reflection tokens; CRAG's T5-large evaluator sits beside any generator."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "CRAG can be layered on top of Self-RAG, and the CRAG paper reports gains from doing so",
+        "why": "Correct. Self-CRAG reached 61.8% on PopQA versus 54.9% for Self-RAG with the same 7B model."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Self-RAG falls back to web search when its IsRel token marks every passage irrelevant",
+        "why": "Web search fallback is CRAG's Incorrect action. Self-RAG uses IsRel to rank candidates; it has no web fallback."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "CRAG requires retraining the generator with special tokens before it can be used",
+        "why": "CRAG is plug-and-play; only its evaluator is trained."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Both call GPT-4 at inference time to judge passage relevance",
+        "why": "Neither does. Self-RAG used GPT-4 only to create critic training data; CRAG used ChatGPT for query rewriting, not as the relevance judge."
+      }
+    ],
+    "explanation": "Self-RAG and CRAG attack the same problem, retrieval that is unnecessary or wrong, from different sides. Self-RAG retrains the generator so it decides when to retrieve and critiques passages and its own output. CRAG leaves the generator alone and corrects retrieval with an external evaluator, knowledge-strip filtering and web search. Because they are orthogonal, the CRAG paper combines them.",
+    "reference": "https://arxiv.org/abs/2401.15884",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-042",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Users of a reading app ask questions about 100,000-token novels, such as *\"How does the narrator's view of her father change over the book?\"* Retrieval of 300-token chunks returns a few scattered scenes, and the context budget is 8,000 tokens. Which approach fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Shrink chunks to 100 tokens so retrieval is more precise",
+        "why": "More precise matching of single scenes does not help a question about change across the whole book."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Small-to-big retrieval: match on small chunks and hand the LLM the whole novel as their parent document",
+        "why": "A 100,000-token parent does not fit an 8,000-token budget, so it would be truncated."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Build a RAPTOR-style tree of recursive cluster summaries and retrieve across all its levels",
+        "why": "Correct. Higher-level summary nodes condense themes spread across the book into units that fit the budget, while leaves still serve detail questions."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Replace the bi-encoder with ColBERT for token-level matching",
+        "why": "Better matching still returns individual passages; the problem is that no single passage contains the answer."
+      }
+    ],
+    "explanation": "Questions about arcs, themes or change over a long text need information integrated from many parts of it. RAPTOR precomputes that integration: clusters of chunks are summarised, the summaries are clustered and summarised again, and collapsed-tree retrieval can pick high-level nodes within a token budget. Paired with GPT-4, RAPTOR improved the best reported accuracy on QuALITY (long-document reading comprehension) by 20 points absolute.",
+    "reference": "https://arxiv.org/abs/2401.18059",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-ADV-043",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each retrieval problem to the technique that targets it most directly.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Late chunking",
+        "why": "Encodes the whole document before pooling per chunk, so chunk vectors carry document context."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Parent-document (small-to-big) retrieval",
+        "why": "Matches on small child chunks and hands the LLM their larger parent."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "ColBERT late interaction",
+        "why": "Keeps a vector per token and scores with MaxSim, trading index size for finer matching."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "GraphRAG global search",
+        "why": "Map-reduces over pre-generated community reports to answer corpus-wide questions."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A chunk says \"its population grew 4%\" without naming the city, so its embedding never matches queries about that city",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Short chunks match precisely, but the LLM needs the surrounding section to answer correctly",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Single-vector embeddings blur rare terms in long passages, and you can afford a much larger index",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "\"What are the recurring complaints across all 10,000 support tickets?\"",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Each technique fixes a different failure. Late chunking fixes missing context inside chunk embeddings. Small-to-big fixes the precision versus context tension between what is matched and what is read. Late interaction fixes information lost by compressing a passage into one vector. GraphRAG global search fixes questions that are about the corpus as a whole, which no single chunk answers.",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-044",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps of ColBERT's end-to-end retrieval for one query, as described in the original paper.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "For each query vector, retrieve its nearest document token vectors from a vector-similarity index",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Load the full token matrices of the candidate documents and compute exact MaxSim scores",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Encode the query into a fixed number of token vectors, padding with `[mask]` tokens",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Map the retrieved token vectors to the documents they belong to, forming a candidate set",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Sort the candidates by score and return the top k",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "A",
+      "D",
+      "B",
+      "E"
+    ],
+    "explanation": "End-to-end ColBERT first encodes the query (padded with `[mask]` to 32 tokens). Each query vector then retrieves its top-k' nearest document token vectors from a faiss index, those hits are mapped back to their documents, and only that candidate set is re-ranked exhaustively with full MaxSim. The paper notes most latency is in gathering and transferring candidate embeddings, not in the MaxSim arithmetic.",
+    "reference": "https://arxiv.org/abs/2004.12832",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-ADV-045",
+    "domain": 4,
+    "skill": "advanced-patterns",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are taking an agentic RAG assistant to production. Which three controls belong in the design? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A maximum number of steps and a token or cost budget per request",
+        "why": "Correct. Hard bounds keep a non-converging loop from consuming unbounded time and money."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Per-tool timeouts with a bounded number of retries and a fallback when a tool keeps failing",
+        "why": "Correct. A failing tool should produce a clear observation and a fallback path, not endless retries."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Tracing of every model and tool call with inputs, outputs and timings",
+        "why": "Correct. Agent behaviour is path-dependent; without step-level traces you cannot debug loops or regressions."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Let the model alone decide when to stop, since it knows best whether it has enough evidence",
+        "why": "Model judgement is useful, but an external stopping condition is still needed for the runs where that judgement fails."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Retry any failed tool call indefinitely with exponential backoff",
+        "why": "Backoff spaces retries out but without a cap a dead dependency still hangs the request forever."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Disable logging of tool outputs to cut latency",
+        "why": "Logging is cheap relative to LLM calls, and removing it blinds you to exactly the failures agents produce."
+      }
+    ],
+    "explanation": "An agent in production needs budgets (steps, tokens, cost, wall-clock), resilient tool handling (timeouts, bounded retries, fallbacks, informative error observations) and observability (step-level traces). Anthropic's guidance pairs agent autonomy with stopping conditions and with getting ground truth from the environment at each step; the traces are how you check both.",
+    "reference": "https://www.anthropic.com/engineering/building-effective-agents",
+    "source": "interview:advanced-patterns",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476824/ai-engineer-interview-rag-agents-evals/",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.analyticsvidhya.com/blog/2026/02/agentic-ai-interview-questions-and-answers/"
+      ]
+    }
+  }
+]

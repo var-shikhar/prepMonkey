@@ -1,0 +1,51 @@
+{
+  "advanced-patterns": {
+    "summary": "Advanced RAG patterns change who controls retrieval (agents, Self-RAG, CRAG), what the index looks like (GraphRAG entity graphs and community reports, RAPTOR summary trees, ColBERT token vectors) or how chunks relate to their context (small-to-big, sentence windows, late chunking). Know what each pattern actually does according to its paper or docs, the failure mode it targets, and what it costs in LLM calls, storage and latency.",
+    "points": [
+      "Agentic RAG: the LLM decides whether, what and how often to retrieve and which tool to call. Anthropic separates workflows (predefined code paths) from agents (LLM-directed) and notes agents trade latency and cost for task performance; add stopping conditions such as a maximum number of iterations, plus token or cost budgets, bounded tool retries and step-level traces.",
+      "Self-RAG (2023) trains the generator to emit reflection tokens: Retrieve (yes/no/continue), IsRel, IsSup (fully/partially/no support) and IsUse (1-5). A Llama 2 7B critic trained on GPT-4 labels annotates training data offline; at inference the 7B/13B generator predicts the tokens itself. Retrieval can fire when normalised P(Retrieve=Yes) exceeds a threshold (0.2 default); segments are ranked by a weighted sum of critique probabilities (1.0, 1.0, 0.5) in a segment-level beam search.",
+      "CRAG (2024) adds a fine-tuned T5-large (about 0.77B) retrieval evaluator. Correct (some document above the upper threshold): decompose documents into knowledge strips, filter low-scoring strips, recompose. Incorrect (all below the lower threshold): discard, rewrite the query into keywords, web search. Ambiguous: combine both. It is plug-and-play; Self-CRAG reached 61.8% vs 54.9% for Self-RAG on PopQA.",
+      "GraphRAG indexing: text units (1,200 tokens default), LLM entity and relationship extraction per unit, description summarisation, optional claim extraction (off by default), Hierarchical Leiden communities, an LLM report per community, then embeddings of entity descriptions, text units and reports. Most LLM cost is paid at indexing.",
+      "GraphRAG querying: global search map-reduces over community reports at one level (map gives rated points, reduce keeps the top ones) for corpus-wide questions; local search anchors on query-related entities and gathers relationships, covariates, text units and reports into one window; DRIFT primes with the top-K community reports, then refines follow-up questions with local search; basic search is top-k vector RAG. More detailed community levels give more thorough but slower, costlier global answers.",
+      "Multi-hop questions need a fact that only appears after an earlier hop. IRCoT retrieves K paragraphs with the question, then alternates generating one CoT sentence and retrieving with that sentence (max 8 steps, at most 15 paragraphs in the paper), stopping at \"answer is:\"; a separate reader answers. Gains: up to 21 points retrieval, 15 points QA.",
+      "Coverage questions (\"which of our 40 contracts...\") are not fixed by raising k or reranking: examine every document (map-reduce over a filtered set) or extract the attribute at ingest into a structured field.",
+      "RAPTOR: 100-token leaves embedded with SBERT, soft clustering with Gaussian mixtures after UMAP (BIC picks the count), gpt-3.5-turbo summaries, recursively. Collapsed-tree retrieval (all levels ranked together, 2,000-token budget) beat tree traversal; with GPT-4 it improved the best QuALITY accuracy by 20 points absolute.",
+      "Small-to-big: embed small children, store a parent id, return the parent; sentence-window returns neighbouring sentences around the matched sentence. Deduplicate by parent and budget parent tokens: 6 hits in 3 distinct 1,500-token parents is 4,500 tokens, 9,000 without dedupe.",
+      "Late chunking (Jina, 2024): run the whole document (up to 8,192 tokens for jina-embeddings-v2) through the transformer, then mean-pool token embeddings per chunk span. No training needed, but requires a long-context mean-pooling model; long documents use macro chunks with overlapping context tokens. Unlike Contextual Retrieval it does not change chunk text, so BM25 gains nothing.",
+      "ColBERT: 128-dim L2-normalised vector per non-punctuation token, queries padded with [mask] to 32 tokens, score = sum over query tokens of max dot product over document tokens (MaxSim, no trainable parameters). Documents encode offline; reported over 170x faster and 13,900x fewer FLOPs than BERT reranking. 16-bit vectors are 256 bytes; ColBERTv2 residual compression stores 20 (1-bit) or 36 (2-bit) bytes, a 6-10x smaller index.",
+      "Cache-augmented generation preloads a limited, stable knowledge set into a long-context model and reuses its precomputed cache, removing retrieval; it breaks when the knowledge outgrows the window or changes often."
+    ],
+    "traps": [
+      "Calling CRAG \"reranking with a different model\": its evaluator can discard the whole retrieved set and switch to web search, and filters strips inside documents.",
+      "Saying Self-RAG runs a critic or GPT-4 at inference; the generator emits reflection tokens itself.",
+      "Proposing GraphRAG for single-fact lookups over fast-changing docs, or local search for corpus-wide theme questions.",
+      "Answering \"raise k\" to multi-hop or all-documents questions; similarity top-k neither finds bridge entities nor guarantees coverage.",
+      "Forgetting to deduplicate and budget parents in small-to-big, so context and cost explode.",
+      "Confusing late chunking (pooling after a full-document pass, chunk text unchanged) with Contextual Retrieval (LLM-written context prepended to the text).",
+      "Treating ColBERT's MaxSim as \"best single token pair\" or \"sum of all pairs\"; it sums each query token's best match, and the index stores a vector per token.",
+      "Shipping an agent loop without step, cost and tool-retry limits or traces, or adopting agents without evidence that single-pass fails."
+    ],
+    "docs": [
+      {
+        "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+        "url": "https://arxiv.org/abs/2310.11511"
+      },
+      {
+        "title": "Corrective Retrieval Augmented Generation",
+        "url": "https://arxiv.org/abs/2401.15884"
+      },
+      {
+        "title": "Microsoft GraphRAG: query engine overview",
+        "url": "https://microsoft.github.io/graphrag/query/overview/"
+      },
+      {
+        "title": "ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction",
+        "url": "https://arxiv.org/abs/2112.01488"
+      },
+      {
+        "title": "Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models",
+        "url": "https://arxiv.org/abs/2409.04701"
+      }
+    ]
+  }
+}
