@@ -1,0 +1,50 @@
+{
+  "tools": {
+    "summary": "Tools are the model-controlled primitive: the server describes each one with a name, a description and a JSON Schema for its arguments, and the client calls it with `tools/call`. Know the exact result shape (content blocks, `structuredContent`, `isError`), the two error channels, why annotations are only hints, and how to design a small, well-described tool surface that a model can use without drowning its context.",
+    "points": [
+      "A tool definition has a required `name` and `inputSchema`, plus optional `title`, `description`, `icons`, `outputSchema` and `annotations`. Display-name precedence is `title`, then `annotations.title`, then `name`.",
+      "`inputSchema` MUST be a valid JSON Schema object (never `null`) with `type: \"object\"` at the root; any JSON Schema 2020-12 keyword is allowed (2026-07-28 loosened this). With no `$schema` the dialect is 2020-12. For a tool with no parameters the recommended schema is `{ \"type\": \"object\", \"additionalProperties\": false }`.",
+      "Tool names SHOULD be 1 to 128 characters, case-sensitive, unique within a server, and use only ASCII letters, digits, `_`, `-` and `.`. Aggregating hosts SHOULD disambiguate collisions with their own prefix; `serverInfo.name` is not guaranteed unique.",
+      "Results carry a `content` array of blocks (`text`, `image`, `audio`, `resource_link`, embedded `resource`), optional `structuredContent` and optional `isError` (absent means false), plus `resultType: \"complete\"` in 2026-07-28. Linked resources need not appear in `resources/list`.",
+      "If `outputSchema` is declared, servers MUST return conforming `structuredContent` and clients SHOULD validate it. A tool returning structured content SHOULD also return the serialized JSON in a text block for older clients. `structuredContent` may now be any JSON value, including an array.",
+      "Two error channels: protocol errors (unknown tool, request failing the `CallToolRequest` schema, server failures) are JSON-RPC errors, for example `-32602` for an unknown tool. Tool execution errors (API failures, bad values such as a past date or wrong date format, business rules) are results with `isError: true` and an actionable message. Clients SHOULD pass execution errors to the model; protocol errors only MAY be passed.",
+      "Annotations `readOnlyHint` (default false), `destructiveHint` (default true), `idempotentHint` (default false) and `openWorldHint` (default true) are hints. `destructiveHint` and `idempotentHint` only matter when `readOnlyHint` is false. Clients MUST treat annotations as untrusted unless the server is trusted.",
+      "`tools/list` MUST NOT vary per connection or as a side effect of other requests, but MAY vary by the authorization on the request. Servers SHOULD return a deterministic order for client caching and prompt-cache hits; results carry `ttlMs` and `cacheScope`, and `listChanged` servers send `notifications/tools/list_changed` to clients listening with `toolsListChanged: true`.",
+      "No protocol sessions: cross-call state uses an explicit, opaque, server-minted handle returned by a creation tool and passed back as an argument. Check the caller's authorization against the handle every call, state the lifetime in the description, and return an `isError` result for expired handles.",
+      "A broken Streamable HTTP stream means the client re-issues the call as a new request with a new id, so side-effecting tools need their own idempotency keys.",
+      "Server MUSTs: validate all inputs, enforce access control, rate limit, sanitize outputs. Client SHOULDs: confirm sensitive operations, show inputs before calling, validate results, set timeouts, log usage, never auto-fetch network `$ref`s (reject unresolvable ones) and bound the cost of composition-heavy schemas.",
+      "Design for the model: a few workflow-level tools rather than one per endpoint, descriptions written for a new colleague, unambiguous parameter names (`user_id`), enums for closed sets, high-signal and bounded responses (pagination, filtering, a `response_format` choice), actionable error text, and evaluations with realistic tasks and held-out sets."
+    ],
+    "traps": [
+      "Returning a JSON-RPC error for a fixable input problem: the model may never see it. Use `isError: true` with a message that says how to fix the call.",
+      "Treating `readOnlyHint: true` from an arbitrary server as permission to auto-run a tool; annotations are untrusted hints and never replace authorization.",
+      "Assuming an omitted `destructiveHint` means safe: it defaults to `true`, and `openWorldHint` defaults to `true` too.",
+      "Writing `\"required\": true` inside a property; in 2020-12 `required` is an array on the parent object, and the boolean form fails meta-schema validation.",
+      "Deduplicating retries on the JSON-RPC id, or keeping state under `Mcp-Session-Id`: re-issued calls get new ids, and sessions no longer exist in 2026-07-28.",
+      "Unlocking extra tools after a `login` call on the same connection; lists may vary by request credentials, not by earlier requests.",
+      "Using `tools/list` pagination to shrink huge tool outputs; protocol pagination is for list operations, so tools must page or truncate their own results."
+    ],
+    "docs": [
+      {
+        "title": "MCP specification: Tools (2026-07-28)",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+      },
+      {
+        "title": "MCP specification: JSON Schema usage and $ref resolution",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/index"
+      },
+      {
+        "title": "MCP schema reference: Tool and ToolAnnotations",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/schema"
+      },
+      {
+        "title": "MCP client best practices: progressive tool discovery",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices"
+      },
+      {
+        "title": "Anthropic: Writing effective tools for agents",
+        "url": "https://www.anthropic.com/engineering/writing-tools-for-agents"
+      }
+    ]
+  }
+}
