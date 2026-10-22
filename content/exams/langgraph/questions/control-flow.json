@@ -1,0 +1,2137 @@
+[
+  {
+    "id": "LGR-CFL-001",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An older tutorial wires a graph with `builder.set_entry_point(\"fetch\")` and `builder.set_finish_point(\"answer\")`. Which calls do the current docs recommend instead?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`builder.add_edge(START, \"fetch\")` and `builder.add_edge(\"answer\", END)`",
+        "why": "The docs state that each helper is equivalent to an edge from `START` or to `END`, and call the edge form the modern syntax."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`builder.add_node(\"fetch\", fetch, entry=True)` and `builder.add_node(\"answer\", answer, finish=True)`",
+        "why": "`add_node` has no entry or finish flags; where a graph starts and stops is expressed with edges."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`builder.compile(entry=\"fetch\", finish=\"answer\")`",
+        "why": "`compile()` takes options such as a checkpointer and interrupts, not the start and finish nodes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`builder.add_conditional_edges(START, \"fetch\")` and `builder.add_conditional_edges(END, \"answer\")`",
+        "why": "Conditional edges take a routing function, and no edge can start from `END`."
+      }
+    ],
+    "explanation": "`set_entry_point(node)` is the same as `add_edge(START, node)` and `set_finish_point(node)` is the same as `add_edge(node, END)`. Both still work, but the docs present the explicit edges from the virtual `START` node and to the virtual `END` node as the recommended form.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:start-end",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CFL-002",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If node `a` has normal edges to both `b` and `c`, LangGraph runs `b` and `c` in parallel in the next super-step.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: every destination of a node's outgoing edges runs in the next super-step, in parallel."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It is true. The docs say that when a node has several outgoing edges, all destinations run in parallel as part of the next super-step."
+      }
+    ],
+    "explanation": "Fan-out needs no special API: two `add_edge` calls from the same node schedule both targets together. If both write the same key, that key needs a reducer, because their updates land in the same step.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:core-concepts",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://raw.githubusercontent.com/jkbrooks/context-engineering-takehome/main/00_BASE_PROBLEM.md",
+        "https://pub.towardsai.net/cracking-the-ai-engineer-interview-langgraph-fundamentals-part-2-83a750cfd11a",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CFL-003",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "You register a node without giving it a name:\n\n```python\ndef summarize_docs(state: State):\n    ...\n\nbuilder.add_node(summarize_docs)\n```\n\nWhat string must you use as the node name in `add_edge`? Type the name.",
+    "options": [],
+    "accepted": [
+      "summarize_docs",
+      "\"summarize_docs\"",
+      "'summarize_docs'"
+    ],
+    "explanation": "When `add_node` gets only a function, the node is named after the function, so this node is `\"summarize_docs\"` and edges refer to it by that string. Pass a name explicitly (`add_node(\"summarize\", summarize_docs)`) when you want a different one.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CFL-004",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You call `builder.add_conditional_edges(\"classify\", route)` without a path map. What should `route(state)` return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A partial state update such as `{\"intent\": \"billing\"}`",
+        "why": "A routing function's return value is read as a destination, not merged into state; to update state and route together, a node returns `Command`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The name of the next node (or a list of names, or `END`)",
+        "why": "Without a path map, the return value is used directly as the node or nodes to run next."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A boolean, which LangGraph maps to the first and second nodes added after `classify`",
+        "why": "LangGraph does not map booleans by node order; a boolean only works if a path map such as `{True: \"b\", False: \"c\"}` translates it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The compiled graph object that should run next",
+        "why": "Destinations are node names in the current graph; a compiled subgraph is added with `add_node` and then addressed by its name."
+      }
+    ],
+    "explanation": "The routing function receives the state and returns where to go: a node name, a list of names (all run in the next super-step) or `END`. A path map is optional and translates other return values, for example `{True: \"node_b\", False: \"node_c\"}`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:conditional-edges",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CFL-005",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A node must save `intent = \"billing\"` and then go straight to the `billing` node, in one step. What should it return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{\"intent\": \"billing\", \"goto\": \"billing\"}`",
+        "why": "A plain dict is only a state update; LangGraph does not read a `goto` key from it to decide routing."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Send(\"billing\", {\"intent\": \"billing\"})`",
+        "why": "`Send` is returned from a conditional edge or placed in `Command.goto`; it gives `billing` that payload as its input but does not write `intent` to the shared state."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`Command(update={\"intent\": \"billing\"}, goto=\"billing\")`",
+        "why": "`Command` combines a state update and a hop to the next node in a single return value."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`interrupt({\"goto\": \"billing\"})`",
+        "why": "`interrupt` pauses the graph for human input; it does not route to a node."
+      }
+    ],
+    "explanation": "`Command` lets a node update state and choose its next node together. Annotate the node as `-> Command[Literal[\"billing\"]]` so the graph drawing knows about the possible hop. If a node only needs to pick a route without writing state, a conditional edge is the simpler tool.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:command-routing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-006",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each requirement with the LangGraph primitive that fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`add_edge(\"a\", \"b\")`",
+        "why": "Fixed edge: `b` always runs after `a`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`add_conditional_edges(\"a\", route)`",
+        "why": "A routing function reads state after `a` and returns the next node or nodes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`Send(\"worker\", payload)`",
+        "why": "Starts one invocation of a node with its own input; the number of sends is decided at run time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Command(update=..., goto=...)`",
+        "why": "Returned by a node to write state and pick the next node in one step."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "After `load`, the graph must always run `clean`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "After `grade`, go to `rewrite` or to `END` depending on the score in state",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Summarise each of an unknown number of documents in parallel, one call per document",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The `triage` node stores the detected language and jumps to the matching handler",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Normal edges are static, conditional edges choose at run time from state, `Send` creates a variable number of parallel invocations with per-call input (map-reduce), and `Command` merges a state update with routing inside the node itself.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:core-concepts",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.linkedin.com/posts/bilal-momin_generativeai-llm-langgraph-activity-7353048174648840192-C0CR",
+        "https://raw.githubusercontent.com/jkbrooks/context-engineering-takehome/main/00_BASE_PROBLEM.md",
+        "https://pub.towardsai.net/cracking-the-ai-engineer-interview-langgraph-fundamentals-part-2-83a750cfd11a",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CFL-007",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In `Send(\"generate_joke\", {\"subject\": s})`, what is the second argument?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A config dict passed to the node as `config[\"configurable\"]`",
+        "why": "Run-time configuration is passed with `invoke(..., config)`, not through `Send`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An update merged into the shared graph state before `generate_joke` runs",
+        "why": "The payload is not written to the graph state; it is the input of one node invocation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The list of nodes to run after `generate_joke` finishes",
+        "why": "What runs afterwards is decided by the edges of `generate_joke`, not by `Send`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The input that this one invocation of `generate_joke` receives as its state",
+        "why": "`Send` takes the target node's name and the state to pass to that node."
+      }
+    ],
+    "explanation": "`Send(node, arg)` schedules one run of `node` with `arg` as its input. Returning a list of `Send` objects from a conditional edge starts one run per item, each with different input, which is how LangGraph does map-reduce when the number of branches is known only at run time.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:send-map-reduce",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-008",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A graph has one node, `a`, wired with `builder.add_edge(START, \"a\")` and no other edge. What happens on `builder.compile().invoke(inputs)`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`a` runs once and the call returns the resulting state",
+        "why": "When no further node is scheduled, the run ends; the edge to `END` just makes this explicit."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`compile()` raises because `a` has no edge to `END`",
+        "why": "An edge to `END` is optional; compilation only insists on an edge from `START`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`invoke` waits for further input because the graph never reaches `END`",
+        "why": "There is no waiting state; the run ends as soon as no node is scheduled for the next step."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`a` runs repeatedly until the recursion limit is hit",
+        "why": "Nothing schedules `a` again, so it runs once."
+      }
+    ],
+    "explanation": "A run finishes when no node is active for the next super-step. `add_edge(\"a\", END)` documents that `a` is terminal and is good style, but leaving it out is not an error. What compilation does require is at least one edge from `START`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:stategraph-basics",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CFL-009",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this graph runs?\n\n```python\nbuilder.add_conditional_edges(\n    \"a\",\n    lambda s: \"other\" if s[\"v\"] > 0 else \"left\",\n    {\"left\": \"b\", \"right\": \"c\"},\n)\ngraph = builder.compile()\ngraph.invoke({\"v\": 1})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`compile()` raises a `ValueError` because the router can return a key missing from the map",
+        "why": "LangGraph cannot know at compile time what a lambda will return; compilation succeeds."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`invoke` raises `KeyError: 'other'` when the router's result is looked up in the path map",
+        "why": "The router returns `\"other\"`, which is not a key of the path map, so the lookup fails at run time."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The run ends quietly after `a` because `\"other\"` has no destination",
+        "why": "With a path map the lookup is strict and fails loudly; quiet endings are a different, unmapped case."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both `b` and `c` run because the map lists two destinations",
+        "why": "The map is a translation table; only the destination for the returned key runs."
+      }
+    ],
+    "explanation": "A path map translates router return values into node names. Every value the router can return must be a key in the map; otherwise the run fails with a `KeyError` when that branch is taken, which a test with `v = 0` alone would never reveal. Keep router return values and map keys in one place, for example a `Literal` type.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:conditional-edges",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-010",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This generate-then-review loop is capped at two attempts. What does it return?\n\n```python\nclass State(TypedDict):\n    draft: str\n    attempts: int\n    ok: bool\n\ndef generate(state: State):\n    return {\"draft\": f\"v{state['attempts'] + 1}\", \"attempts\": state[\"attempts\"] + 1}\n\ndef review(state: State):\n    return {\"ok\": state[\"draft\"] == \"v3\"}\n\ndef route(state: State):\n    if state[\"ok\"] or state[\"attempts\"] >= 2:\n        return END\n    return \"generate\"\n\nb = StateGraph(State)\nb.add_node(\"generate\", generate)\nb.add_node(\"review\", review)\nb.add_edge(START, \"generate\")\nb.add_edge(\"generate\", \"review\")\nb.add_conditional_edges(\"review\", route, [\"generate\", END])\nprint(b.compile().invoke({\"draft\": \"\", \"attempts\": 0, \"ok\": False}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'draft': 'v3', 'attempts': 3, 'ok': True}`",
+        "why": "The cap stops the loop after the second attempt, before `v3` is ever produced."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'draft': 'v1', 'attempts': 1, 'ok': False}`",
+        "why": "After the first review `attempts` is 1, so `route` sends the graph back to `generate` once more."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`{'draft': 'v2', 'attempts': 2, 'ok': False}`",
+        "why": "Two laps run; after the second review `attempts >= 2`, so `route` returns `END` even though the draft was not approved."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `GraphRecursionError`, because the loop never approves the draft",
+        "why": "The attempt counter ends the loop long before the default recursion limit."
+      }
+    ],
+    "explanation": "A loop is a conditional edge that routes back to an earlier node. Always give it an exit that does not depend on the model agreeing, such as an attempt counter in state; the recursion limit is only a safety net and ends the run with an error rather than a result.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:loops",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-011",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about `START` and `END` are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`builder.add_conditional_edges(START, router)` is a valid way to choose the first node at run time",
+        "why": "The docs call this a conditional entry point."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A graph with nodes but no edge from `START` fails at `compile()` with a `ValueError`",
+        "why": "Compilation checks for an entry point and reports that at least one edge from `START` is needed."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "To loop back to the beginning, `builder.add_edge(\"review\", START)` raises a `ValueError`; route to the first named node instead",
+        "why": "`START` can only be the source of an edge; a loop must target a real node."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Every node without outgoing edges must have an explicit `add_edge(node, END)` or compilation fails",
+        "why": "A node with no outgoing edge simply ends the run; the `END` edge is optional."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`START` is an ordinary node you can register with `add_node(\"__start__\", setup)` to run set-up code",
+        "why": "`__start__` is a reserved name, and `add_node` raises a `ValueError` for it."
+      }
+    ],
+    "explanation": "`START` and `END` are virtual nodes: `START` is where input enters and can only be an edge's source, `END` marks termination and can only be a target. A conditional edge from `START` picks the first node dynamically. Set-up work belongs in a real first node.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:start-end",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-012",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Nodes `a` and `b` both start from `START`, and `c` runs after `a`. What values of `v` do `b` and `c` see?\n\n```python\nclass S(TypedDict):\n    log: Annotated[list, operator.add]\n    v: int\n\ng = StateGraph(S)\ng.add_node(\"a\", lambda s: {\"v\": 99, \"log\": [\"a\"]})\ng.add_node(\"b\", lambda s: {\"log\": [f\"b saw {s['v']}\"]})\ng.add_node(\"c\", lambda s: {\"log\": [f\"c saw {s['v']}\"]})\ng.add_edge(START, \"a\")\ng.add_edge(START, \"b\")\ng.add_edge(\"a\", \"c\")\ng.compile().invoke({\"v\": 0})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`b` sees 99 and `c` sees 99",
+        "why": "`b` runs in the same super-step as `a`, so `a`'s write is not visible to it yet."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`b` sees 0 or 99 depending on which thread finishes first",
+        "why": "This is deterministic: nodes in one step all read the state from before the step."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`b` sees 0 and `c` sees 0",
+        "why": "`c` runs after the step in which `a` wrote 99, so it reads the updated value."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`b` sees 0 and `c` sees 99",
+        "why": "Writes are applied at the end of a super-step; `b` shares a step with `a`, while `c` runs in the next one."
+      }
+    ],
+    "explanation": "LangGraph runs in super-steps. All nodes in a step read the same snapshot, and their writes are applied together when the step ends. So parallel siblings never see each other's updates, and a node in the following step sees all of them.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/pregel",
+    "source": "interview:execution-model",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-013",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A node inside a subgraph hands control to the `billing` node of the parent graph:\n\n```python\nreturn Command(goto=\"billing\", update={...}, graph=Command.______)\n```\n\nType the missing attribute.",
+    "options": [],
+    "accepted": [
+      "PARENT",
+      "Command.PARENT"
+    ],
+    "explanation": "`graph=Command.PARENT` makes `goto` and `update` apply to the closest parent graph instead of the subgraph the node lives in. This is how agent handoffs between sibling subgraphs are built.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-014",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If node `a` returns `Command(goto=\"c\")` and the builder also has `add_edge(\"a\", \"b\")`, only `c` runs after `a`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false. `Command` adds a dynamic edge; the static edge to `b` still fires, so both run."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: both `b` and `c` run, because `Command.goto` does not replace static edges."
+      }
+    ],
+    "explanation": "The docs warn that `Command` only adds dynamic edges and that static edges defined with `add_edge` still execute. Pick one routing mechanism per node: static edges, or `Command`/conditional edges, not both.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:command-vs-conditional-edge",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-015",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the events of one map-reduce run in order. A `plan` node writes a list of subjects, a conditional edge fans out with `Send`, and `worker` has an edge to `reduce`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Each `worker` invocation runs in parallel with its own payload, and the `results` reducer combines their outputs",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`plan` runs and writes `subjects` to the state",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`reduce` runs once and reads the combined `results`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The conditional edge returns `[Send(\"worker\", {\"subject\": s}) for s in state[\"subjects\"]]`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "The planner writes the work list, the routing function turns it into one `Send` per item, the workers run in the same super-step and their outputs are merged by the reducer on the shared key, and the aggregator runs in the next step with all results available.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:send-map-reduce",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-016",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A research subgraph uses the same `MessagesState` schema as the parent graph and should read and append to the same `messages`. What is the simplest correct way to plug it in?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pass the compiled subgraph to `builder.add_node(\"research\", research_graph)`",
+        "why": "When parent and child share state keys, a compiled graph can be added directly as a node."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Convert the subgraph into a tool and call it from an agent node",
+        "why": "That changes the design entirely and is not needed to share a `messages` key."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Copy the subgraph's nodes and edges into the parent builder",
+        "why": "Flattening loses the reuse and isolation a subgraph gives you."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Write a wrapper node that copies every key into `research.invoke(...)` and copies the result back",
+        "why": "That works, but the docs reserve the wrapper for schemas that differ; with shared keys it is boilerplate."
+      }
+    ],
+    "explanation": "The docs describe two patterns. With shared keys, add the compiled subgraph as a node and it reads and writes the parent's channels directly. With different schemas, call the subgraph inside a node function that maps parent state to subgraph input and the output back.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "source": "interview:subgraphs-state-mapping",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-017",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A team has a working Python script full of `if`/`else` branches, loops and helper calls. They want checkpointing and a human approval pause with as little restructuring as possible. Which approach fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rewrite it as a `StateGraph` with one node per helper and conditional edges for every branch",
+        "why": "That works, but it is the larger refactor; the Graph API suits workflows that benefit from explicit structure."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Wrap the script in `@entrypoint(checkpointer=...)` and turn its slow or side-effecting helpers into `@task` functions",
+        "why": "The Functional API keeps ordinary Python control flow and adds persistence and interrupts."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Build a `Pregel` application directly from channels and actors",
+        "why": "The low-level runtime is possible but is the most work, not the least."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap the script in `create_agent` with the helpers as tools",
+        "why": "That hands control flow to a model's tool-calling loop, which changes the program's behaviour."
+      }
+    ],
+    "explanation": "The docs position the Functional API for minimal changes to existing procedural code: `@entrypoint` marks the workflow and `@task` marks units of work whose results are checkpointed. The Graph API is the better fit when you want explicit shared state, visualised branching and parallel paths that merge.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/choosing-apis",
+    "source": "interview:graph-vs-functional-api",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-018",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What keys does `worker` find in its `state` argument?\n\n```python\nclass S(TypedDict):\n    topics: list\n    results: Annotated[list, operator.add]\n    final: str\n\nclass W(TypedDict):\n    topic: str\n\ndef worker(s: W):\n    print(list(s.keys()))\n    return {\"results\": [s[\"topic\"].upper()]}\n\ndef fan(s: S):\n    return [Send(\"worker\", {\"topic\": t}) for t in s[\"topics\"]]\n\ng = StateGraph(S)\ng.add_node(\"plan\", lambda s: {})\ng.add_node(\"worker\", worker)\ng.add_edge(START, \"plan\")\ng.add_conditional_edges(\"plan\", fan, [\"worker\"])\ng.compile().invoke({\"topics\": [\"a\", \"b\"]})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['topics', 'results']`: the parent state without `topic`",
+        "why": "The parent state is not passed at all; the `Send` payload replaces it as the input."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`['topics', 'results', 'final', 'topic']`: the parent state with `topic` added",
+        "why": "The payload is not merged into the parent state; the worker sees only what was sent."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`['topic']` in each call",
+        "why": "A node started by `Send` receives exactly the payload it was sent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[]`, because `W` is not the graph's state schema",
+        "why": "A node can take a different input type; it still receives the `Send` payload."
+      }
+    ],
+    "explanation": "A worker started by `Send` gets only the payload. If it needs extra context (a shared instruction, the user id), put it into each payload. Its returned update is still written to the parent's keys, which is why `results` needs a reducer.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:send-map-reduce",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-019",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about `StateGraph.add_node` are true in LangGraph 1.2? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`add_node(fn)` without a name names the node after the function",
+        "why": "The default name is the function's name."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A compiled `StateGraph` can be passed to `add_node` as a node",
+        "why": "This is how a subgraph that shares keys with the parent is added."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Adding a second node with an existing name raises a `ValueError`",
+        "why": "The builder reports that the node is already present."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Node names may contain `:` to namespace them, for example `\"research:search\"`",
+        "why": "`:` is reserved (LangGraph uses it in namespaces) and `add_node` rejects it with a `ValueError`."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A node function must take exactly one parameter, the state",
+        "why": "A node can also accept extra parameters such as `config` or `runtime`, which LangGraph injects."
+      }
+    ],
+    "explanation": "Nodes are named callables or runnables, including compiled graphs. Names must be unique and cannot use reserved names such as `__start__` or `__end__`, nor the reserved characters `:` and `|`. Beyond the state, a node may ask for injected parameters like the run config or the `Runtime` object.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:node-contract",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-CFL-020",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this return?\n\n```python\nclass S(TypedDict):\n    topics: list\n    results: Annotated[list, operator.add]\n    final: str\n\ndef plan(s) -> Command[Literal[\"worker\"]]:\n    return Command(\n        update={\"final\": \"planned\"},\n        goto=[Send(\"worker\", {\"topic\": t}) for t in s[\"topics\"]],\n    )\n\ng = StateGraph(S)\ng.add_node(\"plan\", plan)\ng.add_node(\"worker\", lambda s: {\"results\": [s[\"topic\"].upper()]})\ng.add_edge(START, \"plan\")\nprint(g.compile().invoke({\"topics\": [\"p\", \"q\"]}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `TypeError`, because `Command.goto` accepts node names only",
+        "why": "`goto` also accepts `Send` objects, singly or in a list."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`final` is `'planned'` but `results` is empty, because `Send` only works from conditional edges",
+        "why": "`Send` is accepted both from routing functions and in `Command.goto`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`results` holds `'P'` and `'Q'`, but `final` is missing because the update is dropped when `goto` contains `Send`",
+        "why": "The update and the routing are both applied."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`results` holds `'P'` and `'Q'`, and `final` is `'planned'`",
+        "why": "The update is written and each `Send` starts a `worker` run with its own payload."
+      }
+    ],
+    "explanation": "`Command(goto=[Send(...), ...])` lets one node both write state and fan out to a dynamic number of workers, without a separate conditional edge. The workers run in the next super-step and their `results` are merged by the reducer.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:send-map-reduce",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-021",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Branch one is `START -> a`, branch two is `START -> b -> b2`, and both feed `d` through separate edges: `add_edge(\"a\", \"d\")` and `add_edge(\"b2\", \"d\")`. The log shows `d` running twice. Which changes make `d` run exactly once, after both branches? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Replace the two edges with `builder.add_edge([\"a\", \"b2\"], \"d\")`",
+        "why": "A list of start nodes makes `d` wait until all listed nodes have completed; this suits branches that always both run."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Register `d` with `builder.add_node(\"d\", d, defer=True)`",
+        "why": "A deferred node waits until no other tasks are pending, so it runs once at the end."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Give the `log` key a reducer such as `operator.add`",
+        "why": "Reducers change how updates merge, not when `d` is scheduled."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower `recursion_limit` so the graph stops before the second run",
+        "why": "That turns the extra run into an error instead of fixing the scheduling."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Replace `add_edge(\"a\", \"d\")` with `add_conditional_edges(\"a\", lambda s: \"d\")`",
+        "why": "A conditional edge that always returns `d` triggers it the same way a normal edge does."
+      }
+    ],
+    "explanation": "With separate edges, `d` runs in every super-step in which one of its incoming branches finishes: once after `a` (step 1) and again after `b2` (step 2). A list-form edge waits for all listed nodes; `defer=True` waits until nothing else is pending, and also works when a conditional fan-out selects only some branches.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:parallel-fan-out-fan-in",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-022",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this return?\n\n```python\nclass S(TypedDict):\n    log: Annotated[list, operator.add]\n\ng = StateGraph(S)\nfor n in [\"a\", \"b\", \"d\"]:\n    g.add_node(n, lambda s, n=n: {\"log\": [n]})\ng.add_edge(START, \"a\")\ng.add_conditional_edges(\"a\", lambda s: END, [END, \"b\"])\ng.add_edge([\"a\", \"b\"], \"d\")\nprint(g.compile().invoke({\"log\": []}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{'log': ['a']}`: `d` never runs and no error is raised",
+        "why": "`b` was not selected, so the join's condition is never met and the run ends."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `ValueError` at compile time because `b` may never run",
+        "why": "LangGraph does not reject this graph; the problem only shows at run time, and quietly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'log': ['a', 'd']}`: `d` runs because `a`, one of its sources, completed",
+        "why": "A list-form edge needs every listed node to finish, not just one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The call blocks, waiting for `b` to finish",
+        "why": "There is no waiting: with nothing scheduled, the run simply ends."
+      }
+    ],
+    "explanation": "The docs warn that with a list of start nodes, if one of them never runs (for example because a conditional edge does not select it), the target never runs and no error is raised. When the fan-out is conditional, use separate edges into a node registered with `defer=True` instead.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:parallel-fan-out-fan-in",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-023",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A `classify` node calls an LLM, must store `label` and `confidence` in state, and then go to one of three handlers. Elsewhere, `should_retry` only needs to read `attempts` and pick between two nodes. Which design fits both?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use conditional edges everywhere and call the LLM inside the routing function so it can choose the handler",
+        "why": "A routing function's return value is read only as a destination, so the label and confidence it computed cannot be written to state."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`classify` returns `Command(update=..., goto=...)`; `should_retry` stays a conditional edge",
+        "why": "`Command` fits a node that must both write state and route; a conditional edge fits pure routing on existing state."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Return `Command` from `classify` and also add static edges to all three handlers as a fallback",
+        "why": "Static edges still fire alongside `Command`, so all three handlers would run."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Store `label` in the run config and read it in a conditional edge",
+        "why": "Config is for per-run settings, not for values produced during the run."
+      }
+    ],
+    "explanation": "The docs' rule of thumb: use `Command` when a node needs to both update state and choose the next node, and conditional edges when you only route. Annotate `Command` nodes with `Command[Literal[...]]` so the graph can be drawn, and do not combine them with static edges from the same node.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:command-routing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-024",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "In a multi-agent graph, `support` is a compiled subgraph added as a node of the parent, and `billing` is another node of the parent. How does a node inside `support` hand the conversation to `billing`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Return `Command(goto=\"billing\", update={...})`",
+        "why": "Without `graph`, `goto` targets nodes of the subgraph itself, which has no `billing` node."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Return `Send(\"billing\", state)` from the node",
+        "why": "A node's return value is a state update or a `Command`; `Send` belongs in a routing function or in `Command.goto`, and it still targets the current graph."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Return `Command(goto=\"billing\", update={...}, graph=Command.PARENT)`",
+        "why": "`Command.PARENT` applies the hop and the update in the closest parent graph."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add `builder.add_edge(\"support_agent\", \"billing\")` in the parent builder",
+        "why": "The parent does not know the subgraph's internal node names; compile would report an unknown node."
+      }
+    ],
+    "explanation": "`graph=Command.PARENT` is the mechanism behind agent handoffs: the subgraph exits and the parent continues at the named node, applying the update to the parent's state. The docs say a reducer is required on the parent key when the update targets a key that both schemas share.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:subgraphs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-025",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Why does this graph fail?\n\n```python\nclass Parent(TypedDict):\n    msg: str\n    log: Annotated[list, operator.add]\n\nclass Child(TypedDict):\n    text: str\n\ncb = StateGraph(Child)\ncb.add_node(\"x\", lambda s: {\"text\": s[\"text\"][::-1]})\ncb.add_edge(START, \"x\")\nsub = cb.compile()\n\npb = StateGraph(Parent)\npb.add_node(\"sub\", sub)\npb.add_edge(START, \"sub\")\npb.compile().invoke({\"msg\": \"abc\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`compile()` raises a `ValueError` because the schemas do not match",
+        "why": "LangGraph does not compare schemas when a compiled graph is added as a node; it compiles fine."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It does not fail: LangGraph maps `msg` to `text` because they are the only string fields",
+        "why": "There is no automatic mapping by type or position."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The subgraph is skipped and `invoke` returns `{'msg': 'abc', 'log': []}`",
+        "why": "The subgraph does run, and its node fails on the missing key."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Node `x` raises `KeyError: 'text'`: the child shares no keys with the parent, so it gets no input",
+        "why": "The subgraph receives no `text` value, so reading it fails inside `x`."
+      }
+    ],
+    "explanation": "Adding a compiled subgraph directly works only when parent and child share state keys. With different schemas, call the subgraph inside a wrapper node: `return {\"msg\": sub.invoke({\"text\": s[\"msg\"]})[\"text\"]}`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "source": "interview:subgraphs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-026",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A router has a typo and there is no path map. What happens when the graph runs?\n\n```python\ng.add_edge(START, \"a\")\ng.add_conditional_edges(\"a\", lambda s: \"reveiw\")  # node is called \"review\"\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The run ends after `a` and returns normally; only a warning is logged",
+        "why": "The unknown destination is ignored, nothing else is scheduled, and the run finishes normally."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`invoke` raises `KeyError: 'reveiw'`",
+        "why": "A `KeyError` comes from a path map lookup; here there is no map."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`compile()` raises a `ValueError` about an unknown node",
+        "why": "Without a path map or a `Literal` hint, LangGraph cannot know the router's outputs at compile time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A `GraphRecursionError`, because the router keeps being called",
+        "why": "The router runs once after `a`; nothing loops."
+      }
+    ],
+    "explanation": "Without a path map, a returned name that does not match a node is dropped with a warning such as `wrote to unknown channel branch:to:reveiw, ignoring it`, and the graph ends as if it had reached `END`. Passing the list of destinations (or a path map) to `add_conditional_edges`, and asserting on the final node in tests, catches this class of bug.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:conditional-edges",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-027",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "When two nodes run in parallel in the same super-step and one of them raises an exception, the other node's update from that step is not applied to the graph state.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: the docs describe a super-step as transactional, so a failing branch means none of that step's updates are applied."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It is true. A super-step is transactional; if any branch raises, none of the step's updates are applied."
+      }
+    ],
+    "explanation": "Parallel branches succeed or fail as a unit. With a checkpointer there is one refinement: the results of the nodes that did succeed are saved as pending writes, so they are not repeated when the thread is resumed.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:execution-model",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-CFL-028",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each fan-in wiring with the situation it suits. Branches feed an aggregator `d`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Separate edges into `d`",
+        "why": "`d` runs once per super-step in which an incoming branch finishes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Separate edges into `d`, with `defer=True` on `d`",
+        "why": "`d` runs once, after all pending work, whichever branches were selected."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "List-form edge `add_edge([\"x\", \"y\"], \"d\")`",
+        "why": "`d` runs once after all listed nodes finish, and never if one is skipped."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`Send(\"d\", payload)` per item",
+        "why": "Each send starts its own run of `d` with its own input."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Two branches of equal length always both run; the simplest wiring is enough",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A conditional fan-out picks some of three branches of different lengths; `d` must run exactly once",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Two branches of different lengths always both run; `d` must run once, after both",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "`d` must run once per document, with that document as input",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The docs contrast these forms directly: separate edges are fine when branches finish in the same step, list-form edges wait for every listed node, `defer=True` waits for the whole graph to go quiet and tolerates unselected branches, and `Send` is per-item invocation rather than a join.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:parallel-fan-out-fan-in",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-029",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the phases of one LangGraph step in order, following the Pregel (bulk synchronous parallel) model the runtime uses.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Execute: run the selected nodes in parallel; their writes are not visible to each other yet",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Update: apply all writes from the step to the channels, through each key's reducer",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Input: the invoke input is written to the graph's input channels",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Plan: select the nodes subscribed to channels that changed in the previous step",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "D",
+      "A",
+      "B"
+    ],
+    "explanation": "The runtime docs describe each step as plan, execute, update, repeated until no node is selected or the step limit is reached. The first plan picks nodes triggered by the input; later plans pick nodes whose channels were updated. Checkpoints are saved at these step boundaries.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/pregel",
+    "source": "interview:superstep-pregel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-030",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The planner sometimes finds no topics. What does this return for an empty list?\n\n```python\nclass S(TypedDict):\n    topics: list\n    results: Annotated[list, operator.add]\n    final: str\n\ng = StateGraph(S)\ng.add_node(\"plan\", lambda s: {})\ng.add_node(\"worker\", lambda s: {\"results\": [s[\"topic\"]]})\ng.add_node(\"reduce\", lambda s: {\"final\": str(len(s[\"results\"]))})\ng.add_edge(START, \"plan\")\ng.add_conditional_edges(\"plan\", lambda s: [Send(\"worker\", {\"topic\": t}) for t in s[\"topics\"]], [\"worker\"])\ng.add_edge(\"worker\", \"reduce\")\nprint(g.compile().invoke({\"topics\": []}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'topics': [], 'results': [], 'final': '0'}`",
+        "why": "`reduce` is reached only through `worker`, and no `worker` runs."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'topics': [], 'results': []}`: no worker runs, so `reduce` never runs and `final` is never set",
+        "why": "With zero sends nothing is scheduled after `plan`, and the run ends."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An error, because a routing function returned an empty list",
+        "why": "An empty list is allowed; it just schedules nothing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "One `worker` runs with an empty payload and raises `KeyError: 'topic'`",
+        "why": "No `Send` objects means no worker invocations at all."
+      }
+    ],
+    "explanation": "When the aggregator is reachable only through the workers, an empty fan-out silently skips it. If downstream code expects `final`, route to `reduce` directly when the list is empty (the routing function can return `\"reduce\"` instead of an empty list) or give `final` a default.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:send-map-reduce",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-031",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many times does `join` run? Type a number.\n\n```python\nclass S(TypedDict):\n    log: Annotated[list, operator.add]\n\ng = StateGraph(S)\nfor n in [\"a\", \"b1\", \"b2\", \"c1\", \"c2\", \"c3\", \"join\"]:\n    g.add_node(n, lambda s, n=n: {\"log\": [n]})\ng.add_edge(START, \"a\")\ng.add_edge(START, \"b1\"); g.add_edge(\"b1\", \"b2\")\ng.add_edge(START, \"c1\"); g.add_edge(\"c1\", \"c2\"); g.add_edge(\"c2\", \"c3\")\nfor n in [\"a\", \"b2\", \"c3\"]:\n    g.add_edge(n, \"join\")\ng.compile().invoke({\"log\": []})\n```",
+    "options": [],
+    "accepted": [
+      "3",
+      "three"
+    ],
+    "explanation": "The branches finish in steps 1, 2 and 3, and with separate edges `join` is triggered in every step after one of its sources finishes, so it runs three times. Use `add_edge([\"a\", \"b2\", \"c3\"], \"join\")` or `defer=True` to run it once.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:parallel-fan-out-fan-in",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-032",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A support agent is one big node that reads the email, classifies it, searches docs, calls the bug tracker and drafts a reply. Which are good reasons to split it into separate nodes? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Checkpoints are written at node boundaries, so a failure near the end of one big node repeats all of its work on resume",
+        "why": "Smaller nodes mean less work is repeated after a failure or interrupt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The search and bug-tracker calls can each get their own retry policy without affecting the LLM calls",
+        "why": "Retry policies are configured per node, so separate nodes allow different strategies."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "You can inspect the classification in state before any action is taken, which helps debugging and monitoring",
+        "why": "Intermediate results become visible between steps."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Each extra node makes the run noticeably slower, because every checkpoint blocks the next node",
+        "why": "The docs note that checkpoints are written in the background by default (async durability), so more nodes need not mean slower runs."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A node may call at most one external service, so the big node is invalid",
+        "why": "There is no such rule; a node can do any amount of work."
+      }
+    ],
+    "explanation": "The docs' granularity discussion weighs resilience (finer checkpoints), isolation of external services with their own retry policies, visibility of intermediate decisions, and testability against the extra wiring. Combining steps is valid; you just repeat more work on failure and lose intermediate visibility.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph",
+    "source": "interview:node-granularity",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-033",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements comparing the Graph API with the Functional API are accurate? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The Graph API saves a new checkpoint after each super-step, while the Functional API saves task results into the entrypoint's existing checkpoint",
+        "why": "The docs list this as a key difference in checkpointing."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A compiled `StateGraph` and an `@entrypoint` are both `Pregel` instances, so they share one runtime and can be combined",
+        "why": "Both APIs produce `Pregel` objects and can be used together in one application."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `@task` can only be called from an entrypoint, another task or a graph node, not directly from application code",
+        "why": "Calling a task outside a run fails because there is no runnable context."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The Functional API requires a state schema and reducers, just like a `StateGraph`",
+        "why": "Entrypoint and task state is scoped to the function; no shared schema or reducers are needed."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The Functional API produces the same static diagram of branches and loops as the Graph API",
+        "why": "The docs say it does not support that kind of visualisation, because the flow is plain Python decided at run time."
+      }
+    ],
+    "explanation": "Choose the Graph API for explicit shared state, visual structure and parallel paths that merge; choose the Functional API for ordinary Python control flow with persistence, interrupts and streaming added. Because both compile to `Pregel`, a graph node can call tasks and an entrypoint can call a compiled graph.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/functional-api",
+    "source": "interview:graph-vs-functional-api",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-034",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A node inside the `support` subgraph hands off with `Command.PARENT`, and the parent also has a static edge out of `support`. Which parent nodes run after `support`?\n\n```python\nclass PS(TypedDict):\n    log: Annotated[list, operator.add]\n\ndef agent(s):\n    return Command(goto=\"billing\", update={\"log\": [\"handoff\"]}, graph=Command.PARENT)\n\nsub = StateGraph(PS).add_node(\"agent\", agent).add_edge(START, \"agent\").compile()\n\np = StateGraph(PS)\np.add_node(\"support\", sub)\np.add_node(\"billing\", lambda s: {\"log\": [\"billing\"]})\np.add_node(\"other\", lambda s: {\"log\": [\"other\"]})\np.add_edge(START, \"support\")\np.add_edge(\"support\", \"other\")\np.compile().invoke({\"log\": []})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Only `billing`: a parent handoff replaces the outgoing edges of `support`",
+        "why": "The handoff adds a dynamic destination; it does not cancel the parent's static edge."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only `other`: a `Command` raised inside a subgraph cannot change the parent's routing",
+        "why": "`Command.PARENT` is exactly how a subgraph changes the parent's routing."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Both `billing` and `other`, in the same super-step after `support`",
+        "why": "The handoff schedules `billing`, and the static edge from `support` still schedules `other`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Neither: the handoff ends the run because the subgraph did not finish normally",
+        "why": "The parent continues with the scheduled nodes."
+      }
+    ],
+    "explanation": "The same rule that applies to `Command` inside one graph applies to handoffs: dynamic routing adds destinations and static edges still fire. If `support` hands off with `Command.PARENT`, do not also give it a static outgoing edge, or route its normal exit through the `Command` as well.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:command-vs-conditional-edge",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://dev.to/jamesbmour/interrupts-and-commands-in-langgraph-building-human-in-the-loop-workflows-4ngl",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-035",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "This handoff never reaches `billing`, and the run returns `{'log': ['x']}`. Both `CS` and `PS` declare `log: Annotated[list, operator.add]`. What is wrong?\n\n```python\ndef agent(s):\n    return Command(goto=\"billing\", update={\"log\": [\"x\"]})\n\nchild = StateGraph(CS).add_node(\"agent\", agent).add_edge(START, \"agent\").compile()\n\nparent = StateGraph(PS)\nparent.add_node(\"support\", child)\nparent.add_node(\"billing\", billing)\nparent.add_edge(START, \"support\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`billing` needs `defer=True` so that it waits for the subgraph to finish",
+        "why": "`defer` delays a node that is already triggered; nothing triggers `billing` here."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The parent is missing `add_edge(\"support\", \"billing\")`, which `Command` requires",
+        "why": "A static edge would make `billing` always run, which defeats dynamic handoffs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A subgraph node cannot return `Command` at all; only parent nodes can",
+        "why": "Subgraph nodes can return `Command`; they need `graph=Command.PARENT` to target the parent."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Without `graph=Command.PARENT`, `goto` is resolved inside the subgraph and dropped with a warning",
+        "why": "Without `Command.PARENT`, the hop is resolved in the subgraph, where `billing` does not exist."
+      }
+    ],
+    "explanation": "`goto` is resolved in the graph that contains the node unless `graph=Command.PARENT` is set. An unknown destination is dropped with a logged warning rather than an error, so the update is applied and the run simply ends. Tests that assert which node ran last catch this kind of silent misroute.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:subgraphs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/use-time-travel",
+        "https://docs.langchain.com/oss/python/langgraph/persistence"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-036",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A map step fans out 400 `Send` calls to an LLM-backed `worker`, and the provider allows only 10 concurrent requests. What is the most direct fix that keeps the map-reduce design?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Invoke with `graph.invoke(inputs, {\"max_concurrency\": 10})`",
+        "why": "`max_concurrency` is a top-level config key that caps how many tasks run at once."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Invoke with `{\"configurable\": {\"max_concurrency\": 10}}`",
+        "why": "The docs say `max_concurrency` is a standalone config key; nested under `configurable` it is not the runtime setting."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set `recursion_limit` to 10 so only 10 workers can start",
+        "why": "The recursion limit counts super-steps, not concurrent tasks; all 400 workers would still run together in one step."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Register the worker with `defer=True`",
+        "why": "`defer` postpones a node until other work is done; it does not limit concurrency."
+      }
+    ],
+    "explanation": "All `Send` invocations of one fan-out land in the same super-step and run in parallel. Setting `max_concurrency` in the config limits how many run at once while keeping the graph unchanged; a retry policy on the worker node then handles the occasional rate-limit error.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:send-map-reduce",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-037",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "`good` and `bad` run in parallel and feed `after` through `add_edge([\"good\", \"bad\"], \"after\")`. The graph is compiled with `InMemorySaver`. The first call fails because `bad` raises; after fixing the bug, the code calls `graph.invoke(None, cfg)` on the same thread. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both `good` and `bad` run again, because the failed super-step was rolled back",
+        "why": "With a checkpointer, successful nodes' results are kept as pending writes and are not repeated."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Only `bad` runs again; `good`'s saved result is reused, and then `after` runs",
+        "why": "The successful node is not re-executed on resume, and the join completes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`invoke(None, cfg)` raises, because the last run on the thread ended in an error",
+        "why": "Resuming with `None` after fixing the error is the supported way to continue."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The run starts over from `START`, because `None` input restarts the thread",
+        "why": "`None` input resumes from the last checkpoint rather than restarting."
+      }
+    ],
+    "explanation": "A super-step is transactional: the failing branch keeps the step's updates out of the state. With a checkpointer, though, the writes of nodes that succeeded in that step are saved, so resuming runs only the failed node. In the verified run, `good` executed once in total and `bad` twice.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:execution-model",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-038",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about `Send` in LangGraph 1.2 are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A routing function attached to `START` can return a list of `Send` objects, so the fan-out can be the first step",
+        "why": "`add_conditional_edges(START, fan, [\"worker\"])` works like any other conditional edge."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A node can return `Command(goto=[Send(...), ...])` to fan out without a separate conditional edge",
+        "why": "`Command.goto` accepts `Send` objects."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `Send` addressed to a node registered with `defer=True` still invokes that node separately, once per send",
+        "why": "The docs state this, and `defer` does not batch `Send` invocations into one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A node started by `Send` receives the parent state merged with the payload",
+        "why": "It receives only the payload."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The `Send` invocations of one fan-out run one after another, in successive super-steps",
+        "why": "They are scheduled together in the next super-step and run in parallel."
+      }
+    ],
+    "explanation": "`Send` is the runtime fan-out primitive: one invocation per object, each with its own input, all in the next super-step. It can come from any conditional edge (including from `START`) or from `Command.goto`, and workers still write back to shared keys, which therefore need reducers.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:send-map-reduce",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-039",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A billing team owns an agent graph with its own private `messages` history and a different state schema. The parent conversation must not leak into it, and the parent needs only the agent's final answer. How should the parent integrate it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add the compiled agent directly with `add_node(\"billing\", billing_graph)`",
+        "why": "Direct addition shares keys with the parent, so a shared `messages` key would expose the full conversation both ways."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Have every billing node return `Command(graph=Command.PARENT)` so its updates go straight to the parent",
+        "why": "That pushes internal updates to the parent and works against keeping the history private."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Invoke it inside a wrapper node that maps the input in and only the final answer back out",
+        "why": "A wrapper node controls exactly what goes in and what comes back."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Merge the billing nodes into the parent graph and prefix their state keys",
+        "why": "Flattening removes the team boundary and makes the private history part of parent state."
+      }
+    ],
+    "explanation": "The docs recommend calling a subgraph inside a node when schemas differ or you need to transform state, which is common when each agent keeps a private message history. The wrapper is also a clean contract between teams: as long as its input and output are respected, either side can change internally.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-subgraphs",
+    "source": "interview:subgraphs-state-mapping",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-CFL-040",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\ncalls = []\n\n@task\ndef sq(x):\n    calls.append(x)\n    return x * x\n\n@entrypoint(checkpointer=InMemorySaver())\ndef wf(nums: list, *, previous=None):\n    futs = [sq(n) for n in nums]\n    total = sum(f.result() for f in futs)\n    return (previous or 0) + total\n\ncfg = {\"configurable\": {\"thread_id\": \"t\"}}\nprint(wf.invoke([1, 2, 3], cfg), wf.invoke([1], cfg), sorted(calls))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`14 1 [1, 1, 2, 3]`",
+        "why": "`previous` holds the last return value on the thread, so the second call adds 14."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `TypeError`, because task futures cannot be summed",
+        "why": "The code sums `f.result()`, the resolved values, not the futures."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`14 15 [1, 1, 1, 2, 2, 3, 3]`",
+        "why": "A new invocation with new input does not replay the earlier call's tasks."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`14 15 [1, 1, 2, 3]`",
+        "why": "The first call returns 14; the second gets `previous=14` and adds 1; four task runs in total."
+      }
+    ],
+    "explanation": "Calling a task returns a future immediately, so the three `sq` calls can run concurrently before `.result()` collects them. With a checkpointer, `previous` gives the entrypoint the value it returned last time on the same thread, which is the Functional API's form of short-term memory.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/functional-api",
+    "source": "interview:graph-vs-functional-api",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-041",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "`summ` is registered with `defer=True` and fed by `x` and `y`. An unrelated chain `slow1 -> slow2 -> slow3` also starts from `START`. Put the super-steps in the order they run.\n\n```python\nfor n in [\"x\", \"y\", \"summ\", \"slow1\", \"slow2\", \"slow3\"]:\n    g.add_node(n, mk(n), defer=(n == \"summ\"))\ng.add_edge(START, \"x\"); g.add_edge(START, \"y\")\ng.add_edge(\"x\", \"summ\"); g.add_edge(\"y\", \"summ\")\ng.add_edge(START, \"slow1\"); g.add_edge(\"slow1\", \"slow2\"); g.add_edge(\"slow2\", \"slow3\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`slow3`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`x`, `y` and `slow1`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`summ`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`slow2`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "`defer=True` postpones a node until no tasks are pending anywhere in the graph, not just in the branches that feed it. So `summ` waits for the unrelated `slow` chain to finish, even though `x` and `y` were done after the first step. If the unrelated work is long, a deferred aggregator adds that latency; a list-form edge from `x` and `y` would not.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:parallel-fan-out-fan-in",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-CFL-042",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "One node calls five external APIs in sequence. When the third call fails and the thread is resumed, the first two calls run again. You must keep the graph topology unchanged. What fixes it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Wrap each API call in a `@task` inside the node and keep the checkpointer",
+        "why": "Task results are checkpointed, so on resume completed calls are restored instead of re-run."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Split the node into five nodes, one per API",
+        "why": "That would work, but it changes the topology, which the constraint rules out."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add `cache_policy=CachePolicy()` to the node and compile with `InMemoryCache`",
+        "why": "Node caching keys on the whole node's input and caches only finished results; a node that failed midway has nothing cached."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Register the node with `defer=True`",
+        "why": "Deferral changes when the node runs, not what is repeated on resume."
+      }
+    ],
+    "explanation": "The graph docs describe using tasks inside nodes: a node with several operations can wrap each in a `@task`, and with a checkpointer a resumed node skips task work that already completed. It is the in-node counterpart of splitting into smaller nodes, without changing the graph.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:node-granularity",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-CFL-043",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nclass State(TypedDict):\n    count: int\n    tags: list\n    seen: str\n\ndef n1(state: State):\n    state[\"count\"] = 99\n    state[\"tags\"].append(\"x\")\n    return {}\n\ndef n2(state: State):\n    return {\"seen\": f'{state[\"count\"]}/{len(state[\"tags\"])}'}\n\nb = StateGraph(State)\nb.add_node(\"n1\", n1)\nb.add_node(\"n2\", n2)\nb.add_edge(START, \"n1\")\nb.add_edge(\"n1\", \"n2\")\nprint(b.compile().invoke({\"count\": 0, \"tags\": [], \"seen\": \"\"}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'count': 99, 'tags': ['x'], 'seen': '99/1'}`",
+        "why": "Assigning a key on the state dict a node receives is not an update; `count` stays 0."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'count': 0, 'tags': ['x'], 'seen': '0/1'}`",
+        "why": "The reassignment is lost, but the mutated list is the same object the state holds."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'count': 0, 'tags': [], 'seen': '0/0'}`",
+        "why": "The in-place `append` changes the list object the state still refers to, so it leaks through."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An `InvalidUpdateError`, because the node returned an empty dict",
+        "why": "An empty update is valid; it simply changes nothing."
+      }
+    ],
+    "explanation": "Only the returned dict is an update. Rebinding a key on the dict a node receives is thrown away, while mutating a nested object in place changes a shared reference behind LangGraph's back, outside the update and reducer path. Both are bugs waiting to happen: always return the changes, for example `{\"count\": 99, \"tags\": [*state[\"tags\"], \"x\"]}`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:nodes",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://www.besthub.dev/articles/10-high-frequency-langgraph-interview-questions-core-concepts-answers-for-ai-agent-engineers-a677f8f1030c",
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/11-LangGraph/README.md",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-CFL-044",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about returning `Command` from a node are true? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`goto` can be a list of node names, and those nodes run in parallel in the next super-step",
+        "why": "A list of destinations fans out just as a list returned by a router does."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`Command(goto=END, update=...)` applies the update and ends the run",
+        "why": "`END` is a valid destination for `goto`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The `Command[Literal[...]]` return annotation is needed for drawing the graph; without it the node still routes correctly at run time",
+        "why": "The docs say the annotation is needed for rendering; execution follows the returned `goto` either way."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`goto` overrides the node's static `add_edge` destinations",
+        "why": "Static edges still fire, so both sets of destinations run."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`Command` can be returned from nodes but never from tools",
+        "why": "Tools can return `Command` to update state and route, as the docs show."
+      }
+    ],
+    "explanation": "`Command` adds dynamic edges: names, lists of names, `END` or `Send` objects. Declare the possible targets with `Command[Literal[...]]` (or the `destinations` argument of `add_node`) so the diagram is right, and do not combine it with static edges on the same node.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:command-routing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-CFL-045",
+    "domain": 1,
+    "skill": "control-flow",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each symptom with its most likely cause.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Separate edges into `join` from branches of different lengths",
+        "why": "`join` is triggered once per step in which a branch finishes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A router returns a name that is not a node, with no path map",
+        "why": "The unknown destination is dropped with a warning and the run ends."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A compiled subgraph with no shared keys added directly as a node",
+        "why": "The child receives none of the values it expects."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A node returns `Command(goto=...)` and also has a static `add_edge`",
+        "why": "Both the dynamic and the static destinations run."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "`join` appears twice in the log and the report is generated twice",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The run stops after `classify` and the logs show `wrote to unknown channel branch:to:...`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A `KeyError` for a child-only key is raised inside a subgraph node",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "After `triage`, both `review` and `publish` run, although the code picks only one",
+        "answer": "D"
+      }
+    ],
+    "explanation": "These four bugs are common in code reviews of LangGraph projects. None is caught by `compile()`, so tests should assert the sequence of nodes that ran (for example from `stream_mode=\"updates\"`), not just the final answer.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "roleLevel": 4
+  }
+]
