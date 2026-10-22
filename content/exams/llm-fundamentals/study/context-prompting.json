@@ -1,0 +1,50 @@
+{
+  "context-prompting": {
+    "summary": "The context window is the model's whole working memory for one request, and the reply shares it with the input. Know what fills it, how to budget and manage history, why long contexts lose accuracy, and which prompting techniques (few-shot, chain-of-thought, self-consistency, chaining, clear structure) help, what they cost, and how to test prompt changes like code.",
+    "points": [
+      "Everything in a request counts toward the window: system prompt, every message (including tool results and documents), tool definitions and the generated output, including any thinking tokens. Models are stateless, so chat 'memory' means resending history every turn.",
+      "Budget before you send: window minus system prompt, tools, history and reserved output is what is left for retrieved text. Some APIs reject over-long input with an error rather than truncating; trimming is the application's job.",
+      "History strategies: a sliding window (cheap, drops early details), a running summary or compaction (keeps the gist, loses detail and drifts if you summarise summaries), retrieval of past turns (scales, can miss), and pinned facts in a structured store for anything that must stay exact.",
+      "Lost in the Middle (Liu et al., 2023): models use information at the start or end of a long context better than in the middle, including long-context models. Put key material at the edges and keep retrieved sets small.",
+      "Context rot: accuracy and recall fall as token count grows, well before the limit. Chroma's 18-model study found related-but-wrong distractors hurt more as they add up; RULER found needle-in-a-haystack tests show only shallow ability, and only about half of models claiming 32K or more held up at 32K on harder tasks.",
+      "Long context suits one document that fits and needs cross-references; retrieval suits corpora far bigger than the window, frequently changing data, and per-request cost limits. For long documents, put them at the top, the question at the end, and ask for supporting quotes first.",
+      "Zero-, one- and few-shot prompting specify a task through text with no weight updates (the GPT-3 paper). In-context examples vanish after the request; fine-tuning changes weights.",
+      "Few-shot results depend on example choice, labels and order: predictions lean toward labels near the end and toward common tokens (Zhao et al.), good orders do not transfer between models (Lu et al.), and random labels barely hurt because demonstrations mainly convey label space, input distribution and format (Min et al.).",
+      "Chain-of-thought (Wei et al.) improves multi-step reasoning in large models; zero-shot 'think step by step' raised one model's GSM8K accuracy from 10.4% to 40.7% (Kojima et al.). Self-consistency samples several chains and majority-votes (+17.9% on GSM8K), at roughly N times the cost.",
+      "Decomposition: least-to-most prompting splits a problem into simpler subproblems solved in order; prompt chaining adds checkpoints but adds calls and latency, and errors compound (four 95%-reliable steps give about 81% end to end).",
+      "Prompt sensitivity is large: meaning-preserving format changes swung accuracy by up to 76 points on one 13B model, and this persisted with scale, more examples and instruction tuning (Sclar et al.). Version prompts, run per-slice regression evals, and re-evaluate on every model change.",
+      "Reasoning models think before answering; thinking tokens are typically billed as output, count toward the output limit and the context, and can use up the limit before any visible answer. Give a clear goal, constraints and output format instead of rigid step lists, and route effort by task difficulty."
+    ],
+    "traps": [
+      "Forgetting that the reply shares the window with the input, so a full prompt leaves no room to answer.",
+      "Assuming a large advertised window means every position is used equally well.",
+      "Treating a perfect needle-in-a-haystack score as proof of long-context reasoning.",
+      "Believing few-shot examples teach the model permanently, or that a system prompt is strictly enforced.",
+      "Comparing two models on one prompt format and trusting a small gap.",
+      "Adding step-by-step scaffolding to a reasoning model, or chain-of-thought to a simple high-volume classifier.",
+      "Shipping a prompt change because the overall eval average went up while one category regressed."
+    ],
+    "docs": [
+      {
+        "title": "Liu et al., Lost in the Middle: How Language Models Use Long Contexts",
+        "url": "https://arxiv.org/abs/2307.03172"
+      },
+      {
+        "title": "Wei et al., Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+        "url": "https://arxiv.org/abs/2201.11903"
+      },
+      {
+        "title": "Wang et al., Self-Consistency Improves Chain of Thought Reasoning",
+        "url": "https://arxiv.org/abs/2203.11171"
+      },
+      {
+        "title": "Hsieh et al., RULER: What's the Real Context Size of Your Long-Context Language Models?",
+        "url": "https://arxiv.org/abs/2404.06654"
+      },
+      {
+        "title": "Sclar et al., Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design",
+        "url": "https://arxiv.org/abs/2310.11324"
+      }
+    ]
+  }
+}

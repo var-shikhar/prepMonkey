@@ -1,0 +1,2186 @@
+[
+  {
+    "id": "LLM-DEC-001",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You raise the sampling temperature from 0.7 to 1.3 and keep every other setting the same. What happens to the next-token probability distribution?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It becomes sharper: the most likely token gains even more probability",
+        "why": "That is what lowering the temperature does. Dividing logits by a number below 1 stretches the gaps between them."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It becomes flatter: less likely tokens gain probability and the top token loses some",
+        "why": "Logits are divided by the temperature before softmax, so a larger temperature shrinks the gaps between them and spreads probability toward the tail."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It does not change; temperature only controls how long the answer is",
+        "why": "Temperature has nothing to do with length. Length is controlled by max tokens, stop sequences and the end-of-sequence token."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The vocabulary is cut down to the tokens that together cover 1.3 of the mass",
+        "why": "That mixes temperature up with top-p, and a probability mass can never exceed 1."
+      }
+    ],
+    "explanation": "Temperature rescales the logits as `logits / T` before softmax. `T < 1` sharpens the distribution (more predictable output), `T > 1` flattens it (more varied and more error-prone output), and `T` approaching 0 approaches greedy decoding. It changes how likely each token is, not which tokens are allowed; that is the job of truncation filters such as top-k, top-p and min-p.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-temperature-effect",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini",
+        "Meta"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-DEC-002",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does greedy decoding do at each generation step?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Samples a token at random in proportion to its probability",
+        "why": "That is plain (ancestral) sampling, which greedy decoding deliberately avoids."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keeps several candidate sequences and picks the best one at the end",
+        "why": "That describes beam search, which tracks `num_beams` partial sequences."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Picks the single most probable next token",
+        "why": "Greedy decoding takes the argmax of the distribution at every step, so the same logits always give the same token."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Picks the token whose probability is closest to the average probability",
+        "why": "Choosing tokens near the expected information content is the idea behind typical sampling, not greedy decoding."
+      }
+    ],
+    "explanation": "Greedy decoding is the simplest strategy: at each step take the most probable token and append it. It is fast and repeatable for fixed logits, but it can miss sequences with a higher overall probability and, on open-ended text, it tends to fall into repetitive loops. In Hugging Face Transformers, `do_sample=False` with `num_beams=1` gives greedy decoding.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-greedy-vs-beam",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-DEC-003",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Setting max tokens to 200 tells the model how long its answer should be, so it plans a complete answer that fits in 200 tokens.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "The model is not told about the limit. Max tokens is enforced by the serving loop, which simply stops generating when the count is reached."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: max tokens is a hard cut-off applied from outside. If the answer needs more room it is cut mid-sentence, and the finish reason reports that the length limit was hit."
+      }
+    ],
+    "explanation": "Max tokens (`max_new_tokens` in Transformers, `max_tokens` in vLLM) caps how many tokens are generated. The model never sees this number, so it does not shorten its answer to fit. If you need a shorter answer, ask for it in the prompt; keep max tokens as a safety cap, and check the finish reason to detect truncation.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/sampling_params.html",
+    "source": "interview:llm-stop-sequences",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/SimranAnand1/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-DEC-004",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a language model, what are the logits at a generation step?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Probabilities over the vocabulary that already sum to 1",
+        "why": "Logits are not normalised. Softmax turns them into probabilities that sum to 1."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Unnormalised per-token scores that softmax turns into probabilities",
+        "why": "The final layer outputs one real-valued score per token; softmax exponentiates and normalises them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The log of the number of times each token appeared in the training data",
+        "why": "Logits are computed fresh from the current context at every step; they are not training-set counts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The token IDs of the best few candidates",
+        "why": "Logits are scores for every token in the vocabulary, not a short list of IDs."
+      }
+    ],
+    "explanation": "At every step the model produces a vector of logits with one entry per vocabulary token. Softmax converts them to probabilities, and the log of those probabilities are the logprobs that many APIs can return. Sampling controls such as temperature, penalties and logit bias all work by changing the logits before a token is chosen.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-logprobs-use",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-DEC-005",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You pass the stop sequence `\"\\n\\nUser:\"` to a text-completion request. What happens when the model generates that string?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The model is told in advance not to write it, so it never appears",
+        "why": "Stop sequences are not instructions to the model; they are checked against the output as it is produced."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Generation continues, but the string is removed from the final text",
+        "why": "Generation actually ends at the match; it does not keep going."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The request fails with an error because the output contained a forbidden string",
+        "why": "Hitting a stop sequence is a normal way to finish, not an error."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Generation stops there; many servers omit the stop string from the output",
+        "why": "The server watches the output for the string and stops on a match. In vLLM, for example, `include_stop_str_in_output` is false by default."
+      }
+    ],
+    "explanation": "A stop sequence is a string the serving layer watches for. When it appears, generation ends and the response reports a normal stop rather than a length cut-off. Stop sequences are handy for completion-style prompts (stop before the model invents the next user turn) and for cutting output at a delimiter. vLLM also has `stop_token_ids` for stopping on specific token IDs.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/sampling_params.html",
+    "source": "interview:llm-stop-sequences",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/SimranAnand1/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-DEC-006",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each decoding setting with what it controls.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Temperature",
+        "why": "Rescales logits to make the distribution sharper or flatter."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Top-k",
+        "why": "Keeps a fixed number of the most likely tokens."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Top-p (nucleus)",
+        "why": "Keeps the smallest set of likely tokens whose probabilities reach a target mass."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Max tokens",
+        "why": "Caps how many tokens can be generated."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Keep only the 40 most probable candidate tokens at each step",
+        "answer": "B"
+      },
+      {
+        "id": "P2",
+        "text": "Make the output more predictable without removing any token from the vocabulary",
+        "answer": "A"
+      },
+      {
+        "id": "P3",
+        "text": "Keep as many top tokens as needed to cover 90% of the probability",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Stop the answer after 512 generated tokens even if it is unfinished",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Temperature reshapes the whole distribution but removes nothing. Top-k and top-p are truncation filters: top-k keeps a fixed count, while top-p keeps a variable count that depends on how spread out the distribution is. Max tokens is a length cap applied by the serving loop.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-topk-vs-topp",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-DEC-007",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You are configuring an assistant that extracts invoice numbers and dates from text, where creativity has no value. Which temperature setting fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A low temperature, such as 0 to 0.2",
+        "why": "Low temperature concentrates probability on the most likely tokens, which is what you want when there is one right answer."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A high temperature, such as 1.5, so the model considers more options",
+        "why": "Flattening the distribution makes unlikely, wrong tokens more likely to be sampled, which hurts extraction."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Exactly 1.0, because any other value distorts what the model learned",
+        "why": "1.0 is just the unscaled distribution; nothing makes it the right choice for a deterministic task."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Temperature does not matter as long as top-p is set to 1.0",
+        "why": "Top-p of 1.0 disables truncation, so temperature is then the main control on randomness."
+      }
+    ],
+    "explanation": "For tasks with one correct output (extraction, classification, code that must compile) use a low temperature so the most likely tokens win. Higher temperatures suit brainstorming and creative writing, where variety is the point. Even at low temperature, grounding and validation are still needed; temperature controls randomness, not truth.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-temperature-effect",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini",
+        "Meta"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-008",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Many serving stacks treat one particular temperature value as a request for greedy decoding instead of dividing the logits by it. Which value? Type a number.",
+    "options": [],
+    "accepted": [
+      "0",
+      "0.0"
+    ],
+    "explanation": "Dividing logits by zero is undefined, so servers special-case it. vLLM treats a temperature at (or extremely close to) 0 as greedy sampling, and Hugging Face describes temperature 0 as moving all probability mass to the most likely token. In Transformers you get greedy decoding with `do_sample=False`.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/sampling_params.html",
+    "source": "interview:llm-temperature-effect",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini",
+        "Meta"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-DEC-009",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "The next-token probabilities, sorted, are 0.50, 0.20, 0.15, 0.10 and 0.05. With top-p = 0.8, how many tokens stay in the candidate set? Type a number.",
+    "options": [],
+    "accepted": [
+      "3",
+      "three"
+    ],
+    "explanation": "Top-p keeps the smallest set of most probable tokens whose probabilities add up to at least `p`. Running totals: 0.50, 0.70, 0.85. The third token pushes the total past 0.8, so 3 tokens survive and are renormalised before sampling. Two tokens (0.70) are not enough.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-topk-vs-topp",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-010",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The next-token probabilities, sorted, are 0.50, 0.20, 0.15, 0.10 and 0.05. With top-k = 2, what is the chance that the most likely token is sampled?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "50%",
+        "why": "That is its probability before filtering. After top-k removes the other tokens, the remaining two are renormalised."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "About 71%",
+        "why": "Only 0.50 and 0.20 survive, so the top token gets 0.50 / 0.70, which is about 0.714."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "100%, because top-k = 2 always picks the first token",
+        "why": "Top-k keeps two candidates and samples between them; only top-k = 1 is equivalent to greedy."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "70%",
+        "why": "0.70 is the combined mass of the two kept tokens, not the share of the top one."
+      }
+    ],
+    "explanation": "Truncation filters such as top-k remove tokens and then renormalise what is left. With k = 2, the survivors have weights 0.50 and 0.20, so they are sampled with probabilities 0.50/0.70 and 0.20/0.70, roughly 71% and 29%.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-topk-vs-topp",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-011",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Why is top-p (nucleus) sampling often preferred to top-k as a general default?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Top-p is faster because it never has to sort the vocabulary",
+        "why": "Implementations of top-p sort probabilities to build the cumulative sum, so it is not cheaper than top-k."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Top-p always keeps exactly the same number of tokens, which makes output stable",
+        "why": "It is the other way round: top-k keeps a fixed number, and top-p's count varies."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Its candidate count adapts to how confident the model is",
+        "why": "When one token dominates, a few tokens reach the target mass; when the distribution is flat, many tokens are needed. A fixed k is too wide in the first case and too narrow in the second."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Top-p removes the need for temperature, so the two are never used together",
+        "why": "Libraries apply temperature and top-p together routinely; they solve different problems."
+      }
+    ],
+    "explanation": "A fixed `k` ignores the shape of the distribution: with a confident model, k = 50 lets in many junk tokens, and with an uncertain model it can cut off reasonable ones. Holtzman et al. proposed nucleus sampling to sample from a dynamic nucleus that adapts to the distribution, which keeps diversity while cutting the unreliable tail.",
+    "reference": "https://arxiv.org/abs/1904.09751",
+    "source": "interview:llm-topk-vs-topp",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-012",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Beam search often gives good results for translation, yet chat products rarely use it for open-ended answers. What is the main reason?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Maximising likelihood on open-ended text tends to produce bland, repetitive output",
+        "why": "Holtzman et al. showed that likelihood-maximising decoding leads to degenerate, repetitive text in open-ended generation, and beam search is such a decoder."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Beam search cannot be combined with a stop sequence or an end-of-sequence token",
+        "why": "Beam search handles end-of-sequence tokens fine; finished beams are simply kept as candidates."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Beam search only works for encoder-decoder models",
+        "why": "Decoder-only models can run beam search too; Transformers exposes it through `num_beams` for any generative model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Beam search produces more random text than sampling",
+        "why": "Beam search is deterministic for fixed logits; it is less random, not more."
+      }
+    ],
+    "explanation": "Beam search keeps the `num_beams` best partial sequences and returns the one with the highest (often length-normalised) log-likelihood. That suits tasks with a narrow range of correct outputs. For open-ended text, the highest-likelihood continuation is often generic and loops, which is why chat systems use sampling with temperature and truncation instead.",
+    "reference": "https://arxiv.org/abs/1904.09751",
+    "source": "interview:llm-greedy-vs-beam",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-013",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about grammar-constrained (structured-output) decoding are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "At each step it masks out tokens that would break the grammar or schema before choosing the next token",
+        "why": "Libraries compile the schema or grammar into a state machine and only allow tokens that keep the output valid."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It guarantees the values inside the JSON are factually correct",
+        "why": "It controls syntax and shape only. A well-formed object can still contain a wrong date or an invented name."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It works by retraining the model on examples of valid JSON",
+        "why": "No weights change; the constraint is applied at decoding time to each request."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It can constrain output to a regex, a JSON schema, a fixed list of choices or a context-free grammar",
+        "why": "vLLM, for example, supports `choice`, `regex`, `json` and `grammar` constraints."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It repairs invalid JSON after generation by deleting the bad characters",
+        "why": "Repairing after the fact is a separate technique; constrained decoding prevents invalid tokens from being chosen at all."
+      }
+    ],
+    "explanation": "Asking for JSON in the prompt only raises the odds of valid output. Constrained decoding (Outlines, XGrammar and similar backends) turns the schema into a finite-state machine or grammar and masks invalid tokens at each step, so the result follows the format. It still cannot make the content correct, so validate values and business rules separately.",
+    "reference": "https://docs.vllm.ai/en/latest/features/structured_outputs.html",
+    "source": "interview:llm-structured-output",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-014",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your service asks a model for a JSON object. Some responses end mid-object, like `{\"items\": [\"a\", \"b\"`, and the API reports the finish reason as `length`. What is the most likely fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add a stop sequence of `}` so the model closes the object",
+        "why": "That would stop at the first closing brace, which often belongs to a nested object, making truncation worse."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Lower the temperature so the model writes shorter JSON",
+        "why": "Temperature changes randomness, not how much room the output has."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Increase the max-tokens limit, or ask for a smaller output",
+        "why": "A `length` finish reason means the token cap was hit before the model finished, so the object was cut off."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch from top-p to top-k sampling",
+        "why": "The sampling filter has nothing to do with the length cap that caused the cut-off."
+      }
+    ],
+    "explanation": "The finish reason tells you why generation ended. `stop` means a natural end (end-of-sequence token or a stop sequence); `length` means the max-tokens cap was reached. Always check it before parsing, because a truncated JSON object will fail to parse even under constrained decoding. Give enough headroom or reduce what you ask for.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/outputs.html",
+    "source": "interview:llm-stop-sequences",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/SimranAnand1/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-015",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Calling a hosted LLM endpoint with temperature 0 guarantees the same output every time for the same prompt.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Temperature 0 makes the token choice greedy for fixed logits, but the logits themselves can differ slightly between runs, so the same prompt can produce different text."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Greedy decoding is deterministic only if the logits are bit-for-bit identical. On a shared server, batch composition changes the order of floating-point reductions, so logits can differ and the outputs can diverge."
+      }
+    ],
+    "explanation": "Temperature 0 removes sampling randomness but not numerical differences. Thinking Machines showed that most inference kernels are not batch-invariant: a request's numbers depend on how many other requests share its batch, and that depends on server load. In their test, 1,000 identical temperature-0 requests produced 80 distinct completions until they switched to batch-invariant kernels.",
+    "reference": "https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/",
+    "source": "interview:llm-temp-zero-nondeterminism",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-016",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In Hugging Face Transformers you call `model.generate(**inputs, temperature=0.7)` without setting `do_sample`, and the model's generation config does not enable sampling. What decoding happens?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Sampling at temperature 0.7, because setting a temperature turns sampling on",
+        "why": "Setting a temperature does not switch on sampling. The docs warn that temperature has no effect unless `do_sample=True`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Greedy decoding; the temperature has no effect",
+        "why": "With sampling off and `num_beams=1`, `generate` takes the argmax at each step and the temperature is ignored."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Beam search with 7 beams",
+        "why": "The beam count comes from `num_beams`, not from the temperature value."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "An error, because temperature requires top-k to be set",
+        "why": "Top-k has its own default and is not required; nothing about this call raises an error."
+      }
+    ],
+    "explanation": "In Transformers, the decoding method depends on `do_sample` and `num_beams`. Temperature, top-k, top-p and min-p only matter when sampling is on. This is a common source of 'my temperature does nothing' bugs: set `do_sample=True` explicitly, or check the model's `generation_config.json`, which may set it for you.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-017",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An API returns a logprob of -0.105 for a generated token. Roughly what probability did the model assign to that token?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "0.105",
+        "why": "A logprob is the natural log of a probability, not the probability itself."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "0.90",
+        "why": "e raised to -0.105 is about 0.90."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "-0.105, because logprobs are already probabilities",
+        "why": "Probabilities cannot be negative; logprobs are always 0 or below."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "0.50",
+        "why": "A probability of 0.5 corresponds to a logprob of about -0.693."
+      }
+    ],
+    "explanation": "A logprob is `ln(p)`, so `p = exp(logprob)`. Values near 0 mean high confidence (`exp(0) = 1`), and large negative values mean the token was unlikely. Log space is used because multiplying many small probabilities underflows; adding logprobs gives a sequence's log-likelihood.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/outputs.html",
+    "source": "interview:llm-logprobs-use",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-018",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "A customer-support chatbot writes fluent, friendly answers but sometimes states policy details that are wrong. Which two changes address this best? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Lower the temperature so sampling sticks closer to the most likely tokens",
+        "why": "Less randomness reduces the chance of sampling an unlikely, wrong detail, especially for factual answers."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Ground answers in retrieved policy text and tell the model to say it does not know when the text is silent",
+        "why": "Most wrong details come from the model filling gaps from memory; grounding plus an explicit abstain path tackles the cause."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Raise top-p to 1.0 so the model can consider every token",
+        "why": "Removing truncation lets more tail tokens through, which increases errors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add a large presence penalty so the model does not repeat itself",
+        "why": "Repetition is not the problem here, and pushing the model away from words it has already used can push it away from correct terms."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Raise the temperature to make the model double-check itself",
+        "why": "Temperature does not trigger any checking; a higher value only adds randomness."
+      }
+    ],
+    "explanation": "Sampling settings control randomness, not knowledge. A low temperature helps with factual tasks, but when the model does not have the facts it will still produce a confident guess. Pair low temperature with grounding in trusted text and a clear instruction to abstain, then evaluate on real support questions.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-tune-creative-vs-factual",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://pub.towardsai.net/your-complete-22-part-series-on-ai-interview-questions-and-answers-part-2-58120c36f39f",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-019",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "In Hugging Face Transformers, put the steps of one sampling step in order when a repetition penalty, temperature and top-p are all set.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Divide the logits by the temperature",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run the forward pass to get logits for the next token",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep only the top-p nucleus of tokens",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Apply the repetition penalty to tokens already in the sequence",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Softmax the remaining logits and sample a token",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C",
+      "E"
+    ],
+    "explanation": "`generate` builds a list of logits processors and applies them in order. Penalties such as `RepetitionPenaltyLogitsProcessor` are added before the sampling warpers, and among the warpers `TemperatureLogitsWarper` comes before top-k, top-p and min-p. So temperature changes the distribution that top-p then truncates, and only then is a token sampled from the softmax of what remains.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-020",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "At step 1 the model gives token A probability 0.6 and token B probability 0.4. After A, the best next token has probability 0.4. After B, the best next token has probability 0.9. Compare greedy decoding with beam search (2 beams) over these two steps.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both choose A first, so both end with probability 0.24",
+        "why": "Beam search keeps B as a second candidate at step 1 and later finds that it leads to a better sequence."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Greedy ends with a sequence of probability 0.24; beam search finds one with 0.36",
+        "why": "Greedy commits to A (0.6 x 0.4 = 0.24). Beam search keeps both starts and finds B followed by its best token (0.4 x 0.9 = 0.36)."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Greedy ends with 0.36 because it looks two steps ahead",
+        "why": "Greedy looks only one step ahead, which is why it misses the better path through B."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Beam search ends with 0.6 because it keeps the best first token",
+        "why": "Sequence probability is the product over all steps, not the first token's probability."
+      }
+    ],
+    "explanation": "Greedy decoding makes the locally best choice and never revisits it. Beam search keeps several partial sequences and compares them by total log-probability, so it can recover a sequence whose first token looked worse. That is also why beam search is more expensive: it keeps `num_beams` sequences going at once.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-greedy-vs-beam",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-021",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A server applies penalties the way vLLM does: `logit -= frequency_penalty * count + presence_penalty * (count > 0)`, where `count` is how often the token appears in the generated output so far. A token's logit is 3.0, it has appeared 4 times, `frequency_penalty` is 0.5 and `presence_penalty` is 0.6. What is the adjusted logit?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "0.4",
+        "why": "3.0 - 0.5 x 4 - 0.6 = 0.4."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "2.4",
+        "why": "That subtracts only the presence penalty and ignores the count-scaled frequency penalty."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "-1.4",
+        "why": "That applies the presence penalty once per occurrence; it is a one-off penalty for any token that has appeared."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "1.0",
+        "why": "That applies the frequency penalty but forgets the presence penalty."
+      }
+    ],
+    "explanation": "The frequency penalty grows with each repeat, so it targets tokens used again and again. The presence penalty is a flat, one-time deduction for any token that has appeared at all, which nudges the model toward new words and topics. In vLLM both use only the generated output; the multiplicative repetition penalty also considers the prompt.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/sampling_params.html",
+    "source": "interview:llm-repetition-penalties",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-022",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each anti-repetition control with how it works.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Frequency penalty",
+        "why": "Subtracts an amount that grows with each repeat."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Presence penalty",
+        "why": "Subtracts a flat amount once a token has appeared."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Repetition penalty (CTRL-style)",
+        "why": "Scales the logits of seen tokens by a factor."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No-repeat n-gram size",
+        "why": "Bans any n-gram from appearing twice."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A token used 5 times is pushed down five times as much as a token used once",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Any token already used is pushed down by the same amount, however often it appeared",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Positive logits of seen tokens are divided by a factor such as 1.2, and the prompt counts by default for decoder-only models",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Setting it to 3 means the same three-token sequence can never appear twice, which can wreck text that must repeat a name",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Frequency and presence penalties are additive; the first scales with count and the second is a one-off. The Hugging Face repetition penalty from the CTRL paper is multiplicative and applied at most once per token, and for decoder-only models it includes prompt tokens. `no_repeat_ngram_size` is a hard ban that sets matching tokens to minus infinity; the Transformers docs warn that a 2-gram ban would let 'New York' appear only once in an article about the city.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-repetition-penalties",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-023",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Hugging Face's repetition penalty divides positive logits by the penalty and multiplies negative logits by it. With penalty 1.2, what happens to a previously generated token whose logit is -2.0?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It becomes about -1.67, so the token gets more likely",
+        "why": "Dividing a negative logit by 1.2 would raise it, which is the opposite of a penalty; that is exactly why the code multiplies negative logits."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It becomes -2.4, so the token gets less likely",
+        "why": "Negative logits are multiplied by the penalty: -2.0 x 1.2 = -2.4, which lowers the token's score."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It stays -2.0, because the penalty only applies to positive logits",
+        "why": "Both signs are penalised; only the operation differs."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It becomes -3.2, because the penalty is subtracted",
+        "why": "This penalty is multiplicative, not additive like the frequency and presence penalties."
+      }
+    ],
+    "explanation": "A naive 'divide by the penalty' would push negative logits toward zero and make a repeated token more likely. Transformers avoids that with `torch.where(score < 0, score * penalty, score / penalty)`. A penalty of 1.0 means no change, above 1.0 discourages repeats and below 1.0 encourages them.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-repetition-penalties",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-024",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With min-p = 0.1, a token is kept only if its probability is at least 0.1 times the top token's probability. Distribution X is 0.90, 0.04, 0.03, 0.02, 0.01. Distribution Y is 0.20, 0.18, 0.16, 0.14, 0.12, 0.10, 0.06, 0.04. How many tokens survive in each?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "X keeps 5 and Y keeps 1",
+        "why": "This has it backwards: the threshold is high when the model is confident (X) and low when it is unsure (Y)."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "X keeps 2 and Y keeps 6",
+        "why": "In X the threshold is 0.09, so 0.04 is cut; in Y the threshold is 0.02, so even 0.04 survives."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "X keeps 1 and Y keeps 8",
+        "why": "X's threshold is 0.1 x 0.90 = 0.09, so only the top token passes. Y's is 0.1 x 0.20 = 0.02, so all eight pass."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both keep the same number, because min-p is a fixed cutoff",
+        "why": "The cutoff scales with the top probability, so it differs between the two distributions."
+      }
+    ],
+    "explanation": "Min-p sets a threshold relative to the most likely token. When the model is confident the filter is strict, and when the distribution is flat it lets more candidates through. For comparison, top-p = 0.95 would keep 3 tokens in X and 7 in Y. The Transformers docs note that min-p values of 0.01 to 0.2 are about as selective as top-p values of 0.99 to 0.8.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-min-p",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-025",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Why is min-p sampling said to hold up better than top-p at high temperatures?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It applies a lower temperature internally whenever the requested one is above 1",
+        "why": "Min-p does not change the temperature; it only decides which tokens survive."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It always keeps exactly one token, so temperature cannot matter",
+        "why": "Min-p keeps a variable number of tokens; on flat distributions it keeps many."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Its cutoff scales with the top token's probability, so it still trims the tail",
+        "why": "At high temperature, top-p needs more and more tail tokens to reach its mass target; min-p's relative cutoff keeps cutting tokens far below the leader."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It skips the softmax entirely and samples directly from logits",
+        "why": "Min-p computes probabilities with softmax and compares them with the scaled threshold."
+      }
+    ],
+    "explanation": "Nguyen et al. (ICLR 2025) found that top-p struggles to balance quality and diversity at high temperature, where output tends to become incoherent. Min-p's threshold scales with the model's confidence in its top token, so it adapts as the distribution changes. Both Transformers and vLLM support it as `min_p`.",
+    "reference": "https://arxiv.org/abs/2407.01082",
+    "source": "interview:llm-min-p",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-026",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "A summariser uses greedy decoding and sometimes repeats the same sentence until it hits the token limit. Which two changes are reasonable first fixes? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Switch to sampling with a moderate temperature and top-p",
+        "why": "Greedy decoding on open-ended text is known to fall into loops; a little sampling breaks the self-reinforcing pattern."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Add a modest repetition or frequency penalty",
+        "why": "Penalising tokens that already appeared directly lowers the score of the looping text."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Increase `num_beams` to 10",
+        "why": "Beam search maximises likelihood even harder, which tends to make repetition worse on open-ended text."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raise the max-tokens limit so the summary can finish",
+        "why": "More room just means more repeats; the loop itself is the problem."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Set temperature to 0 to make the output stable",
+        "why": "Temperature 0 is greedy decoding, which is the setting that is looping."
+      }
+    ],
+    "explanation": "Repetition loops are a classic failure of likelihood-maximising decoding: once a phrase appears, repeating it becomes even more likely. Fixes act on the decoding: sample a little instead of taking the argmax, and penalise repeats. Keep penalties modest, because heavy penalties push the model away from terms it legitimately needs, such as names and key words.",
+    "reference": "https://arxiv.org/abs/1904.09751",
+    "source": "interview:llm-decoding-failure-modes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-027",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A story generator runs at temperature 1.8 with top-p = 1.0 and top-k disabled. Outputs often drift into odd words and broken sentences. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The temperature is too low, so the model keeps choosing the same words",
+        "why": "1.8 is a high temperature; low temperatures cause blandness, not broken sentences."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A very flat distribution with no truncation, so tail tokens are sampled often",
+        "why": "High temperature flattens the distribution, and with every filter off nothing removes the unreliable tail."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Top-p of 1.0 forces greedy decoding",
+        "why": "Top-p of 1.0 keeps every token; it disables truncation rather than forcing greedy decoding."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The max-tokens limit is cutting sentences in half",
+        "why": "A length cut-off affects only the end of the output, not word choice throughout."
+      }
+    ],
+    "explanation": "Incoherence is the opposite failure to repetition. A high temperature spreads probability onto many poor tokens, and once one is sampled the rest of the text has to continue from it. Lower the temperature, or keep it high for variety but add truncation such as top-p or min-p to cut the tail.",
+    "reference": "https://arxiv.org/abs/1904.09751",
+    "source": "interview:llm-decoding-failure-modes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-028",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You want a model never to write the word `guarantee`, and you plan to use a logit-bias setting that adds a large negative number to the logit of that word's token. What is the main pitfall?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Logit bias only works when temperature is above 1",
+        "why": "Logit bias changes the logits before any decoding strategy runs, so it works with greedy and sampling alike."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A large negative bias makes the model refuse to answer at all",
+        "why": "It only affects the listed token IDs; everything else is untouched."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Logit bias is applied after sampling, so it cannot stop a token from being chosen",
+        "why": "It is applied to the logits before the token is chosen; that is the whole point."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "One word maps to several token IDs, and every variant needs its own bias",
+        "why": "Bias works on token IDs, not words. The Transformers docs point out that biasing `foo` mid-sentence usually means biasing ` foo` with a leading space."
+      }
+    ],
+    "explanation": "Logit bias (vLLM `logit_bias`, Transformers `sequence_bias`) edits specific token logits; a very large negative value effectively bans a token. Because tokenizers have separate tokens for ' guarantee', 'Guarantee' and sub-word pieces, banning a word needs every variant, and a determined model may still spell it another way. For hard guarantees, check the output too.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-029",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You classify support tickets into five fixed labels with an LLM and want a confidence score for each prediction. Which use of token logprobs is sound?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Treat a logprob close to 0 as proof that the label is correct",
+        "why": "A model can be confidently wrong; a high probability is not proof of correctness."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use the average logprob of the explanation text the model writes after the label as its confidence",
+        "why": "The explanation's tokens measure fluency of the prose, not certainty about the label."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Limit output to the label tokens, read their probabilities, and route low ones to a human",
+        "why": "With the output limited to the labels, the probabilities over them give a usable score that you can check against held-out data."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Compare logprobs across different models to decide which one is right",
+        "why": "Each model's probabilities have their own calibration, so raw logprobs are not comparable across models."
+      }
+    ],
+    "explanation": "Logprobs give a cheap confidence signal: the probability mass on each allowed label, or the margin between the top two. They are most useful for routing (auto-handle confident cases, escalate the rest) once you have checked calibration on labelled data. They measure the model's belief, not the truth.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/sampling_params.html",
+    "source": "interview:llm-logprobs-use",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-030",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Even with grammar-constrained decoding that only allows schema-valid tokens, a response can still fail JSON parsing.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. If generation stops at the max-tokens limit, the constraint has no chance to close the object, so you receive a valid prefix that is not a complete document."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "The constraint guarantees each chosen token keeps the output a valid prefix, not that generation reaches the end. A length cut-off leaves an unclosed object."
+      }
+    ],
+    "explanation": "Constrained decoding masks tokens that would break the grammar, so the output is always a valid prefix. Whether it finishes depends on the token budget. Check the finish reason, size max tokens with headroom, and keep schemas tight (for example, limit array lengths) so outputs cannot grow without bound.",
+    "reference": "https://docs.vllm.ai/en/latest/features/structured_outputs.html",
+    "source": "interview:llm-structured-output",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-031",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "For logits [2.0, 1.0, 0.0], order these temperatures from the highest to the lowest probability given to the top token.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "T = 2.0",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "T = 0.5",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A very large T (approaching infinity)",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "T = 1.0",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "Probabilities are `softmax(logits / T)`. The top token gets about 0.87 at T = 0.5, 0.67 at T = 1.0 and 0.51 at T = 2.0. As T grows without limit, every logit divided by T approaches 0, so the distribution approaches uniform and the top token approaches 1/3.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-temperature-effect",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini",
+        "Meta"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-032",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "One product has two features: generating SQL queries from questions, and writing marketing taglines. Which sampling setup fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "High temperature for both, so users see varied output",
+        "why": "Variety helps taglines, but random tokens in SQL produce queries that fail or return wrong data."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Low temperature for SQL; higher temperature with top-p or min-p for taglines",
+        "why": "SQL has a narrow set of correct outputs, while taglines benefit from variety with the tail trimmed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Beam search for taglines and high temperature for SQL",
+        "why": "That is backwards: beam search gives bland, repetitive text, and high temperature adds errors to code."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The same settings for both, since temperature does not affect correctness",
+        "why": "Temperature changes how often low-probability tokens are picked, which directly affects correctness on precise tasks."
+      }
+    ],
+    "explanation": "Tune decoding per task, not per product. Precise outputs (code, SQL, extraction, classification) want low temperature and often structured output. Creative outputs want more temperature, with truncation so that variety does not turn into nonsense.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-tune-creative-vs-factual",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://pub.towardsai.net/your-complete-22-part-series-on-ai-interview-questions-and-answers-part-2-58120c36f39f",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Meta"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-DEC-033",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two are sound uses of token logprobs in an application? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Flag answers whose key tokens had low probability for extra review",
+        "why": "Low-probability tokens point to where the model was unsure, which is a useful signal for review."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Rank a fixed set of candidate answers by how likely the model finds each one",
+        "why": "Scoring candidates by total or length-normalised log-likelihood is a standard way to rank options."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prove that a generated fact is true because its tokens had high probability",
+        "why": "High probability means the model expected the tokens, not that they are true; models can be confidently wrong."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Recover the exact temperature the provider used from a single token's logprob",
+        "why": "A single logprob mixes the logits and the temperature together, so it cannot tell you either one on its own."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Detect prompt injection with certainty by checking for low-probability tokens",
+        "why": "Injected text can be perfectly fluent; logprobs give no reliable signal for that."
+      }
+    ],
+    "explanation": "Logprobs are a measure of the model's own uncertainty. They work for triage, ranking candidates, and building classifiers with confidence thresholds once you have checked them against labelled data. They are not a fact-checker and not a security control.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/outputs.html",
+    "source": "interview:llm-logprobs-use",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-034",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "On a self-hosted vLLM server, the same temperature-0 prompt gives slightly different answers when traffic is high than when the server is idle. What explains this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The seed is reset for each request, so greedy decoding samples differently",
+        "why": "Greedy decoding does not sample, so the seed plays no part at temperature 0."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Kernels are not batch-invariant, so results depend on batch size",
+        "why": "Under load the batch size changes, which changes the reduction order in matmul, attention and normalisation, so tiny logit differences can flip an argmax."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Concurrent threads race on atomic additions inside every forward pass",
+        "why": "Thinking Machines found that typical LLM forward passes do not use atomic adds and are deterministic run to run for a fixed batch; the issue is batch-size dependence."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The model's weights are updated slightly after each request",
+        "why": "Inference does not change weights; the model is the same for every request."
+      }
+    ],
+    "explanation": "At temperature 0 the token is the argmax of the logits, so any change in the logits can change the output, and one changed token changes everything after it. The changes come from floating-point reductions whose order depends on batch size. vLLM documents that reproducibility needs batch-invariant mode (or deterministic scheduling offline) on the same hardware and the same vLLM version, at some cost in throughput.",
+    "reference": "https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/",
+    "source": "interview:llm-temp-zero-nondeterminism",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-DEC-035",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Beam search divides each finished hypothesis's total log-probability by `length ** length_penalty`. Hypothesis A has a total of -3.0 over 4 tokens; hypothesis B has -4.0 over 8 tokens. Which one wins with `length_penalty` = 0 and with `length_penalty` = 1?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A wins in both cases, because its total log-probability is higher",
+        "why": "With a penalty of 1, scores are per-token averages: -0.75 for A and -0.5 for B, so B wins."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "B wins in both cases, because longer answers are always preferred",
+        "why": "With a penalty of 0 the raw totals are compared, and -3.0 beats -4.0, so A wins."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "B wins with 0 and A wins with 1",
+        "why": "This swaps the two results."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A wins with 0 and B wins with 1",
+        "why": "Penalty 0 compares totals (-3.0 beats -4.0). Penalty 1 compares averages (-0.5 beats -0.75)."
+      }
+    ],
+    "explanation": "Every extra token adds a negative logprob, so raw totals favour short outputs. Length normalisation offsets that bias. The Transformers docs explain that because the score is a negative log-likelihood, `length_penalty > 0` promotes longer sequences and `length_penalty < 0` promotes shorter ones.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-greedy-vs-beam",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-036",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about seeds and reproducibility in LLM serving are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A fixed seed makes sampled output repeatable only when the logits are also identical, which needs the same hardware, software and batching behaviour",
+        "why": "The seed fixes the random draws, but if the logits differ the same draw can pick a different token."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "vLLM documents reproducibility only on the same hardware and the same vLLM version",
+        "why": "Its reproducibility guide states both conditions and says reproducibility is not guaranteed by default."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A seed makes temperature-0 output deterministic on any shared endpoint",
+        "why": "At temperature 0 there is no sampling for the seed to control; differences come from the logits."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Setting a seed lowers output quality because it limits the vocabulary",
+        "why": "A seed only fixes the random number stream; it does not touch the vocabulary or the distribution."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Two requests with the same seed always match, even if the prompt differs by a space",
+        "why": "A different prompt gives different logits, so outputs can differ regardless of the seed."
+      }
+    ],
+    "explanation": "Reproducing an LLM output needs the same logits and the same random draws. The seed handles the draws. The logits need the same model, weights, kernels, hardware and batch-invariant execution. Hosted APIs that accept a seed generally describe it as best effort for this reason.",
+    "reference": "https://docs.vllm.ai/en/latest/usage/reproducibility.html",
+    "source": "interview:llm-temp-zero-nondeterminism",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-037",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are designing a pipeline that extracts structured fields from long contracts into a strict JSON schema, and downstream code must never crash. Which three design choices belong in it? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use constrained decoding against the schema so the output is always well-formed",
+        "why": "It removes syntax failures at the source instead of relying on retries."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Validate field values against business rules after parsing and retry or flag failures",
+        "why": "A schema-valid object can still contain a wrong date or an impossible amount, so you need semantic checks."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Check the finish reason and give max tokens enough headroom for the largest documents",
+        "why": "A length cut-off leaves an incomplete object even with constrained decoding."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set temperature to 1.5 so the model explores more ways to fill each field",
+        "why": "Extraction has one right answer per field; extra randomness only adds errors."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Skip validation because constrained decoding guarantees correct values",
+        "why": "Constraints cover syntax and shape, not truth."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Put the schema only in the prompt and parse the output with a regular expression",
+        "why": "Prompt-only JSON works most of the time but not always, and regex parsing of JSON is brittle."
+      }
+    ],
+    "explanation": "Reliable structured output needs layers: constrained decoding for syntax, enough token budget so the output can finish, and semantic validation with a retry or human fallback. Each layer catches failures the others cannot.",
+    "reference": "https://docs.vllm.ai/en/latest/features/structured_outputs.html",
+    "source": "interview:llm-structured-output",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-DEC-038",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "After switching a math word-problem feature to strict JSON output with a single `answer` field, accuracy drops noticeably. What is the most likely cause, and the best fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Format restrictions can hurt reasoning; add a free-text reasoning field before `answer`, or reason first and format in a second step",
+        "why": "Tam et al. found significant reasoning drops under format restrictions. Giving the model room to work before the answer field usually restores accuracy."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Constrained decoding changes the model's weights; disable it and fine-tune instead",
+        "why": "Constrained decoding is a decode-time mask and never changes weights."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "JSON numbers lose precision, so answers are being rounded",
+        "why": "The drop is in which answer the model reaches, not how the number is encoded."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The temperature is too low for JSON mode; raise it above 1",
+        "why": "Higher temperature adds randomness to a task that needs precision."
+      }
+    ],
+    "explanation": "When the schema forces the final answer first, the model must commit before it has worked anything out. 'Let Me Speak Freely?' (Tam et al., 2024) reports that stricter format constraints generally cause larger drops on reasoning tasks. Common fixes: put a reasoning field before the answer, or use a two-step pipeline (free-form reasoning, then a cheap formatting call).",
+    "reference": "https://arxiv.org/abs/2408.02442",
+    "source": "interview:llm-structured-output",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-DEC-039",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Logits for six candidate tokens are fixed, and top-p = 0.9 stays fixed. You raise the temperature from 0.7 to 1.3. What happens to the number of tokens in the nucleus?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It shrinks, because higher temperature concentrates probability on the top token",
+        "why": "Higher temperature does the opposite: it spreads probability toward the tail."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It stays the same, because top-p depends only on the logits",
+        "why": "Temperature is applied before top-p, so top-p sees the reshaped probabilities."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It grows, because the flatter distribution needs more tokens to reach 0.9",
+        "why": "Temperature runs first, so a flatter distribution needs more tokens to cover the same mass. For logits [3, 2, 1.5, 1, 0.5, 0] the nucleus grows from 3 tokens at T = 0.7 to 5 at T = 1.3."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It becomes all six tokens, because any temperature above 1 disables top-p",
+        "why": "Top-p still applies at any temperature; the nucleus just gets larger."
+      }
+    ],
+    "explanation": "In Transformers the temperature warper runs before top-k, top-p and min-p, so these controls interact. Raising temperature both flattens the distribution and widens the nucleus, letting in tokens that were cut before. This is one reason high-temperature sampling gets incoherent with top-p, and why min-p was proposed.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-040",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "fill",
+    "select": 1,
+    "stem": "The top two tokens' logits differ by 2.0. At temperature 0.5, how many times more likely is the top token than the second? Round to the nearest whole number.",
+    "options": [],
+    "accepted": [
+      "55",
+      "54.6",
+      "54.60",
+      "~55"
+    ],
+    "explanation": "The probability ratio of two tokens is `exp((l1 - l2) / T)`, because the softmax denominator cancels. At T = 1 it is `e^2`, about 7.4; at T = 0.5 it is `e^4`, about 54.6. Halving the temperature squares the ratio, which is why small temperature changes have large effects.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/internal/generation_utils",
+    "source": "interview:llm-temperature-effect",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/Capgemini-Interview-E3803-RVW95903382.htm",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini",
+        "Meta"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-041",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your team's golden-output regression tests for a self-hosted model keep flaking even at temperature 0. You need bit-identical outputs for these tests, while production should stay fast. What is the best approach?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set a fixed seed in production and the tests, which makes temperature-0 output identical",
+        "why": "Temperature 0 does no sampling, so a seed has nothing to fix; the differences come from batch-dependent logits."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Lower the temperature further, to 0.0001",
+        "why": "Greedy decoding is already the limit; the varying logits are the problem, not the temperature."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Run the test suite on a deterministic, batch-invariant configuration pinned to the same hardware and engine version",
+        "why": "Batch invariance removes batch-size-dependent numerics, and pinning hardware and engine version removes the other sources of drift. The throughput cost stays out of production."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retry each test until it matches the golden output",
+        "why": "That hides real regressions and makes the suite slower without fixing anything."
+      }
+    ],
+    "explanation": "Exact reproducibility needs the same logits, which needs batch-invariant kernels (or deterministic scheduling for offline runs) on the same hardware and engine version. That costs throughput: Thinking Machines measured a deterministic mode as slower than the default. Keep it for tests and evaluation, and for production checks prefer comparisons that tolerate small differences.",
+    "reference": "https://docs.vllm.ai/en/latest/usage/reproducibility.html",
+    "source": "interview:llm-temp-zero-nondeterminism",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://nerdleveltech.com/courses/llm-engineer-interviews/learn/llm-fundamentals/sampling-strategies"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-DEC-042",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about truncation sampling methods are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Locally typical sampling can exclude the single most probable token",
+        "why": "It keeps tokens whose information content is close to the distribution's entropy; a dominant token can have too little information to qualify. For probabilities 0.4, 0.15, 0.15, 0.15, 0.15 with mass 0.5, it keeps only the 0.15 tokens."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Epsilon sampling keeps only tokens above a fixed absolute probability threshold",
+        "why": "Transformers' `epsilon_cutoff` keeps tokens with probability above the threshold, whatever the shape of the distribution."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Top-k adapts the number of kept tokens to the entropy of the distribution",
+        "why": "Top-k always keeps exactly k tokens; it ignores the shape."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Top-p = 1.0 is the same as greedy decoding",
+        "why": "Top-p = 1.0 keeps every token, which disables truncation."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Min-p = 0 removes every token except the top one",
+        "why": "A min-p of 0 sets the threshold to zero, so nothing is removed."
+      }
+    ],
+    "explanation": "Truncation methods differ in what the cutoff is relative to: a count (top-k), a cumulative mass (top-p), a fraction of the top token (min-p), a fixed probability (epsilon) or closeness to the expected information content (typical). Meister et al. reported that typical sampling reduces degenerate repetition compared with top-k and nucleus sampling.",
+    "reference": "https://arxiv.org/abs/2202.00666",
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-DEC-043",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You generate five candidate answers by sampling and keep the one with the highest total (summed) logprob. Reviewers say the chosen answers are often short and generic. Why, and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Summed logprobs favour short answers; rank by per-token average instead",
+        "why": "A longer answer collects more negative logprobs even when each token is likely, so the raw sum is biased toward brevity."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Sampling five times makes every candidate identical; use one sample",
+        "why": "Sampled candidates differ; the bias comes from how they are scored."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "High logprobs mean the answer was copied from training data; pick the lowest-scoring answer",
+        "why": "Picking the least likely answer would select noisy, low-quality text."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The temperature was too low; raise it so longer answers become likely",
+        "why": "Even with longer candidates, the summed score would still prefer the shortest one."
+      }
+    ],
+    "explanation": "Total log-likelihood shrinks with length, so ranking by the raw sum favours short, generic replies. Rank by average logprob per token (or a tuned length penalty, as beam search does), or use a separate quality signal such as a reward model or task-specific checks.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation",
+    "source": "interview:llm-greedy-vs-beam",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://static.glassdoor.com.mx/Interview/applied-scientist-interview-questions-SRCH_KO0,17_IP41.htm",
+        "https://hackernoon.com/top-ultimate-list-of-50-llms-interview-question-master-llms-crack-your-next-interview",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ],
+      "companies": [
+        "Amazon"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-DEC-044",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of grammar-constrained decoding for one token in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Advance the grammar state with the chosen token",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Compute the logits for the next position",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set the logits of disallowed tokens to minus infinity",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Look up which tokens the current grammar state allows",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Apply temperature and other sampling settings, then pick a token",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "C",
+      "E",
+      "A"
+    ],
+    "explanation": "Constrained decoders compile the schema, regex or grammar into a state machine indexed over the vocabulary (Willard and Louf, the Outlines paper). At each step the engine computes logits, looks up the allowed tokens for the current state, masks the rest, samples as usual from what is left, and moves the state forward with the chosen token. The mask comes before sampling, so an invalid token can never be chosen.",
+    "reference": "https://arxiv.org/abs/2307.09702",
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-DEC-045",
+    "domain": 2,
+    "skill": "decoding-sampling",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each production symptom with its most likely decoding cause.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Greedy or beam decoding on open-ended text",
+        "why": "Likelihood-maximising decoding that tends to loop."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "High temperature with no truncation",
+        "why": "A flat distribution that samples many tail tokens."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Max-tokens cap reached",
+        "why": "The length limit cut the output off."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A stop sequence that is too broad",
+        "why": "A string that also occurs in normal output."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Answers keep repeating the same phrase until they run out of room",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Answers drift into strange words and broken grammar",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Answers stop mid-sentence and the finish reason is `length`",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Answers end early at the first blank line, with a normal stop reason, even though the model had more to say",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Use the finish reason first: `length` points at the token cap, while a normal stop with clipped content points at a stop sequence or end-of-sequence token. Repetition points at likelihood-maximising decoding or missing penalties. Incoherence points at too much randomness without truncation.",
+    "reference": "https://docs.vllm.ai/en/latest/api/vllm/outputs.html",
+    "source": "interview:llm-decoding-failure-modes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language"
+      ]
+    },
+    "roleLevel": 3
+  }
+]

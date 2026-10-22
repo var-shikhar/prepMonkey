@@ -1,0 +1,50 @@
+{
+  "decoding-sampling": {
+    "summary": "A model only produces logits; decoding turns them into text. Know how temperature, truncation filters (top-k, top-p, min-p), penalties, logit bias, stop rules and constrained decoding change which token is picked, how to read finish reasons and logprobs, and why temperature 0 still is not fully deterministic.",
+    "points": [
+      "Each step yields one logit per vocabulary token; softmax turns them into probabilities and `ln(p)` is the logprob. Sequence log-likelihood is the sum of token logprobs, so `p = exp(logprob)` (for example -0.105 is about 0.90).",
+      "Temperature divides logits before softmax: `softmax(logits / T)`. The ratio between two tokens is `exp((l1 - l2) / T)`, so halving T squares it. T < 1 sharpens, T > 1 flattens, and T near 0 is treated as greedy (vLLM switches to greedy below a tiny epsilon).",
+      "Greedy takes the argmax every step. Beam search keeps `num_beams` partial sequences and can find a higher-probability sequence than greedy, but likelihood-maximising decoding gives bland, repetitive text on open-ended tasks (Holtzman et al.).",
+      "Truncation filters remove tokens and renormalise the rest: top-k keeps a fixed count; top-p keeps the smallest set whose mass reaches p; min-p keeps tokens with probability >= min_p x the top probability; epsilon keeps tokens above a fixed probability; typical sampling keeps tokens whose information content is near the entropy and can drop the top token.",
+      "In Hugging Face Transformers the order is: penalties and biases, then temperature, then top-k / top-p / min-p / typical, then sampling. Because temperature runs first, raising it widens the top-p nucleus. Sampling settings do nothing unless `do_sample=True`.",
+      "Penalties: frequency subtracts `penalty x count` (grows with repeats), presence subtracts a flat amount once a token has appeared (vLLM uses output tokens only for both); the CTRL-style repetition penalty divides positive and multiplies negative logits of seen tokens, includes the prompt, and 1.0 means off. `no_repeat_ngram_size` is a hard ban.",
+      "Logit bias edits specific token IDs; a large negative value effectively bans a token. A word usually has several IDs (leading space, capitals, sub-word pieces), and every variant needs biasing.",
+      "Max tokens is a hard external cap that the model never sees. Stop sequences end generation when a string appears and by default are usually left out of the output. The finish reason says why generation ended: `stop` (end-of-sequence token or stop string) versus `length` (cap reached).",
+      "Constrained (structured-output) decoding compiles a JSON schema, regex, choice list or grammar into a state machine and masks disallowed tokens before sampling. It guarantees syntax, not correct values, and a length cut-off still leaves an incomplete object.",
+      "Strict output formats can hurt reasoning (Tam et al., 2024). Put a reasoning field before the answer, or reason first and format in a second call.",
+      "Temperature 0 is not reproducible on shared servers because most kernels are not batch-invariant: batch size changes the floating-point reduction order. A seed fixes random draws only; vLLM promises reproducibility only with batch invariance on the same hardware and version.",
+      "Tune per task: low temperature (often with structured output) for extraction, SQL and classification; higher temperature with top-p or min-p for creative text. Sampling controls randomness, not knowledge, so factual errors also need grounding and abstention."
+    ],
+    "traps": [
+      "Assuming max tokens makes the model write a shorter answer; it only cuts the output off.",
+      "Saying top-p = 1.0 is greedy; it disables truncation and keeps every token.",
+      "Dividing a negative logit by the repetition penalty raises it; the real implementation multiplies negative logits.",
+      "Believing temperature 0 or a seed guarantees identical output on a hosted endpoint.",
+      "Treating a high logprob or constrained decoding as proof that the content is correct.",
+      "Ranking sampled candidates by summed logprob, which favours short answers; use a per-token average or a length penalty.",
+      "Setting `temperature` in Transformers `generate` without `do_sample=True` and wondering why nothing changes."
+    ],
+    "docs": [
+      {
+        "title": "Hugging Face Transformers: Generation (GenerationConfig)",
+        "url": "https://huggingface.co/docs/transformers/main/en/main_classes/text_generation"
+      },
+      {
+        "title": "vLLM: SamplingParams",
+        "url": "https://docs.vllm.ai/en/latest/api/vllm/sampling_params.html"
+      },
+      {
+        "title": "vLLM: Structured outputs",
+        "url": "https://docs.vllm.ai/en/latest/features/structured_outputs.html"
+      },
+      {
+        "title": "Holtzman et al., The Curious Case of Neural Text Degeneration",
+        "url": "https://arxiv.org/abs/1904.09751"
+      },
+      {
+        "title": "Thinking Machines: Defeating Nondeterminism in LLM Inference",
+        "url": "https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/"
+      }
+    ]
+  }
+}
