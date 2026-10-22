@@ -1,0 +1,50 @@
+{
+  "safety-security": {
+    "summary": "LLM security is application security for a component that cannot separate instructions from data. Know the difference between prompt injection (direct and indirect) and jailbreaks, the OWASP Top 10 for LLM Applications 2025, and why reliable defences limit what a compromised model can do instead of hoping it will not be fooled.",
+    "points": [
+      "Prompt injection (OWASP LLM01:2025) is input that changes model behaviour against the developer's intent. It is direct when the user types it, and indirect when it hides in content the system reads: web pages, emails, files, RAG chunks, tool results. OWASP treats jailbreaking (bypassing safety training) as one form of injection.",
+      "Injection is hard to fix because instructions and data share one token stream, so there is no equivalent of a parameterised query. OWASP says it is unclear whether fool-proof prevention exists.",
+      "Defences that lower probability: prompt wording, spotlighting (delimiting, datamarking, encoding), instruction-hierarchy training, classifiers. Defences that limit impact: least-privilege tools, human approval for irreversible actions, output validation and encoding, egress allowlists, sandboxing.",
+      "The lethal trifecta (Willison) is private data access, untrusted content and an external communication channel. Remove one leg per context. The dual-LLM pattern keeps the tool-holding model away from untrusted text.",
+      "OWASP 2025 list: LLM01 Prompt Injection, LLM02 Sensitive Information Disclosure, LLM03 Supply Chain, LLM04 Data and Model Poisoning, LLM05 Improper Output Handling, LLM06 Excessive Agency, LLM07 System Prompt Leakage, LLM08 Vector and Embedding Weaknesses, LLM09 Misinformation, LLM10 Unbounded Consumption.",
+      "Excessive Agency has three root causes: excessive functionality, permissions and autonomy. Fixes are minimal tools, scoped credentials in the user's context, human approval, and authorisation enforced in downstream systems (complete mediation).",
+      "System prompts are not secrets or security controls (LLM07). Keep credentials and authorisation rules in code, and assume prompts can be extracted.",
+      "Treat model output as untrusted input (LLM05): encode for HTML, parameterise SQL, never pass output to `eval` or a shell, restrict Markdown image and link loading to block exfiltration, and use a CSP.",
+      "Jailbreak techniques: role-play or persona, many-shot (power-law in shots, larger models more susceptible), obfuscation or encoding, multi-turn escalation (Crescendo), transferable adversarial suffixes (GCG).",
+      "Guardrails trade harm caught against benign traffic blocked. Measure both on labelled sets, moderate inputs and outputs (and whole conversations), and account for streaming. Llama Guard-style classifiers accept custom taxonomies.",
+      "Privacy: redact PII before the API call, minimise and shorten log retention, restrict access. Models can memorise rare training strings (Carlini et al.), so scrub fine-tuning data.",
+      "Poisoning and backdoors can survive safety training (sleeper agents), so control data provenance and model supply chain. Denial of wallet is bounded with per-key rate limits, token quotas and input and output caps."
+    ],
+    "traps": [
+      "Saying a system-prompt instruction such as \"ignore embedded instructions\" prevents injection.",
+      "Treating a 95%-accurate classifier as sufficient: attackers adapt, and at low base rates most flags are false alarms.",
+      "Confusing indirect injection (inference-time content) with data poisoning (training-time data).",
+      "Logging, monitoring or rate limiting presented as prevention for excessive agency. They only reduce damage.",
+      "Asking the model to enforce access control over data already placed in its context, such as multi-tenant RAG.",
+      "Blocklisting the exact wording of red-team findings instead of fixing the class of attack and adding regression tests.",
+      "Reporting only harm caught and ignoring over-blocking of legitimate users."
+    ],
+    "docs": [
+      {
+        "title": "OWASP Top 10 for LLM Applications 2025",
+        "url": "https://genai.owasp.org/llm-top-10/"
+      },
+      {
+        "title": "Not what you've signed up for: Indirect Prompt Injection (Greshake et al.)",
+        "url": "https://arxiv.org/abs/2302.12173"
+      },
+      {
+        "title": "Defending Against Indirect Prompt Injection Attacks With Spotlighting",
+        "url": "https://arxiv.org/abs/2403.14720"
+      },
+      {
+        "title": "Many-shot jailbreaking (Anthropic research)",
+        "url": "https://www.anthropic.com/research/many-shot-jailbreaking"
+      },
+      {
+        "title": "Llama Guard: LLM-based Input-Output Safeguard",
+        "url": "https://arxiv.org/abs/2312.06674"
+      }
+    ]
+  }
+}

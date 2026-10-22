@@ -1,0 +1,50 @@
+{
+  "inference-economics": {
+    "summary": "Inference cost and latency come from two phases: a compute-heavy prefill over the prompt and a memory-bandwidth-bound decode that produces one token per step. Know how to size weights and the KV cache, how batching, paging, caching, speculative decoding and quantization move cost and latency, and how to read TTFT, ITL and throughput when something regresses.",
+    "points": [
+      "Cost per request = input tokens x input price + output tokens x output price. Output usually costs several times more per token, because each output token needs its own sequential decode step, while prompt tokens are processed in parallel during prefill.",
+      "TTFT = queueing + prefill (+ network). ITL (TPOT) = (e2e - TTFT) / (output tokens - 1). End-to-end latency = TTFT + ITL x (N - 1). System throughput is total output tokens per second across all requests.",
+      "Weight memory = parameters x bytes: about 2 GB per billion parameters in FP16/BF16, 1 GB in INT8 and 0.5 GB in INT4. A 70B model needs about 140 / 70 / 35 GB, before KV cache and activations.",
+      "KV-cache bytes per token = 2 x layers x kv_heads x head_dim x bytes per value. Multiply by tokens and concurrent sequences. GQA divides it by query_heads / kv_heads, and an FP8 cache halves it again.",
+      "Batch-1 decoding is memory-bound: tokens/s is at most bandwidth / bytes read per token. Batching lets one weight read serve many sequences, so cost per token falls steeply with concurrency.",
+      "Continuous (iteration-level) batching, introduced by Orca, admits and retires requests after every step. PagedAttention (vLLM) stores the KV cache in fixed-size blocks (16 tokens by default) with block tables and copy-on-write sharing. Earlier systems used only 20 to 38% of KV memory for real tokens.",
+      "Prefix (prompt) caching reuses the KV cache for an exact shared prefix. It cuts TTFT and the billed input cost. Put stable content first. A timestamp or reordered tools near the top silently turns every request into a miss. Isolate caches per tenant (vLLM `cache_salt`) to block timing side channels.",
+      "Speculative decoding: a draft proposes k tokens, the target verifies them in one pass, and accept/reject sampling keeps the target's distribution. Expected tokens per pass = (1 - a^(k+1)) / (1 - a). It helps memory-bound, low-to-medium load, and gains shrink when the GPU is compute-bound or acceptance is low.",
+      "Quantization: GPTQ (second-order, calibration data) and AWQ (activation-aware scaling of about 1% of salient weights) for 4-bit GPU weights. LLM.int8() keeps outlier features in 16-bit. SmoothQuant enables W8A8. GGUF is llama.cpp's single-file format. QAT inserts fake quantization during fine-tuning to recover accuracy that PTQ loses.",
+      "Tensor parallelism splits each layer's matrices and needs per-layer all-reduce, so keep it inside a node. Pipeline parallelism splits layers into stages and suits scaling across nodes.",
+      "Chunked prefill splits long prompts to fit a per-step token budget, with decodes scheduled first, to avoid generation stalls. Disaggregated prefill puts prefill and decode on separate instances to tune TTFT and ITL independently, and it does not raise throughput.",
+      "Resilience: honour `Retry-After` on 429, use capped exponential backoff with jitter, short timeouts, circuit breakers and evaluated fallback models or degraded modes."
+    ],
+    "traps": [
+      "Streaming improves perceived latency only. Total generation time and cost are unchanged.",
+      "Forgetting the factor of 2 (keys and values) or using query heads instead of KV heads in KV-cache arithmetic.",
+      "Assuming INT4 is always faster: weight-only quantization helps memory-bound small batches, but dequantization overhead can erase the gain at large batch sizes.",
+      "Claiming that PagedAttention or FlashAttention approximate attention. Both compute exact attention, and only memory layout or IO differs.",
+      "Lowering `max_tokens` or adding speculative decoding to fix a slow first token. Those act on decode, not prefill.",
+      "Putting a timestamp, request id or user name at the top of the system prompt, which defeats prefix caching.",
+      "Retrying 429s or outages in a tight loop without jitter, which keeps you rate-limited and can cause a retry storm."
+    ],
+    "docs": [
+      {
+        "title": "Efficient Memory Management for LLM Serving with PagedAttention (vLLM paper)",
+        "url": "https://arxiv.org/abs/2309.06180"
+      },
+      {
+        "title": "Fast Inference from Transformers via Speculative Decoding",
+        "url": "https://arxiv.org/abs/2211.17192"
+      },
+      {
+        "title": "vLLM docs: Automatic prefix caching design",
+        "url": "https://docs.vllm.ai/en/latest/design/prefix_caching.html"
+      },
+      {
+        "title": "vLLM docs: Optimization and tuning (chunked prefill, preemption, parallelism)",
+        "url": "https://docs.vllm.ai/en/latest/configuration/optimization.html"
+      },
+      {
+        "title": "Hugging Face Transformers: Quantization overview",
+        "url": "https://huggingface.co/docs/transformers/main/en/quantization/overview"
+      }
+    ]
+  }
+}
