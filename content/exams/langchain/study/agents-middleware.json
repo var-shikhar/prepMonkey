@@ -1,0 +1,36 @@
+{
+  "agents-middleware": {
+    "summary": "In LangChain 1.x, `create_agent` (from `langchain.agents`) is the standard agent: a model calling tools in a loop, compiled to a LangGraph graph. You customise it with middleware hooks rather than new agent classes. Know the hook order, which built-in middleware solves which production problem, how structured output and human approval work inside the loop, and how legacy `AgentExecutor` code maps onto it.",
+    "points": [
+      "`create_agent(model, tools, *, system_prompt, middleware, response_format, state_schema, context_schema, checkpointer, store, ...)` returns a compiled graph. The loop alternates a `model` node and a `tools` node, and it ends when the model replies with no tool calls. A `return_direct` tool, a graceful limit or a `jump_to: \"end\"` also end it.",
+      "Node-style hooks (`before_agent`, `before_model`, `after_model`, `after_agent`) return state updates. Wrap-style hooks (`wrap_model_call`, `wrap_tool_call`) receive a `handler` and can retry, short-circuit, or rewrite the call via `request.override(model=..., tools=..., messages=..., system_message=...)`.",
+      "Ordering for `middleware=[m1, m2, m3]`: `before_*` hooks run m1 to m3, `wrap_*` hooks nest with m1 outermost, and `after_*` hooks run m3 to m1. `before_agent` and `after_agent` run once per invocation; model hooks run on every model call.",
+      "Use a decorator (`@before_model`, `@wrap_model_call`, `@dynamic_prompt`, ...) for a single quick hook. Use an `AgentMiddleware` subclass for several hooks, sync and async variants, configuration, a `state_schema` of its own, or extra `tools` that ship with the middleware.",
+      "Jumps: a node hook returns `{\"jump_to\": \"end\" | \"model\" | \"tools\"}` and must declare the target with `can_jump_to` (`@hook_config(can_jump_to=[...])` or the decorator argument).",
+      "Request overrides in `wrap_model_call` affect only that call. State updates from node hooks are persisted by the checkpointer. The system prompt is applied at call time and is not stored in `messages`.",
+      "Built-ins: `SummarizationMiddleware` (needs a `trigger`; `keep` defaults to 20 messages), `HumanInTheLoopMiddleware`, `ModelCallLimitMiddleware` (`run_limit`/`thread_limit`, exit `end` by default), `ToolCallLimitMiddleware` (exit `continue` by default), `ModelFallbackMiddleware`, `ModelRetryMiddleware`/`ToolRetryMiddleware`, `PIIMiddleware`, `LLMToolSelectorMiddleware`, `ContextEditingMiddleware`, `TodoListMiddleware` (adds `write_todos`).",
+      "`response_format`: `ToolStrategy` (the schema becomes an artificial tool; supports unions; `handle_errors=True` retries on validation errors) or `ProviderStrategy` (provider-native, optional `strict`). A bare schema picks the provider strategy when the model profile supports it. The result is in `result[\"structured_response\"]`.",
+      "Human in the loop: `interrupt_on={\"tool\": True | False | {\"allowed_decisions\": [...]}}`, with decisions approve, edit, reject or respond. It needs a checkpointer and a `thread_id`, and you resume with `Command(resume={\"decisions\": [...]})`, one decision per action in order.",
+      "Runtime context: declare `context_schema`, pass `invoke(..., context=...)`, and read `runtime.context` in node hooks, `request.runtime.context` in wrap hooks, or a hidden `ToolRuntime` parameter in tools.",
+      "Migration: `langgraph.prebuilt.create_react_agent` became `create_agent` and `prompt` became `system_prompt`. Pre and post model hooks became `before_model`/`after_model`, dynamic models and tool error handling moved to `wrap_model_call`/`wrap_tool_call`, custom state must be a `TypedDict` extending `AgentState`, and `AgentExecutor`/`initialize_agent` live in `langchain-classic`.",
+      "Positioning: LangGraph is the runtime, LangChain's `create_agent` is a minimal harness, and Deep Agents is an opinionated harness built on it (filesystem, subagents, skills). Use a plain chain or graph when the steps are fixed."
+    ],
+    "traps": [
+      "An exception raised inside a tool body propagates and fails the run by default. Only invalid arguments and unknown tool names become error `ToolMessage`s automatically, so add `wrap_tool_call` or retry/error middleware.",
+      "Returning `jump_to` without declaring `can_jump_to` is silently ignored: the model step still runs.",
+      "A sync-only `wrap_model_call` raises `NotImplementedError` under `ainvoke`/`astream` (and async-only fails under `invoke`). Sync node hooks still work in async runs.",
+      "Two instances of the same middleware class fail the build as duplicates. Configure one `ModelCallLimitMiddleware` with both `run_limit` and `thread_limit`.",
+      "`PIIMiddleware` checks only user input by default. Set `apply_to_tool_results` and `apply_to_output` to catch data that enters through tools or leaves in replies.",
+      "`HumanInTheLoopMiddleware` without a checkpointer can still pause, but the resume fails. Also, `respond` tells the model the tool succeeded, so use `reject` to deny an action.",
+      "Adding tools in `wrap_model_call` that were never registered with `create_agent` raises an error when the model calls them, unless a `wrap_tool_call` executes them.",
+      "`SummarizationMiddleware` with no `trigger` never summarizes."
+    ],
+    "docs": [
+      { "title": "Agents (create_agent)", "url": "https://docs.langchain.com/oss/python/langchain/agents" },
+      { "title": "Custom middleware", "url": "https://docs.langchain.com/oss/python/langchain/middleware/custom" },
+      { "title": "Built-in middleware", "url": "https://docs.langchain.com/oss/python/langchain/middleware/built-in" },
+      { "title": "Structured output", "url": "https://docs.langchain.com/oss/python/langchain/structured-output" },
+      { "title": "LangChain v1 migration guide", "url": "https://docs.langchain.com/oss/python/migrate/langchain-v1" }
+    ]
+  }
+}
