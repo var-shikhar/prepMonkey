@@ -1,0 +1,50 @@
+{
+  "training-alignment": {
+    "summary": "An LLM is pretrained with next-token prediction on raw text, then post-trained: supervised fine-tuning teaches it to follow instructions and preference optimisation (RLHF, DPO and relatives) aligns it with what people prefer. Interviews probe the loss functions, the RLHF pipeline and its failure modes, DPO's loss and beta, LoRA/QLoRA arithmetic, and when full fine-tuning, PEFT or distillation is the right call.",
+    "points": [
+      "Pretraining is self-supervised: the target at each position is the next token of the same text, and the loss is cross-entropy, -ln p(true token), averaged over positions. Training is parallel across positions (teacher forcing plus a causal mask); only generation is sequential.",
+      "Chinchilla (70B parameters, 1.4T tokens, same compute as the 280B Gopher) showed model size and training tokens should grow in equal proportion: about 20 tokens per parameter, with training compute C ~ 6ND. Many earlier large models were undertrained.",
+      "InstructGPT-style RLHF has three steps: SFT on demonstrations, a reward model trained on human rankings of several responses (4 to 9 per prompt), then PPO against the reward model with a per-token KL penalty to the SFT model.",
+      "Reward hacking: the policy over-optimises an imperfect proxy reward, so the reward-model score rises while true quality falls (Goodhart). Beta too small allows drift and hacking; beta too large pins the policy to the reference.",
+      "DPO solves the KL-constrained RLHF objective in closed form: loss = -log sigmoid(beta x [(log pi(y+) - log ref(y+)) - (log pi(y-) - log ref(y-))]). There is no reward model and no sampling during training, but a frozen reference model is still needed. The implicit reward is beta x log(pi/ref). TRL's default beta is 0.1, and a higher beta means less deviation.",
+      "Preference variants: IPO (identity transform, less overfitting), KTO (unpaired thumbs-up/down labels, prospect-theory utility), ORPO (reference-free, odds-ratio term folded into SFT), GRPO (online RL without a critic; advantage = reward normalised within a group of samples; suits verifiable rewards such as unit tests).",
+      "Constitutional AI: a supervised phase (sample, self-critique against written principles, revise, fine-tune on the revisions), then an RL phase where AI-labelled comparisons train a preference model (RLAIF). Cheaper and more scalable than human labels, but bias in the principles or the judge gets scaled up too.",
+      "LoRA freezes W and learns dW = B A with rank r, adding r x (d + k) parameters per matrix (65,536 for a 4096 x 4096 matrix at r = 8, versus 16.8M). B starts at zero so training begins from the base model. Scale = lora_alpha / r (rsLoRA: alpha / sqrt(r)). PEFT defaults are r = 8 and lora_alpha = 8.",
+      "QLoRA = frozen base in 4-bit NF4 + double quantization (about 0.37 bits per parameter saved) + paged optimizers + BF16 LoRA adapters that alone receive gradients. LoRA on all linear layers was needed to match full 16-bit fine-tuning. It made fine-tuning a 65B model fit on one 48 GB GPU.",
+      "Merging (merge_and_unload) folds B A into W, so inference has zero extra latency but you get a full-size standalone model. Keep adapters separate to serve many tenants from one base. Unmerging on a quantized base is not exact.",
+      "Full fine-tuning with mixed-precision Adam needs about 16 bytes per parameter for model states (2 for weights + 2 for gradients + 12 for the FP32 master copy and Adam moments), about 112 GB for 7B before activations. LoRA learns less but forgets less than full fine-tuning.",
+      "Distillation: train a student on the teacher's softened distribution (temperature T, soft-loss gradients scaled by T^2) when you have logits and a shared vocabulary, or on teacher-generated text when the teacher is a black box."
+    ],
+    "traps": [
+      "Saying DPO needs no reference model: it needs reference log-probabilities. ORPO is the reference-free method.",
+      "Thinking LoRA's A and B are both zero-initialised: then nothing would train. Only B is zero.",
+      "Claiming QLoRA trains 4-bit adapters: adapters are BF16; only the frozen base is 4-bit.",
+      "Treating SFT as the way to add lots of new facts: it mainly teaches behaviour and format; retrieval injects knowledge better.",
+      "Computing SFT loss on prompt tokens by accident: mask them (label -100); TRL does completion-only loss by default for prompt-completion data.",
+      "Assuming a merged LoRA model is slower: it costs exactly what the base model costs; unmerged serving is what adds latency.",
+      "Blaming over-refusal on temperature: the usual cause is a safety data mix that rewards refusing benign prompts that only sound risky; measure false refusals on a borderline set."
+    ],
+    "docs": [
+      {
+        "title": "TRL: DPO Trainer",
+        "url": "https://huggingface.co/docs/trl/dpo_trainer"
+      },
+      {
+        "title": "PEFT: LoRA conceptual guide",
+        "url": "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora"
+      },
+      {
+        "title": "Training language models to follow instructions with human feedback (InstructGPT)",
+        "url": "https://arxiv.org/abs/2203.02155"
+      },
+      {
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs",
+        "url": "https://arxiv.org/abs/2305.14314"
+      },
+      {
+        "title": "Training Compute-Optimal Large Language Models (Chinchilla)",
+        "url": "https://arxiv.org/abs/2203.15556"
+      }
+    ]
+  }
+}

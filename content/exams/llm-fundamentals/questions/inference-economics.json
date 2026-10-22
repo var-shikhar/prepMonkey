@@ -1,0 +1,2206 @@
+[
+  {
+    "id": "LLM-INF-001",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "single",
+    "stem": "During autoregressive decoding, what does the KV cache hold?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The query vectors of every earlier token, so their attention scores can be reused at each new step",
+        "why": "Past queries are never needed again. Only the newest token's query attends over the sequence, so caching old queries would waste memory."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The key and value vectors that each attention layer computed for the tokens so far",
+        "why": "Correct. Each new token's query attends to the keys and values of all earlier tokens, so storing them means each step only computes K and V for the newest token."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The logits produced at earlier steps, so the model can skip the final vocabulary projection",
+        "why": "Logits are recomputed for each new position. Old logits do not help predict the next token."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Whole previous answers keyed by prompt text, so a repeated question is answered without running the model",
+        "why": "That describes an application-level response cache. The KV cache lives inside one generation and stores per-layer tensors, not text."
+      }
+    ],
+    "explanation": "Without a KV cache, every decoding step would recompute keys and values for the entire prefix, so the work per token would grow with the sequence length. The cache trades GPU memory for compute: it grows linearly with the number of tokens and with batch size, which is why it, and not the weights, often limits how many requests a server can run at once.",
+    "reference": "https://arxiv.org/abs/2309.06180",
+    "source": "interview:llm-kv-cache-what",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://aixfunda.substack.com/p/ai-engineer-interview-prep-qa-2",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/SimranAnand1/LLMInterviewQuestions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-002",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "truefalse",
+    "stem": "Streaming tokens to the client as they are generated reduces the total time and cost of producing a response.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Streaming does not change the work. The server runs the same prefill and the same number of decode steps, and bills the same tokens."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Streaming improves perceived latency because the user can start reading at the first token, but total generation time and token cost stay the same."
+      }
+    ],
+    "explanation": "Streaming (for example over server-sent events) sends each token as soon as it is sampled. It makes the product feel faster because time to first token, not total latency, sets the first impression. It does not reduce compute, total latency or price, and it makes some things harder, such as validating or moderating a complete answer before the user sees it.",
+    "source": "interview:llm-streaming",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-INF-003",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "single",
+    "stem": "A chat app with long prompts shows the first token after about 1.5 seconds, and then the rest of the answer arrives quickly and steadily. What mainly explains the slow first token?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The tokenizer is far slower than the model, and decoding cannot begin until it has finished",
+        "why": "Tokenizing even a long prompt takes milliseconds on a CPU. It is not what makes the first token slow."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The first token is chosen with a wide beam search, while later tokens use plain sampling",
+        "why": "Chat serving does not switch decoding strategy after the first token. The delay comes from processing the prompt."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Prefill: the whole prompt must pass through the model before the first token can be sampled",
+        "why": "Correct. This prefill phase processes every prompt token, so its cost grows with prompt length. After it, each new token needs only one cheap decode step."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Network and TLS connection setup always dominate the first-token delay, regardless of how long the prompt is",
+        "why": "Connection setup adds a roughly fixed amount. It does not explain why the delay is large for long prompts."
+      }
+    ],
+    "explanation": "Time to first token is mostly queueing time plus prefill. Prefill handles all prompt tokens in parallel and is compute-heavy, so a longer prompt means a longer wait. Decode then produces one token per forward pass using the cached keys and values. Shorter prompts, prefix caching of shared instructions and enough serving capacity to avoid queueing all lower TTFT.",
+    "reference": "https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html",
+    "source": "interview:llm-first-token-slow",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-004",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "fill",
+    "stem": "About how many gigabytes (1 GB = 10^9 bytes) are needed just to store the weights of a 7-billion-parameter model in FP16? Type a number.",
+    "select": 1,
+    "options": [],
+    "accepted": [
+      "14",
+      "14 GB",
+      "14GB",
+      "14.0"
+    ],
+    "explanation": "FP16 uses 2 bytes per parameter, so 7 x 10^9 x 2 bytes = 14 x 10^9 bytes, about 14 GB. A rule of thumb: FP16/BF16 needs about 2 GB per billion parameters, INT8 about 1 GB and INT4 about 0.5 GB. Serving also needs memory for the KV cache and activations on top of the weights.",
+    "source": "interview:llm-model-memory-footprint",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-INF-005",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "single",
+    "stem": "A developer says: \"Our LLM API bill depends only on how long our prompts are.\" What is wrong with this?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Bills depend on the number of requests, and token counts only matter for the context limit",
+        "why": "Token-metered APIs bill by tokens. The request count matters only indirectly, through the tokens each request uses."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Only output tokens are billed, because the provider can cache every prompt for free",
+        "why": "Input tokens are billed too. Caching can discount repeated prefixes, but it does not make all prompts free."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Output tokens are billed as well, usually at a higher rate per token than input",
+        "why": "Correct. Both sides are metered, and each output token typically costs several times as much as an input token."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Bills depend on characters sent, since tokens are an internal detail the provider hides",
+        "why": "Usage is reported and billed in tokens, and the same text can be a different number of tokens for different tokenizers."
+      }
+    ],
+    "explanation": "Cost per request is input tokens x input price + output tokens x output price. Both also count toward the context window. In multi-turn chat the whole history is usually sent again each turn, so input tokens grow over a conversation. Long answers are often the bigger cost driver, because output tokens are priced higher.",
+    "source": "interview:llm-tokens-cost-context",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-INF-006",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "match",
+    "stem": "Match each latency or throughput metric with its definition.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Time to first token (TTFT)",
+        "why": "Covers queueing, prefill and network time until the first token arrives."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Inter-token latency (ITL, also called TPOT)",
+        "why": "Measures the decode phase only."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "End-to-end request latency",
+        "why": "Equals TTFT plus the time to generate the remaining tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "System throughput",
+        "why": "A server-level measure of tokens per second across all requests."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Time from sending a request until the first output token is received",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Average gap between consecutive output tokens once streaming has started",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Total time from sending a request until the last token is received",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Total output tokens produced by the server divided by the benchmark's wall-clock time",
+        "answer": "D"
+      }
+    ],
+    "explanation": "TTFT reflects queueing and prefill, so it grows with prompt length and load. ITL reflects decoding, where each step reads the weights and KV cache once. End-to-end latency = TTFT + ITL x (output tokens - 1). Throughput is about the whole system: larger batches raise it, but they can also raise each user's ITL. Interactive products watch TTFT and ITL, while offline jobs care about throughput and cost.",
+    "reference": "https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html",
+    "source": "interview:llm-ttft-vs-tpot",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-007",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "single",
+    "stem": "What does quantizing a model's weights from FP16 to INT4 mainly do?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Stores each weight in 4 bits rather than 16, so weight memory falls to roughly a quarter",
+        "why": "Correct. Fewer bits per weight shrink memory and the bytes read per token. The cost is some rounding error, which can lower quality."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Removes three-quarters of the layers and keeps only the ones that matter most for accuracy",
+        "why": "That is closer to pruning or layer dropping. Quantization keeps every layer and changes only the number format."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Maps the vocabulary to 4-bit token ids so that every prompt uses fewer tokens",
+        "why": "Quantization does not touch the tokenizer. Prompts produce the same number of tokens as before."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Retrains the model so it gives identical outputs at exactly four times the speed on any GPU",
+        "why": "Post-training quantization usually involves no retraining, outputs can change slightly, and speed-ups depend on kernels, hardware and batch size."
+      }
+    ],
+    "explanation": "Quantization represents weights (and sometimes activations or the KV cache) with fewer bits. INT4 weights take about 0.5 bytes per parameter instead of 2, so a model fits on smaller GPUs and memory-bound decoding reads fewer bytes per token. Quality can drop, especially at very low bit widths, and real speed-ups depend on kernel support. Always evaluate on your own task.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/quantization/overview",
+    "source": "interview:llm-quantization-tradeoffs",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/capgemini/work-experiences/genai-engineer-november-16-2024-3-a8a184a5",
+        "https://static-pc.glassdoor.fr/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP261.htm",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-INF-008",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 1,
+    "type": "single",
+    "stem": "Your service calls an LLM API and gets `HTTP 429 Too Many Requests` with a `Retry-After` header. What should the client do?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Retry immediately in a loop until the request goes through",
+        "why": "Tight retry loops add load to a provider that is already rate-limiting you, and they keep you over the limit for longer."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Wait at least as long as `Retry-After` says, then retry, using exponential backoff with jitter if the error repeats",
+        "why": "Correct. 429 is a temporary signal to slow down. Respecting the hint and backing off with randomness lets the client recover without causing a retry storm."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Treat it as a permanent failure and show the user an error without any retry",
+        "why": "A 429 is usually temporary. Giving up at once turns a short throttle into a user-facing failure."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Resend the request at once with a much larger `max_tokens`, so the work is done in fewer calls and uses less of the rate limit",
+        "why": "Token-based limits count the tokens a request may use, so a larger `max_tokens` usually uses more of the quota, not less, and it ignores the request to wait."
+      }
+    ],
+    "explanation": "HTTP 429 means the client has sent too much in a time window. `Retry-After` (in seconds or as a date) says when to try again. Production clients combine it with capped exponential backoff plus jitter, a retry budget, and queueing or load shedding upstream so a burst does not turn into an outage.",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429",
+    "source": "interview:llm-rate-limits-fallback",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-009",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "single",
+    "stem": "A hypothetical API charges 1 credit per 1,000 input tokens and 4 credits per 1,000 output tokens. A request sends 2,000 input tokens and receives 500 output tokens. What share of this request's cost comes from the output?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "20%",
+        "why": "That is the output's share of the tokens (500 of 2,500). Output tokens cost four times as much each, so their share of the cost is higher."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "66.7%",
+        "why": "That counts the input as 1 credit, as if the price applied per 2,000 tokens. Input is 2,000 tokens at 1 credit per 1,000, which is 2 credits, the same as the output."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "50%",
+        "why": "Correct. Input costs 2,000/1,000 x 1 = 2 credits, and output costs 500/1,000 x 4 = 2 credits. The request costs 4 credits, half of it from the output."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "25%",
+        "why": "That is the ratio of output tokens to input tokens (500/2,000), not a share of the cost."
+      }
+    ],
+    "explanation": "Always cost both sides: tokens_in x price_in + tokens_out x price_out. Because output is priced higher, a short answer can cost as much as a long prompt. Capping output length, asking for compact structured formats and avoiding needless explanations often save more than trimming the prompt.",
+    "source": "interview:llm-input-vs-output-price",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-010",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "single",
+    "stem": "Why do LLM APIs usually charge more per output token than per input token?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Output tokens are longer strings on average, so each one carries more text and needs more storage",
+        "why": "Input and output use the same tokenizer and vocabulary, so tokens are the same size on both sides. Length is not the reason."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Every output token passes through a separate safety model before it is sent, and the price of that check is added to the output rate",
+        "why": "Some systems run output checks, but that is not the general economic reason for the price gap."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Prompt tokens share one parallel prefill pass, but each output token needs its own sequential decode step",
+        "why": "Correct. Decoding produces one token per sequence per forward pass and must read the weights and KV cache each time, so output tokens take up far more GPU time per token."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Input tokens are always served from the prompt cache at no cost, so providers recover their costs on output",
+        "why": "Only repeated prefixes can be cached, and cached reads are usually discounted, not free. Uncached input is billed at the normal input rate."
+      }
+    ],
+    "explanation": "Prefill can process thousands of prompt tokens together and keeps the GPU's compute units busy. Decode is sequential: each step makes one token per sequence and is limited by memory bandwidth. A GPU-second therefore produces far fewer output tokens than input tokens, and prices reflect that. This is why concise outputs are a key cost lever.",
+    "reference": "https://arxiv.org/abs/2403.02310",
+    "source": "interview:llm-input-vs-output-price",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-011",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "multi",
+    "stem": "Users of a document Q&A tool complain about a long wait before any text appears. Each request has a 6,000-token prompt (a fixed 5,000-token instruction block followed by the user's question and context) and a roughly 200-token answer. Which two changes most directly cut time to first token? (Choose two.)",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Turn on prefix caching, keeping the fixed 5,000-token block byte-for-byte identical at the start of every request",
+        "why": "Correct. A cache hit skips prefill for the shared prefix, so only the variable part of each prompt has to be processed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Lower `max_tokens` from 200 to 100",
+        "why": "The output limit affects when generation ends, not how long prefill takes. TTFT stays the same."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Trim the fixed block and the inserted context to what each answer actually needs",
+        "why": "Correct. Prefill cost grows with the number of prompt tokens, so a shorter prompt reaches the first token sooner."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add speculative decoding with a small draft model",
+        "why": "Speculative decoding speeds up decoding after the first token. It does nothing for prefill."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Lower the sampling temperature to make the model more decisive",
+        "why": "Temperature changes which token is picked, not how long the forward passes take."
+      }
+    ],
+    "explanation": "TTFT = queueing + prefill (+ network). Prefill work grows with the number of uncached prompt tokens, so the levers are fewer prompt tokens, cached shared prefixes and less queueing. Output-side levers such as `max_tokens` and speculative decoding improve end-to-end latency, not the wait for the first token.",
+    "reference": "https://docs.vllm.ai/en/latest/design/prefix_caching.html",
+    "source": "interview:llm-ttft-vs-tpot",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-012",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "single",
+    "stem": "With static batching, a server groups 16 requests and runs them together until every one has finished. What problem does continuous (iteration-level) batching solve?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Static batching computes attention approximately, and continuous batching makes it exact again",
+        "why": "Both schemes compute exactly the same attention. The difference is in scheduling only."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Finished requests idle while the longest runs, and new ones wait for the batch; continuous batching swaps requests in after every step",
+        "why": "Correct. Scheduling per decoding iteration fills freed slots right away, which raises GPU use and cuts queueing delay."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Static batching cannot use a KV cache, so every step has to recompute the entire prompt",
+        "why": "Static batches use a KV cache as well. The waste comes from idle slots, not from recomputation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Continuous batching cuts the floating-point work needed for each generated token, so even a lone request on an idle server finishes much sooner",
+        "why": "The compute per token does not change. The gain comes from keeping the batch full under load."
+      }
+    ],
+    "explanation": "Orca introduced iteration-level scheduling: the engine runs one decoding step at a time, so finished sequences leave and waiting ones join between steps. Output lengths vary widely, so static batches waste many slot-steps. Continuous batching, combined with paged KV memory, is the default in modern servers such as vLLM, SGLang, TGI and TensorRT-LLM.",
+    "reference": "https://www.usenix.org/conference/osdi22/presentation/yu",
+    "source": "interview:llm-continuous-batching",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://www.techinterview.org/post/tag/kv-cache/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-013",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "truefalse",
+    "stem": "With the standard accept/reject rule, speculative decoding changes the output distribution, so generated text drifts toward what the small draft model would have written.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Under the standard algorithm the draft model only proposes tokens. Each one is accepted with probability min(1, p/q) and otherwise replaced by a sample from an adjusted distribution, so outputs follow the target model."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. The accept/reject scheme is built so that outputs are distributed exactly as if the target model had sampled them alone. The draft model affects only speed, through how many tokens are accepted."
+      }
+    ],
+    "explanation": "Speculative decoding (Leviathan et al.) proves the output distribution is unchanged and needs no retraining. In practice, floating-point and batching effects can cause tiny numerical differences, and some serving engines offer deliberately relaxed, lossy verification modes, but the standard method is lossless in principle.",
+    "reference": "https://arxiv.org/abs/2211.17192",
+    "source": "interview:llm-speculative-decoding",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://aiinterviewprep.substack.com/p/advanced-nlp-interview-questions-2e4",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ],
+      "companies": [
+        "Together AI"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-014",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "single",
+    "stem": "Your app sends a 3,000-token system prompt and a set of tool definitions with every request, followed by the user's message. How should you lay out each request to get the most from prompt (prefix) caching?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Put the user's message first so the model reads the question before the instructions",
+        "why": "The user's message changes every time. Putting it first changes the prefix of every request, so nothing after it can be reused."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Shuffle the tool definitions on each request so the model does not favour the first tool",
+        "why": "Any reordering changes the token sequence, so the cached prefix no longer matches."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Keep the system prompt and tools identical and first, with per-request content after them",
+        "why": "Correct. Caches match on an exact prefix, so stable content must come first and stay byte-for-byte the same."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put the current timestamp on the very first line, so the cache can tell that the prompt is fresh and should be stored again",
+        "why": "A timestamp at the top makes every prefix unique and guarantees a cache miss."
+      }
+    ],
+    "explanation": "Prefix caches reuse computation only up to the first differing token. Put static instructions, tool schemas and reference documents first, and put dynamic values (timestamps, user names, retrieved passages, the latest message) at the end. Providers often need a minimum prefix length, keep entries for a limited time, and bill cached reads at a large discount.",
+    "reference": "https://docs.vllm.ai/en/latest/design/prefix_caching.html",
+    "source": "interview:llm-prompt-caching-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-015",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "fill",
+    "stem": "OPT-13B has 40 layers and a hidden size of 5,120, and it stores its KV cache in FP16 (2 bytes per value). How many KiB (1 KiB = 1,024 bytes) of KV cache does a single token need across all layers? Type a number.",
+    "select": 1,
+    "options": [],
+    "accepted": [
+      "800",
+      "800 KiB",
+      "800KiB",
+      "800 KB"
+    ],
+    "explanation": "Per token: 2 (key and value) x 5,120 x 40 layers x 2 bytes = 819,200 bytes = 800 KiB. The PagedAttention paper uses this example. At 2,048 tokens that is about 1.6 GiB for one sequence, which shows why the KV cache, not the weights, often limits batch size. In general: bytes per token = 2 x layers x kv_heads x head_dim x bytes per value.",
+    "reference": "https://arxiv.org/abs/2309.06180",
+    "source": "interview:llm-kv-cache-size",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://github.com/SimranAnand1/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/tag/kv-cache/",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://aixfunda.substack.com/p/ai-engineer-interview-prep-qa-2"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-016",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "single",
+    "stem": "Hundreds of worker processes hit a provider's rate limit at the same moment, and all of them retry with plain exponential backoff (1 s, 2 s, 4 s, and so on). Why add random jitter to the wait?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Identical schedules make the workers retry in synchronised waves; random waits spread them out",
+        "why": "Correct. Identical schedules make clients collide on every retry round. Jitter spreads retries into a steadier rate."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Jitter makes each retry cheaper, because providers discount requests that arrive after a random delay",
+        "why": "Providers do not price retries by their timing. Jitter is about avoiding collisions."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Jitter is needed only to keep each request under the provider's maximum request size",
+        "why": "Request size limits are unrelated to retry timing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Jitter replaces backoff completely, so every worker can retry at once and the provider simply serves them in a random order",
+        "why": "Jitter is added to backoff, not used instead of it. The waits still grow, but with randomness."
+      }
+    ],
+    "explanation": "AWS's analysis of backoff showed that clients on the same schedule arrive in clusters, and that adding jitter (for example \"full jitter\", a random wait between zero and the capped backoff) sharply reduces the total number of calls. Combine it with a retry cap and honour `Retry-After` when the server sends it.",
+    "reference": "https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/",
+    "source": "interview:llm-rate-limits-fallback",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-017",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "single",
+    "stem": "Your team runs an overnight job that summarises 2 million support tickets. Nobody watches the output live. Which metric should you mainly optimise?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Time to first token, because faster first tokens make the whole job finish sooner",
+        "why": "TTFT matters to someone watching a stream. For an unattended job, the total tokens processed per unit of time and money matters more."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Throughput and cost per token, even if each single request waits longer",
+        "why": "Correct. Offline work can use large batches and discounted batch modes, trading per-request latency for more tokens per GPU-hour."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Each request's inter-token latency, so the text streams smoothly",
+        "why": "Nobody sees the stream, so smooth streaming has no value here."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The 99th-percentile time to first token for each ticket",
+        "why": "Tail TTFT is a target for interactive products. A batch job is judged by finishing on time and on budget."
+      }
+    ],
+    "explanation": "Choose metrics by workload. Interactive chat cares about TTFT and ITL. Offline summarisation, labelling or embedding backfills care about throughput and cost per million tokens, so they use large batches, longer queues and discounted batch APIs where available. One server configuration rarely suits both, which is why teams often split interactive and batch traffic.",
+    "reference": "https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html",
+    "source": "interview:llm-ttft-vs-tpot",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-018",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "order",
+    "stem": "Order the stages of serving one streaming chat request on an LLM server, from first to last.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The first output token is sampled and streamed to the client",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The request waits in the scheduler's queue until there is room for it in the running batch",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Generation stops at an end-of-sequence token, a stop sequence or the token limit",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Prefill: the whole prompt runs through the model and its KV cache is written",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Decode steps: each further token is generated using the cached keys and values",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "E",
+      "C"
+    ],
+    "explanation": "Queueing and prefill together make up time to first token. Decode then repeats one forward pass per token, and its speed sets inter-token latency. Generation ends on an end-of-sequence token, a stop sequence or `max_tokens`, and the finish reason tells you which. When diagnosing latency, measure each stage separately.",
+    "reference": "https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html",
+    "source": "interview:llm-first-token-slow",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-INF-019",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 2,
+    "type": "match",
+    "stem": "Match each serving tool with the situation it fits best.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "vLLM",
+        "why": "An open-source, high-throughput GPU serving engine built around PagedAttention and continuous batching, with an OpenAI-compatible server."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "llama.cpp",
+        "why": "A C/C++ inference engine that runs GGUF-quantized models on CPUs, Apple silicon and consumer GPUs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "TensorRT-LLM",
+        "why": "NVIDIA's open-source library with optimised kernels and runtimes for LLM inference on NVIDIA GPUs."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ollama",
+        "why": "A developer-friendly tool for pulling and running open models locally, behind a simple local REST API."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A startup serving an open-weight model to many concurrent users on rented GPUs wants a high-throughput, OpenAI-compatible endpoint",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "An engineer needs a quantized model to run on a laptop with no discrete GPU, from a single model file",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A team running a fleet of NVIDIA data-centre GPUs wants to get the most from vendor-optimised kernels",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A developer wants to try several open models on their own machine with one command and call them from a local app",
+        "answer": "D"
+      }
+    ],
+    "explanation": "vLLM (and SGLang) are general high-throughput GPU servers. TensorRT-LLM targets peak performance on NVIDIA hardware. llama.cpp runs GGUF files on CPUs and Apple silicon, and Ollama wraps local model management and a local API for developers. The right choice depends on hardware, concurrency and how much operational work the team can take on.",
+    "reference": "https://huggingface.co/docs/hub/gguf",
+    "source": "interview:llm-serving-frameworks",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/capgemini/work-experiences/genai-engineer-november-16-2024-3-a8a184a5",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-020",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "A decoder model has 32 layers and grouped-query attention with 8 KV heads of dimension 128, and its KV cache is stored in FP16. How much KV cache does one sequence of 8,192 tokens need?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "4 GiB",
+        "why": "That uses 32 KV heads, as if every query head had its own keys and values. With GQA only the 8 KV heads are cached."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "512 MiB",
+        "why": "That leaves out the factor of 2: both a key and a value vector are cached for every head."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "2 GiB",
+        "why": "That uses 4 bytes per value (FP32). An FP16 cache uses 2 bytes."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "1 GiB",
+        "why": "Correct. 2 x 32 x 8 x 128 x 2 bytes = 131,072 bytes (128 KiB) per token, and x 8,192 tokens = 1 GiB."
+      }
+    ],
+    "explanation": "KV bytes per token = 2 (K and V) x layers x kv_heads x head_dim x bytes per value. Multiply by tokens and by concurrent sequences. GQA cuts the cache by query_heads / kv_heads compared with full multi-head attention (4x here), which is a main reason modern models use it. An FP8 KV cache would halve it again.",
+    "reference": "https://arxiv.org/abs/2309.06180",
+    "source": "interview:llm-kv-cache-size-estimate",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewquery.com/guides/mistral-ai-ai-engineer",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-021",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "Will a 70B-parameter model fit for serving on a single 80 GB GPU?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Yes in FP16, because only the layer that is currently running needs to be in GPU memory",
+        "why": "Every layer runs for every token, so offloading layers to CPU memory makes decoding painfully slow. FP16 weights alone are about 140 GB."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Not in FP16 (about 140 GB). INT8 (about 70 GB) barely fits and leaves little room for the KV cache; INT4 (about 35 GB) leaves room for a useful batch",
+        "why": "Correct. Weights take params x bytes, and the KV cache and activations need room on top, so INT4 is the practical single-GPU option."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Yes at INT8 with plenty of headroom, since serving engines keep the KV cache in CPU memory by default",
+        "why": "Serving engines keep the KV cache in GPU memory. With about 70 GB of weights, roughly 10 GB is left for cache and activations, which is very little."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No, at any precision, because a 70B model always needs tensor parallelism across at least four GPUs",
+        "why": "INT4 weights (about 35 GB) fit on one 80 GB GPU. Multi-GPU setups are a choice made for speed or capacity, not a hard requirement."
+      }
+    ],
+    "explanation": "Weight memory = parameters x bytes per parameter: 70B x 2 = 140 GB in FP16, 70 GB in INT8 and 35 GB in INT4. A deployment also needs KV cache for the batch and context you plan to serve, plus activation and runtime overhead, so a model that barely fits its weights cannot serve much traffic.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/quantization/overview",
+    "source": "interview:llm-model-memory-footprint",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-022",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "multi",
+    "stem": "Which two statements about PagedAttention, as used in vLLM, are correct? (Choose two.)",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Each sequence's KV cache lives in fixed-size blocks that need not be contiguous, found through a per-sequence block table, much like pages in virtual memory",
+        "why": "Correct. Allocating small blocks on demand removes the need to reserve contiguous space for the maximum length, which cuts fragmentation."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It approximates attention by looking only at the most recent block, which is where its memory saving comes from",
+        "why": "PagedAttention computes exact attention over all blocks. The saving comes from how memory is allocated, not from skipping tokens."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Sequences that share a prefix, such as parallel samples from one prompt, can share physical blocks, with copy-on-write when one of them diverges",
+        "why": "Correct. Reference-counted blocks let shared prefixes be stored once, which helps parallel sampling, beam search and prefix caching."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It compresses cached keys and values to 4 bits, which is where most of its saving comes from",
+        "why": "PagedAttention changes memory layout, not precision. KV-cache quantization is a separate option."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It frees memory by recomputing prompt tokens at every decoding step instead of caching them",
+        "why": "It still caches every token's keys and values. Recomputation happens only when a request is preempted under memory pressure."
+      }
+    ],
+    "explanation": "The vLLM paper found that earlier systems used only 20.4% to 38.2% of KV-cache memory for actual token states, because of reservation and internal and external fragmentation. Paging with small blocks (16 tokens by default) brings waste close to zero and allows block sharing, giving 2 to 4x higher throughput at the same latency in the paper's tests.",
+    "reference": "https://arxiv.org/abs/2309.06180",
+    "source": "interview:llm-paged-attention",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-023",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "After a release, a chatbot's prompt-cache hit rate drops from about 85% to almost zero and time to first token rises. The only change was to the system prompt template. Which change most likely caused this?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A new 200-token instruction was appended to the end of the existing system prompt",
+        "why": "That changes the prefix once. After the first request the new prefix is cached, so hit rates recover quickly."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The line `Current time: {now}` was added as the first line of the system prompt",
+        "why": "Correct. A value that changes on every request, placed at the start, makes every prefix unique, so nothing can be reused."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The user's message is now wrapped in XML tags after the system prompt",
+        "why": "That content comes after the shared prefix and varies anyway, so it does not affect caching of the system prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The system prompt was rewritten from British to American spelling",
+        "why": "A one-time edit invalidates old entries once. The new version is then cached and reused."
+      }
+    ],
+    "explanation": "Prefix caches key on exact token sequences, and in vLLM each block's hash chains on everything before it. Anything per-request near the top, such as timestamps, request ids, user names or reordered tool lists, silently turns every request into a miss. Put volatile values at the end, and watch cache-hit metrics after every prompt change.",
+    "reference": "https://docs.vllm.ai/en/latest/design/prefix_caching.html",
+    "source": "interview:llm-prompt-caching-context",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-024",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "A team moves its chat service from FP16 to INT4 weight-only quantization. Latency for a single user improves, but at high concurrency with large batches, total throughput is no better or even worse. What best explains this?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "INT4 models cannot use a KV cache, so every token has to recompute the whole prompt",
+        "why": "Quantized models use a KV cache in the normal way. This is not the cause."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Quantization makes the tokenizer produce more tokens, so every request becomes longer",
+        "why": "Weight quantization does not touch the tokenizer, so token counts stay the same."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "At large batches the GPU is compute-bound, so smaller weights save little and dequantizing them adds work",
+        "why": "Correct. Weight-only INT4 mainly helps memory-bound, small-batch decoding. Under heavy batching, dequantization overhead can cancel the gain."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "INT4 weights end up taking more GPU memory than FP16 weights once they are loaded and unpacked for the kernels to use",
+        "why": "INT4 weights stay packed in memory and take about a quarter of the FP16 size."
+      }
+    ],
+    "explanation": "Weight-only quantization (W4A16) cuts the bytes read per decoding step, which helps most when decoding is memory-bound (small batches). With large batches, matrix multiplies become compute-bound, and converting INT4 weights back to 16-bit for compute adds overhead. The QServe paper reports 20 to 90% runtime overhead for existing INT4 methods on GPUs, and little or no gain in large-batch cloud serving. Benchmark at your real concurrency, and consider FP8 or W8A8 for high-throughput serving.",
+    "reference": "https://arxiv.org/abs/2405.04532",
+    "source": "interview:llm-quantization-tradeoffs",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/capgemini/work-experiences/genai-engineer-november-16-2024-3-a8a184a5",
+        "https://static-pc.glassdoor.fr/Interview/ml-engineer-interview-questions-SRCH_KO0,11_IP261.htm",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-025",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "match",
+    "stem": "Match each quantization method or format with the idea that defines it.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "GPTQ",
+        "why": "One-shot post-training weight quantization using approximate second-order information."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "AWQ",
+        "why": "Activation-aware weight quantization that protects salient channels by scaling them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LLM.int8() (bitsandbytes)",
+        "why": "8-bit matrix multiplication with mixed-precision handling of outlier features."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "GGUF",
+        "why": "A single-file model format used by llama.cpp and related local runtimes."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Quantizes weights layer by layer in one pass, using approximate second-order information to correct the error each rounding step introduces",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Observes that about 1% of weights matter most, picks them from activation magnitudes, and scales those channels up instead of keeping them in higher precision",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Runs most of each matrix multiply in 8-bit but splits off a few outlier feature dimensions and computes them in 16-bit",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Packs quantized tensors together with tokenizer and model metadata in one file that CPU-friendly local runtimes load directly",
+        "answer": "D"
+      }
+    ],
+    "explanation": "GPTQ and AWQ are post-training methods that use a small calibration set and usually target 4-bit weights for GPU serving. LLM.int8() keeps outlier dimensions (under 0.1% of values) in 16-bit so that everything else can run in 8-bit, and bitsandbytes can quantize on the fly as a model loads. GGUF is a file format rather than an algorithm: it holds tensors in llama.cpp quantization types such as Q4_K or Q8_0, plus metadata.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/quantization/overview",
+    "source": "interview:llm-quant-methods",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://github.com/SimranAnand1/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-026",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "Weight-only INT4 quantization of LLMs is common, but also quantizing activations to 8 bits (W8A8) is harder. Why, and what does SmoothQuant do about it?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A few activation channels have large outliers; SmoothQuant moves part of that range into the weights with an equivalent rescaling",
+        "why": "Correct. Weights are smooth and easy to quantize, while activations are not. Rescaling offline balances the two, so both fit well in 8 bits without retraining."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Activations live in the KV cache, which cannot be quantized; SmoothQuant moves them to CPU memory instead",
+        "why": "Activations and the KV cache are different things, and KV caches can be quantized. SmoothQuant does not offload anything."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Activations need gradients at inference time; SmoothQuant fine-tunes the model with quantization-aware training to remove them before deployment",
+        "why": "Inference uses no gradients, and SmoothQuant is training-free post-training quantization."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Weights have the outliers and activations do not; SmoothQuant clips the weight outliers to zero before quantizing",
+        "why": "This reverses the problem. The outliers are in activations, and clipping important values to zero would damage the model."
+      }
+    ],
+    "explanation": "SmoothQuant divides activation channels by a per-channel factor and multiplies the matching weight rows by the same factor. This is an exact transformation that shifts quantization difficulty from activations to weights, so both can use INT8 and use INT8 matrix-multiply kernels. The paper reports up to 1.56x speed-up and 2x memory reduction with negligible accuracy loss. W8A8 speeds up compute-bound work, while weight-only quantization mainly helps memory-bound decoding.",
+    "reference": "https://arxiv.org/abs/2211.10438",
+    "source": "interview:llm-quant-methods",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://github.com/SimranAnand1/LLMInterviewQuestions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-027",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "You must serve a model that needs 16 GPUs: two nodes with 8 GPUs each. GPUs inside a node share a fast interconnect, while the link between the nodes is much slower. Which layout is the usual starting point?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Tensor parallelism of 16 across both nodes, so that every layer is split as finely as possible",
+        "why": "Tensor parallelism needs collective communication inside every layer. Doing that over the slow link between nodes would dominate latency."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pipeline parallelism of 16, one stage per GPU, so that there is no communication at all",
+        "why": "Pipeline stages still pass activations to each other, and 16 stages add latency and pipeline bubbles. The fast links inside each node go unused."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Two independent copies of the model, one per node, each using 8 GPUs",
+        "why": "The model needs 16 GPUs' worth of memory, so a copy on 8 GPUs does not fit."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Tensor parallelism of 8 inside each node, with pipeline parallelism of 2 across the nodes",
+        "why": "Correct. The communication-heavy tensor parallelism stays on the fast links, and only stage-boundary activations cross the slow link."
+      }
+    ],
+    "explanation": "Tensor parallelism shards the weight matrices inside each layer and needs all-reduce operations in every layer, so it belongs on fast links within one node. Pipeline parallelism assigns groups of layers to devices and passes activations only at stage boundaries, so it suits scaling across nodes. vLLM's guidance follows this pattern: TP within a node, then PP when TP alone is not enough.",
+    "reference": "https://docs.vllm.ai/en/latest/configuration/optimization.html",
+    "source": "interview:llm-tensor-pipeline-parallel",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-028",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "On a busy server, users who are mid-stream see their text pause briefly whenever someone submits a 30,000-token document. What is happening, and which scheduler feature targets it?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The new document evicts everyone's KV cache at once; continuous batching prevents that kind of eviction from happening",
+        "why": "Continuous batching does not guarantee there will be no eviction, and a brief pause on every large submission points to the step being stalled by prefill."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The long prefill shares a step with everyone's decode and stalls it; chunked prefill splits it into smaller pieces",
+        "why": "Correct. Chunking caps how much prefill work goes into each step, so ongoing decodes keep a steady pace."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The long prompt raises the sampling temperature for the whole batch; setting sampling parameters per request fixes it",
+        "why": "Sampling parameters are per request and do not affect timing like this."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The tokenizer blocks the GPU while it splits the long document; a faster tokenizer fixes this",
+        "why": "Tokenization runs on the CPU and is fast. The pause comes from GPU work for the prefill."
+      }
+    ],
+    "explanation": "A large prefill is compute-heavy. If it runs as one block, every decoding sequence in the batch waits for it, which shows up as inter-token latency spikes (generation stalls). Sarathi-Serve's chunked prefill and vLLM's scheduler split prefills to fit a per-step token budget and schedule decodes first. Disaggregating prefill and decode onto separate instances is the heavier-weight alternative.",
+    "reference": "https://arxiv.org/abs/2403.02310",
+    "source": "interview:llm-chunked-prefill-disagg",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-029",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "multi",
+    "stem": "LLM costs for a customer-support assistant are too high. Which three changes usually cut cost without lowering answer quality, as long as you confirm them on your eval set? (Choose three.)",
+    "select": 3,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Cache the long, unchanging system prompt and tool definitions as a shared prefix",
+        "why": "Correct. Cached input is billed at a discount and skips prefill, without changing the output."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise the temperature so the model reaches an answer in fewer tokens",
+        "why": "Temperature changes randomness, not length. Higher values tend to reduce accuracy."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Send simple, high-volume intents to a smaller model and keep the large model for hard cases",
+        "why": "Correct. Routing by difficulty saves the most on the bulk of traffic, provided an eval confirms quality on each route."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Resend the full conversation history word for word on every turn so the model never needs a retry",
+        "why": "This makes input tokens grow every turn. Summarising or trimming history is the cost-saving move."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Ask for concise, structured output and set a sensible output token limit",
+        "why": "Correct. Output tokens are the most expensive, so removing padding and preambles cuts cost directly."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Send every request to the largest model so that users ask fewer follow-up questions",
+        "why": "That raises cost per request a lot, and fewer follow-ups rarely make up for it."
+      }
+    ],
+    "explanation": "Common cost levers, roughly from cheapest to try: trim prompts and outputs, cache shared prefixes, use batch modes for offline work, route or cascade by difficulty, and fine-tune or distil a smaller model for high-volume narrow tasks. Measure cost per successful task, not just per token, and re-run your eval after each change.",
+    "source": "interview:llm-cost-reduction",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://dev.to/amantank/top-15-interview-questions-for-generative-ai-engineers-2025-guide-29n4",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-030",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "truefalse",
+    "stem": "Running prefill and decode on separate GPU instances (disaggregated prefill) is mainly a way to raise a cluster's total throughput.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "vLLM's documentation states plainly that disaggregated prefill does not improve throughput."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Its value is control: prefill and decode can use different parallel settings, so TTFT and inter-token latency are tuned separately and tail ITL stays stable."
+      }
+    ],
+    "explanation": "When prefills share GPUs with decodes, a prefill arriving mid-stream slows other users' tokens. Disaggregation moves prefill to its own instances and transfers the KV cache to decode instances, which separates the two latency goals. It adds KV-transfer cost and operational complexity, so it suits strict tail-latency targets. Chunked prefill is the simpler, single-instance mitigation.",
+    "reference": "https://docs.vllm.ai/en/latest/features/disagg_prefill.html",
+    "source": "interview:llm-chunked-prefill-disagg",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-INF-031",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "A self-hosted GPU serving an 8B model decodes about 40 tokens per second for one user. With dozens of concurrent requests, the same GPU produces several times more tokens per second in total, while each user sees only a modest slowdown. Why, and what does this mean for self-hosting costs?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The GPU raises its clock speed under load, so a busy GPU always costs less per hour",
+        "why": "The hourly price of a GPU is the same whether it is busy or idle. The gain comes from more tokens per unit of time."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Concurrent users with similar questions share one output, so each token is generated once for many people",
+        "why": "Every sequence gets its own tokens. Requests share weight reads, not outputs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Batching lowers the floating-point work needed for each token, so the cost per token falls even when the GPU is mostly idle all day",
+        "why": "Work per token stays roughly the same. Cost per token falls only when there are enough concurrent requests to fill the batch."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Decoding is memory-bound: one weight read serves the whole batch, so cost per token falls with load and an idle GPU is costly",
+        "why": "Correct. At batch size 1, most of each step is spent moving weights. Batching spreads that cost across many tokens."
+      }
+    ],
+    "explanation": "A GPU's cost per hour is fixed, so cost per token = hourly cost / tokens per hour. Because decoding is memory-bound, aggregate throughput rises steeply with batch size until compute or KV-cache memory runs out. Self-hosting pays off only when utilisation is high and steady. Spiky or low traffic is often cheaper on a per-token API.",
+    "reference": "https://arxiv.org/abs/2403.02310",
+    "source": "interview:llm-selfhost-vs-api",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.jointaro.com/interviews/companies/capgemini/work-experiences/genai-engineer-november-16-2024-3-a8a184a5",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://masteringllm.substack.com/p/how-to-prepare-for-large-language",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ],
+      "companies": [
+        "Capgemini"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-032",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "single",
+    "stem": "Your product depends on one model provider. During an outage, requests hang until a 60-second timeout and your workers pile up. Which design handles this best?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise the timeout to five minutes so slow requests eventually succeed",
+        "why": "Longer timeouts hold workers for longer during an outage and make the pile-up worse."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retry each failed request immediately, up to ten times, against the same provider",
+        "why": "Immediate repeated retries multiply load on a failing service and delay the user's answer even more."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Short timeouts plus a circuit breaker that shifts traffic to a pre-tested fallback model and probes the primary",
+        "why": "Correct. Failing fast frees workers, the breaker stops hammering a provider that is down, and a fallback that has been evaluated keeps quality known."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch to a fallback model on the very first error, reusing the primary model's prompts exactly as they are without testing them",
+        "why": "Switching on a single error causes flapping, and prompts often behave differently on another model. Fallbacks need their own evals."
+      }
+    ],
+    "explanation": "Resilience for LLM calls follows standard distributed-systems patterns: timeouts sized to your latency targets, retries with backoff and jitter within a budget, circuit breakers, idempotent requests, queues for asynchronous work, and graceful degradation (a smaller model, cached answers or a clear message). Keep fallback prompts tuned and evaluated per model.",
+    "reference": "https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/",
+    "source": "interview:llm-rate-limits-fallback",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-033",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 3,
+    "type": "fill",
+    "stem": "A streamed response has a time to first token of 400 ms, an inter-token latency of 20 ms, and 301 output tokens in total. What is the end-to-end latency in seconds? Type a number.",
+    "select": 1,
+    "options": [],
+    "accepted": [
+      "6.4",
+      "6.40",
+      "6.4 s",
+      "6.4s"
+    ],
+    "explanation": "End-to-end latency = TTFT + ITL x (output tokens - 1) = 0.4 s + 0.02 s x 300 = 6.4 s. The first token arrives at TTFT, and each of the remaining 300 tokens adds one inter-token gap. For long outputs, ITL dominates, so a 5 ms ITL improvement saves 1.5 s here, while halving TTFT saves only 0.2 s.",
+    "reference": "https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html",
+    "source": "interview:llm-ttft-vs-tpot",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-INF-034",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "multi",
+    "stem": "In which two situations is speculative decoding likely to give little or no speed-up? (Choose two.)",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The server already runs large batches under heavy load, so the GPU is compute-bound and verifying draft tokens competes for compute",
+        "why": "Correct. Speculative decoding spends spare compute to save sequential steps. When there is no spare compute, the extra verification work slows other requests."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "One user chats with a large model on a mostly idle GPU",
+        "why": "This is the best case: decoding is memory-bound with plenty of unused compute, so verifying several tokens per pass is nearly free."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The draft model's guesses are rarely accepted, for example because it was trained on very different data from the target",
+        "why": "Correct. With a low acceptance rate, most target passes yield only one token, while you still pay to run the draft model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The task is code completion with many predictable, repeated tokens",
+        "why": "Predictable text raises acceptance rates, which is where speculative and n-gram methods do best."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Decoding with the target model is limited by memory bandwidth",
+        "why": "That is exactly the condition speculative decoding exploits. It is a reason the method helps, not a reason it fails."
+      }
+    ],
+    "explanation": "Each target forward pass verifies several draft tokens at once, so the speed-up depends on the acceptance rate and on spare compute. The original paper notes that the method needs extra compute and helps when decoding is limited by memory bandwidth. vLLM's documentation targets medium-to-low QPS, memory-bound workloads and reports smaller gains at high QPS for most methods.",
+    "reference": "https://docs.vllm.ai/en/latest/features/speculative_decoding/",
+    "source": "interview:llm-speculative-decoding",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://aiinterviewprep.substack.com/p/advanced-nlp-interview-questions-2e4",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ],
+      "companies": [
+        "Together AI"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-035",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "single",
+    "stem": "A vLLM deployment handles 20 concurrent users smoothly. At 60 concurrent users with long conversations, throughput stops rising, latency spikes for some requests, and the logs show requests being preempted and later recomputed. What is the most likely bottleneck?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The tokenizer has run out of threads and is queueing requests one at a time",
+        "why": "Tokenizer pressure would not cause preemption. Preemption is a KV-memory event."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The model weights are being reloaded from disk for each new request",
+        "why": "Weights load once at start-up and stay in GPU memory."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "KV-cache memory has run out, so running sequences are evicted and recomputed later",
+        "why": "Correct. Long conversations at high concurrency need more KV blocks than the GPU has, and vLLM's default response is to preempt and later recompute."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The sampling temperature is too high, which makes outputs longer and crowds the batch",
+        "why": "Temperature does not set output length in any reliable way, and it would not explain preemption logs."
+      }
+    ],
+    "explanation": "KV-cache demand = concurrent sequences x tokens per sequence x bytes per token. When it exceeds free GPU memory, vLLM preempts requests and recomputes them later (RECOMPUTE is the default in V1). Remedies include raising `gpu_memory_utilization`, lowering `max_num_seqs` or `max_num_batched_tokens`, adding GPUs through tensor parallelism, quantizing the KV cache, capping context length, or choosing a model with GQA.",
+    "reference": "https://docs.vllm.ai/en/latest/configuration/optimization.html",
+    "source": "interview:llm-gpu-sizing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-036",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "single",
+    "stem": "You serve an 8B model in FP16 on one 80 GiB GPU and let the server use 90% of the memory. The weights take 16 GiB, and activations and other overhead take about 4 GiB; the rest goes to the KV cache. The model has 32 layers and 8 KV heads of dimension 128, with an FP16 KV cache. About how many 8,192-token sequences can be held at full length at the same time?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "56",
+        "why": "That forgets the 4 GiB of activations and overhead: 72 - 16 = 56 GiB."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "13",
+        "why": "That sizes each sequence as if all 32 heads had their own keys and values (4 GiB per sequence). With 8 KV heads each sequence needs 1 GiB."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "104",
+        "why": "That drops the factor of 2 for keys and values, sizing each sequence at 0.5 GiB instead of 1 GiB."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "52",
+        "why": "Correct. 0.9 x 80 = 72 GiB; 72 - 16 - 4 = 52 GiB for KV. Each sequence needs 2 x 32 x 8 x 128 x 2 bytes x 8,192 = 1 GiB, so about 52 fit."
+      }
+    ],
+    "explanation": "GPU sizing: usable memory - weights - overhead = KV budget. Divide by the KV bytes per sequence at your target context to get maximum concurrency at full length. Real traffic rarely uses the full context, so paged allocation fits more sequences on average. Then check throughput: the batch must also meet your tokens-per-second and latency targets.",
+    "reference": "https://docs.vllm.ai/en/latest/configuration/optimization.html",
+    "source": "interview:llm-gpu-sizing",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-037",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "single",
+    "stem": "After a deploy with no model change, p99 latency for a chat API doubled. Dashboards show time to first token up sharply, inter-token latency unchanged, output lengths unchanged, and the prefix-cache hit rate down from 80% to 5%. What should you check first?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The decode kernels, because a slower attention kernel would explain the regression",
+        "why": "A slower decode kernel would raise inter-token latency, which has not changed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The sampling settings, because a higher temperature produces longer answers",
+        "why": "Output lengths have not changed, so sampling settings do not explain the rise."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The GPU driver version, because driver bugs usually show up as a lower cache hit rate",
+        "why": "Prefix-cache hits depend on prompt tokens matching. A driver issue would not usually change hit rates."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A diff of the rendered system prompt and tool list before and after the deploy",
+        "why": "Correct. TTFT up with a collapsed hit rate means prefixes stopped matching, usually because of a dynamic value or a reordering early in the prompt."
+      }
+    ],
+    "explanation": "Split latency into queueing, TTFT and ITL before guessing. Here only prefill got slower, and the cache metric says why: requests no longer share a prefix. Typical culprits are timestamps or request ids added to the system prompt, tool definitions serialised in a different order, or a new template that injects per-user data early. Fix the layout and add a cache-hit-rate alert to your release checks.",
+    "reference": "https://docs.vllm.ai/en/latest/design/prefix_caching.html",
+    "source": "interview:llm-latency-regression",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-038",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "multi",
+    "stem": "This week, p99 time to first token doubled while inter-token latency and output length stayed flat. Which two causes fit these symptoms? (Choose two.)",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Requests now wait longer in the queue, because traffic grew faster than the number of replicas",
+        "why": "Correct. Queueing time is part of TTFT but not of ITL, so this fits the pattern."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A slower decode kernel was deployed",
+        "why": "That would raise inter-token latency, which is flat."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Average prompt length grew, for example because retrieval now inserts more passages",
+        "why": "Correct. Longer prompts mean more prefill work, which raises TTFT without changing per-token decode speed much."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Users started asking for much longer answers",
+        "why": "Output length is flat, and longer answers would change end-to-end latency, not TTFT."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Speculative decoding was switched off",
+        "why": "That would slow decoding and show up in inter-token latency."
+      }
+    ],
+    "explanation": "Use the phase split as a diagnostic. TTFT up with flat ITL points to queueing, more prefill tokens, cache misses or prefill interference. ITL up points to decode: batch size, KV pressure, kernels or lost speculative decoding. Check request-rate and queue-depth metrics alongside the input-token distribution before you change the serving configuration.",
+    "reference": "https://docs.nvidia.com/nim/benchmarking/llm/latest/metrics.html",
+    "source": "interview:llm-latency-regression",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-039",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "single",
+    "stem": "In speculative decoding, a draft model proposes 4 tokens per step, and each draft token is accepted with probability 0.8, independently. Counting the extra token the target model always contributes, about how many tokens are produced per forward pass of the target model?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "About 3.2",
+        "why": "That is 4 x 0.8. It ignores that acceptance stops at the first rejection, and it leaves out the guaranteed token from the target model."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "About 3.4",
+        "why": "Correct. The expected count is 1 + 0.8 + 0.8^2 + 0.8^3 + 0.8^4 = (1 - 0.8^5) / (1 - 0.8), about 3.36."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Always 5.0",
+        "why": "That assumes every draft token is always accepted, which happens only with probability 0.8^4, about 41%."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "About 2.4",
+        "why": "That is 0.8 + 0.64 + 0.512 + 0.41, the expected number of accepted drafts. It leaves out the one token every target pass always produces."
+      }
+    ],
+    "explanation": "Each target pass produces at least one token: a corrected token at the first rejection, or a bonus token if all drafts are accepted. The expected number of tokens per pass is (1 - a^(g+1)) / (1 - a) for acceptance rate a and g draft tokens, as in the speculative decoding paper. Actual wall-clock speed-up is lower, because draft passes and verification have their own costs.",
+    "reference": "https://arxiv.org/abs/2211.17192",
+    "source": "interview:llm-speculative-decoding",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://aiinterviewprep.substack.com/p/advanced-nlp-interview-questions-2e4",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ],
+      "companies": [
+        "Together AI"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-INF-040",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "single",
+    "stem": "You run a shared vLLM cluster for several customer companies and want automatic prefix caching for speed. A security reviewer worries that one tenant could learn about another tenant's prompts. What is the real concern, and what is a proportionate fix?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Cached blocks can be returned as text in other tenants' responses; turning off streaming prevents it",
+        "why": "The cache holds key/value tensors, not text that could be returned. Streaming has nothing to do with it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Timing: a cache hit returns the first token faster, so an attacker can test whether a guessed prefix is cached; give each tenant its own cache salt so blocks are reused only within that tenant",
+        "why": "Correct. vLLM mixes a per-request `cache_salt` into the first block's hash, so only requests with the same salt can share cached blocks, which closes the timing side channel across tenants."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The cache stores prompts unencrypted on disk; encrypting the model weights fixes it",
+        "why": "The prefix cache lives in GPU memory, and encrypting the weights would not protect prompt content."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Hash collisions regularly merge different tenants' prompts, so the only safe option is to switch prefix caching off entirely",
+        "why": "vLLM's default block hash is SHA-256, so collisions are not a practical risk. Isolating tenants with salts keeps most of the speed benefit."
+      }
+    ],
+    "explanation": "Shared caches create a side channel: a lower TTFT reveals that someone else recently sent the same prefix. Isolate caches per trust boundary (per tenant, or per user for sensitive data) using salts or separate deployments, and keep sharing within a tenant where it is safe. Hosted APIs make a similar promise when they say caches are not shared across organisations.",
+    "reference": "https://docs.vllm.ai/en/latest/design/prefix_caching.html",
+    "source": "interview:llm-prefix-caching",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-041",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "multi",
+    "stem": "You quantized a model to 4 bits with GPTQ, using generic English web text as calibration data. On your Hindi-English support tickets, task accuracy fell by 6 points, while English benchmarks barely moved. Which two steps are most likely to recover accuracy? (Choose two.)",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Re-run calibration with a few hundred representative in-domain tickets, including code-mixed Hindi-English text",
+        "why": "Correct. GPTQ minimises error on the calibration inputs, so calibrating on the traffic you actually serve protects what matters for your task."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise the sampling temperature to make up for the rounding noise",
+        "why": "Temperature does not undo quantization error, and more randomness usually lowers accuracy."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Keep the most sensitive layers (often the first and last few) in higher precision, or use 8-bit, then re-measure on the task eval",
+        "why": "Correct. Sensitivity varies by layer, and mixed precision or a higher bit width trades a little memory for a lot of accuracy."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Judge success by perplexity on English web text, since that is what calibration optimised",
+        "why": "That metric hides exactly the regression you care about. Evaluate on your real task and languages."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Use one scale for the whole weight tensor instead of per-group scales, to cut overhead",
+        "why": "Coarser scales increase rounding error. Smaller groups usually improve accuracy at a small memory cost."
+      }
+    ],
+    "explanation": "Post-training quantization can hurt rare or out-of-distribution inputs, such as other languages or code, while generic benchmarks look fine. Levers include in-domain calibration data, activation-aware methods such as AWQ, smaller group sizes, keeping sensitive layers in higher precision, a higher bit width, or quantization-aware training. Always compare against the full-precision model on your own eval set.",
+    "reference": "https://pytorch.org/blog/quantization-aware-training/",
+    "source": "interview:llm-quantized-accuracy-drop",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-042",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "order",
+    "stem": "All of these configurations are for the same 32-layer model with a head dimension of 128. Order them from the most KV cache per token to the least.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Grouped-query attention with 8 KV heads, FP8 cache",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Multi-head attention with 32 KV heads, FP16 cache",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Multi-query attention with 1 KV head, FP16 cache",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Grouped-query attention with 8 KV heads, FP16 cache",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Multi-head attention with 32 KV heads, FP8 cache",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "E",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "Bytes per token = 2 x 32 x kv_heads x 128 x bytes per value. MHA-32 in FP16 needs 512 KiB, MHA-32 in FP8 needs 256 KiB, GQA-8 in FP16 needs 128 KiB, GQA-8 in FP8 needs 64 KiB, and MQA-1 in FP16 needs 16 KiB. The number of KV heads and the cache precision multiply together. GQA and an FP8 cache stack, which is why both are common levers for long-context serving.",
+    "reference": "https://arxiv.org/abs/2309.06180",
+    "source": "interview:llm-kv-cache-size-estimate",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewquery.com/guides/mistral-ai-ai-engineer",
+        "https://www.techinterview.org/post/3233476952/transformer-questions-past-the-diagram/",
+        "https://github.com/llmgenai/LLMInterviewQuestions"
+      ],
+      "companies": [
+        "Mistral AI"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-043",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "multi",
+    "stem": "Which two statements about chunked prefill and prefill/decode disaggregation are accurate? (Choose two.)",
+    "select": 2,
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Chunked prefill splits a long prompt into pieces that are batched alongside ongoing decode steps, with decodes scheduled first",
+        "why": "Correct. vLLM fills each step's token budget with pending decodes first and then with prefill chunks."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Chunked prefill reduces the total compute needed to process a prompt",
+        "why": "The prompt still needs the same work. Chunking only spreads it across steps to protect decode latency."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Disaggregation runs prefill and decode on separate instances and transfers the KV cache between them, so TTFT and inter-token latency can be tuned independently",
+        "why": "Correct. Each phase gets its own parallel configuration, which gives more reliable control of tail ITL."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Disaggregation removes the need for a KV cache on the decode instances",
+        "why": "Decode instances must hold the transferred KV cache in order to generate tokens."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "With chunked prefill, a smaller per-step token budget favours time to first token over inter-token latency",
+        "why": "This is reversed. Smaller budgets favour ITL, because fewer prefill tokens slow each step. Larger budgets favour TTFT."
+      }
+    ],
+    "explanation": "Both techniques address interference between compute-heavy prefill and latency-sensitive decode. Chunked prefill does it inside one instance by tuning the per-step token budget (`max_num_batched_tokens`). Disaggregation separates the phases physically, at the cost of KV transfer and extra operational work, and vLLM notes it does not improve throughput.",
+    "reference": "https://docs.vllm.ai/en/latest/features/disagg_prefill.html",
+    "source": "interview:llm-chunked-prefill-disagg",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-INF-044",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "single",
+    "stem": "An 8B model in FP16 (16 GB of weights) runs on a GPU with about 2 TB/s of memory bandwidth. Decoding one sequence at a time, every new token requires reading all the weights once. Ignoring KV-cache reads and other overheads, what is the rough upper bound on tokens per second, and what would INT4 weights do to it?",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "About 125 tokens/s; INT4 changes nothing, because decoding is compute-bound",
+        "why": "At batch size 1, decoding is memory-bound, which is why fewer weight bytes help."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "About 2,000 tokens/s; INT4 makes no difference at batch size 1",
+        "why": "2 TB/s divided by 16 GB is 125 reads per second, not 2,000."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "About 125 tokens/s; INT4 weights (about 4 GB) raise the bound to roughly 500 tokens/s",
+        "why": "Correct. 2 x 10^12 / 16 x 10^9 = 125, and with a quarter of the bytes the bound is about four times higher."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "About 16 tokens/s; INT4 raises it to about 64 tokens/s",
+        "why": "This divides the wrong way. The bound is bandwidth divided by bytes per token."
+      }
+    ],
+    "explanation": "For single-stream decoding, tokens/s is at most memory bandwidth / bytes read per token (the weights plus the KV cache). This roofline estimate explains why quantization and bandwidth matter so much for latency, and why batching helps: one weight read serves many sequences. Real systems reach only part of this bound because of KV reads, kernel efficiency and overheads.",
+    "reference": "https://arxiv.org/abs/2403.02310",
+    "source": "interview:llm-prefill-vs-decode",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://www.techinterview.org/post/tag/kv-cache/",
+        "https://prachub.com/resources/llm-inference-optimization-interview-questions-quantization-batching-kv-cache-and-latency",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ],
+      "companies": [
+        "Together AI",
+        "OpenAI",
+        "Anthropic"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-INF-045",
+    "domain": 4,
+    "skill": "inference-economics",
+    "difficulty": 4,
+    "type": "order",
+    "stem": "Order the steps of one iteration of standard speculative decoding.",
+    "select": 1,
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The target model scores all the candidate positions in a single parallel forward pass",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "At the first rejection, a replacement token is sampled from the adjusted distribution proportional to max(0, p - q)",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The small draft model generates several candidate tokens one after another",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Draft tokens after the rejection are discarded, and the next iteration starts from the accepted text",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Going left to right, each draft token is accepted with probability min(1, p/q), where p is the target's probability and q the draft's",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "A",
+      "E",
+      "B",
+      "D"
+    ],
+    "explanation": "The draft step is cheap and sequential, and verification is one expensive but parallel pass of the target model. Accept/reject sampling with the adjusted distribution guarantees that outputs follow the target model's distribution. If every draft token is accepted, the target model's pass also supplies one bonus token, so each iteration yields between 1 and k+1 tokens.",
+    "reference": "https://arxiv.org/abs/2211.17192",
+    "source": "interview:llm-speculative-decoding",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233475331/ai-inference-infrastructure-interview-prep-2026-vllm-triton/",
+        "https://aiinterviewprep.substack.com/p/advanced-nlp-interview-questions-2e4",
+        "https://cloudsoftsol.com/blog/llm-inference-serving-interview-questions/"
+      ],
+      "companies": [
+        "Together AI"
+      ]
+    },
+    "roleLevel": 5
+  }
+]

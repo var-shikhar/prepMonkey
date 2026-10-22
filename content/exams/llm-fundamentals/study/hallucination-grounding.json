@@ -1,0 +1,51 @@
+{
+  "hallucination-grounding": {
+    "summary": "Hallucination is fluent output that is false or unsupported. Know where it comes from (a likelihood objective with no truth signal, rare facts, the training cutoff, sampling, sycophancy and evaluations that reward guessing), how to tell faithfulness errors from factuality errors, how to reduce it (grounding, citations, abstention, verification, validators), how to detect it without labels, and how to diagnose a RAG system that hallucinates even when retrieval worked.",
+    "points": [
+      "Root cause: next-token training rewards plausible text, not true text. Kalai et al. (2025) argue errors arise naturally from pretraining statistics (facts seen only once in the data are hard to learn) and persist because binary 0/1 grading gives \"I don't know\" the same zero as a wrong answer, so guessing always scores at least as well.",
+      "Other causes: long-tail facts (QA accuracy tracks how many pretraining documents mention a fact), the knowledge cutoff, higher sampling temperature, ambiguous prompts, fine-tuning on facts the model did not know (learned slowly, then raises hallucination; Gekhman et al.), and sycophancy learned from preference data.",
+      "Intrinsic hallucination contradicts the source; extrinsic adds content the source cannot verify (it may even be true). The newer taxonomy separates factuality errors (wrong about the world: contradiction or fabrication) from faithfulness errors (ignores instructions, contradicts the given context, or contradicts itself).",
+      "Grounding improves faithfulness, not factuality: an answer that faithfully repeats a stale document is still wrong. Fix stale sources in the data (freshness metadata, re-indexing), not the prompt.",
+      "Prompt-level mitigations: answer only from supplied sources, quote or cite before answering, explicitly allow a fixed \"not found\" reply, give the current date for time-sensitive questions, and ask the model to check false premises.",
+      "Verification: Chain-of-Verification drafts, plans fact-check questions, answers them independently (factored, without the draft in view, so errors are not copied), then revises. Deterministic validators (schema, sums, ID lookups) plus bounded retries with the error message plus a human or abstain fallback make pipelines reliable.",
+      "Reference-free detection: SelfCheckGPT samples extra answers (20 at temperature 1.0 in the paper) and flags sentences the samples do not support; it is black-box and zero-resource. Semantic entropy clusters sampled answers by bidirectional entailment and measures entropy over meanings, so paraphrases do not count as uncertainty; the original method uses sequence likelihoods.",
+      "Context-based scores: faithfulness = supported claims / total claims, judged against the retrieved context (no reference answer needed). FActScore = share of atomic facts supported by a knowledge source. Citation recall asks whether statements are supported by their citations; citation precision asks whether each citation supports its statement (51.5% and 74.5% in an audit of generative search engines).",
+      "Abstention trade-off: with a scoring rule of +1 correct, 0 abstain and -t/(1-t) wrong, answering pays only when confidence exceeds t (a -4 penalty means t = 0.8). Always measure accuracy on answerable questions and correct abstention on unanswerable ones together, or over-refusal hides behind a falling hallucination rate.",
+      "Calibration: large base models are fairly well calibrated on well-formatted multiple-choice questions, but post-training often hurts calibration; check any confidence signal against accuracy on held-out data before showing it to users.",
+      "Sycophancy: assistants change correct answers when challenged, copy users' wrong claims, and tailor feedback to the user's stated view. Humans and preference models sometimes prefer convincing sycophantic answers. Test with paired prompts (with and without a stated belief) and \"Are you sure?\" challenges.",
+      "RAG still hallucinates when retrieval worked: weak instructions (\"may help\"), a strong conflicting prior, mixed old and new evidence (models show confirmation bias towards what they already believe), no quote requirement and no abstention path. Fix at generation, then measure with faithfulness."
+    ],
+    "traps": [
+      "Saying temperature 0 stops hallucination: greedy decoding still outputs the most likely wrong answer when the model lacks the fact.",
+      "Treating a faithful RAG answer as correct when the source document itself is outdated.",
+      "Reporting only a lower hallucination rate after adding \"say I don't know\", without checking refusals on answerable questions.",
+      "Trusting a citation because it is present; citations must be checked for support.",
+      "Calling every extrinsic hallucination false; it is unverifiable from the source, not necessarily wrong.",
+      "Using user satisfaction as the hallucination or sycophancy metric; approval can reward confident, agreeable wrong answers.",
+      "Fine-tuning to teach new facts and expecting fewer hallucinations; it can increase them, so retrieval is the usual answer.",
+      "Blaming the retriever when logs show the right passage was retrieved; the failure is at generation."
+    ],
+    "docs": [
+      {
+        "title": "Kalai et al., Why Language Models Hallucinate (2025)",
+        "url": "https://arxiv.org/abs/2509.04664"
+      },
+      {
+        "title": "Huang et al., A Survey on Hallucination in Large Language Models",
+        "url": "https://arxiv.org/abs/2311.05232"
+      },
+      {
+        "title": "Manakul et al., SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection",
+        "url": "https://arxiv.org/abs/2303.08896"
+      },
+      {
+        "title": "Sharma et al., Towards Understanding Sycophancy in Language Models",
+        "url": "https://arxiv.org/abs/2310.13548"
+      },
+      {
+        "title": "Ragas docs: Faithfulness metric",
+        "url": "https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/"
+      }
+    ]
+  }
+}

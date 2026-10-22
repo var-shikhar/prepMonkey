@@ -1,0 +1,2182 @@
+[
+  {
+    "id": "LLM-TOK-001",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What is a token, from a language model's point of view?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Always exactly one whole word, found by splitting the text on spaces and punctuation",
+        "why": "Common words are often one token, but rare words, numbers and many non-English words are split into several pieces."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A vocabulary entry, often a word piece, that the model sees as an integer id",
+        "why": "Correct. The tokenizer maps text to ids from a learned subword vocabulary; the model never sees raw characters."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Exactly one Unicode character",
+        "why": "Character-level models exist, but LLM tokenizers merge frequent character or byte sequences into larger units."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A fixed block of four bytes of text",
+        "why": "Tokens vary in length; a rule of thumb about characters per token is an average, not a definition."
+      }
+    ],
+    "explanation": "Subword tokenizers (BPE, WordPiece, Unigram) learn a vocabulary of frequent pieces. Text is split into those pieces and each piece becomes an integer id, which indexes the embedding matrix. Frequent words get one token; rare words are split into several. This is why token counts, not word counts, determine cost and context usage.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-what-is-a-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://dev.to/himanshuai/10-most-asked-llm-interview-questions-with-expert-answers-4l1f"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-TOK-002",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "The GPT-2 tokenizer splits `strawberry` (with no leading space) into the tokens `st`, `raw` and `berry`. Why does this help explain why language models often miscount the letter r in it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The model receives three token ids, not ten letters, so it never sees the characters",
+        "why": "Correct. Letter-level facts about a token have to be memorised indirectly; they are not visible in the input."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The tokenizer quietly deletes repeated letters such as the double r before the text reaches the model",
+        "why": "Byte-level BPE is lossless; decoding the three tokens gives back `strawberry` exactly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Sampling temperature makes counting answers random",
+        "why": "Even greedy decoding miscounts; the root cause is that the input is tokens, not letters."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Models count only vowels reliably because vowels are separate tokens",
+        "why": "Vowels are not tokenised separately; the split here is `st` + `raw` + `berry`."
+      }
+    ],
+    "explanation": "The model operates on token ids. For it, `berry` is one symbol, and the fact that it contains two r's is something it may or may not have learned. The same word with a leading space (` strawberry`) is a single token in GPT-2's vocabulary, so the split even depends on context. Character-level tasks such as counting, reversing or spelling are reliably solved by code, not by the model alone.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-what-is-a-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://dev.to/himanshuai/10-most-asked-llm-interview-questions-with-expert-answers-4l1f"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-TOK-003",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In a static embedding model such as Word2Vec, the word `bank` gets the same vector in \"river bank\" and in \"bank loan\".",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. Static models store one vector per vocabulary word, learned from all its contexts together, so every sense of a word shares it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "Word2Vec and GloVe are lookup tables: one entry per word. Only contextual models such as transformers produce different vectors for different sentences."
+      }
+    ],
+    "explanation": "Static embeddings blend all senses of a word into a single vector. A transformer instead produces a hidden state for each token that depends on the surrounding tokens, so `bank` near `river` and `bank` near `loan` end up in different places. That context dependence is the main reason contextual embeddings replaced static ones for most tasks.",
+    "reference": "https://arxiv.org/abs/1301.3781",
+    "source": "interview:llm-static-vs-contextual-embeddings",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-TOK-004",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which statement about a text embedding is accurate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Each dimension stands for a named, human-readable attribute such as sentiment or topic",
+        "why": "Dimensions are learned features with no fixed meaning; individual coordinates are rarely interpretable."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is a compressed copy of the text that can be decoded back into the original words",
+        "why": "Embedding models are not trained to reconstruct text; many different texts can map to similar vectors."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It is a dense vector placed so that texts with similar meaning end up close together",
+        "why": "Correct. Closeness, usually measured by cosine similarity, is what makes embeddings useful for search, clustering and deduplication."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Its length grows with the length of the input text",
+        "why": "A sentence-embedding model returns a fixed-size vector whatever the input length (up to its maximum input length)."
+      }
+    ],
+    "explanation": "An embedding maps text to a fixed-size dense vector. Training shapes the space so that related meanings are near each other, which is what retrieval, clustering, classification and duplicate detection rely on. The individual numbers carry no direct meaning; only relationships between vectors do.",
+    "reference": "https://sbert.net/docs/sentence_transformer/usage/semantic_textual_similarity.html",
+    "source": "interview:llm-what-is-an-embedding-production",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://www.glassdoor.co.uk/Interview/Tiger-Analytics-Interview-E717029-RVW93702753.htm",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Palantir",
+        "Amazon",
+        "Tiger Analytics"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-005",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "Byte-level BPE, used by GPT-2, starts from a base vocabulary of raw bytes before any merges are learned. How many entries does that base vocabulary have? Type a number.",
+    "options": [],
+    "accepted": [
+      "256"
+    ],
+    "explanation": "Byte-level BPE treats text as UTF-8 bytes, so the starting alphabet is the 256 possible byte values. Every string can be written in bytes, so the tokenizer never needs an unknown token: unseen characters fall back to their byte sequence. Merges learned on the training corpus are then added on top (GPT-2's full vocabulary is 50,257 entries).",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-bpe-algorithm",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://sebastianraschka.com/faq/docs/tokenization-bpe.html",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-006",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the main job of the end-of-sequence (EOS) token in a generative model?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It separates the words in a sentence",
+        "why": "Word boundaries are handled by the tokenizer (for example a leading space in the token), not by EOS."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It marks where a sequence ends, so generation can stop when the model emits it",
+        "why": "Correct. If the model emits EOS, decoding stops; a model that never learned to emit it keeps going until a length limit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It stores the model's hidden state so that the next request can continue from where this one stopped",
+        "why": "Tokens carry no state between requests; EOS is just a vocabulary entry with a special meaning."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It replaces unknown characters",
+        "why": "That is the role of an unknown (`[UNK]`) token in tokenizers that have one."
+      }
+    ],
+    "explanation": "Special tokens are vocabulary entries reserved for structure: beginning and end of sequence, padding, separators, and role markers in chat formats. EOS teaches the model where a complete response ends. Generation loops stop when it appears (or when a stop sequence or token limit is hit).",
+    "reference": "https://huggingface.co/docs/transformers/main/en/chat_templating",
+    "source": "interview:llm-special-tokens-and-chat-templates",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huggingface.co/learn/llm-course/chapter11/6",
+        "https://huggingface.co/docs/tokenizers/index"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LLM-TOK-007",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does cosine similarity between two embedding vectors measure?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The angle between them, ignoring their lengths",
+        "why": "Correct. Cosine is the dot product divided by the product of the norms, so it ranges from -1 to 1 and is unaffected by vector length."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The straight-line distance between their end points",
+        "why": "That is Euclidean distance, which depends on both direction and length."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "How many dimensions have exactly the same value",
+        "why": "Dense embeddings almost never share exact values; cosine compares overall direction."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The sum of their lengths",
+        "why": "Lengths are divided out in cosine similarity, not added."
+      }
+    ],
+    "explanation": "cos(a, b) = a·b / (|a| |b|). Two vectors pointing the same way score 1, orthogonal vectors 0, opposite vectors -1. Cosine is the default similarity in the Sentence Transformers library. When vectors are L2-normalised, the dot product equals the cosine, and libraries suggest dot product then because it is cheaper.",
+    "reference": "https://sbert.net/docs/sentence_transformer/usage/semantic_textual_similarity.html",
+    "source": "interview:llm-cosine-vs-dot-vs-euclidean",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-008",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "The same 500-word English prompt is 640 tokens for one model and 710 tokens for another. What is the most likely reason?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "One of the models adds hidden words to the prompt",
+        "why": "Chat templates can add a few control tokens, but a gap of this kind comes mainly from how the text itself is split."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Token counts are random and change on every request",
+        "why": "Tokenization is deterministic for a given tokenizer: the same text always gives the same ids."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The models have different tokenizers with different vocabularies and merge rules",
+        "why": "Correct. Each tokenizer splits text its own way, so the same text yields different token counts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "One model counts punctuation and the other does not",
+        "why": "Every tokenizer turns punctuation into tokens; the difference is how text is chunked overall."
+      }
+    ],
+    "explanation": "Token counts are a property of the tokenizer, not of the text alone. Vocabulary size, training corpus and merge rules decide how text is split. To budget cost and context accurately, count tokens with the exact tokenizer of the target model, including any template tokens it adds.",
+    "source": "interview:llm-token-count-and-cost",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/himanshuai/10-most-asked-llm-interview-questions-with-expert-answers-4l1f",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-009",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A BPE tokenizer is trained on this word-frequency corpus: `hug` x10, `pug` x5, `pun` x12, `bun` x4, `hugs` x5. Words start split into characters. Which merge does BPE learn first?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`p` + `u`, which appears 17 times in total",
+        "why": "`pu` appears in pug (5) and pun (12), 17 in total. That is high, but another pair is more frequent."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`u` + `n`, which appears 16 times",
+        "why": "`un` appears in pun (12) and bun (4); it becomes the second merge."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`h` + `u`, which appears 15 times",
+        "why": "`hu` appears in hug (10) and hugs (5): 15, which is not the maximum."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`u` + `g`, which appears 20 times",
+        "why": "Correct. `ug` appears in hug (10), pug (5) and hugs (5): 20, the most frequent adjacent pair."
+      }
+    ],
+    "explanation": "BPE counts every adjacent symbol pair, weighted by word frequency, and merges the most frequent one into a new vocabulary entry, then repeats. On this corpus the first three merges are `u`+`g` (20), `u`+`n` (16) and `h`+`ug` (15). Simulating the counts in Python confirms that `pu` (17) is second at the first step but is overtaken once `ug` and `un` absorb its occurrences.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-bpe-algorithm",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://sebastianraschka.com/faq/docs/tokenization-bpe.html",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-010",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each subword algorithm to how it builds or uses its vocabulary.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "BPE",
+        "why": "Byte-pair encoding: frequency-driven merges."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "WordPiece",
+        "why": "BERT's tokenizer: likelihood-style merge score."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Unigram",
+        "why": "Probabilistic model that prunes a large vocabulary."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Byte-level BPE",
+        "why": "BPE over UTF-8 bytes rather than characters."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Repeatedly merges the most frequent adjacent pair",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Merges the pair with the highest freq(pair) / (freq(first) x freq(second)) and marks word-internal pieces with `##`",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Starts from a large vocabulary and removes the pieces whose loss hurts the corpus likelihood least",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Starts from 256 base symbols, so it never needs an unknown token",
+        "answer": "D"
+      }
+    ],
+    "explanation": "BPE merges by raw pair frequency and applies merges in learned order. WordPiece divides pair frequency by the product of the parts' frequencies, favouring pairs whose parts are rare on their own, and tokenises by longest-match from the start of each word. Unigram goes the other way: it starts large, prunes, and segments with the highest-probability split (Viterbi). Byte-level BPE runs BPE on bytes, as in GPT-2 and RoBERTa.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/7",
+    "source": "interview:llm-bpe-vs-wordpiece-vs-unigram",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-011",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A BPE tokenizer has learned exactly three merges, in this order: `u`+`g` -> `ug`, `u`+`n` -> `un`, `h`+`ug` -> `hug`. Its base vocabulary includes `b`, `g`, `h`, `n`, `p`, `s` and `u`. How many tokens does it produce for the word `bugs`? Type a number.",
+    "options": [],
+    "accepted": [
+      "3"
+    ],
+    "explanation": "Start from characters `b u g s` and apply merges in learned order. `u`+`g` gives `b ug s`. `u`+`n` does not apply. `h`+`ug` does not apply, because the symbol before `ug` is `b`. The result is `b`, `ug`, `s`: 3 tokens. A Python simulation of these merges gives the same split.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-bpe-algorithm",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://sebastianraschka.com/faq/docs/tokenization-bpe.html",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-012",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "How does a contextual embedding from a transformer differ from a static word vector?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It depends on the surrounding tokens, so one word gets different vectors in different sentences",
+        "why": "Correct. Each layer's attention mixes in context, so the hidden state for a token reflects the sentence it appears in."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It is a larger lookup table with more dimensions per word",
+        "why": "The input embedding layer of a transformer is a lookup table, but the contextual vectors come from the layers that follow it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is retrained for every new sentence the model sees",
+        "why": "Weights are fixed at inference; only the activations change with the input."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It ignores word order completely, which is what makes contextual vectors robust to typos and to shuffled sentences",
+        "why": "Transformers use positional information; contextual vectors depend on order."
+      }
+    ],
+    "explanation": "A static model has one vector per word, so `bank` (river) and `bank` (finance) collide. A transformer starts from a static token-embedding lookup but then passes it through attention layers, and the resulting hidden state depends on the whole input. That is why transformer hidden states, suitably pooled, make much better features for downstream tasks than static vectors.",
+    "source": "interview:llm-static-vs-contextual-embeddings",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-013",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each stage of a Hugging Face tokenizer pipeline to an example of what it does.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Normalization",
+        "why": "Cleans the raw string."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Pre-tokenization",
+        "why": "Splits text into word-like chunks that bound the final tokens."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Model",
+        "why": "The trained subword algorithm."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Post-processing",
+        "why": "Final touches to the encoding."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Turns `Héllò hôw are ü?` into `hello how are u?`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Splits `Hello! How are you?` on whitespace and punctuation",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Applies learned BPE merges or WordPiece longest matches and maps pieces to ids",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Wraps the sequence as `[CLS] ... [SEP]` for BERT",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Hugging Face Tokenizers runs normalization, pre-tokenization, model, then post-processing. Normalization covers Unicode normalisation, lowercasing and accent stripping. Pre-tokenization sets word-like boundaries (merges never cross them). The model is the trained BPE, WordPiece or Unigram part. Post-processing adds special tokens. Changing the normalizer or pre-tokenizer means the tokenizer should be retrained; changing the post-processor does not.",
+    "reference": "https://huggingface.co/docs/tokenizers/pipeline",
+    "source": "interview:llm-tokenizer-pipeline-normalization-pretokenization",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huggingface.co/learn/llm-course/chapter6/10"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-014",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "A byte-level BPE tokenizer, like GPT-2's, can encode any input string without ever producing an unknown token.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. Its base vocabulary covers all 256 byte values, so any UTF-8 text can be written with known tokens, in the worst case one byte at a time."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "Character-level BPE can hit unknown characters, but byte-level BPE always has a byte to fall back on."
+      }
+    ],
+    "explanation": "Character-level BPE with a limited base alphabet maps unseen characters to `[UNK]`; in the Hugging Face course example, `mug` becomes `[UNK]`, `ug` because `m` was never seen. Byte-level BPE avoids this entirely. The catch is cost: rare scripts may be split into many byte tokens.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-bpe-algorithm",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://sebastianraschka.com/faq/docs/tokenization-bpe.html",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-015",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A team fine-tunes an open-weight chat model, then serves it by concatenating `User: ...` and `Assistant: ...` as plain text instead of using the model's chat template. Answers become rambling and often continue the user's message. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The serving GPU uses a different floating-point format",
+        "why": "Precision differences do not usually make a model continue the user's turn; the formatting does."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Plain text prompts are always too long for the context window",
+        "why": "Plain role labels are short; the issue is that they are not the control tokens the model learned."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Fine-tuning erased most of the model's general knowledge of English, so it falls back to copying the prompt text",
+        "why": "The model still writes English; it is confused about where its turn starts and ends."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Without the control tokens it was trained on, the model cannot tell where its turn begins or ends",
+        "why": "Correct. Chat models continue token sequences; the template's role and end tokens are what signal a new assistant turn."
+      }
+    ],
+    "explanation": "A chat is still one token sequence. Each model family wraps messages in its own control tokens (for example `[INST]`/`[/INST]` or `<|user|>`/`<|assistant|>`), and the Hugging Face docs note that using the wrong control tokens drastically worsens performance. Use `apply_chat_template` with the template that ships with the tokenizer, and set `add_generation_prompt=True` so the prompt ends with the assistant-turn marker.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/chat_templating",
+    "source": "interview:llm-special-tokens-and-chat-templates",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huggingface.co/learn/llm-course/chapter11/6",
+        "https://huggingface.co/docs/tokenizers/index"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-016",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "You need an accurate token count for a chat request before sending it. Which practices are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use the tokenizer of the exact model that will receive the request",
+        "why": "Correct. Different tokenizers split the same text differently, so only the target model's tokenizer gives the true count."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Count the formatted conversation, including the role markers and special tokens the chat template adds",
+        "why": "Correct. Templates add control tokens for each message, which consume context and count towards the total."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Divide the character count by four; it is accurate for every language",
+        "why": "Characters per token varies widely by language and content; scripts like Devanagari can need many more tokens per character than English."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Count words, since one word is always one token",
+        "why": "Rare words, numbers and non-English words are often several tokens each."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Ignore whitespace and newlines, because tokenizers drop them",
+        "why": "Byte-level tokenizers keep spaces and newlines, often as part of tokens or as tokens of their own."
+      }
+    ],
+    "explanation": "Token budgets cover the whole formatted input: system and user text, role markers, and template tokens, plus the output you allow. Count with the target model's own tokenizer, ideally by applying its chat template exactly as the server will. Heuristics are fine for rough planning but fail badly on code, numbers and non-English text.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/chat_templating",
+    "source": "interview:llm-token-count-and-cost",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dev.to/himanshuai/10-most-asked-llm-interview-questions-with-expert-answers-4l1f",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-017",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "An embedding layer has weight matrix `W` of shape `(V, d)`. Multiplying the one-hot vector for token id 7 (a row vector of length V) by `W` gives what?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The sum of all rows of `W`",
+        "why": "A one-hot vector has a single 1, so only one row contributes."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Row 7 of `W`, which is why frameworks implement it as a direct index lookup",
+        "why": "Correct. The product picks out one row, so indexing gives the same result without a V-wide matrix multiply."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Column 7 of `W`, a vector of length V",
+        "why": "A `(1, V)` row times `(V, d)` gives a `(1, d)` vector, which is a row of W."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A vector of length V of similarity scores",
+        "why": "That would be the output projection (hidden state times the transposed embedding), not the input lookup."
+      }
+    ],
+    "explanation": "Mathematically, an embedding layer is a bias-free linear layer applied to one-hot inputs. Materialising one-hot vectors of size V (tens of thousands or more) and multiplying would waste memory and compute, so `nn.Embedding` simply indexes row `id`. Gradients flow only into the rows that were looked up.",
+    "reference": "https://sebastianraschka.com/faq/docs/embedding-linear-onehot.html",
+    "source": "interview:llm-embedding-layer-as-lookup",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://sebastianraschka.com/faq/docs/embedding-linear-onehot.html"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-018",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps of training a BPE tokenizer.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Normalise and pre-tokenise the corpus, and count word frequencies",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Split every word into base symbols (characters or bytes)",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Count all adjacent symbol pairs, weighted by word frequency",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Merge the most frequent pair into a new vocabulary symbol and record the merge rule",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Repeat counting and merging until the target vocabulary size is reached",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "BPE training is a greedy loop: count pairs, merge the top one, update the words, repeat. The ordered list of merges is part of the tokenizer: at inference, new text is normalised, pre-tokenised, split into base symbols, and the merges are applied in the order they were learned.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-bpe-algorithm",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://sebastianraschka.com/faq/docs/tokenization-bpe.html",
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LLM-TOK-019",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps to turn a sentence into a vector with a Sentence-BERT-style encoder and score it against a stored, normalised document vector.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Tokenise the sentence",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run the tokens through the transformer encoder to get one hidden vector per token",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Mean-pool the token vectors, ignoring padding positions",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "L2-normalise the pooled vector",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Take the dot product with the document vector",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "An encoder outputs one vector per token; a sentence embedding needs one vector. SBERT tested CLS-token, mean and max pooling, with mean pooling as the default. After normalisation, the dot product equals cosine similarity, which is cheaper to compute at scale. The attention mask is used during pooling so padding does not dilute the average.",
+    "reference": "https://arxiv.org/abs/1908.10084",
+    "source": "interview:llm-embedding-model-vs-generative-llm",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233474925/ml-engineer-interview-post-llm-era/",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-020",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With the GPT-2 tokenizer, `This is a test.` is 5 tokens, while its Hindi equivalent `यह एक परीक्षा है।` is 27 tokens. What best explains the gap?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Hindi sentences contain more words than English ones",
+        "why": "The two sentences have about the same number of words; the gap is far larger than any word-count difference."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The tokenizer drops the Hindi characters it does not know and then pads the sequence with filler tokens",
+        "why": "Byte-level BPE never drops input; decoding the 27 tokens gives back the exact Hindi string."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Devanagari characters are 3 UTF-8 bytes each, and a mostly English corpus taught few Devanagari merges",
+        "why": "Correct. Merges reflect training-corpus frequency; with little Hindi data, most characters stay split into byte tokens."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Hindi needs a separate tokenizer, so the count is an estimate",
+        "why": "The count is exact for this tokenizer; it simply handles Hindi inefficiently."
+      }
+    ],
+    "explanation": "Running the GPT-2 tokenizer shows `नमस्ते` alone is 6 characters, 18 UTF-8 bytes, and 12 tokens. For the same meaning, Hindi costs several times more tokens here than English, which means higher cost, a smaller effective context window, and often worse quality. Tokenizers trained on more multilingual data have more merges for Indic scripts and close much of this gap.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-tokenizing-code-numbers-multilingual",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://goodspace.ai/interview-questions/llm",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-021",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "The GPT-2 tokenizer splits `12345678` into `123`, `45`, `678`, but `1234567` into `123`, `45`, `67`. The Llama 2 tokenizer instead splits all numbers into individual digits. Why can digit-level splitting help arithmetic?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It reduces the number of tokens per number",
+        "why": "Single digits use more tokens per number, not fewer."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It lets the model skip the embedding lookup for digits",
+        "why": "Digits are still tokens with embeddings; nothing is skipped."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It removes the need for positional encodings inside numbers, because each digit already carries its place value",
+        "why": "Position still matters; that is exactly what consistent digit tokens make easier to use."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Every digit is its own token, so place value lines up the same way in every number",
+        "why": "Correct. With frequency-based chunks, the same digits land in different tokens depending on length and context, which obscures place value."
+      }
+    ],
+    "explanation": "BPE chunks numbers by what was frequent in training data, so a number's split depends on its length and neighbours. That makes carrying and aligning digits harder to learn. The Llama 2 paper states it splits all numbers into individual digits and uses byte fallback for unknown UTF-8 characters. The trade-off is longer sequences for numeric text.",
+    "reference": "https://arxiv.org/abs/2307.09288",
+    "source": "interview:llm-tokenizing-code-numbers-multilingual",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://goodspace.ai/interview-questions/llm",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-022",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A model with `d_model = 4096` and untied input and output embedding matrices moves from a 32,000-token vocabulary to a 128,000-token vocabulary. Roughly how many parameters does this add?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Roughly 393M",
+        "why": "96,000 x 4096 = 393,216,000 is the growth of one matrix. With untied weights, the output projection grows by the same amount."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "About 786M",
+        "why": "Correct. Both the input embedding and the output projection grow by 96,000 rows of 4096: 2 x 393,216,000."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Roughly 524M",
+        "why": "128,000 x 4096 = 524,288,000 is the full size of one new matrix, not the increase."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Roughly 131M",
+        "why": "32,000 x 4096 = 131,072,000 is the size of one old matrix."
+      }
+    ],
+    "explanation": "Each extra vocabulary entry adds one d_model-sized row to the input embedding and one to the output projection (unless they are tied). Here that is 2 x 96,000 x 4,096, about 786M parameters, plus a wider softmax at every decoding step. In return, text compresses into fewer tokens, especially for multilingual data and code.",
+    "source": "interview:llm-vocab-size-tradeoffs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-023",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "What typically happens when you grow a tokenizer's vocabulary substantially, for example from 32K to over 100K entries? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The same text is encoded in fewer tokens, so more fits in a fixed context window",
+        "why": "Correct. More merges mean longer pieces, especially for languages and code that were fragmented before."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The embedding and output matrices grow, and so does the cost of computing logits over the vocabulary at each step",
+        "why": "Correct. Both matrices have one row per vocabulary entry, and the output projection produces one logit per entry."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Every token is seen more often during training, so its embedding is better trained",
+        "why": "The opposite: with more entries, each rare token appears less often, so its embedding gets fewer updates."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The output layer is unaffected, because it predicts words rather than tokens",
+        "why": "The output layer predicts a distribution over the token vocabulary; its size is the vocabulary size."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The model's attention cost per token grows with vocabulary size",
+        "why": "Attention cost depends on sequence length and width, not vocabulary size; fewer tokens actually reduce it."
+      }
+    ],
+    "explanation": "Vocabulary size trades sequence length against matrix size. Larger vocabularies shorten sequences (cheaper attention, more effective context, often better multilingual quality) but enlarge the embedding and output layers and spread training signal over more rare tokens. Smaller vocabularies do the reverse.",
+    "source": "interview:llm-vocab-size-tradeoffs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-024",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A language model has vocabulary size 32,000 and `d_model = 4096`. If the input embedding and the output projection share one matrix (weight tying) instead of being separate, how many parameters are saved? Type the exact integer.",
+    "options": [],
+    "accepted": [
+      "131072000",
+      "131,072,000",
+      "131 072 000"
+    ],
+    "explanation": "Tying removes one V x d matrix: 32,000 x 4,096 = 131,072,000 parameters. The output logits are then computed as the final hidden state times the transposed embedding matrix. Press and Wolf showed the output embedding is a valid word embedding in its own right and that tying can cut translation models to less than half their size while improving perplexity.",
+    "reference": "https://arxiv.org/abs/1608.05859",
+    "source": "interview:llm-weight-tying-embedding-and-output",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://sebastianraschka.com/faq/docs/embedding-linear-onehot.html"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-025",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Two embeddings are L2-normalised to unit length and have cosine similarity 0.8. What is the squared Euclidean distance between them?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "0.2",
+        "why": "That is 1 - cos. For unit vectors the squared distance is 2 - 2cos, twice this value."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "0.64",
+        "why": "That is cos squared, which has no direct relation to the distance."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "1.6",
+        "why": "That is 2cos; the formula subtracts it from 2."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "0.4",
+        "why": "Correct. |a - b|^2 = |a|^2 + |b|^2 - 2a·b = 1 + 1 - 2(0.8) = 0.4."
+      }
+    ],
+    "explanation": "Expanding |a - b|^2 gives |a|^2 + |b|^2 - 2a·b. For unit vectors this is 2 - 2cos(a, b). Distance is therefore a decreasing function of cosine, so on normalised vectors, ranking by smallest Euclidean distance, largest cosine and largest dot product all give the same order. A NumPy check on random unit vectors confirms the identity.",
+    "source": "interview:llm-cosine-vs-dot-vs-euclidean",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-026",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your embedding model's vectors are not normalised, and their lengths vary a lot. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Raw dot product will favour vectors with large norms even when their direction is a weaker match",
+        "why": "Correct. a·b = |a||b|cos, so a long vector can outscore a better-aligned short one."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Cosine similarity divides out the norms, so it compares direction only",
+        "why": "Correct. Cosine is the dot product divided by both norms."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Dot product and cosine always produce identical rankings",
+        "why": "They agree only when all vectors have the same length, for example after L2 normalisation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Euclidean distance ignores vector length, like cosine",
+        "why": "Euclidean distance depends on both length and direction."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Normalising embeddings changes what the model has learned and must be avoided",
+        "why": "Normalising is a post-processing step; many models are trained with cosine-based losses and expect it."
+      }
+    ],
+    "explanation": "Use the similarity the model was trained with; model cards usually say. The Sentence Transformers docs default to cosine and recommend dot product only when the model ends with a Normalize module, because dot product on normalised vectors equals cosine and is faster. Some retrieval models are trained for raw dot product, where norm carries signal on purpose.",
+    "reference": "https://sbert.net/docs/sentence_transformer/usage/semantic_textual_similarity.html",
+    "source": "interview:llm-cosine-vs-dot-vs-euclidean",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-027",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If every embedding is L2-normalised, ranking documents by highest dot product, highest cosine similarity, or lowest Euclidean distance to a query gives the same order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. For unit vectors, dot product equals cosine, and squared Euclidean distance equals 2 - 2cos, so all three move together."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "The three metrics can disagree on unnormalised vectors, but on unit vectors they are monotone functions of one another."
+      }
+    ],
+    "explanation": "This identity is why many systems normalise once at indexing time and then use the cheapest operation, the dot product. It also means switching between these metrics changes nothing on normalised data, while on unnormalised data the choice matters.",
+    "reference": "https://sbert.net/docs/sentence_transformer/usage/semantic_textual_similarity.html",
+    "source": "interview:llm-cosine-vs-dot-vs-euclidean",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions",
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-028",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You must find the most similar pair among 10,000 sentences. Why is a bi-encoder (Sentence-BERT style) preferred over running a BERT cross-encoder on every pair?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Cross-encoders cannot score sentence pairs",
+        "why": "Cross-encoders score pairs very well; they are often more accurate. The problem is how many pairs there are."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It embeds each sentence once, so pairs are compared with cheap vector maths, not 50 million model passes",
+        "why": "Correct. The SBERT paper estimates about 65 hours for the cross-encoder approach against about 5 seconds with SBERT."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Bi-encoders are always more accurate than cross-encoders",
+        "why": "A cross-encoder sees both texts together and is usually at least as accurate; the bi-encoder wins on cost."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Cross-encoders need labelled training pairs at inference time, which a search system does not have",
+        "why": "Neither approach needs labels at inference."
+      }
+    ],
+    "explanation": "A cross-encoder must process every pair jointly: n(n-1)/2, about 50 million pairs for 10,000 sentences. A bi-encoder computes 10,000 embeddings once and compares them with cosine similarity. A common production pattern is to retrieve candidates with a bi-encoder and re-rank the top few with a cross-encoder.",
+    "reference": "https://arxiv.org/abs/1908.10084",
+    "source": "interview:llm-embedding-model-vs-generative-llm",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233474925/ml-engineer-interview-post-llm-era/",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-029",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "You train a sentence-embedding model with Sentence Transformers' `MultipleNegativesRankingLoss` on (anchor, positive) pairs. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "For each anchor, the other positives in the batch serve as negatives",
+        "why": "Correct. The loss treats the matched pair as the target and every other in-batch candidate as a negative."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Larger batches usually help, because each anchor is contrasted against more negatives",
+        "why": "Correct. The docs note that higher batch sizes allow more negatives and often give a stronger model."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "You must supply an explicit labelled negative for every pair or the loss cannot be computed",
+        "why": "Hard negatives are optional; plain (anchor, positive) pairs work because negatives come from the batch."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It regresses a predicted similarity score onto a human-labelled score with mean squared error",
+        "why": "That describes regression-style losses such as CoSENT or cosine-similarity loss, not in-batch contrastive ranking."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Its `scale` parameter is the softmax temperature itself, so larger values make the distribution flatter",
+        "why": "The docs define scale as 1 / temperature; a larger scale sharpens the distribution."
+      }
+    ],
+    "explanation": "The default configuration of this loss is what the literature calls InfoNCE or in-batch negatives: a cross-entropy over similarities where the correct pair must outscore all other in-batch candidates. Similarity is cosine by default, multiplied by `scale` (default 20). Duplicates within a batch can create false negatives, which is why batch composition matters.",
+    "reference": "https://sbert.net/docs/package_reference/sentence_transformer/losses.html",
+    "source": "interview:llm-sentence-embeddings-contrastive-training",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-030",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A developer formats a chat with `tokenizer.apply_chat_template(messages, tokenize=False)` and then calls `tokenizer(text)` on the resulting string. Output quality drops slightly. What is the likely bug?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`tokenize=False` silently drops the system message",
+        "why": "It returns the full formatted string; nothing is dropped."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`apply_chat_template` cannot be used for inference, only for training",
+        "why": "It is the recommended way to format inference prompts, usually with `add_generation_prompt=True`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The template already contains the special tokens such as BOS, and the second tokenisation adds them again",
+        "why": "Correct. The docs advise passing `add_special_tokens=False` when tokenising a pre-formatted chat, or using `tokenize=True` directly."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The tokenizer lowercases the text on the second call",
+        "why": "Tokenising does not lowercase unless the normaliser was built to, and that would happen either way."
+      }
+    ],
+    "explanation": "Chat templates already insert the control tokens a model expects. Tokenising the rendered string with default settings can add a duplicate BOS (or other special tokens), a sequence the model never saw in training. Either use `apply_chat_template(..., tokenize=True)` or tokenise with `add_special_tokens=False`.",
+    "reference": "https://huggingface.co/docs/transformers/main/en/chat_templating",
+    "source": "interview:llm-special-tokens-and-chat-templates",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huggingface.co/learn/llm-course/chapter11/6",
+        "https://huggingface.co/docs/tokenizers/index"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-031",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each marker you see when inspecting tokens to its meaning.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`##`",
+        "why": "WordPiece continuation prefix."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Ġ`",
+        "why": "GPT-2's visible stand-in for a space byte."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`▁`",
+        "why": "SentencePiece's whitespace meta-symbol (U+2581)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[CLS]`",
+        "why": "BERT's special classification token."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "BERT shows `hugs` as `hug` followed by this prefix on `s`",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "GPT-2 shows ` how` (with a leading space) as a token starting with this",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "T5 and other SentencePiece tokenizers replace spaces with this so decoding is lossless",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Added at the start of every BERT input; its final hidden state is used for sequence classification",
+        "answer": "D"
+      }
+    ],
+    "explanation": "WordPiece marks word-internal pieces with `##`. GPT-2's byte-level BPE keeps spaces as part of the following token and displays the space byte as `Ġ`. SentencePiece treats whitespace as an ordinary symbol, `▁`, so detokenisation is a simple join and replace. `[CLS]` is a special token inserted by BERT's post-processor.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/4",
+    "source": "interview:llm-tokenizer-pipeline-normalization-pretokenization",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huggingface.co/learn/llm-course/chapter6/10"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-032",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order these strings from fewest to most tokens under the GPT-2 tokenizer.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "` strawberry` (with a leading space)",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Hello world`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`12345678`",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`This is a test.`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`नमस्ते`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Measured with the GPT-2 encoding: ` strawberry` is 1 token (a frequent word with its leading space is a single vocabulary entry), `Hello world` is 2, `12345678` is 3 (`123`, `45`, `678`), `This is a test.` is 5, and the single Hindi word `नमस्ते` is 12, because its 18 UTF-8 bytes mostly stay as byte-level pieces. Character count is a poor predictor of token count.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/5",
+    "source": "interview:llm-what-is-a-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://dev.to/himanshuai/10-most-asked-llm-interview-questions-with-expert-answers-4l1f"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-033",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about the GPT-2 tokenizer are true? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "` hello` (with a leading space) and `hello` map to different token ids",
+        "why": "Correct. GPT-2 attaches the preceding space to the token, so the two are separate vocabulary entries (23748 and 31373)."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`strawberry` is 3 tokens, while ` strawberry` with a leading space is 1 token",
+        "why": "Correct. The space-prefixed form is common in training text and got its own entry; the bare form is split into `st`, `raw`, `berry`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is case-insensitive, so `Hello` and `hello` share one id",
+        "why": "They have different ids (15496 and 31373); GPT-2 does no lowercasing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Every digit is always a separate token",
+        "why": "GPT-2 groups digits into chunks such as `123` and `45`; per-digit splitting is a choice other tokenizers make."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Each Devanagari character is exactly one token",
+        "why": "Devanagari characters take 3 bytes each and are often split into two or more byte-level tokens."
+      }
+    ],
+    "explanation": "Small details like leading spaces and case change token ids, and therefore cost and model behaviour. This explains why prompts that differ only in spacing can behave differently, and why the first word of a text is often tokenised differently from the same word mid-sentence.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/4",
+    "source": "interview:llm-what-is-a-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://dev.to/himanshuai/10-most-asked-llm-interview-questions-with-expert-answers-4l1f"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-034",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An off-the-shelf embedding model scores poorly at retrieving your company's internal support articles. You have 20,000 historical (customer question, article that resolved it) pairs. What is the most effective next step?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Fine-tune the embedder on the pairs with an in-batch contrastive loss and check recall on a held-out split",
+        "why": "Correct. Question-answer pairs are exactly the (anchor, positive) data contrastive losses use, and a held-out split tells you whether it helped."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Increase the embedding dimension by padding vectors with zeros",
+        "why": "Zero padding adds no information and leaves similarities unchanged."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch from cosine similarity to Euclidean distance",
+        "why": "On normalised vectors the rankings are identical, and on unnormalised vectors this is not a fix for domain mismatch."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Fine-tune a generative LLM on all the support articles with next-token prediction, and keep the current embedder unchanged",
+        "why": "That changes the generator, not the retrieval model that is failing."
+      }
+    ],
+    "explanation": "Domain mismatch is best fixed with in-domain pairs. Sentence Transformers' `MultipleNegativesRankingLoss` takes (anchor, positive) pairs and uses the rest of the batch as negatives; hard negatives (similar but wrong articles) make the task sharper. Keep a held-out set of queries to measure recall before and after, and watch for duplicate positives in a batch acting as false negatives.",
+    "reference": "https://sbert.net/docs/package_reference/sentence_transformer/losses.html",
+    "source": "interview:llm-sentence-embeddings-contrastive-training",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-035",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "To strengthen a contrastive embedding model, you mine hard negatives: for each question, the top-5 passages from a keyword search that are not the labelled answer. After training, retrieval recall drops. Many questions have several valid answer passages in the corpus. What is the most likely cause?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Hard negatives always hurt; contrastive training should only use random negatives",
+        "why": "Hard negatives usually help when they are truly negative; the issue here is label quality."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keyword search produces passages that are too short to embed",
+        "why": "Passage length is not the problem described; the passages are relevant, which is the point."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The batch size was too large",
+        "why": "Larger batches generally help in-batch contrastive losses."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Many mined 'negatives' are actually relevant passages, so the model is trained to push correct answers away",
+        "why": "Correct. These false negatives teach the model the wrong geometry; filter them, for example with a cross-encoder score threshold, before training."
+      }
+    ],
+    "explanation": "Hard-negative mining picks passages that look similar to the query. When the labels list only one correct passage but several exist, the hardest negatives are often valid answers. Common mitigations: filter candidates whose cross-encoder score is close to the positive's, skip the top few ranks, or de-duplicate near-identical passages.",
+    "source": "interview:llm-sentence-embeddings-contrastive-training",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-036",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your team wants to cut vector-storage cost by shortening 768-dimensional embeddings to 256 dimensions. Which statements are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "With a model trained using Matryoshka Representation Learning, the leading dimensions are trained to work on their own, so truncating keeps most of the quality",
+        "why": "Correct. MRL trains nested prefixes of the embedding to be useful by themselves."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Truncation lowers storage and comparison cost, but the model's forward pass costs the same",
+        "why": "Correct. The Sentence Transformers docs note smaller embeddings do not make the model itself faster; the savings are in storing and comparing vectors."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Any embedding model can be truncated to its first 256 dimensions with no loss",
+        "why": "Without Matryoshka-style training, information is spread across all dimensions and truncation usually costs more quality."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Matryoshka models need a separate model for each target dimension",
+        "why": "One model serves all sizes; you choose the prefix length at use time."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Truncated vectors keep unit length, so dot product still equals cosine",
+        "why": "Removing dimensions shortens a unit vector; renormalise after truncation if you rely on dot product."
+      }
+    ],
+    "explanation": "Matryoshka Representation Learning applies the training loss at several prefix lengths, so the first k dimensions form a usable embedding. The paper reports up to 14x smaller embeddings at the same ImageNet accuracy, and the Sentence Transformers example keeps about 98% of STS performance at roughly 8% of the dimensions. Truncate with the model's `truncate_dim` option or by slicing, then renormalise.",
+    "reference": "https://sbert.net/examples/sentence_transformer/training/matryoshka/README.html",
+    "source": "interview:llm-what-is-an-embedding-production",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://www.glassdoor.co.uk/Interview/Tiger-Analytics-Interview-E717029-RVW93702753.htm",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Palantir",
+        "Amazon",
+        "Tiger Analytics"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-037",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A teammate proposes using a pretrained language model's raw hidden states (CLS token or a plain average) as sentence embeddings, with no embedding-specific training. Which concerns are valid? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pretraining objectives do not train the model to place semantically similar sentences close together under cosine similarity",
+        "why": "Correct. MLM and next-token objectives shape token predictions, not a similarity geometry for whole sentences."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "In the SBERT paper, averaged BERT outputs and the CLS vector scored worse on semantic similarity than averaged GloVe vectors",
+        "why": "Correct. The paper reports averages of 54.81 (mean BERT) and 29.19 (CLS) Spearman against 61.32 for GloVe."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Hidden states cannot be extracted from transformer models",
+        "why": "Every framework exposes hidden states; the issue is their quality as sentence vectors."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Raw hidden states are always 1,536-dimensional, which is too small",
+        "why": "Hidden size depends on the model, and dimension is not the core problem here."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "With causal attention, the final token's state sees none of the earlier tokens",
+        "why": "With causal attention the last token sees all earlier tokens; it is the earliest tokens that miss later context."
+      }
+    ],
+    "explanation": "Embedding models are trained specifically, usually with contrastive objectives, so that cosine similarity reflects meaning. Raw states from a pretrained model are poor substitutes, as SBERT measured. Decoder-based embedders exist, but they are fine-tuned for the purpose and choose pooling carefully (for causal models, early tokens never see later ones).",
+    "reference": "https://arxiv.org/abs/1908.10084",
+    "source": "interview:llm-embedding-model-vs-generative-llm",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233474925/ml-engineer-interview-post-llm-era/",
+        "https://lets-code.co.in/articles/generative-ai-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-038",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your product serves Hindi users, and the base model's tokenizer splits Hindi into many byte-level tokens. You add 8,000 Devanagari tokens to the tokenizer and call `resize_token_embeddings`. What else must happen before the new tokens are useful?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing; resizing initialises the new rows from the meaning of the characters they contain",
+        "why": "New rows are initialised statistically (by default from the mean and covariance of existing embeddings), not from the characters they spell."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retrain only the tokenizer, because the model learns new tokens at inference time",
+        "why": "Model weights do not change at inference; new embeddings need gradient updates."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Train the model on enough Hindi text that the new embedding and output rows learn meaningful values",
+        "why": "Correct. The added rows start without learned meaning, so continued pretraining or fine-tuning on Hindi data is needed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower the sampling temperature so the model prefers the new tokens",
+        "why": "Temperature rescales logits for all tokens; it cannot give untrained embeddings meaning."
+      }
+    ],
+    "explanation": "Extending a vocabulary is a model change, not just a tokenizer change. `resize_token_embeddings` appends new rows; with `mean_resizing=True` (the default) they start from a distribution matched to the existing embeddings, so the next-token distribution barely moves, but they still carry no Hindi-specific meaning. Text that used to be many byte tokens now becomes fewer new tokens the model has never trained on, so continued training on Hindi data is essential.",
+    "reference": "https://huggingface.co/docs/transformers/main_classes/model",
+    "source": "interview:llm-tokenizing-code-numbers-multilingual",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://goodspace.ai/interview-questions/llm",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-039",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Which statement about tying the input embedding matrix to the output projection is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Tying forces the model to predict the same token it just received as input",
+        "why": "Logits come from the final hidden state, which reflects the whole context, not just the last input token."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Logits become the final hidden state times the transposed embedding matrix, so one matrix serves both roles",
+        "why": "Correct. A token's input vector also scores how likely it is as the next output, which removes one V x d matrix."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tying is only possible when the vocabulary size is smaller than d_model, so that the shared matrix can be square or wide",
+        "why": "Tying needs matching shapes (V x d used both ways), which holds for any V and d."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Tying doubles the size of the embedding matrix to cover both uses",
+        "why": "It halves the total, from two matrices to one."
+      }
+    ],
+    "explanation": "Press and Wolf showed that the output embedding of a language model is itself a good word embedding, and that tying input and output embeddings reduces perplexity and parameter count. In Hugging Face Transformers this is controlled by `tie_word_embeddings`; GPT-2's config defaults it to true, with V = 50,257 and d = 768, saving about 38.6M parameters. The assumption is that one geometry can serve both reading and predicting tokens.",
+    "reference": "https://arxiv.org/abs/1608.05859",
+    "source": "interview:llm-weight-tying-embedding-and-output",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huyenchip.com/ml-interviews-book/contents/8.2.1-natural-language-processing.html",
+        "https://sebastianraschka.com/faq/docs/embedding-linear-onehot.html"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-040",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A Unigram tokenizer has these token probabilities: `h` 0.05, `u` 0.05, `g` 0.05, `hu` 0.04, `ug` 0.08, `hug` 0.003. Which segmentation of `hug` does it choose?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`hug`, because a whole-word token always wins",
+        "why": "Its probability is 0.003, lower than the best two-piece split. Unigram compares products, not lengths."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`hu` + `g`",
+        "why": "0.04 x 0.05 = 0.002, lower than another split."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`h` + `ug`",
+        "why": "Correct. 0.05 x 0.08 = 0.004, the highest product of all segmentations."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`h` + `u` + `g`",
+        "why": "0.05^3 = 0.000125; more pieces multiply in more small probabilities."
+      }
+    ],
+    "explanation": "Unigram scores a segmentation as the product of its pieces' probabilities and picks the maximum, found efficiently with the Viterbi algorithm. Here: `hug` 0.003, `hu g` 0.002, `h ug` 0.004, `h u g` 0.000125. Longer pieces usually win because every extra factor shrinks the product, but not always.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/7",
+    "source": "interview:llm-bpe-vs-wordpiece-vs-unigram",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-041",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "During training, pair (a, b) occurs 20 times, with freq(a) = 100 and freq(b) = 40. Pair (c, d) occurs 10 times, with freq(c) = 20 and freq(d) = 25. Which pair does BPE merge, and which does WordPiece merge?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both merge (a, b), because it is more frequent",
+        "why": "WordPiece divides by the parts' frequencies, which changes the winner here."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "BPE merges (a, b); WordPiece merges (c, d)",
+        "why": "Correct. BPE picks the higher raw count (20 > 10). WordPiece scores 20 / (100 x 40) = 0.005 against 10 / (20 x 25) = 0.02."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "BPE merges (c, d); WordPiece merges (a, b)",
+        "why": "The pairing is reversed: BPE uses raw counts, which favour (a, b)."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Both merge (c, d), because its parts are rarer",
+        "why": "BPE ignores the parts' frequencies and goes by the pair count alone."
+      }
+    ],
+    "explanation": "WordPiece's score, freq(pair) / (freq(first) x freq(second)), rewards pairs whose parts mostly occur together. That avoids gluing very common pieces just because they often happen to be adjacent. BPE simply merges the most frequent pair. The two also differ at inference: BPE replays merges, while WordPiece takes the longest matching piece from the start of each word.",
+    "reference": "https://huggingface.co/learn/llm-course/chapter6/6",
+    "source": "interview:llm-bpe-vs-wordpiece-vs-unigram",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewbit.com/llm-interview-questions-answers/",
+        "https://huggingface.co/learn/llm-course/chapter6/10",
+        "https://www.datainterview.com/blog/llms-and-transformers-interview-questions"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-042",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You run semantic search over 50 million documents embedded with model A. A newer model B scores better on benchmarks. What is the minimum correct migration plan?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Embed only new documents with B and keep the old vectors from A in the same index",
+        "why": "Vectors from different models live in unrelated spaces; mixing them makes similarity scores meaningless."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Embed queries with B and compare them to the existing A vectors",
+        "why": "A query vector from B cannot be compared meaningfully with document vectors from A."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Re-embed the corpus with B, validate retrieval quality on your own queries, then switch queries and index to B together",
+        "why": "Correct. Queries and documents must share one embedding space, and benchmarks do not guarantee gains on your data."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Average the A and B vectors for each document to combine their strengths",
+        "why": "The coordinates of two separately trained models do not correspond, so averaging them is meaningless (and dimensions may differ)."
+      }
+    ],
+    "explanation": "An embedding space is specific to the model, and often to its version. Changing models means re-embedding everything that will be compared, which is a real cost at scale and the reason teams pin embedding model versions. Run an offline evaluation on in-domain queries before switching, since public leaderboard gains do not always transfer.",
+    "source": "interview:llm-what-is-an-embedding-production",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://www.glassdoor.co.uk/Interview/Tiger-Analytics-Interview-E717029-RVW93702753.htm",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Palantir",
+        "Amazon",
+        "Tiger Analytics"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LLM-TOK-043",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "After supervised fine-tuning, a model writes good answers but never stops until `max_new_tokens`. In training, `pad_token` was set equal to `eos_token`, and every label position whose input id equals the pad id was set to -100 (ignored by the loss). What went wrong?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The learning rate was too low for the model to learn that short answers are preferred over long ones",
+        "why": "The answers are fine; the model specifically never learned to emit the end token."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The real EOS shares the pad id, so it was masked out and the model never learned to emit it",
+        "why": "Correct. Masking by token id cannot tell padding apart from the genuine end-of-sequence token when they share an id."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Using -100 for labels makes the loss ignore the whole sequence",
+        "why": "-100 ignores only those positions; the rest of the answer was trained normally."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "EOS tokens should never appear in training data for chat models",
+        "why": "The model must see EOS (or the template's end-of-turn token) in its targets to learn when to stop."
+      }
+    ],
+    "explanation": "Two fixes: build the loss mask from the attention mask or from known sequence lengths rather than by token id, or use a dedicated pad token distinct from EOS. Also check that the training template actually appends the end-of-turn or EOS token to each assistant reply. A model that never saw the stop token in its targets cannot learn to emit it.",
+    "source": "interview:llm-special-tokens-and-chat-templates",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://huggingface.co/learn/llm-course/chapter11/6",
+        "https://huggingface.co/docs/tokenizers/index"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LLM-TOK-044",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A pipeline asks an LLM to count characters, reverse strings and check exact spellings, and it fails often. Which change most reliably fixes this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise the temperature so the model explores more answers",
+        "why": "More randomness does not let the model see characters it never receives; it usually makes exact tasks worse."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Do the character-level work in code, such as a tool the model calls",
+        "why": "Correct. Code operates on characters directly and is exact; the model sees token ids, so it can only approximate character-level facts."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Use a larger embedding dimension",
+        "why": "That cannot be changed on a trained model, and it does not expose individual characters."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ask the model to answer more confidently",
+        "why": "Confidence wording does not change what the model can see in its input."
+      }
+    ],
+    "explanation": "Character-level tasks expose tokenization: the model receives subword ids, so letters inside a token are not directly visible. Spelling a word out with separators helps a little, because each character then becomes its own token, but deterministic code is the dependable answer. Interviewers like candidates who route such sub-tasks to tools.",
+    "source": "interview:llm-what-is-a-token",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.techinterview.org/post/3233476821/what-llm-interviewers-ask-about-transformers/",
+        "https://taggd.in/blogs/ai-engineer-interview-questions/",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions",
+        "https://dev.to/himanshuai/10-most-asked-llm-interview-questions-with-expert-answers-4l1f"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LLM-TOK-045",
+    "domain": 1,
+    "skill": "tokenization-embeddings",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You truncate unit-length Matryoshka embeddings from 768 to 256 dimensions and keep scoring with the dot product, assuming it still equals cosine similarity. What goes wrong, and what is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing; truncation preserves vector length",
+        "why": "Dropping coordinates removes part of the squared length, so truncated vectors are shorter than 1."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The vectors become longer than 1 after truncation, so scores can exceed 1; clip every score back into range",
+        "why": "Truncation can only shorten a vector; clipping hides the real problem."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Dot product cannot be computed on 256-dimensional vectors",
+        "why": "Dot products work at any dimension; the issue is that norms are no longer equal."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Norms drop below 1 by varying amounts, so dot no longer equals cosine; renormalise",
+        "why": "Correct. Each vector loses a different share of its length, so raw dot products mix in norm differences."
+      }
+    ],
+    "explanation": "A unit vector's squared length is spread across all 768 coordinates. Keeping the first 256 leaves a length below 1 that differs from vector to vector. Since dot = |a||b|cos, the ranking can now reflect how much length each vector kept rather than direction alone. L2-normalise the truncated vectors, or use cosine similarity.",
+    "reference": "https://arxiv.org/abs/2205.13147",
+    "source": "interview:llm-what-is-an-embedding-production",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.teamblind.com/post/after-chatgpt-how-are-interviews-conducted-for-data-scientistsml-engineers-and-what-changes-have-occured-rhacpua0",
+        "https://www.glassdoor.co.uk/Interview/Tiger-Analytics-Interview-E717029-RVW93702753.htm",
+        "https://github.com/llmgenai/LLMInterviewQuestions",
+        "https://www.wecreateproblems.com/interview-questions/large-language-models-interview-questions"
+      ],
+      "companies": [
+        "Palantir",
+        "Amazon",
+        "Tiger Analytics"
+      ]
+    },
+    "roleLevel": 4
+  }
+]
