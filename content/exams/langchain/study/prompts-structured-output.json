@@ -1,0 +1,34 @@
+{
+  "prompts-structured-output": {
+    "summary": "Prompt templates turn inputs into prompt values (text or messages), and structured output turns model replies into typed data. Know what each template piece produces, how variables and braces are handled, how `with_structured_output` works and what each schema type returns, and when output parsers and fixing/retry parsers still earn their place.",
+    "points": [
+      "`ChatPromptTemplate.invoke` returns a `ChatPromptValue` (`.to_messages()` or `.to_string()`), and `PromptTemplate.invoke` returns a `StringPromptValue`. A template with a single variable accepts a bare string; with two or more you must pass a dict. Missing variables raise `KeyError`, while extra keys are ignored.",
+      "`from_messages` accepts role tuples (`human`/`user`, `ai`/`assistant`, `system`, `placeholder`), plain strings (human), message dicts, message objects and message prompt templates. Message objects are inserted literally and never formatted. Unknown roles such as `tool` raise `ValueError`.",
+      "f-string is the default template format: `{x}` is a variable, `{{` and `}}` are literal braces, and attribute access such as `{user.name}` is rejected. Mustache (`template_format=\"mustache\"`) supports nested lookups and sections but renders missing variables as empty text. Never accept Jinja2 templates from untrusted sources: the docs warn they can execute arbitrary code and that sandboxing is only best effort.",
+      "`MessagesPlaceholder(\"history\")` splices a list of messages in at its position. It is required by default, and `optional=True` (or the `(\"placeholder\", \"{history}\")` shorthand) lets callers leave it out. It accepts message objects, tuples or dicts, rejects a bare string, and `n_messages=N` keeps the last N.",
+      "`.partial(name=value)` (or `partial_variables=`) pre-fills variables and removes them from `input_variables`. A zero-argument function partial is called on every format, which suits dates. A common use is putting a parser's format instructions into the prompt.",
+      "`FewShotChatMessagePromptTemplate` formats each example with `example_prompt` into human/AI messages inserted where the template sits. Pass either `examples` or an `example_selector`, not both. `SemanticSimilarityExampleSelector` picks the k nearest examples via embeddings, while `LengthBasedExampleSelector` adds examples in order until a length budget is used up.",
+      "`model.with_structured_output(schema)` returns a Runnable. A Pydantic class gives a validated instance (lax coercion, so `\"36\"` becomes `36`); a TypedDict or JSON schema gives an unvalidated dict. A JSON schema dict needs a top-level `title` (and ideally a `description`). The class name, docstring and field descriptions are all sent to the model.",
+      "`method` depends on the provider: `json_schema` uses native structured output, `function_calling` forces a tool call, and `json_mode` guarantees valid JSON only, so the schema must be described in the prompt. `ChatOpenAI` defaults to `json_schema`, and its `strict=True` guarantees schema conformance for `json_schema`/`function_calling`. `include_raw=True` returns `{raw, parsed, parsing_error}` and catches parse errors instead of raising.",
+      "langchain-core's default implementation binds the schema as a tool with `tool_choice=\"any\"` and parses only the first tool call. It needs `bind_tools` (otherwise `NotImplementedError`) and accepts but ignores `method`/`strict`. If the model makes no tool call, `parsed` is `None` with no error.",
+      "Output parsers: `StrOutputParser` gives text, `JsonOutputParser` gives dicts (fenced JSON is fine; `pydantic_object` only shapes format instructions and adds no validation), `PydanticOutputParser` gives validated instances or raises `OutputParserException`, and `CommaSeparatedListOutputParser` gives a list. While streaming, JSON parsers yield growing partial dicts, and the Pydantic parser yields only objects that already validate.",
+      "Fixing and retry parsers live in `langchain_classic.output_parsers`. `OutputFixingParser` repairs a bad completion from the instructions, completion and error, without the original prompt (`max_retries` defaults to 1). `RetryOutputParser`/`RetryWithErrorOutputParser` also send the original prompt and must be called with `parse_with_prompt`."
+    ],
+    "traps": [
+      "A JSON example inside an f-string template creates a bogus variable such as `\"ok\"`. Double the braces or use a `SystemMessage` object.",
+      "Building a template with an f-string from user text lets any `{...}` in the data become a variable. Keep templates static and pass data as values; values are never re-parsed.",
+      "`model.bind_tools([search]).with_structured_output(Answer)` silently drops `search`: only the forced `Answer` tool is sent.",
+      "`with_structured_output(Person)` returns one object. For many, wrap them: `people: list[Person]`.",
+      "Format instructions are just prompt text; they constrain nothing. Prefer native structured output when the model supports it.",
+      "Switching a schema from Pydantic to TypedDict to stop validation errors only hides bad data.",
+      "`RetryOutputParser.parse()` raises `NotImplementedError`; it needs `parse_with_prompt`."
+    ],
+    "docs": [
+      { "title": "Models: structured output", "url": "https://docs.langchain.com/oss/python/langchain/models" },
+      { "title": "ChatPromptTemplate reference", "url": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate" },
+      { "title": "MessagesPlaceholder reference", "url": "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder" },
+      { "title": "ChatOpenAI.with_structured_output reference", "url": "https://reference.langchain.com/python/langchain-openai/chat_models/base/ChatOpenAI/with_structured_output" },
+      { "title": "Output parsers reference", "url": "https://reference.langchain.com/python/langchain-core/output_parsers" }
+    ]
+  }
+}

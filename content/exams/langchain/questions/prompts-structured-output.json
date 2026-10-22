@@ -1,0 +1,2116 @@
+[
+  {
+    "id": "LCH-PSO-001",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What does `result` hold after this runs?\n\n```python\nfrom langchain_core.prompts import ChatPromptTemplate\n\nprompt = ChatPromptTemplate.from_messages([\n    (\"system\", \"You are {role}.\"),\n    (\"human\", \"{q}\"),\n])\nresult = prompt.invoke({\"role\": \"a tutor\", \"q\": \"hi\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A `ChatPromptValue` with two messages",
+        "why": "Invoking a chat prompt template returns a prompt value; `result.to_messages()` gives the two formatted messages."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The string `\"You are a tutor.\\nhi\"`",
+        "why": "A chat template keeps the messages separate. You only get text if you call `result.to_string()`, and even that prefixes each role."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An `AIMessage` with the model's reply",
+        "why": "No model has been called yet; a prompt template only formats input."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A list of `(role, text)` tuples",
+        "why": "Tuples are only the shorthand you write in `from_messages`; the output is real message objects inside a prompt value."
+      }
+    ],
+    "explanation": "`ChatPromptTemplate.invoke` returns a `ChatPromptValue`. Call `.to_messages()` for the message list or `.to_string()` for a flat transcript (`System: You are a tutor.\\nHuman: hi`). The prompt value is exactly what a chat model accepts as input, which is why `prompt | model` works.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-prompt-template-why"
+  },
+  {
+    "id": "LCH-PSO-002",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What happens when this runs?\n\n```python\nprompt = ChatPromptTemplate.from_template(\"Explain {topic} simply\")\nprompt.invoke({\"subject\": \"recursion\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It returns a message containing `Explain {topic} simply` unchanged",
+        "why": "LangChain does not leave unfilled variables in the text; it checks for them before formatting."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It raises a `KeyError` saying the input is missing the variable `topic`",
+        "why": "The template declares `topic`, the input supplies only `subject`, so formatting fails with a missing-variables error."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It fills `{topic}` with `recursion`, since there is only one key",
+        "why": "Keys are matched by name, not position, so `subject` cannot stand in for `topic`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It returns an empty string for the missing variable",
+        "why": "f-string templates never default a missing variable to empty text."
+      }
+    ],
+    "explanation": "Template variables are matched by name. Here the template expects `topic`, the dict has only `subject`, and `invoke` raises a `KeyError` along the lines of \"Input to ChatPromptTemplate is missing variables {'topic'}\". Extra keys are ignored, but missing ones are an error. Check `prompt.input_variables` when wiring a template to upstream data.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.index.dev/interview-questions/langchain-developer",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    },
+    "source": "interview:lc-coding-prompt-template"
+  },
+  {
+    "id": "LCH-PSO-003",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`PromptTemplate.from_template(\"Tell me about {topic}\").invoke(\"cats\")` works and produces the text `Tell me about cats`.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct: a template with exactly one input variable accepts a bare string and maps it to that variable."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "It does work: the single-variable shortcut maps the string to `topic`. A template with two variables would raise a `TypeError` asking for a mapping."
+      }
+    ],
+    "explanation": "When a prompt template has a single input variable, `invoke` accepts a plain string and uses it for that variable, returning a `StringPromptValue`. With two or more variables you must pass a dict; passing a string raises `TypeError: Expected mapping type as input`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/prompt/PromptTemplate",
+    "roleLevel": 1
+  },
+  {
+    "id": "LCH-PSO-004",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each output parser with what it returns when you put it after a chat model in a chain.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`StrOutputParser`",
+        "why": "Plain text of the message."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`JsonOutputParser`",
+        "why": "Parsed JSON (dict or list)."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`PydanticOutputParser`",
+        "why": "Validated Pydantic object."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`CommaSeparatedListOutputParser`",
+        "why": "List of strings."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "You only want the reply text to stream into a chat UI",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "You want a Python dict from a JSON reply, with no validation",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "You want an instance of your `Invoice` model, with field validation",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "You asked for `red, green, blue` and want `['red', 'green', 'blue']`",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`StrOutputParser` returns the message text (a `str`). `JsonOutputParser` parses JSON, even inside a ```json fence, into dicts or lists. `PydanticOutputParser` parses JSON and validates it against your model, raising `OutputParserException` on failure. `CommaSeparatedListOutputParser` splits on commas and strips spaces.",
+    "reference": "https://reference.langchain.com/python/langchain-core/output_parsers",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    },
+    "source": "interview:lc-output-parsers"
+  },
+  {
+    "id": "LCH-PSO-005",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "`Person` is a Pydantic `BaseModel` with `name: str` and `age: int`. What does this return when the model answers correctly?\n\n```python\nstructured = model.with_structured_output(Person)\nstructured.invoke(\"Ada Lovelace was 36.\")\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An `AIMessage` whose `content` is a JSON string",
+        "why": "That is what the raw model returns. `with_structured_output` adds parsing on top."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A plain dict such as `{'name': 'Ada Lovelace', 'age': 36}`",
+        "why": "You get a dict for TypedDict or JSON-schema schemas. A Pydantic class gives you an instance of that class."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `Person` instance such as `Person(name='Ada Lovelace', age=36)`",
+        "why": "With a Pydantic schema, the output is validated and returned as an instance of the class."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A JSON string you still need to pass to `Person.model_validate_json`",
+        "why": "Parsing and validation are already done for you."
+      }
+    ],
+    "explanation": "`with_structured_output(schema)` returns a Runnable that steers the model to the schema and parses the reply. A Pydantic class gives you a validated instance of that class. A TypedDict or JSON schema gives you a plain dict that is not validated. Pass `include_raw=True` if you also need the raw `AIMessage`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/ncapek/ai_engineer_interview_2025",
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "source": "interview:lc-with-structured-output"
+  },
+  {
+    "id": "LCH-PSO-006",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "What is the job of `MessagesPlaceholder(\"history\")` in this template?\n\n```python\nprompt = ChatPromptTemplate.from_messages([\n    (\"system\", \"You are helpful.\"),\n    MessagesPlaceholder(\"history\"),\n    (\"human\", \"{question}\"),\n])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It stores the conversation between calls, so later invocations remember it",
+        "why": "A placeholder stores nothing. You pass the history in on every call; storing it is a memory or checkpointer concern."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It formats the `history` variable as one text block inside the system message",
+        "why": "The messages are inserted as separate message objects, not flattened into text."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It inserts the messages passed as `history` at that spot",
+        "why": "Whatever messages you pass under `history` appear between the system message and the new question."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It trims `history` automatically to fit the model's context window",
+        "why": "No trimming happens unless you set `n_messages` or trim the list yourself beforehand."
+      }
+    ],
+    "explanation": "`MessagesPlaceholder` marks a slot for a whole list of messages, typically chat history or an agent scratchpad. At invoke time you pass `{\"history\": [...], \"question\": ...}`, and the messages appear in order at that position. It is required by default; pass `optional=True` if callers may leave it out.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate"
+      ]
+    },
+    "source": "interview:lc-messages-placeholder"
+  },
+  {
+    "id": "LCH-PSO-007",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "An interviewer asks why you would use a `ChatPromptTemplate` instead of building the prompt with an f-string. Which answer is best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Templates are compiled ahead of time, so prompts are cheaper in tokens",
+        "why": "Token cost depends on the final text, not on how it was built."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Templates validate the reply the model gives, which f-strings cannot",
+        "why": "Templates format input only. Validating output is the job of parsers or structured output."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A template is required, because chat models reject plain strings",
+        "why": "Chat models accept a plain string and treat it as one human message."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It checks inputs, keeps roles apart and pipes with `|`",
+        "why": "These are the real benefits: missing inputs are caught, roles stay separate, and the template composes with `|`."
+      }
+    ],
+    "explanation": "A prompt template is reusable and declares its `input_variables`, so a missing input fails loudly. A chat template produces separate system, human and AI messages. Because it is a Runnable, it can be piped into a model (`prompt | model`), batched, streamed and traced. It does not make the prompt cheaper, and it does not check what the model returns.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://www.hirist.tech/blog/top-30-langchain-interview-questions-and-answers/",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions"
+      ]
+    },
+    "source": "interview:lc-prompt-template-why"
+  },
+  {
+    "id": "LCH-PSO-008",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "How many input variables does this template still need at invoke time? Type a number.\n\n```python\np = PromptTemplate.from_template(\"{a} and {b}\").partial(a=\"A\")\n```",
+    "options": [],
+    "accepted": [
+      "1",
+      "one"
+    ],
+    "explanation": "`partial(a=\"A\")` fixes `a`, so `p.input_variables` is `['b']` and `p.format(b=\"B\")` returns `A and B`. You can also pass a function as the partial value, for example a date; it is called again on every format.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/prompt/PromptTemplate",
+    "roleLevel": 1
+  },
+  {
+    "id": "LCH-PSO-009",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "With `include_raw=True`, `with_structured_output` returns a dict with the keys `raw`, `parsed` and one more key, which holds the exception if parsing failed. Type that key name.",
+    "options": [],
+    "accepted": [
+      "parsing_error",
+      "'parsing_error'",
+      "\"parsing_error\""
+    ],
+    "explanation": "With `include_raw=True` the output is always `{\"raw\": AIMessage, \"parsed\": ..., \"parsing_error\": ...}`. When parsing fails, the error is caught and stored in `parsing_error` and `parsed` is `None`, instead of being raised. Use it to log the raw message, read token usage or decide on a retry.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/ncapek/ai_engineer_interview_2025",
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "source": "interview:lc-with-structured-output"
+  },
+  {
+    "id": "LCH-PSO-010",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This template is meant to tell the model to reply with JSON, but `invoke({\"q\": \"hi\"})` raises a missing-variable error. What is the fix?\n\n```python\nprompt = ChatPromptTemplate.from_messages([\n    (\"system\", 'Reply only as {\"ok\": true, \"answer\": \"...\"}'),\n    (\"human\", \"{q}\"),\n])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch the system tuple to a `HumanMessage`, since only system prompts parse braces",
+        "why": "Every role in a tuple is formatted the same way, so changing the role does not help."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Double the literal braces: `{{\"ok\": true, \"answer\": \"...\"}}`",
+        "why": "In f-string templates, `{{` and `}}` produce literal braces, so the JSON example is no longer read as a variable."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pass the JSON example as an extra key in the invoke dict",
+        "why": "That only works around the bug. The variable is named `\"ok\": true, ...`, so this is fragile and confusing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Call `prompt.partial()` with no arguments to freeze the system text",
+        "why": "`partial()` fixes named variables. It does not turn braces into literal text."
+      }
+    ],
+    "explanation": "f-string templates treat every `{...}` as a variable, so the JSON example creates a bogus variable and `invoke` reports it missing. Escape literal braces by doubling them, or use a `SystemMessage` object, whose content is never formatted. The error message itself suggests double braces.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/prompt/PromptTemplate",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-PSO-011",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nprompt = ChatPromptTemplate.from_messages([\n    (\"system\", \"S\"),\n    (\"placeholder\", \"{history}\"),\n    (\"human\", \"{q}\"),\n])\nprint(len(prompt.invoke({\"q\": \"hi\"}).to_messages()))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`2`",
+        "why": "The `(\"placeholder\", \"{history}\")` shorthand is an optional placeholder, so leaving out `history` just adds no messages."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`3`, because an empty placeholder message is inserted",
+        "why": "An optional placeholder with no value adds nothing at all, not an empty message."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises `KeyError` for the missing `history`",
+        "why": "That is what `MessagesPlaceholder(\"history\")` does by default; the tuple shorthand sets `optional=True`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`1`, because the placeholder swallows the human turn",
+        "why": "Each entry is formatted on its own; the human message is always produced."
+      }
+    ],
+    "explanation": "`(\"placeholder\", \"{history}\")` is shorthand for `MessagesPlaceholder(\"history\", optional=True)`. With no `history`, the prompt has only the system and human messages, so it prints 2. A plain `MessagesPlaceholder(\"history\")` is required and raises a missing-variable `KeyError`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate"
+      ]
+    },
+    "source": "interview:lc-messages-placeholder"
+  },
+  {
+    "id": "LCH-PSO-012",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "`history` holds four messages (human, AI, human, AI). How many messages does `prompt.invoke({\"history\": history, \"q\": \"now\"}).to_messages()` return? Type a number.\n\n```python\nprompt = ChatPromptTemplate.from_messages([\n    (\"system\", \"S\"),\n    MessagesPlaceholder(\"history\"),\n    (\"human\", \"{q}\"),\n])\n```",
+    "options": [],
+    "accepted": [
+      "6",
+      "six"
+    ],
+    "explanation": "One system message, the four history messages spliced in at the placeholder, and the new human message: 1 + 4 + 1 = 6. The placeholder adds all the messages it receives unless you limit it with `n_messages`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate"
+      ]
+    },
+    "source": "interview:lc-messages-placeholder"
+  },
+  {
+    "id": "LCH-PSO-013",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What messages does `final.invoke({\"input\": \"3+3\"})` produce?\n\n```python\nexamples = [{\"input\": \"2+2\", \"output\": \"4\"}, {\"input\": \"2+3\", \"output\": \"5\"}]\nexample_prompt = ChatPromptTemplate.from_messages([(\"human\", \"{input}\"), (\"ai\", \"{output}\")])\nfew_shot = FewShotChatMessagePromptTemplate(examples=examples, example_prompt=example_prompt)\nfinal = ChatPromptTemplate.from_messages([(\"system\", \"You do math.\"), few_shot, (\"human\", \"{input}\")])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "System, then one human message listing both examples as text, then human `3+3`",
+        "why": "That is closer to the string-based `FewShotPromptTemplate`. The chat version keeps each example as separate messages."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "System, human `2+2`, AI `4`, human `2+3`, AI `5`, human `3+3`",
+        "why": "Each example is formatted with `example_prompt` into a human/AI pair, placed before the real question."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "System, then human `3+3`; the examples go into the system message",
+        "why": "The examples are inserted where `few_shot` sits in the list, as their own messages."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Human `3+3` only, because both examples share the `input` key",
+        "why": "Example values are filled from each example dict, so they do not clash with the final `input` variable."
+      }
+    ],
+    "explanation": "`FewShotChatMessagePromptTemplate` formats every example with `example_prompt` and inserts the resulting messages at its position. Showing the model real human/AI turns is the chat-native way to do few-shot prompting. Swap `examples=` for `example_selector=` to choose examples per input (pass one or the other, not both).",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/few_shot/FewShotChatMessagePromptTemplate",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://reference.langchain.com/python/langchain-core/prompts/few_shot/FewShotChatMessagePromptTemplate"
+      ]
+    },
+    "source": "interview:lc-few-shot"
+  },
+  {
+    "id": "LCH-PSO-014",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\ncount = {\"n\": 0}\ndef today():\n    count[\"n\"] += 1\n    return f\"D{count['n']}\"\n\np = PromptTemplate.from_template(\"{today}: {q}\").partial(today=today)\nprint(p.format(q=\"a\"), p.format(q=\"b\"))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`D1: a D1: b`",
+        "why": "That would happen only if the function ran once when `partial` was called. It runs on every format."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`<function today ...>: a <function today ...>: b`",
+        "why": "A callable passed as a partial is called; its return value is inserted, not the function's repr."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `TypeError`, because partial values must be strings",
+        "why": "Partials accept strings or zero-argument functions that return strings."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`D1: a D2: b`",
+        "why": "A function partial is called again each time the prompt is formatted, so the counter advances."
+      }
+    ],
+    "explanation": "A partial can be a fixed string or a zero-argument function. Functions are called when the prompt is formatted, not when `partial` is called, so values such as the current date stay fresh on every run. The partial variable drops out of `input_variables`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/prompt/PromptTemplate",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-PSO-015",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "`Person` has `age: int = Field(ge=0)`. What does this return?\n\n```python\nJsonOutputParser(pydantic_object=Person).invoke('{\"name\": \"x\", \"age\": -5}')\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `Person` instance, after clamping `age` to 0",
+        "why": "Pydantic never clamps values, and this parser does not build model instances anyway."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The dict `{'name': 'x', 'age': -5}`, without validation",
+        "why": "`JsonOutputParser` only parses JSON. `pydantic_object` shapes its format instructions; it does not validate."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises `OutputParserException` because `age` breaks `ge=0`",
+        "why": "That is what `PydanticOutputParser` does. `JsonOutputParser` does not validate fields."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`None`, because the parsed JSON fails the schema",
+        "why": "Parsers either return a value or raise; they do not quietly return `None`."
+      }
+    ],
+    "explanation": "`JsonOutputParser` turns text into Python JSON values. Its optional `pydantic_object` is used to write format instructions for the prompt, but the output is still a dict with no validation. Use `PydanticOutputParser` (or `with_structured_output` with a Pydantic class) when values must be validated.",
+    "reference": "https://reference.langchain.com/python/langchain-core/output_parsers/json/JsonOutputParser",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/riteshrai6306/Roy-AI-Lab-Interview-Q-A/main/10-LangChain/README.md",
+        "https://techshark.io/blog/langchain-interview-questions-and-answers/",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://www.javapedia.net/langgraph-langchain-interview-questions",
+        "https://zerotomastery.io/blog/langchain-interview-questions/"
+      ]
+    },
+    "source": "interview:lc-output-parsers"
+  },
+  {
+    "id": "LCH-PSO-016",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In `ChatPromptTemplate.from_messages([SystemMessage(\"Use {braces} freely\"), (\"human\", \"{q}\")])`, the text `{braces}` becomes a template variable.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "A message object is inserted as is; only tuple, string and template entries are formatted."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: message objects are literal, so `input_variables` is just `['q']`."
+      }
+    ],
+    "explanation": "Only template entries, such as `(\"system\", \"...\")` tuples, plain strings and message prompt templates, are formatted. A concrete `SystemMessage`/`HumanMessage` object passes through unchanged, so `{braces}` stays literal and `input_variables` is `['q']`. That makes message objects a handy way to include JSON examples without escaping.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-PSO-017",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each prompt-building need with the LangChain feature that handles it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`MessagesPlaceholder`",
+        "why": "Inserts a list of messages at a position."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`.partial(...)`",
+        "why": "Fixes some variables ahead of time."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`FewShotChatMessagePromptTemplate`",
+        "why": "Formats examples as human/AI turns."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`template_format=\"mustache\"`",
+        "why": "Mustache syntax, including dotted names."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Insert the previous turns of a conversation before the new question",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Fill in today's date on every call so callers never pass it",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Show the model three worked input/output pairs as real chat turns",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Reference `{{user.name}}` from a nested dict, which f-string templates reject",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Placeholders insert message lists. Partials pre-fill variables with strings or functions. Few-shot chat templates turn example dicts into human/AI messages. f-string templates reject attribute access such as `{user.name}` with a `ValueError`, while mustache templates can read nested values.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/prompt/PromptTemplate",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-PSO-018",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the steps of a parser-based extraction chain (no native structured output) in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Create `PydanticOutputParser(pydantic_object=Invoice)`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Insert `parser.get_format_instructions()` into the prompt as a partial variable",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The prompt template formats the messages with the user's input",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The model generates text that should contain JSON",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The parser extracts the JSON and validates it into an `Invoice`",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "The parser is defined first because its format instructions, generated from the Pydantic schema, go into the prompt (usually as a partial). At run time the prompt formats, the model writes text, and the parser pulls out the JSON (fenced or bare) and validates it, raising `OutputParserException` if it does not fit.",
+    "reference": "https://reference.langchain.com/python/langchain-core/output_parsers/pydantic/PydanticOutputParser",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://reference.langchain.com/python/langchain-core/output_parsers"
+      ]
+    },
+    "source": "interview:lc-pydantic-parser-vs-structured"
+  },
+  {
+    "id": "LCH-PSO-019",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which entries can you pass in the list given to `ChatPromptTemplate.from_messages`? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`(\"system\", \"You are {role}.\")`",
+        "why": "A role/template tuple, the most common form."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`(\"tool\", \"result text\")`",
+        "why": "Tuples accept only human, user, ai, assistant, system and placeholder; `tool` raises a `ValueError`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`MessagesPlaceholder(\"history\")`",
+        "why": "A placeholder that inserts a list of messages."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`HumanMessage(\"literal text\")`",
+        "why": "A concrete message object, inserted without formatting."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "`(\"placeholder\", \"history\")`",
+        "why": "The placeholder shorthand needs braces, as in `\"{history}\"`; without them it raises a `ValueError`."
+      }
+    ],
+    "explanation": "`from_messages` accepts role/template tuples (human, user, ai, assistant, system, placeholder), plain strings (treated as human), message objects and message prompt templates such as `MessagesPlaceholder`. Unknown roles like `tool` or `function` raise `Unexpected message type`. The placeholder shorthand must name its variable in braces.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate",
+    "roleLevel": 2
+  },
+  {
+    "id": "LCH-PSO-020",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about schema types for `with_structured_output` are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "A Pydantic class returns an instance whose fields have been validated",
+        "why": "Pydantic schemas are validated and returned as model instances."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A `TypedDict` returns a plain dict whose values are not validated",
+        "why": "TypedDict and JSON-schema outputs are dicts; checking them is up to you."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `TypedDict` raises at run time if the model returns the wrong type for a field",
+        "why": "TypedDict is only a type hint; a string where an int is expected passes straight through."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A JSON schema dict is turned into a Pydantic model, so you get an instance back",
+        "why": "JSON schemas give you a dict, not a generated class."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Field descriptions are dropped before the schema is sent to the model",
+        "why": "Descriptions are part of the schema the model sees and steer what it fills in."
+      }
+    ],
+    "explanation": "A Pydantic class gives you validation and an instance. TypedDict (with `Annotated[type, default, \"description\"]` for descriptions) and JSON schemas give you dicts without runtime validation. In every case, the class docstring and field descriptions reach the model as part of the schema.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://docs.langchain.com/oss/python/langchain/structured-output"
+      ]
+    },
+    "source": "interview:lc-schema-choice"
+  },
+  {
+    "id": "LCH-PSO-021",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate builds a prompt with `PydanticOutputParser.get_format_instructions()` and is surprised when the model still sometimes returns invalid JSON. Which explanation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Format instructions only work if the model is called with `temperature=0`",
+        "why": "Temperature affects randomness, not whether the model obeys text instructions."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "They are only prompt text; nothing constrains generation",
+        "why": "Format instructions describe the schema in words. Nothing constrains generation, so validation happens only at parse time."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The parser should send the schema to the provider as a constrained-decoding grammar",
+        "why": "Output parsers never talk to the provider; they process text after generation."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`get_format_instructions()` must be passed to `bind_tools` to take effect",
+        "why": "It returns plain text for the prompt; it is not a tool definition."
+      }
+    ],
+    "explanation": "`get_format_instructions()` returns prompt text containing the JSON schema and an example. The model is merely asked to comply, and the parser validates afterwards. For enforcement at generation time, use `with_structured_output`, which uses tool calling or the provider's native structured output (optionally `strict`), or add a fixing or retry step.",
+    "reference": "https://reference.langchain.com/python/langchain-core/output_parsers/pydantic/PydanticOutputParser",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://reference.langchain.com/python/langchain-core/output_parsers"
+      ]
+    },
+    "source": "interview:lc-pydantic-parser-vs-structured"
+  },
+  {
+    "id": "LCH-PSO-022",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "With `with_structured_output`, which `method` produces syntactically valid JSON but leaves it to you to describe the schema in the prompt?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`method=\"json_schema\"`",
+        "why": "This uses the provider's native structured output and sends your schema, so the model is guided by it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`method=\"function_calling\"`",
+        "why": "This forces a tool call whose argument schema is your schema."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`method=\"json_mode\"`",
+        "why": "JSON mode only guarantees valid JSON. The model does not get your schema, so describe the fields in the prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`include_raw=True`",
+        "why": "That is not a method. It returns the raw message alongside the parsed result."
+      }
+    ],
+    "explanation": "`json_schema` uses the provider's structured-output feature with your schema. `function_calling` forces a tool call shaped by the schema. `json_mode` is the older option some providers offer: valid JSON, but the schema has to be in the prompt. Supported methods and defaults vary by provider; for example, `ChatOpenAI` defaults to `json_schema`.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://docs.langchain.com/oss/python/langchain/models"
+      ]
+    },
+    "source": "interview:lc-structured-output-methods"
+  },
+  {
+    "id": "LCH-PSO-023",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You call `ChatOpenAI(...).with_structured_output(Schema, method=\"json_schema\", strict=True)`. What does `strict=True` add?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pydantic runs in strict mode, so `\"36\"` no longer coerces to `36` during parsing",
+        "why": "`strict` governs what the provider generates and which schemas it accepts, not Pydantic's coercion rules."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LangChain retries the call until the output validates against `Schema`",
+        "why": "Nothing in `strict` adds retries."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The output is guaranteed to match the schema, and the schema must be one OpenAI supports",
+        "why": "Strict mode makes the provider constrain generation to your schema, and unsupported schema features are rejected."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It is ignored unless `method=\"json_mode\"`",
+        "why": "It is the reverse: `strict` applies to `json_schema` and `function_calling`, not `json_mode`."
+      }
+    ],
+    "explanation": "For `ChatOpenAI.with_structured_output`, `strict=True` guarantees the output matches the schema and validates the input schema against what OpenAI supports. `strict=False` validates neither, and `None` (the default) does not send the flag. It applies only with `json_schema` or `function_calling`. Strict support differs across providers, so check the integration page.",
+    "reference": "https://reference.langchain.com/python/langchain-openai/chat_models/base/ChatOpenAI/with_structured_output",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://docs.langchain.com/oss/python/langchain/models"
+      ]
+    },
+    "source": "interview:lc-structured-output-methods"
+  },
+  {
+    "id": "LCH-PSO-024",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Using the default tool-calling `with_structured_output(Person, include_raw=True)`, a request returns:\n\n```python\n{\"raw\": AIMessage(content=\"I can't help with that.\"), \"parsed\": None, \"parsing_error\": None}\n```\n\nWhat happened?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Parsing failed, and the error was swallowed because `include_raw=True`",
+        "why": "A failure would appear in `parsing_error`. Here it is `None`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The model answered in prose and made no tool call",
+        "why": "With no tool call, the parser finds nothing and yields `None` without raising. Your code must handle `parsed is None`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The schema has no required fields, so an empty object parsed as `None`",
+        "why": "An empty object would still parse into a `Person` or raise a validation error; it would not become `None`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`include_raw=True` turns off parsing, so `parsed` is always `None`",
+        "why": "`include_raw` keeps parsing and adds the raw message; `parsed` is filled on success."
+      }
+    ],
+    "explanation": "The default implementation binds the schema as a tool and parses the first tool call. If the model refuses or answers in prose, there is no tool call, so `parsed` is `None` and `parsing_error` is `None` too. Treat that as its own outcome: log `raw`, retry, or return a safe fallback, rather than assuming `parsed` is always set.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "ByteDance",
+        "Gupshup"
+      ]
+    },
+    "source": "interview:lc-parse-failures"
+  },
+  {
+    "id": "LCH-PSO-025",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "`Person` has `name: str` and `age: int`. The model's tool call contains `{\"name\": \"Ada\", \"age\": \"36\"}`. What does `(prompt | model.with_structured_output(Person)).invoke(...)` return?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`Person(name='Ada', age=36)`",
+        "why": "Pydantic's default lax mode coerces the numeric string `\"36\"` to the int 36."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Person(name='Ada', age='36')`",
+        "why": "Pydantic converts the value to the declared type; it does not keep a string in an `int` field."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It raises a `ValidationError` because `age` is a string",
+        "why": "Lax mode accepts numeric strings for ints; `\"thirty six\"` would fail, but `\"36\"` does not."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'name': 'Ada', 'age': '36'}`",
+        "why": "You would get a raw dict for a TypedDict schema. A Pydantic schema gives an instance."
+      }
+    ],
+    "explanation": "Pydantic validation runs in lax mode by default, so `\"36\"` becomes `36` and the result is a `Person`. With a TypedDict schema the same reply would come back as `{'name': 'Ada', 'age': '36'}`, unchecked. That difference is a common reason to choose Pydantic for extraction.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://docs.langchain.com/oss/python/langchain/structured-output"
+      ]
+    },
+    "source": "interview:lc-schema-choice"
+  },
+  {
+    "id": "LCH-PSO-026",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You use `model.with_structured_output(Person)` to pull every person out of an article. When the text names three people, you only ever get one `Person`. What is the cause and fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The model caps output at one object; raise `max_tokens`",
+        "why": "Token limits truncate text; they do not limit how many objects the model returns."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Only the first tool call is parsed; wrap in `list[Person]`",
+        "why": "The default implementation parses only the first schema call. A container schema lets one call carry a list."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pydantic merges duplicates; set `model_config = {\"extra\": \"allow\"}`",
+        "why": "Pydantic does not merge objects, and `extra` controls unknown fields, not object count."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass `include_raw=True`, which returns every object in `parsed`",
+        "why": "`include_raw` adds the raw message, but `parsed` still holds only the first object."
+      }
+    ],
+    "explanation": "`with_structured_output` returns a single object. The default tool-calling implementation parses only the first tool call (`first_tool_only=True`), so extra calls are dropped. Model a collection explicitly, for example `class People(BaseModel): people: list[Person]`, which also lets the model return an empty list when nobody is named.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/ncapek/ai_engineer_interview_2025",
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "source": "interview:lc-with-structured-output"
+  },
+  {
+    "id": "LCH-PSO-027",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You pass this JSON schema dict to `with_structured_output` on a model that uses the default tool-calling implementation, and it fails before any call is made. Why?\n\n```python\nschema = {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "JSON schema dicts are not accepted; only Pydantic classes are",
+        "why": "JSON schema dicts are accepted alongside Pydantic classes, TypedDicts and tool schemas."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The schema has no `required` list, so every field is invalid",
+        "why": "`required` is optional in JSON Schema; leaving it out only makes the fields optional."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It needs a top-level `title`, which becomes the tool's name",
+        "why": "Turning a JSON schema into a tool requires a `title` for the function name; add one and a `description`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "JSON schemas require `strict=True`",
+        "why": "`strict` is optional and provider-specific; it is not what fails here."
+      }
+    ],
+    "explanation": "To bind a JSON schema as a tool, LangChain converts it to a function definition, and the function name comes from the top-level `title`. Without it you get \"must have a top-level 'title' key\". Add a `description` too, because the model reads it to decide what to put in the fields.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://docs.langchain.com/oss/python/langchain/structured-output"
+      ]
+    },
+    "source": "interview:lc-schema-choice"
+  },
+  {
+    "id": "LCH-PSO-028",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "`OutputFixingParser.from_llm(parser=PydanticOutputParser(...), llm=fixer)` receives a malformed completion. Put what happens in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The wrapped parser tries to parse the completion and raises `OutputParserException`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A fix prompt is built from the format instructions, the bad completion and the error",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The fixer model generates a corrected completion",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The wrapped parser parses the corrected text",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "If it still fails and retries are used up (`max_retries` defaults to 1), the exception propagates",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "`OutputFixingParser` (in `langchain_classic.output_parsers`) first tries the wrapped parser. On failure, it asks an LLM to repair the output, using a prompt built from the parser's instructions, the completion and the error. It does not see the original user prompt. It parses the repaired text and, once `max_retries` (default 1) is used up, re-raises.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/output_parsers/fix/OutputFixingParser",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "ByteDance",
+        "Gupshup"
+      ]
+    },
+    "source": "interview:lc-parse-failures"
+  },
+  {
+    "id": "LCH-PSO-029",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "`RetryOutputParser.from_llm(parser=p, llm=m).parse(bad_text)` re-asks the model and returns a parsed result.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "`parse` alone is not enough, because the retry parser needs the original prompt."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct: plain `parse` raises `NotImplementedError`; you must call `parse_with_prompt(completion, prompt_value)`."
+      }
+    ],
+    "explanation": "`RetryOutputParser` and `RetryWithErrorOutputParser` send the original prompt with the bad completion so the model can try again in context. They therefore only work through `parse_with_prompt(completion, prompt_value)`; plain `parse` raises `NotImplementedError`. `OutputFixingParser` works with plain `parse` because it never sees the prompt.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/output_parsers/retry/RetryOutputParser",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "ByteDance",
+        "Gupshup"
+      ]
+    },
+    "source": "interview:lc-parse-failures"
+  },
+  {
+    "id": "LCH-PSO-030",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A greeting template renders as `Hi !` for some users, and nothing raises. What explains it?\n\n```python\np = PromptTemplate.from_template(\"Hi {{name}}!\", template_format=\"mustache\")\np.format()\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The f-string engine read `{{name}}` as an escaped literal and dropped it",
+        "why": "With `template_format=\"mustache\"`, `{{name}}` is a mustache variable, not an escaped f-string brace."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The `name` partial was evaluated once and cached as empty",
+        "why": "There is no partial here; `name` is simply not provided."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Mustache renders a missing variable as empty text instead of raising",
+        "why": "Unlike f-string templates, mustache templates fill missing variables with empty strings, so the bug is silent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Mustache requires `jinja2`, which falls back to blanking variables when absent",
+        "why": "Mustache is built in and unrelated to `jinja2`."
+      }
+    ],
+    "explanation": "f-string templates raise a `KeyError` when a variable is missing; mustache templates render it as an empty string. If you choose mustache for nested lookups such as `{{user.name}}`, check inputs yourself, for example in a test that asserts the rendered prompt, because LangChain will not catch the gap.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/prompt/PromptTemplate",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-PSO-031",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `with_structured_output` option with what it does.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`method=\"json_schema\"`",
+        "why": "Provider-native structured output from your schema."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`method=\"function_calling\"`",
+        "why": "Forces a tool call shaped by the schema."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`method=\"json_mode\"`",
+        "why": "Valid JSON only; schema goes in the prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`include_raw=True`",
+        "why": "Returns raw message, parsed value and error."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Use the provider's dedicated structured-output feature",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Works with any model that supports tool calling, via a forced tool call",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "An older JSON-only mode where you must describe the fields yourself",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Keep token usage and catch parse errors instead of raising them",
+        "answer": "D"
+      }
+    ],
+    "explanation": "`json_schema` uses native structured output; `function_calling` binds the schema as a tool and forces it; `json_mode` guarantees parseable JSON only. Which methods exist and which is the default depend on the provider integration. `include_raw` is orthogonal to the method and turns parse failures into data you can inspect.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://docs.langchain.com/oss/python/langchain/models"
+      ]
+    },
+    "source": "interview:lc-structured-output-methods"
+  },
+  {
+    "id": "LCH-PSO-032",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Put the messages this prompt produces in order. `history` holds one earlier user turn and its AI reply.\n\n```python\nprompt = ChatPromptTemplate.from_messages([\n    (\"system\", \"You classify tickets.\"),\n    few_shot,                      # one example: human/AI pair\n    (\"placeholder\", \"{history}\"),\n    (\"human\", \"{ticket}\"),\n])\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "System: You classify tickets.",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Human: the few-shot example input",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "AI: the few-shot example label",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Human and AI: the earlier turn from `history`",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Human: the new ticket",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "explanation": "Messages appear in list order. The few-shot template expands into its human/AI pair where it sits, the placeholder splices in the history, and the current ticket comes last. Keeping examples before the real history makes it clear to the model which turns are demonstrations.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/few_shot/FewShotChatMessagePromptTemplate",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://reference.langchain.com/python/langchain-core/prompts/few_shot/FewShotChatMessagePromptTemplate"
+      ]
+    },
+    "source": "interview:lc-few-shot"
+  },
+  {
+    "id": "LCH-PSO-033",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which statements about `MessagesPlaceholder` are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "History given as `(\"human\", \"a\")`, `(\"ai\", \"b\")` tuples is turned into message objects",
+        "why": "The placeholder accepts message-like values such as tuples and turns them into messages."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`MessagesPlaceholder(\"h\", n_messages=2)` keeps only the last two messages from `h`",
+        "why": "`n_messages` limits the placeholder to the most recent N messages."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Passing a plain string for the placeholder wraps it in a `HumanMessage`",
+        "why": "A string raises `ValueError`: the variable must be a list of messages."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`optional` defaults to `True`, so leaving out the variable is fine",
+        "why": "The class defaults to `optional=False`; only the `(\"placeholder\", ...)` tuple shorthand is optional."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A placeholder may only be the last entry in the template",
+        "why": "Placeholders can sit anywhere, most often between the system message and the new human turn."
+      }
+    ],
+    "explanation": "`MessagesPlaceholder` converts message-like values (message objects, tuples, dicts) into messages and splices them in. `n_messages` keeps the last N. It is required unless `optional=True`, and a bare string is rejected with a `ValueError`. Real trimming by tokens belongs to `trim_messages`.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/MessagesPlaceholder",
+        "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate"
+      ]
+    },
+    "source": "interview:lc-messages-placeholder"
+  },
+  {
+    "id": "LCH-PSO-034",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A support bot has 2,000 labelled examples. Putting them all in the prompt is too long, and a fixed handful does poorly on unusual tickets. Which approach fits best?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pick the k most similar examples per input with a semantic selector",
+        "why": "Choosing examples per input by embedding similarity keeps the prompt short and the examples relevant."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A `LengthBasedExampleSelector` set to the context limit, so as many examples as possible fit",
+        "why": "It controls length but picks examples in list order, not by relevance to the ticket."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Fine-tune the model, since few-shot prompts cannot scale past about ten examples",
+        "why": "Fine-tuning is a much heavier option. Dynamic selection solves this without training."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Pass all 2,000 through `MessagesPlaceholder(n_messages=20)` so only 20 are kept",
+        "why": "`n_messages` keeps the last 20 items, which are arbitrary examples, not relevant ones."
+      }
+    ],
+    "explanation": "Few-shot templates accept an `example_selector` instead of fixed `examples`. `SemanticSimilarityExampleSelector` embeds the examples into a vector store and returns the k nearest to each input. `LengthBasedExampleSelector` only fits examples within a length budget, in order.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/few_shot/FewShotChatMessagePromptTemplate",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://reference.langchain.com/python/langchain-core/prompts/few_shot/FewShotChatMessagePromptTemplate"
+      ]
+    },
+    "source": "interview:lc-few-shot"
+  },
+  {
+    "id": "LCH-PSO-035",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A developer wants the model to be able to call `search` and also return a typed `Answer`:\n\n```python\nllm = model.bind_tools([search]).with_structured_output(Answer)\n```\n\nIn langchain-core 1.x, what does `llm` actually send to the model?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Both `search` and `Answer` as tools, letting the model choose",
+        "why": "That is the intent, but the earlier binding is not carried over."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Only `Answer`, as a forced tool; the `search` binding is lost",
+        "why": "`with_structured_output` is applied to the underlying model, which binds `[Answer]` with `tool_choice=\"any\"`; the `search` binding disappears."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Only `search`, because the first binding wins",
+        "why": "The structured-output wrapper builds its own binding, so `Answer` is what gets sent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nothing; the chain raises because a bound model has no `with_structured_output`",
+        "why": "The call succeeds, because the binding forwards the method to the wrapped model, and that is what makes the bug quiet."
+      }
+    ],
+    "explanation": "A bound model forwards `with_structured_output` to the underlying chat model, which then binds only the schema and forces it. Prior `bind_tools` arguments are dropped, so the model can never call `search`. The models docs also note, in the dynamic model selection section, that pre-bound models (after `bind_tools`) are not supported with structured output. Options: an agent with `response_format`, a tool loop followed by a separate structured-output call, or a provider feature that combines both.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://docs.langchain.com/oss/python/langchain/structured-output"
+      ]
+    },
+    "source": "interview:lc-tools-plus-structured"
+  },
+  {
+    "id": "LCH-PSO-036",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "With `langchain-openai`, you want one call in which the model can either call your tools or return an `Answer` that matches your schema. Which configuration does `ChatOpenAI.with_structured_output` document for this?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`method=\"function_calling\"` with `tools=[...]`, reading tool calls from `parsed`",
+        "why": "The `tools` option requires the `json_schema` method, and tool calls come back in the raw message."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`method=\"json_mode\"` with `tools=[...]` and the schema in the prompt",
+        "why": "The documented `tools` option requires `method=\"json_schema\"`, not JSON mode."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`tools=[...]` with the default `json_schema` method, `strict=True` and `include_raw=True`",
+        "why": "These are the documented requirements; tool calls show up in the AIMessage under `raw`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`model.bind_tools(tools)` followed by `.with_structured_output(Answer)`",
+        "why": "Chaining like this drops the tool binding."
+      }
+    ],
+    "explanation": "`ChatOpenAI.with_structured_output` accepts `tools`, but only with `method=\"json_schema\"`, `strict=True` and `include_raw=True`. If the model chooses a tool, inspect `result[\"raw\"].tool_calls`; otherwise `parsed` holds the `Answer`. This is a provider-specific feature, so for portable code prefer an agent with a response format or a separate final formatting step.",
+    "reference": "https://reference.langchain.com/python/langchain-openai/chat_models/base/ChatOpenAI/with_structured_output",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://docs.langchain.com/oss/python/langchain/structured-output"
+      ]
+    },
+    "source": "interview:lc-tools-plus-structured"
+  },
+  {
+    "id": "LCH-PSO-037",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A summariser builds its template like this, and some users' requests crash with a missing-variable `KeyError`. What is the root cause and the right fix?\n\n```python\nprompt = ChatPromptTemplate.from_messages([(\"human\", f\"Summarise this: {user_text}\")])\nprompt.invoke({})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Braces in user text are parsed as variables; pass the text as a variable instead",
+        "why": "Use `(\"human\", \"Summarise this: {text}\")` with `invoke({\"text\": user_text})`; values are never re-parsed."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The template is too long; split the user text into chunks",
+        "why": "Length has nothing to do with a missing-variable error."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "f-strings are evaluated lazily; call `.format()` on the string first",
+        "why": "The f-string is evaluated immediately. The problem is that its result is then parsed as a template."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Strip all braces from user input before building the prompt",
+        "why": "That corrupts legitimate input such as code or JSON and leaves the template-from-data design in place."
+      }
+    ],
+    "explanation": "Splicing data into the template string means any `{...}` in the data becomes a template variable, so text containing code or JSON crashes, and users can control the template. Keep templates static and pass data as variable values: values are inserted verbatim, so `{role}` inside a value stays literal text.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-PSO-038",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your platform lets customers author their own prompt templates, which run on your servers. The team wants loops and conditionals in the templates. What is the safest choice?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`template_format=\"jinja2\"`, since LangChain sandboxes Jinja2 templates",
+        "why": "The docs call Jinja2 sandboxing best effort, not a guarantee, and warn against untrusted Jinja2 templates."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "f-string templates, allowing attribute access such as `{user.name}`",
+        "why": "f-string templates reject attribute access and indexing outright, and they have no loops."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`template_format=\"mustache\"` for customer templates, since mustache has no code execution",
+        "why": "Mustache supports sections and nested lookups without running Python; Jinja2 from untrusted sources risks code execution."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Jinja2 templates, run through `eval` in a subprocess to contain errors",
+        "why": "Moving the risk to another process does not remove the code-execution risk."
+      }
+    ],
+    "explanation": "LangChain's docs say never to accept Jinja2 templates from untrusted sources, because they can lead to arbitrary Python execution, and that sandboxing is only best effort. Mustache is logic-less: it supports sections and dotted lookups, but it renders missing variables as empty text, so validate inputs yourself. Keep f-string or mustache for anything user-authored.",
+    "reference": "https://reference.langchain.com/python/langchain-core/prompts/prompt/PromptTemplate",
+    "roleLevel": 5
+  },
+  {
+    "id": "LCH-PSO-039",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "An extraction service occasionally gets output that violates the schema. Which practices belong in a production-grade recovery design? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Use `include_raw=True` so parse failures come back as data with the raw message for logging",
+        "why": "Failures become inspectable instead of crashing, and you keep the raw output and token usage."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Retry a bounded number of times, feeding the validation error back to the model",
+        "why": "A targeted retry, such as `RetryWithErrorOutputParser` or a re-prompt that includes the error, fixes most slips."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "After retries run out, return a safe fallback or a clear error instead of bad data",
+        "why": "Failing safely keeps invalid records out of downstream systems."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Loop until the output validates, since the model will eventually comply",
+        "why": "Unbounded retries can spin forever and multiply cost on inputs that can never fit."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Raise the temperature on each retry so the model tries something different",
+        "why": "Higher temperature tends to make format compliance worse, not better."
+      }
+    ],
+    "explanation": "Robust structured output treats failure as expected: capture it (`include_raw` or catching `OutputParserException`), retry a bounded number of times with the error as feedback, then degrade gracefully. Native structured output with `strict` reduces failures, but you still need a path for refusals (`parsed is None`) and semantic errors.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "ByteDance",
+        "Gupshup"
+      ]
+    },
+    "source": "interview:lc-parse-failures"
+  },
+  {
+    "id": "LCH-PSO-040",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The model's JSON is sometimes cut off partway, so required fields are missing. You add `OutputFixingParser`, but it often fills those fields with made-up values. What is the better choice, and why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise the fixer's `max_retries` to 5 so it converges",
+        "why": "More attempts with the same missing context just produce more guesses."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`RetryWithErrorOutputParser`, which also sends the prompt",
+        "why": "The fixer sees only instructions, completion and error; a retry parser includes the prompt, so missing facts can be recovered."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Switch to `JsonOutputParser`, which tolerates missing fields",
+        "why": "Skipping validation hides the problem; the downstream code still gets incomplete data."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put `OutputFixingParser` before the model so it fixes the prompt",
+        "why": "Output parsers act on completions; they cannot run before the model."
+      }
+    ],
+    "explanation": "`OutputFixingParser` asks a model to repair a completion given only the format instructions, the bad output and the error. That is fine for syntax slips, but it cannot recover information that was never generated. `RetryOutputParser` and `RetryWithErrorOutputParser` include the original prompt (call `parse_with_prompt`), so the model can regenerate from the real input.",
+    "reference": "https://reference.langchain.com/python/langchain-classic/output_parsers/retry/RetryOutputParser",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "ByteDance",
+        "Gupshup"
+      ]
+    },
+    "source": "interview:lc-parse-failures"
+  },
+  {
+    "id": "LCH-PSO-041",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements describe langchain-core's default `BaseChatModel.with_structured_output` implementation, used by models that do not override it? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It binds the schema as a tool and forces a call with `tool_choice=\"any\"`",
+        "why": "The default path is tool calling: it binds `[schema]` and forces a tool call."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It parses only the first tool call in the response",
+        "why": "Its parser is created with `first_tool_only=True`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "It raises `NotImplementedError` if the model class does not implement `bind_tools`",
+        "why": "Without tool support, the default implementation cannot work."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It retries automatically when Pydantic validation fails",
+        "why": "No retries are built in; the validation error is raised (or returned with `include_raw`)."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "It appends format instructions to the prompt as a fallback",
+        "why": "The default implementation never edits your prompt."
+      }
+    ],
+    "explanation": "In langchain-core, the base `with_structured_output` accepts and ignores `method`/`strict`, rejects other unknown keyword arguments with a `ValueError`, requires `bind_tools`, binds the schema with a forced tool call and parses the first call with a Pydantic or JSON key parser. Provider packages override it to add `json_schema`, `json_mode` and strict options.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4
+  },
+  {
+    "id": "LCH-PSO-042",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A UI should show extracted fields as they stream in. The chain is `prompt | model | parser` with a JSON-producing model. With `PydanticOutputParser(pydantic_object=Person)` (both fields required), the UI stays blank until near the end. Why, and what fits better?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pydantic parsers cannot stream; use `StrOutputParser` and parse at the end",
+        "why": "`PydanticOutputParser` does stream, but only objects that already validate. Plain text gives the UI nothing structured."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Pydantic output waits for validation; stream `JsonOutputParser` dicts",
+        "why": "Streaming partial JSON gives growing dicts; Pydantic output appears only after the partial object passes validation."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Wrap the parser in `OutputFixingParser` so incomplete chunks are repaired",
+        "why": "Fixing calls another model on failures; it does not make streaming more incremental."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Set `include_raw=True` on the parser to emit raw chunks",
+        "why": "`include_raw` belongs to `with_structured_output`, not to output parsers."
+      }
+    ],
+    "explanation": "JSON output parsers parse partial JSON while streaming, yielding growing dicts such as `{}`, `{'name': 'Ad'}`, `{'name': 'Ada'}` and so on. `PydanticOutputParser` emits only once the partial object validates, so with required fields nothing appears until both are present. For progressive UIs, stream dicts and validate the final object.",
+    "reference": "https://reference.langchain.com/python/langchain-core/output_parsers/json/JsonOutputParser",
+    "roleLevel": 3
+  },
+  {
+    "id": "LCH-PSO-043",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "You are designing a Pydantic schema to extract contract details. Which choices improve extraction quality? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Write a class docstring and `Field(description=...)` for each field, since both are sent to the model",
+        "why": "The docstring becomes the tool description and the field descriptions go into the parameter schema."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Make facts that may be absent `Optional[...] = None`, so the model is not forced to invent them",
+        "why": "Required fields push the model to fill something in; optional fields allow an honest `null`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Explain each field in a `# comment` next to it, so it reaches the model",
+        "why": "Python comments are not part of the generated schema."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Put the extraction rules in `@field_validator` methods, since validators are sent to the model",
+        "why": "Validators run locally after generation; the model never sees them."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Use a generic class name such as `Output`, because the name is not shown to the model",
+        "why": "The class name becomes the tool or schema name the model sees, so a descriptive name helps."
+      }
+    ],
+    "explanation": "With tool calling, the class name becomes the tool name, the docstring its description, and `Field(description=...)` values describe each parameter. Comments and validators stay in Python. Optional fields with `None` defaults reduce fabricated values, and validators still catch semantic errors after parsing.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.secondtalent.com/interview-guide/llm-engineer/",
+        "https://cloudsoftsol.com/interview-questions/langchain-interview-questions-and-answers-2026/",
+        "https://docs.langchain.com/oss/python/langchain/structured-output"
+      ]
+    },
+    "source": "interview:lc-schema-choice"
+  },
+  {
+    "id": "LCH-PSO-044",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A service calls `model.with_structured_output(Person, include_raw=True)` and reads `result[\"parsed\"]`. Production occasionally logs `parsing_error` set to a `ValidationError` for `age: Input should be greater than or equal to 0`. The team proposes switching the schema from Pydantic to a TypedDict \"to stop the errors\". What is the right response?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Agree: TypedDict is faster and the errors are noise",
+        "why": "The errors flag real bad data; hiding them is the problem, not the fix."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Agree, and wrap the call in `try/except` that turns any error into an empty result",
+        "why": "Swallowing errors hides bad data and gives callers nothing to act on."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Disagree: keep Pydantic, then retry once with the error or fall back",
+        "why": "The validation error is doing its job by catching bad values. Handle it rather than turning validation off."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Disagree: use `json_mode`, which validates numeric ranges",
+        "why": "JSON mode only guarantees syntactically valid JSON; it validates nothing about values."
+      }
+    ],
+    "explanation": "Switching to a TypedDict removes validation, so a negative age flows downstream unnoticed. With `include_raw=True` you already have the error and the raw message, which is the right point to retry with feedback or fall back. Native structured output reduces failures, but local validation is still your last line of defence.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/models",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://github.com/amityadav108/GUPPSHUPP_Founding_AI_Engineer_Assignment",
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain"
+      ],
+      "companies": [
+        "ByteDance",
+        "Gupshup"
+      ]
+    },
+    "source": "interview:lc-parse-failures"
+  },
+  {
+    "id": "LCH-PSO-045",
+    "domain": 1,
+    "skill": "prompts-structured-output",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "In a design review you must justify when `PydanticOutputParser` (format instructions in the prompt) is still the right tool rather than `with_structured_output`. Which reasons hold? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The model or endpoint supports neither tool calling nor native structured output",
+        "why": "Without those features, parsing text is the only option."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "You are parsing text that did not come from a structured-output-capable call, such as a stored completion",
+        "why": "A parser works on any text, while `with_structured_output` wraps a model call."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "You need the output guaranteed to match the schema",
+        "why": "Prompt instructions guarantee nothing; native structured output with strict mode is the stronger option."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "You want to save tokens",
+        "why": "Format instructions add a whole schema and example to every prompt."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "You need the parsed result to be a validated Pydantic object",
+        "why": "`with_structured_output` with a Pydantic class gives you that too."
+      }
+    ],
+    "explanation": "The reference docs note that most models now support structured output natively, so parsers matter mainly for models without it or for extra processing. Prefer `with_structured_output` when the model supports it. Keep parsers for text-only models, for post-processing existing text, or for custom formats.",
+    "reference": "https://reference.langchain.com/python/langchain-core/output_parsers",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://www.tutorialslogic.com/interview-questions/langchain",
+        "https://reference.langchain.com/python/langchain-core/output_parsers"
+      ]
+    },
+    "source": "interview:lc-pydantic-parser-vs-structured"
+  }
+]
