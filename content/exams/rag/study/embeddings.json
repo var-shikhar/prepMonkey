@@ -1,0 +1,49 @@
+{
+  "embeddings": {
+    "summary": "An embedding model maps text to a fixed-length dense vector so that similar meanings sit close together. Know how bi-encoders make retrieval cheap, how cosine, dot product and L2 relate, why query and corpus must share one model and the right input type, and how dimensions, Matryoshka truncation and quantisation trade memory for recall.",
+    "points": [
+      "A bi-encoder embeds query and documents independently into one vector each, so document vectors are precomputed at indexing time; a cross-encoder scores each pair jointly and is used for reranking instead.",
+      "Output size is fixed per model (OpenAI `text-embedding-3-small` 1,536, `text-embedding-3-large` 3,072; Cohere `embed-v4.0` defaults to 1,536 and `embed-v5.0-pro`/`-fast` to 2,048), regardless of input length.",
+      "Cosine = dot / (|a||b|). On unit vectors dot product equals cosine and squared L2 = 2 - 2 x cosine, so all three rank identically. On unnormalised vectors dot product rewards vector length. OpenAI embeddings come back normalised to length 1.",
+      "Vectors from different models, or different versions of one model, live in unrelated spaces. Equal dimensionality only makes the maths run; a mixed or mismatched index silently gives near-random rankings, so changing models means re-embedding the whole corpus.",
+      "Asymmetric inputs: Cohere Embed v3+ requires `input_type` (`search_document` for stored chunks, `search_query` for queries, plus `classification`, `clustering`, `image`). E5 models need `query: ` and `passage: ` prefixes for retrieval and `query: ` on both sides for symmetric similarity.",
+      "Inputs beyond the model's maximum are truncated: Cohere's `truncate` defaults to `END` (drop the tail), `START` drops the head and `NONE` errors. `embed-english-v3.0` accepts 512 tokens; E5 truncates at 512; OpenAI's text-embedding-3 models list 8,192.",
+      "Matryoshka Representation Learning trains nested prefixes to be usable embeddings. OpenAI's `dimensions` parameter shortens text-embedding-3 vectors this way; a 256-dimension `text-embedding-3-large` vector still beats full `ada-002` on MTEB. If you slice vectors yourself, L2-normalise them again.",
+      "Quantisation cuts bytes per dimension: int8 is 4x smaller (calibrated per-dimension ranges, about 97% of retrieval quality kept, 99% with rescoring); binary is 32x smaller (threshold at 0, Hamming distance, about 92.5% kept, about 96% with float32 rescoring of a shortlist). Raw size = vectors x dimensions x bytes.",
+      "MTEB (8 task types, 58 datasets, 112 languages in the original paper) found no single method dominates every task. Shortlist from it, then compare models on labelled queries from your own corpus with recall@k, keeping corpus and chunking fixed.",
+      "Fine-tune embeddings with (query, positive) pairs or (query, positive, hard negative) triples, for example Sentence-Transformers `MultipleNegativesRankingLoss` with in-batch negatives and a no-duplicates batch sampler; confirm gains on held-out real queries.",
+      "Cross-lingual retrieval needs a multilingual model that embeds all languages into one space (`multilingual-e5-large`: about 100 languages; Cohere `embed-multilingual-v3.0`: over 100). Per-language indexes cannot match a Hindi query to an English passage.",
+      "Embeddings are not anonymised data: vec2text-style inversion recovered 92% of 32-token inputs exactly, so protect vector stores like the source text."
+    ],
+    "traps": [
+      "Assuming a similarity threshold carries over to a new model: score distributions differ, and some models (E5) put almost every score in a narrow high band.",
+      "Swapping the query encoder or re-embedding part of the corpus while the old vectors stay in the index; nothing errors, ranking just degrades.",
+      "Sending `search_query` for stored chunks, or forgetting the `query: `/`passage: ` prefix on one side.",
+      "Truncating a non-Matryoshka model's vectors, or slicing Matryoshka vectors without re-normalising before a dot-product search.",
+      "Using `np.argsort(scores)[:k]` for top-k similarity: it returns the least similar items. Also `argpartition(-s, k)` crashes when k equals the corpus size.",
+      "Picking the top MTEB average without testing on your own queries, or evaluating a fine-tuned model on synthetic queries from the same generator used for training."
+    ],
+    "docs": [
+      {
+        "title": "OpenAI: Vector embeddings guide",
+        "url": "https://developers.openai.com/api/docs/guides/embeddings"
+      },
+      {
+        "title": "Cohere: Embed API reference",
+        "url": "https://docs.cohere.com/reference/embed"
+      },
+      {
+        "title": "Hugging Face: Binary and scalar embedding quantization",
+        "url": "https://huggingface.co/blog/embedding-quantization"
+      },
+      {
+        "title": "Matryoshka Representation Learning (Kusupati et al., 2022)",
+        "url": "https://arxiv.org/abs/2205.13147"
+      },
+      {
+        "title": "MTEB: Massive Text Embedding Benchmark (Muennighoff et al., 2022)",
+        "url": "https://arxiv.org/abs/2210.07316"
+      }
+    ]
+  }
+}
