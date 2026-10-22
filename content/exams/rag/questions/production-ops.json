@@ -1,0 +1,2202 @@
+[
+  {
+    "id": "RAG-OPS-001",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Your resume project is a RAG chatbot over a few hundred PDFs: fixed-size chunks, one embedding model, top-5 retrieval and a prompt template. An interviewer asks what you would add first to make it production-ready. Which answer is strongest?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raising top-k from 5 to 50 so that the answer is almost always somewhere in the context",
+        "why": "More chunks raise cost and latency and add distracting text. Whether it helps is exactly what an evaluation set would tell you, which this answer skips."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A labelled set of real questions, run on every change, plus per-request logging",
+        "why": "Without an evaluation set you cannot tell whether any later change helps, and without request logs you cannot debug a wrong answer. Both are the foundation for every other improvement."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A larger LLM, because answer quality is mostly decided by the generator",
+        "why": "A bigger model is a guess. If retrieval misses the right chunk, a larger generator still cannot answer, and you would have no measurement to show either way."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A nicer chat interface with streaming and dark mode",
+        "why": "Streaming helps perceived latency, but interface polish does nothing for correctness, debuggability or safety in production."
+      }
+    ],
+    "explanation": "Interviewers use this question to see whether a candidate thinks beyond the demo. The strongest answer starts with measurement and visibility: a golden set of real questions run as a regression check, and per-request traces of what was retrieved and generated. Model swaps, top-k changes and thresholds can then be judged on evidence.",
+    "source": "interview:production",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.glassdoor.es/Entrevista/Fractal-Entrevista-E270403-RVW101037548.htm",
+        "https://static.glassdoor.at/Interview/Infosys-Interview-Questions-E7927_P54.htm",
+        "https://www.interviewquery.com/guides/tiger-analytics-ai-engineer",
+        "https://faceprep.in/article/how-to-explain-a-rag-project-in-an-ai-ml-interview-2026/",
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/"
+      ],
+      "companies": [
+        "Fractal",
+        "Infosys",
+        "Tiger Analytics"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-002",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Why should a production RAG service log the ids and similarity scores of the chunks it retrieved for every request?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "So that the LLM can read its earlier retrievals in the next request",
+        "why": "Logs are not fed back into prompts. Conversation memory, if any, is a separate design decision."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Because similarity scores are needed to compute the token bill",
+        "why": "Token billing depends on prompt and output length, not on retrieval scores."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "So that a wrong answer can be traced to a retrieval miss or a generation mistake",
+        "why": "With the retrieved ids you can check whether the answer-bearing chunk was found at all; with the scores you can see how close it came to the cut-off."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Because vector databases need the ids to rebuild their search index after a crash or restart",
+        "why": "The store persists its own data. Request logs are for people debugging behaviour, not for the database's recovery."
+      }
+    ],
+    "explanation": "A trace that holds only the question and the answer cannot tell you why the answer is wrong. Logging the retrieved chunk ids, their scores and ranks (and which of them made it into the prompt) lets you separate \"the right text was never found\" from \"the right text was found and the model ignored or misread it\". The two need very different fixes.",
+    "source": "interview:production",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://lets-code.co.in/interview/generative-ai-interview-questions/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.techinterview.org/post/3233476824/ai-engineer-interview-rag-agents-evals/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-003",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Letting the model read every retrieved chunk and then removing restricted content from the generated answer is a sound way to enforce document permissions in a RAG system.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "This is not sound: once a restricted chunk is in the prompt, the model can paraphrase, summarise or hint at it, and no output filter can reliably catch every rewording."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Permissions must be enforced inside retrieval, with a filter derived from the authenticated user, so restricted text never reaches the prompt in the first place."
+      }
+    ],
+    "explanation": "Access control in RAG belongs at retrieval time. If a chunk the user may not read is placed in the context, its facts can leak through paraphrase, summary or inference, and scanning the output for forbidden strings misses those. The standard design stores access metadata (tenant, groups) on each chunk and applies a server-side filter built from the caller's identity in the search query itself.",
+    "source": "interview:production",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/enforce-tenant-and-session-isolation-in-an-agent-rag-system",
+        "https://www.hellointerview.com/community/questions/rag-system-design/cmoaemvhf1emv09adwqq9wk3f",
+        "https://www.techinterview.org/post/3233476794/glean-engineering-interview/",
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/",
+        "https://www.recrew.ai/interview-questions/llm-engineer"
+      ],
+      "companies": [
+        "Qualified Health",
+        "Atlassian",
+        "Glean"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-004",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "How does a **semantic** cache in front of a RAG pipeline differ from an exact-match cache?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It stores the embedding of every document so they need not be recomputed on re-indexing",
+        "why": "That describes an embedding cache for ingestion, a different component with a different purpose."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It only returns an answer when the query text matches a cached query character for character",
+        "why": "That is an exact-match cache, the very thing the semantic cache is meant to improve on."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It caches the model's internal attention state so long prompts are processed faster",
+        "why": "That is closer to provider-side prompt caching, which reuses computation for a repeated prompt prefix; it does not skip the model call."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It can return a stored answer for a new query whose embedding is close to a cached one",
+        "why": "That is the point of a semantic cache: paraphrases such as \"reset my password\" and \"how do I change my password\" can share one cached answer if their similarity passes a threshold."
+      }
+    ],
+    "explanation": "A semantic cache embeds each incoming query and looks for a previously answered query within a similarity threshold. A hit skips retrieval and generation entirely, which saves cost and latency, but it brings new risks: a threshold that is too loose returns answers to different questions, and entries can go stale or leak across users unless they are scoped and invalidated.",
+    "source": "interview:production",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-005",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A policy document that was indexed as 10 chunks (ids `policy-7#0` to `policy-7#9`) is edited and now splits into 7 chunks. The sync job re-embeds the 7 new chunks and upserts them under ids `policy-7#0` to `policy-7#6`. What is the problem?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Nothing: upserting by id replaces the document's old content",
+        "why": "Upsert replaces only the ids it writes. Ids that are not written again keep their old content."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Chunks `#7` to `#9` still hold text from the old version and can still be retrieved",
+        "why": "Those three ids were never overwritten or deleted, so stale text from the previous version remains searchable."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The new chunks will be rejected because their ids already exist",
+        "why": "Upsert means insert-or-update; existing ids are updated, not rejected."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The leftover old vectors make the new ones unsearchable until the whole index is rebuilt",
+        "why": "Updated points are searchable after the write; the issue is the leftover points, not the new ones."
+      }
+    ],
+    "explanation": "Incremental indexing must treat a changed document as a unit: delete every chunk that belongs to the document id (for example with a delete-by-filter on `doc_id`), then insert the new chunks, or upsert the new set and delete the ids that are no longer present. Upserting only the new chunk ids leaves orphaned chunks from the old version, which is a classic source of contradictory or outdated answers.",
+    "source": "interview:production",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476794/glean-engineering-interview/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://blog.theinterviewguys.com/?p=12600",
+        "https://schoolofcoreai.com/interview-prep/topics/rag-interview-questions"
+      ],
+      "companies": [
+        "Glean"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-006",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "With Anthropic's prompt caching, a cache entry written with the default setting lives for how many minutes unless it is refreshed by a hit? Type a number.",
+    "options": [],
+    "accepted": [
+      "5",
+      "five"
+    ],
+    "explanation": "The default cache lifetime is 5 minutes, and each hit refreshes it at no extra cost. A 1-hour lifetime is available with `\"ttl\": \"1h\"` at a higher write price (2x the base input price, against 1.25x for the 5-minute default).",
+    "reference": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+    "roleLevel": 1
+  },
+  {
+    "id": "RAG-OPS-007",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A user reports a wrong answer. In the request trace, none of the retrieved chunks mentions the fact the user asked about, although the source document does contain it. Where does the failure lie?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "In the user's question, because the document clearly has the answer",
+        "why": "Users phrase things their own way; a retriever that cannot match ordinary phrasing to the document is the system's problem."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "In generation: the model should have used its own knowledge to fill the gap",
+        "why": "Encouraging the model to answer from memory is how a RAG system starts hallucinating; it is not a fix for missing context."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "In retrieval or indexing: the needed text never reached the prompt",
+        "why": "If the answer-bearing text is absent from what was retrieved, no prompt change can make the model ground its answer in it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "In the prompt template, which needs stronger grounding instructions",
+        "why": "Grounding instructions help the model use context it has. Here the context lacks the fact, so the template cannot help."
+      }
+    ],
+    "explanation": "The first triage question for a wrong RAG answer is whether the answer-bearing text was in the retrieved context. If it was not, look at indexing (is the document there and parsed correctly?) and retrieval (query wording, filters, k, ranking). If it was, the problem is in context assembly or generation. Mixing these up wastes effort on the wrong component.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477306/rag-evaluation-interview-questions/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://buildml.substack.com/p/top-interview-questions-on-rag-for",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.interviewbit.com/varsity/blog/?p=127"
+      ],
+      "companies": [
+        "Hebbia"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-008",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A team enables token streaming in its RAG chat. Which latency figure does this improve?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The time spent in retrieval and reranking before generation",
+        "why": "Retrieval and reranking still have to finish before the model can start, so streaming does nothing for them."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The time to embed new documents during ingestion",
+        "why": "Ingestion is an offline path, unrelated to how the answer is delivered."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The time until the user sees the first words of the answer",
+        "why": "Streaming shows tokens as they are generated, so the wait the user feels is roughly the time to the first token rather than the time to the last one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The total time to generate the complete answer",
+        "why": "Streaming does not make the model decode faster; the last token arrives at about the same time."
+      }
+    ],
+    "explanation": "RAG latency budgets usually track two numbers: time to first token (all pre-generation stages plus the model's first-token latency) and total time (plus decoding the whole answer). Streaming improves perceived latency by moving the user's wait to the first token; cutting either number for real needs work on the stages themselves.",
+    "source": "interview:production",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://www.hirist.tech/blog/top-rag-interview-questions-and-answers/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-009",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Retrieval quality collapsed right after a deploy, but the vector store and the documents are unchanged. You suspect the query service now calls a different embedding model version from the one that built the index. Both produce 1,024-dimensional vectors, so nothing errors. Which quick check confirms or rules this out?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Check that the query vectors still have 1,024 dimensions",
+        "why": "Both models output 1,024 dimensions, so the dimension check passes either way; that is exactly why the problem is silent."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Re-embed a few indexed chunks with the query-side model and compare with the stored vectors",
+        "why": "With the same model the fresh vectors should match the stored ones almost exactly (cosine near 1.0); with a different model they will not, which settles the question directly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Rebuild the index with the current model and see if quality returns",
+        "why": "That might fix it, but it is an expensive full re-embed used as a diagnostic, and it hides which change caused the incident."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Compare the average similarity score of the top results in the week before and the hour after the deploy",
+        "why": "Scores can shift for many reasons, such as a new query mix, so a change in the average is a hint at best and proves nothing about model identity."
+      }
+    ],
+    "explanation": "Vectors are only comparable when they come from the same model, and two models with the same dimension fail silently. A cheap diagnostic is to embed known indexed text with the model the query path uses and compare with what is stored. To prevent it, record the embedding model id and version with the index and have the query service check it at startup or per request.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://aixfunda.substack.com/p/rag-interview-questions-and-answers-6ee"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-010",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your RAG trace records the user query, the final answer, total latency and the HTTP status. A user reports a wrong answer. Which two additional fields would you most need to decide whether retrieval or generation failed? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A count of how many times this user has asked questions before",
+        "why": "Usage history does not show what was retrieved or what the model was given for this request."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The ids, scores and ranks of the retrieved chunks",
+        "why": "These show whether the answer-bearing chunk was found and how it ranked against the cut-off."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The exact prompt sent to the model, or the ids of the chunks that made it into the prompt",
+        "why": "Retrieved is not the same as used: context assembly may drop or truncate chunks. The final prompt shows what the model actually saw."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The client's IP address and browser user agent",
+        "why": "Useful for security analytics, but they say nothing about which pipeline stage produced a wrong answer."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The CPU and memory usage of the API server",
+        "why": "Resource metrics help with capacity and latency incidents, not with diagnosing answer quality."
+      }
+    ],
+    "explanation": "To separate the two failure classes you need the evidence at the boundary between them: what the retriever returned (ids, scores, ranks) and what reached the model (the assembled prompt, or at least the chunk ids included in it). With those two fields a reviewer can tell \"never found\", \"found but cut\" and \"present but misused\" apart.",
+    "source": "interview:production",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://lets-code.co.in/interview/generative-ai-interview-questions/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.techinterview.org/post/3233476824/ai-engineer-interview-rag-agents-evals/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-011",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "The bot says it cannot find an answer that is clearly in an HR handbook. The trace shows the query ran with the metadata filter `department = \"HR\"`. Re-running it without the filter returns the handbook's chunk at rank 1. What is the most likely cause, and the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The top-k is too small; raise it from 5 to 50",
+        "why": "The chunk is excluded by the filter before ranking, so no k value brings it back."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The similarity threshold is too strict; lower it",
+        "why": "Without the filter the chunk ranks first, so its similarity is fine; the threshold is not what removed it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The embedding model does not understand HR terminology well enough; fine-tune it on HR documents",
+        "why": "The unfiltered run shows the model already ranks the chunk first, so the embeddings work for this query."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The handbook is tagged \"Human Resources\", not \"HR\"; normalise metadata at ingest",
+        "why": "A filter is an exact match on stored values, so inconsistent labels from different connectors silently exclude documents. A controlled vocabulary at ingest fixes it for every query."
+      }
+    ],
+    "explanation": "When a document is present but never retrieved, isolate each stage: run the same query without filters, with a larger k and without a threshold. Here the filter alone causes the miss, and the usual culprit is metadata written inconsistently by different sources. Normalising values (or mapping synonyms) during ingestion repairs every affected query at once.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/",
+        "https://pub.towardsai.net/senior-ai-interviews-dont-test-what-you-know-they-test-what-breaks-at-2am-2b949558fe6d",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://aixfunda.substack.com/p/rag-interview-questions-and-answers-6ee"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-012",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "In Qdrant, deleting a point immediately and physically removes its vector and payload from storage on disk.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "This is not how it works: Qdrant marks the record as deleted so that queries are not slowed by disk operations, and physical removal happens later."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Deleted records are marked as deleted and are purged later by the vacuum optimizer once a segment has enough deleted records to be worth rewriting."
+      }
+    ],
+    "explanation": "Many storage engines use soft deletes followed by compaction. Qdrant's docs say a deleted record \"isn't removed right away but marked as deleted\", and the vacuum optimizer removes such records when the deleted fraction of a segment passes `deleted_threshold` (and the segment has at least `vacuum_min_vector_number` vectors). For an erasure request, this matters: you can say the data is no longer retrievable straight away, but proving physical removal depends on compaction.",
+    "reference": "https://qdrant.tech/documentation/ops-optimization/optimizer/",
+    "source": "interview:production",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/reconcile-rag-document-expiry-chat-history-and-cold-audits",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://schoolofcoreai.com/interview-prep/topics/rag-interview-questions"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-013",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A RAG request has this cost profile: 1,000 tokens of system prompt plus 12 chunks of 500 tokens as input, 400 output tokens, an LLM priced at $3 per million input tokens and $15 per million output tokens, a 20-token query embedding at $0.02 per million tokens, and a rerank call at $2 per 1,000 searches. Which line item dominates, and what is the matching lever?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Output tokens, about 72% of the cost; cap answers at 100 tokens",
+        "why": "400 output tokens cost $0.006, about 21%. Output is pricier per token, but input volume is far larger here."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Query embedding, about 30% of the cost; cache query embeddings",
+        "why": "20 tokens at $0.02 per million is $0.0000004 per request, a negligible share."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Reranking, about 50% of the cost; drop the reranker",
+        "why": "The rerank call costs $0.002 of the roughly $0.029 per request, about 7%, so removing it saves little and costs quality."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Input tokens, about 72% of the cost; send fewer, better chunks",
+        "why": "7,000 input tokens cost $0.021 of the $0.029 total. Cutting the chunk count after reranking attacks the largest line item."
+      }
+    ],
+    "explanation": "Per request: input 7,000 x $3/M = $0.021; output 400 x $15/M = $0.006; rerank $0.002; query embedding about $0.0000004. Total about $0.029, of which input context is about 72%. In most RAG systems the retrieved context dominates the bill, so trimming chunks (with an evaluation showing quality holds) and caching a repeated prompt prefix are the first levers, not re-embedding.",
+    "source": "interview:production",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://kodekloud.com/blog/ai-interview-questions/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-014",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which three changes can cut the LLM token cost of a RAG assistant without retraining any model? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise top-k so that the model always has every possibly relevant chunk",
+        "why": "This increases input tokens on every request, the opposite of a cost cut."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Re-embed the corpus with a larger embedding model",
+        "why": "That is a one-off embedding cost and does nothing to the per-request LLM token bill."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Turn off streaming so tokens are sent in a single response",
+        "why": "Streaming changes how tokens are delivered, not how many are billed."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Rerank a wider candidate set and send only the best few chunks to the generator",
+        "why": "Fewer, better chunks shrink the input, which is usually the largest cost line in RAG."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Cache a long, stable prompt prefix (system prompt, tool definitions) with provider prompt caching",
+        "why": "Cached prefix tokens are billed at a fraction of the base input price on later requests."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Route simple, well-covered questions to a smaller, cheaper model",
+        "why": "Routing by difficulty spends the large model's price only where it is needed."
+      }
+    ],
+    "explanation": "The per-request LLM bill is driven by input length, output length and the model's price. Context trimming after reranking, prompt caching of a repeated prefix and model routing each attack one of those factors. Any of them can hurt quality if pushed too far, so each change should be checked against the evaluation set before rollout.",
+    "source": "interview:production",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://kodekloud.com/blog/ai-interview-questions/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-015",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A team turns on Anthropic prompt caching with `cache_control` on the system prompt, which starts with `Current time: 2026-10-23T10:15:32Z` followed by 3,000 tokens of fixed instructions. The model's minimum cacheable length is 1,024 tokens and requests arrive every few seconds, yet `cache_read_input_tokens` is always 0. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The system prompt is below the minimum cacheable length",
+        "why": "3,000 tokens of instructions is well above the stated 1,024-token minimum."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The 5-minute cache lifetime expires before the next request can read the entry",
+        "why": "Requests arrive every few seconds, far inside a 5-minute lifetime that each hit would refresh."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The timestamp changes on every request, so the cached prefix never matches",
+        "why": "A cache hit needs the prefix up to the breakpoint to be identical. A per-request timestamp at the start makes every prefix unique."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only tool definitions can be cached, not system prompts",
+        "why": "System blocks are cacheable; the cached prefix covers tools, then system, then messages up to the breakpoint."
+      }
+    ],
+    "explanation": "Prompt caching matches on an identical prefix (tools, then system, then messages) up to the block marked with `cache_control`. Anything that varies per request, such as a timestamp, a request id or a user name, must come after the breakpoint, for example in the user message. In RAG this means static instructions first, then the retrieved chunks and question, which change on most requests.",
+    "reference": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+    "roleLevel": 2
+  },
+  {
+    "id": "RAG-OPS-016",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Each finding comes from the trace of a different wrong answer. Match each finding with the stage that failed.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Indexing or ingestion",
+        "why": "The document never made it into the index, so no query could find it."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retrieval ranking",
+        "why": "The chunk exists but was not ranked high enough to reach the prompt."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Context assembly",
+        "why": "The chunk was retrieved but was dropped or truncated when the prompt was built."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Generation",
+        "why": "The model saw the right text and still produced a wrong answer."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Searching the index for the source document's id returns no chunks, although the page exists in the wiki",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The answer-bearing chunk sits at rank 23 of the candidates, and only the top 8 are passed on",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "The chunk is in the reranked top 8, but the logged prompt ends before it because a token budget cut the context",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "The logged prompt contains the answer-bearing chunk, yet the answer states a different figure",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Operational triage walks the pipeline in order: is the document indexed, was its chunk retrieved and ranked in, did it survive prompt assembly, and did the model use it? Each finding points to one stage, and each stage has its own fix: repair ingestion, improve recall or ranking, change the context budget, or work on grounding and the generator.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477306/rag-evaluation-interview-questions/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://buildml.substack.com/p/top-interview-questions-on-rag-for",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.interviewbit.com/varsity/blog/?p=127"
+      ],
+      "companies": [
+        "Hebbia"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-017",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "A RAG endpoint has an 800 ms budget for time to first token. The stages before generation run one after another: input guardrail 20 ms, query embedding 40 ms, hybrid search 60 ms, reranking 150 ms, prompt assembly 10 ms and network overhead 20 ms. How many milliseconds remain for the LLM's own time to first token? Type a number.",
+    "options": [],
+    "accepted": [
+      "500",
+      "500ms",
+      "500 ms"
+    ],
+    "explanation": "The pre-generation stages sum to 20 + 40 + 60 + 150 + 10 + 20 = 300 ms, so 800 - 300 = 500 ms is left for the model to produce its first token. Writing the budget down per stage like this shows quickly which stage to attack when the model's first-token latency alone exceeds what is left.",
+    "source": "interview:production",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://www.hirist.tech/blog/top-rag-interview-questions-and-answers/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-018",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A B2B SaaS product on Qdrant has 30,000 small customers, each with a few thousand chunks, all embedded with the same model. Following Qdrant's multitenancy guidance, how should tenants be stored?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A separate Qdrant cluster per customer, sized to its data",
+        "why": "That multiplies operational cost thousands of times for tenants with a few thousand chunks each."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "One collection per customer, so that data is physically separated",
+        "why": "Qdrant says a collection per tenant is rarely efficient: each carries its own overhead, and Qdrant Cloud limits a cluster to 1,000 collections by default."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "One collection with a tenant id in each point's payload, a keyword index marked `is_tenant`, and a tenant filter on every query",
+        "why": "This is Qdrant's recommended pattern for many small, similar tenants; `is_tenant` lets it co-locate each tenant's vectors for faster filtered reads."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "One collection with no tenant field, removing other tenants' results from the top-k after search",
+        "why": "Post-filtering a shared top-k returns few or no results for small tenants and makes isolation depend on application code after the fact."
+      }
+    ],
+    "explanation": "Qdrant's guidance is to keep tenants in a single collection and partition by payload (it uses a `group_id` field in its example) with a keyword index created with `is_tenant: true`. Every request filters on the tenant field, and that filter must come from the server-side session, never from user input. Separate collections make sense only for a few tenants that need strict isolation.",
+    "reference": "https://qdrant.tech/documentation/guides/multiple-partitions/",
+    "source": "interview:production",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/enforce-tenant-and-session-isolation-in-an-agent-rag-system",
+        "https://www.hellointerview.com/community/questions/rag-system-design/cmoaemvhf1emv09adwqq9wk3f",
+        "https://www.techinterview.org/post/3233476794/glean-engineering-interview/",
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/",
+        "https://www.recrew.ai/interview-questions/llm-engineer"
+      ],
+      "companies": [
+        "Qualified Health",
+        "Atlassian",
+        "Glean"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-019",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "With Anthropic prompt caching, each cache hit refreshes the entry's lifetime at no additional cost.",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "True",
+        "why": "Correct. A hit resets the lifetime (5 minutes by default, or 1 hour if set), so a steady stream of requests keeps a prefix warm while paying only the cache-read price."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "False",
+        "why": "This is true, not false: the docs state that hits refresh the lifetime at no extra cost."
+      }
+    ],
+    "explanation": "The cache lifetime is measured from the most recent request that wrote or read the entry. For a RAG service with steady traffic, the stable prefix (system prompt, tool definitions, any fixed reference text) stays cached and is billed at the read rate, while a 5-minute write is billed at 1.25x the base input price.",
+    "reference": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-OPS-020",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "A customer invokes their right to erasure. The team deletes the customer's rows from the source Postgres database and considers the request closed. Which three places in a typical RAG stack can still hold data derived from those rows? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Request traces and evaluation datasets built from them, which contain retrieved chunk text",
+        "why": "Traces often log retrieved context and prompts, and evaluation sets are frequently sampled from traces."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The LLM's weights, which absorbed the rows when they were retrieved",
+        "why": "Retrieval places text in a prompt at inference time; it does not train the model, so the weights hold nothing from it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The embedding model's weights, which learn from every document they embed",
+        "why": "Calling an embedding model to encode text does not update it; embedding is inference."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The vector store, which holds the chunk text and embeddings built from the rows",
+        "why": "Ingestion copied the text into chunks and vectors; deleting the source row does not touch them."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "The semantic or answer cache, which may hold answers generated from those chunks",
+        "why": "Cached answers are derived data and can keep quoting the deleted content until evicted."
+      }
+    ],
+    "explanation": "RAG copies source data into several derived stores: chunks and vectors in the index, cached answers, and logs or evaluation sets that capture retrieved text. A complete deletion covers each of them and records evidence that it happened. Calling a model at inference time, whether the LLM or the embedder, does not train it, so the weights are not where the data lives.",
+    "source": "interview:production",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/reconcile-rag-document-expiry-chat-history-and-cold-audits",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://schoolofcoreai.com/interview-prep/topics/rag-interview-questions"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-021",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A semantic cache is implemented like this in a multi-tenant RAG assistant:\n\n```python\ndef cached_answer(query: str):\n    v = embed(query)\n    hit = cache.nearest(v)          # one shared cache for all tenants\n    if hit and hit.score >= 0.95:\n        return hit.answer\n    return None\n```\n\nWhat is the most serious flaw?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Cosine similarity is the wrong measure for comparing query embeddings",
+        "why": "Cosine similarity is a standard choice for comparing query embeddings; the measure is not the problem."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The lookup is not scoped by tenant or permissions, so one tenant can receive an answer built from another's documents",
+        "why": "Two tenants asking the same question get the same cached answer, even though each answer was generated from that tenant's private documents."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Embedding the query on every request costs more than the cache saves",
+        "why": "A query embedding is cheap compared with retrieval plus generation; it does not cancel out the savings."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "A threshold of 0.95 is too strict, so the hit rate will be low",
+        "why": "A strict threshold lowers the hit rate but is the safe direction; it is not the serious flaw here."
+      }
+    ],
+    "explanation": "A cached answer is derived from documents the original asker was allowed to see. The cache key or lookup filter must therefore include the tenant and permission scope, and usually the corpus or index version and the prompt and model version too, so that changes do not serve answers produced under the old ones. Without that, the cache becomes a cross-tenant data leak that bypasses the retrieval filter entirely.",
+    "source": "interview:production",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-022",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "To raise the semantic cache hit rate, a team lowered the cosine similarity threshold from 0.95 to 0.85. Hits rose from 12% to 35%, but users now get wrong answers: \"How do I cancel my order?\" was served the cached answer to \"How do I cancel my subscription?\" (similarity 0.88). What is the best next step?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Keep 0.85 but shorten the cache lifetime to one hour",
+        "why": "A shorter lifetime limits staleness, but a wrong match is wrong the moment it is served, however fresh the entry is."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Choose the threshold from a labelled set of query pairs, including near misses with different intents, to hit a target false-hit rate",
+        "why": "Measuring same-intent and different-intent pairs shows how often each threshold returns an answer to a different question, so the trade-off is chosen on evidence."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Lower the threshold further so that more paraphrases are caught",
+        "why": "That widens the radius that already catches different intents, so wrong answers become more frequent."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Disable the semantic cache and fall back to an exact-match cache",
+        "why": "That removes the bad matches but also loses every legitimate paraphrase hit; tuning on data is the better first step."
+      }
+    ],
+    "explanation": "Embedding similarity measures topical closeness, not identical intent: questions that differ in one key word (order vs subscription) can score very high. The threshold should be set from data, with labelled pairs that include hard negatives, so the false-hit rate is a measured number. Some teams also restrict caching to intents with stable answers.",
+    "source": "interview:production",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-023",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A wiki connector polls for changes every 30 minutes, the ingestion queue lags up to 10 minutes, and embedding plus upsert takes 2 minutes. A semantic answer cache with a 6-hour lifetime sits in front, and it is not invalidated when documents change. What is the worst-case delay before a user stops getting an answer based on the old version of a page?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "6 hours 42 minutes: 42 minutes of indexing lag plus a 6-hour cached answer",
+        "why": "In the worst case the edit lands just after a poll (30 min), then waits in the queue (10 min) and is indexed (2 min), while a cached old answer written just before the index update survives its full 6-hour lifetime."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "42 minutes, the sum of the polling interval, the queue lag and the indexing time",
+        "why": "That is when the index reflects the change. A cached answer written just before that moment can still be served afterwards."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "6 hours, the cache lifetime",
+        "why": "The cache lifetime only starts to matter once the index has the new version; the 42-minute pipeline delay comes first."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "30 minutes, the polling interval",
+        "why": "Polling is only the first part of the indexing delay, and the cache adds far more."
+      }
+    ],
+    "explanation": "Freshness is end to end: detection delay, queue lag, indexing time and any cache that sits in front of the index all add up. Here the cache dominates, so the fix is to invalidate cached answers whose source documents changed (by recording source document ids with each entry), with the lifetime only as a backstop.",
+    "source": "interview:production",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476794/glean-engineering-interview/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://blog.theinterviewguys.com/?p=12600",
+        "https://schoolofcoreai.com/interview-prep/topics/rag-interview-questions"
+      ],
+      "companies": [
+        "Glean"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-024",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Chunks in your enterprise assistant carry an `allowed_users` list that is flattened from group memberships at index time and re-synced nightly. HR moves about 2,000 people between groups every day. What is the better design?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Re-embed the affected chunks whenever someone changes group",
+        "why": "Permissions are metadata; changing who may read a chunk does not change its text, so re-embedding is wasted work."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Store group ids on chunks; resolve the user's groups from the identity provider per query",
+        "why": "Group-level ACLs on chunks change rarely, and a user's memberships are looked up per request, so a group move takes effect immediately without touching the index."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep the flattened user lists but re-sync them every hour instead of nightly, in larger batches",
+        "why": "That shrinks the stale window but multiplies write churn across millions of chunks, and access is still wrong for up to an hour."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ask the model in the system prompt to refuse content from groups the user has left",
+        "why": "The model cannot know group membership, and prompt instructions are not an access-control mechanism."
+      }
+    ],
+    "explanation": "Flattening group membership into per-chunk user lists makes every HR change an index write and leaves a stale window. Storing the access principals as the source system does (groups, roles) and expanding the caller's memberships at query time keeps the index stable and makes membership changes effective at once. Document-level permission changes still need to update chunk metadata, which can be done without re-embedding.",
+    "source": "interview:production",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/enforce-tenant-and-session-isolation-in-an-agent-rag-system",
+        "https://www.hellointerview.com/community/questions/rag-system-design/cmoaemvhf1emv09adwqq9wk3f",
+        "https://www.techinterview.org/post/3233476794/glean-engineering-interview/",
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/",
+        "https://www.recrew.ai/interview-questions/llm-engineer"
+      ],
+      "companies": [
+        "Qualified Health",
+        "Atlassian",
+        "Glean"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-025",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A shared pgvector table `chunks(tenant_id, embedding, content)` has `ENABLE ROW LEVEL SECURITY` and the policy `USING (tenant_id = current_setting('app.tenant_id')::int)`. Every request opens a fresh connection and sets `app.tenant_id` first; there is no connection pooler. The application connects as the role that created the table. Tenant B can still see tenant A's chunks. Why?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "pgvector's approximate indexes skip row-level security policies",
+        "why": "Policies are applied by PostgreSQL to the query whatever index is used; pgvector does not bypass them."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`current_setting` is evaluated once per server start, so every query keeps the first tenant's id",
+        "why": "The setting is read when the query runs, and each fresh connection sets its own value."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Row-level security only applies to `UPDATE` and `DELETE`, not to `SELECT`",
+        "why": "RLS policies govern which rows are visible to `SELECT` as well as which rows can be modified."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The table owner bypasses row-level security unless the table uses `FORCE ROW LEVEL SECURITY`",
+        "why": "PostgreSQL applies policies to normal access, but the table's owner normally bypasses them. Connect as a non-owner role without `BYPASSRLS`, or force RLS on the table."
+      }
+    ],
+    "explanation": "PostgreSQL row-level security is a strong way to enforce tenant isolation for pgvector because the database applies the filter, not application code. The trap is the bypass rules: superusers and roles with `BYPASSRLS` always bypass it, and table owners do too unless `ALTER TABLE ... FORCE ROW LEVEL SECURITY` is set. Run the application under a dedicated non-owner role.",
+    "reference": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-OPS-026",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Users say about a third of answers are wrong. You have logs with the question, the retrieved chunks and the answer for every request. What should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to a stronger LLM for half of the traffic and compare complaint rates for a week",
+        "why": "This changes one component without knowing whether the generator is the problem; if retrieval is missing facts, a stronger model will not help."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Label a sample of failing requests: did the retrieved chunks contain the needed fact?",
+        "why": "This one measurement splits failures into retrieval misses and generation errors, so the next fix goes to the right component."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Rewrite the prompt with stricter grounding rules",
+        "why": "Stricter grounding helps only when the right chunk was retrieved, and you do not yet know how often that is the case."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Double the chunk size so each chunk carries more context",
+        "why": "This is a guess that changes the whole index before measuring where the failures come from."
+      }
+    ],
+    "explanation": "The first move in RAG debugging is to measure, not to change things. Labelling a sample of failures by whether the answer-bearing evidence was in the retrieved context tells you how much of the problem is retrieval and how much is generation. Formal metrics such as context recall automate the same idea later, but a quick labelled sample from logs is enough to point the first fix.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477306/rag-evaluation-interview-questions/",
+        "https://www.datacamp.com/blog/rag-interview-questions",
+        "https://kodekloud.com/blog/ai-interview-questions/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-027",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "An assistant lets users upload large document sets and then ask questions about them. Uploads come in bursts, and the embedding provider rate-limits the account. Which three design choices keep ingestion from hurting interactive queries? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Embed every uploaded document synchronously inside the upload request so it is searchable immediately",
+        "why": "Large uploads then time out, and bursts tie up the request path and the shared quota."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retry rate-limited calls immediately in a tight loop until they succeed",
+        "why": "This amplifies the overload and keeps hitting the limit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Share one embedding quota and let interactive queries wait behind the ingestion backlog",
+        "why": "Interactive latency then depends on how much bulk work happens to be queued."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Parse and embed uploads asynchronously from a queue, and show each document's status (processing, ready, failed)",
+        "why": "This keeps slow parsing and embedding out of the upload request, and users know when a document can be searched."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Give ingestion its own worker pool and rate-limit budget, separate from query-time embedding",
+        "why": "This isolation stops a burst of bulk embedding from using up the quota that interactive queries need."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Retry rate-limited embedding calls with exponential backoff and jitter",
+        "why": "Backoff with jitter respects the provider's limits and avoids synchronised retry storms."
+      }
+    ],
+    "explanation": "Ingestion is bulk, latency-tolerant work; queries are interactive and latency-sensitive. Production systems separate them: asynchronous pipelines with readiness states, separate quotas or priority for query-time calls, and backoff with jitter when a provider returns rate-limit errors.",
+    "source": "interview:production",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://faceprep.in/article/how-to-explain-a-rag-project-in-an-ai-ml-interview-2026/",
+        "https://www.interviewbit.com/varsity/blog/?p=127",
+        "https://blog.theinterviewguys.com/?p=12600"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-028",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A team runs Microsoft Presidio over support tickets at ingestion to redact names, phone numbers and emails. They now propose opening the index to every employee and keeping all request traces forever, \"since the PII is gone\". What is the best response?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Disagree, because Presidio cannot detect phone numbers or email addresses",
+        "why": "Presidio recognises such entities using patterns, rules, checksums and named-entity recognition; the issue is coverage, not that these types are unsupported."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Disagree: automated detection can miss PII, so keep access controls and retention limits, and measure redaction recall on a labelled sample",
+        "why": "Presidio's own docs say there is no guarantee it finds all sensitive information, so redaction is one layer, not a replacement for the others."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Agree: redaction at ingestion removes the need for access control on the index",
+        "why": "This treats detection as perfect. Anything the detector misses would then be open to every employee for good."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Agree, but re-run redaction on traces once a year",
+        "why": "A yearly re-run leaves missed PII exposed in between and still assumes detection catches everything."
+      }
+    ],
+    "explanation": "PII redaction lowers exposure but is probabilistic: Presidio warns that \"there is no guarantee that Presidio will find all sensitive information\" and recommends additional safeguards. A defensible design stacks layers: redact at ingestion and before logging, keep least-privilege access to the index and traces, set retention limits, and estimate how much the detector misses on a labelled sample.",
+    "reference": "https://presidio.dataprivacystack.org/",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-OPS-029",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "A RAG service sends the same 10,000-token prefix (system prompt plus fixed reference text) on 50 requests within a few minutes. With prompt caching, the first request writes the prefix at 1.25x the base input price and the other 49 read it at 0.1x. Over the 50 requests, the cached prefix costs the same as how many full-price (uncached) sends of that prefix? Type a decimal number.",
+    "options": [],
+    "accepted": [
+      "6.15"
+    ],
+    "explanation": "One write costs 1.25 prefix-equivalents and 49 reads cost 49 x 0.1 = 4.9, so the total is 1.25 + 4.9 = 6.15 prefix-equivalents, against 50 without caching: about 88% less spent on the prefix. The 1.25x write and 0.1x read rates are Anthropic's standard figures for the 5-minute cache; some models read at an even lower rate, so check the pricing table for the model you use.",
+    "reference": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-OPS-030",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each tenancy situation with the storage pattern that fits it best.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "One shared collection with a tenant payload field, an `is_tenant` keyword index and a mandatory tenant filter",
+        "why": "Qdrant's recommended default for many small, similar tenants."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A separate collection per tenant",
+        "why": "Strict isolation and independent configuration, at a per-collection overhead cost."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Tiered multitenancy: a shared fallback shard, with large tenants promoted to dedicated shards",
+        "why": "Combines payload partitioning for small tenants with shard-level isolation for big ones."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "PostgreSQL list partitioning by tenant id (or separate tables) in pgvector",
+        "why": "Keeps one tenant's vectors out of another tenant's approximate index."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "40,000 small customers, each with a few thousand chunks, all using the same embedding model",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Three regulated clients who each demand strict isolation and use embedding models of different dimensions",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Thousands of small tenants plus a handful whose data grows to millions of points",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A pgvector team finds that one huge tenant's vectors hurt approximate-search recall for everyone else",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Qdrant recommends a single collection with payload partitioning for many small tenants, separate collections only for a limited number of tenants needing strict isolation, and tiered multitenancy (shared fallback shard plus dedicated shards for large tenants) when sizes are very uneven. pgvector's docs note that sharing an approximate index between tenants lets one tenant's vectors affect recall and speed for others, and suggest list partitioning or separate tables.",
+    "reference": "https://qdrant.tech/documentation/guides/multiple-partitions/",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-OPS-031",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "A user reports a wrong answer and you have the request trace. Order these triage steps from first to last.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Check whether its chunk appeared in the retrieved candidates, and at what rank",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Replay the request with the exact inputs from the trace: query, filters, index version and prompt version",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Check whether the model used the chunk correctly, or contradicted or ignored it",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Check that the answer-bearing document is in the index and was parsed correctly",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Check whether that chunk survived context assembly and appears in the final prompt",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "E",
+      "C"
+    ],
+    "explanation": "Triage follows the data flow. First reproduce the failure under identical conditions, otherwise you may debug a different system state. Then go stage by stage: is the content indexed, was it retrieved, did it reach the prompt, did the model use it? The first stage that fails is where the fix belongs.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477306/rag-evaluation-interview-questions/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://buildml.substack.com/p/top-interview-questions-on-rag-for",
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.interviewbit.com/varsity/blog/?p=127"
+      ],
+      "companies": [
+        "Hebbia"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-032",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "You are moving a production RAG index to a new embedding model without downtime, using a collection alias. Order the steps from first to last.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch the alias to the new collection and the query-side model at the same moment",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Re-embed every chunk with the new model into the new collection, and dual-write ongoing document changes to both collections",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Keep the old collection for a rollback window, then delete it",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Create a new collection sized for the new model's vectors, leaving the alias on the old collection",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Evaluate the new collection with the new query-side model on the golden set and compare with the old one",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "D",
+      "B",
+      "E",
+      "A",
+      "C"
+    ],
+    "explanation": "Vectors from different models are not comparable, so a model change means a full re-embed into a separate index (blue/green), not in-place upserts. Dual-writing keeps the new index current while it is backfilled. After it passes evaluation, an atomic alias switch (Qdrant performs multiple alias actions atomically) moves traffic, and the query model must switch with it. The old collection stays until the new one has proved itself.",
+    "reference": "https://qdrant.tech/documentation/concepts/collections/#collection-aliases",
+    "source": "interview:production",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://lets-code.co.in/interview/generative-ai-interview-questions/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-033",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each field in a RAG request trace with the debugging question it answers best.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The rewritten (condensed) query",
+        "why": "Shows what was actually searched after query transformation."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retrieved chunk ids with scores and ranks",
+        "why": "Shows what the retriever found and how close each hit was to the cut-off."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompt template version and index version",
+        "why": "Ties the request to a specific release of the configuration and data."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Token counts and latency per stage",
+        "why": "Breaks down cost and time by pipeline stage."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Did the follow-up condensation drop the product name the user mentioned two turns earlier?",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Was the answer-bearing chunk found, and did it only just miss the top-k?",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Did last Tuesday's release change how this kind of question is answered?",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Why did spend per request double this week?",
+        "answer": "D"
+      }
+    ],
+    "explanation": "A useful RAG trace records each stage's inputs and outputs: the original and rewritten query, retrieved ids with scores and ranks, the assembled prompt, configuration versions (prompt template, index, models), the answer, and token counts and latency per stage. Each field answers a different class of incident question.",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-OPS-034",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "The access token of one Confluence space's connector expired 9 days ago. The connector treats the 401 response as \"no changes\", so nothing was logged as an error. Uptime, p95 latency and the 5xx rate stayed green throughout, and Ragas faithfulness on sampled traffic stayed at 0.93. Which monitor would have caught this earliest?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "An alert on Ragas faithfulness dropping below 0.85",
+        "why": "Answers stay faithful to the stale chunks they retrieve, so faithfulness does not move; it measures grounding, not freshness."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "An alert on p95 latency rising above the budget",
+        "why": "A connector that silently does nothing makes nothing slower."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An alert on the overall abstention rate",
+        "why": "Only questions about recently changed pages are affected, a small share of traffic, so the global rate barely moves."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Per-source freshness: time since the last successful sync and documents changed per day, alerting on deviation from each source's baseline",
+        "why": "A space that normally changes daily dropping to zero changes for days is exactly what this signal shows, whatever the connector's error handling does."
+      }
+    ],
+    "explanation": "System health metrics and answer-grounding metrics can both stay green while the corpus quietly goes stale. Production RAG needs data-pipeline monitoring per source: last successful sync, change volume compared with that source's normal level, ingestion failures and queue lag. Treating an auth failure as \"no changes\" is a common connector bug that only such signals expose.",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-OPS-035",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A research assistant fans one question out over 500 documents, one model call per document, and then synthesises the results. Halfway through, calls for 12 documents time out. What is the best behaviour?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Fail the whole request and ask the user to try again later",
+        "why": "This throws away 488 successful results and the work they cost, and the retry may hit the same timeouts."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retry the whole fan-out from the start until every call succeeds",
+        "why": "Redoing finished work multiplies cost and latency, and the request can loop for as long as the failing documents keep timing out."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Return the synthesis with explicit completeness markers for the 12 missing documents, and retry only those calls idempotently",
+        "why": "The user gets a useful answer that is honest about its coverage, and the retries redo only the failed work without double-counting it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Return the synthesis of the 488 documents without mentioning the gaps",
+        "why": "Silently partial answers can be badly wrong, for example when a missing document holds the key clause, and the user has no way to know."
+      }
+    ],
+    "explanation": "Large fan-outs make partial failure normal. Good designs track per-item status, return partial results marked as such (which documents are covered and which are pending or failed), and retry failed items with idempotency keys so a retry never double-counts or duplicates work. Silent partial answers and all-or-nothing failure are both poor trade-offs.",
+    "source": "interview:production",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477248/hebbia-interview-guide/"
+      ],
+      "companies": [
+        "Hebbia"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-036",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "During an embedding-model migration, the alias was switched to the new collection `docs_v2` at 10:00, but query-service pods rolled to the new embedding model gradually between 10:00 and 10:12. Both models output 1,024 dimensions. For those 12 minutes, some users got irrelevant results. Which design prevents this class of incident, including during rollback?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Record each collection's embedding model id, and have every request resolve the alias, then embed with that collection's model",
+        "why": "The query model is then derived from the index version per request, so the alias switch (and any rollback) changes both atomically."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Roll out the new query model to all pods first, then switch the alias",
+        "why": "This only reverses the mismatch: until the alias moves, the new-model pods query the old collection with incompatible vectors."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add a check that query vectors have the same dimension as the collection",
+        "why": "Both models produce 1,024 dimensions, so the check passes while the vectors are still incomparable."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Re-embed in place into the existing collection so that no alias switch is needed",
+        "why": "During an in-place re-embed the collection mixes vectors from two models, which corrupts rankings for the whole migration."
+      }
+    ],
+    "explanation": "The embedding model and the index are one versioned unit; the query-side model must always match the index being searched. Making the model a property of the collection, resolved per request through the alias, turns the cutover into a single atomic switch (Qdrant applies alias actions atomically) and makes rollback the same operation in reverse. Both models must stay callable during the cutover window.",
+    "reference": "https://qdrant.tech/documentation/concepts/collections/#collection-aliases",
+    "source": "interview:production",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://lets-code.co.in/interview/generative-ai-interview-questions/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-037",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A RAG assistant serves 1 million queries a month. Each request has 1,000 tokens of system prompt plus 12 chunks of 500 tokens as input and 400 output tokens, with LLM prices of $3 per million input tokens and $15 per million output tokens; reranking adds $0.002 and the query embedding is negligible, for about $0.029 per request. Evaluation shows that sending only the top 5 reranked chunks keeps answer quality, and a semantic cache at a safe threshold would hit 15% of traffic. Which single change saves the most per month?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add the semantic cache with a 15% hit rate",
+        "why": "15% of about $0.029 x 1M is about $4,350 a month, which is real but smaller than trimming the context."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Re-embed the corpus with a cheaper embedding model to cut query-embedding cost",
+        "why": "Query embeddings cost about $0.40 a month in total here, so there is almost nothing to save, and a model change forces a full re-embed."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Prompt-cache the 1,000-token system prompt, read at 0.1x the input price",
+        "why": "This saves about 900 token-equivalents x $3/M x 1M = about $2,700 a month (slightly less after cache writes)."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Send the top 5 reranked chunks instead of 12",
+        "why": "This removes 3,500 input tokens per request: 3,500 x $3/M x 1M = $10,500 a month, the largest saving, with quality held."
+      }
+    ],
+    "explanation": "Work the numbers: trimming 7 chunks of 500 tokens saves $10,500; the semantic cache saves about $4,350; caching the system prompt saves about $2,700; query-embedding savings are negligible. The levers combine, but when asked for the biggest win, quantify each one. In most RAG systems the retrieved context is the largest cost driver, which is why reranking to fewer, better chunks pays for itself.",
+    "source": "interview:production",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://pub.towardsai.net/7-rag-agent-system-design-questions-you-will-face-in-every-ai-engineer-interview-with-answers-45d31004ffe4",
+        "https://www.datacamp.com/blog/langchain-interview-questions",
+        "https://kodekloud.com/blog/ai-interview-questions/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://cloudsoftsol.com/interview-questions/rag-interview-questions-for-freshers-2026/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-038",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A RAG chat must reach p95 time to first token of at most 1,000 ms and total time of at most 3,000 ms for 300-token answers. Current p95 stages run in sequence: LLM query rewrite 350 ms, query embedding 40 ms, dense search 50 ms, BM25 search 50 ms, cross-encoder rerank of the top 100 at 300 ms (time scales linearly with candidates, and evaluation shows the top 50 keeps recall), generator first token 450 ms, then decoding at 150 tokens/s. Follow-up questions must still be rewritten. Which plan meets both targets?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch to a generator model that decodes twice as fast, with the same first-token latency as today",
+        "why": "Total drops to 2,240 ms, but first token stays at 1,240 ms, missing that target."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Rewrite with a small model at 120 ms, run the two searches in parallel and rerank the top 50",
+        "why": "120 + 40 + 50 + 150 + 450 = 810 ms to first token, and 810 + 2,000 ms of decoding = 2,810 ms total: both targets met."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Stream tokens to the client so that users see output sooner",
+        "why": "Streaming changes when tokens are shown, not when the first one is produced or the last one arrives, so neither measured figure changes."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Run dense and BM25 search in parallel and rerank the top 50",
+        "why": "First token drops from 1,240 to 1,040 ms (50 ms saved by parallel search, 150 ms by the smaller rerank), still over 1,000 ms, and total is 3,040 ms."
+      }
+    ],
+    "explanation": "Baseline: 350 + 40 + 50 + 50 + 300 + 450 = 1,240 ms to first token; decoding 300 tokens at 150 tokens/s adds 2,000 ms, for 3,240 ms in total. Only the plan that cuts across several pre-generation stages (cheaper rewrite, parallel retrieval legs, a smaller rerank window) brings first token under 1,000 ms while keeping the total under 3,000 ms. Writing per-stage budgets down makes such trade-offs explicit.",
+    "source": "interview:production",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/interview-questions/ingest-and-serve-rag-sessions-with-up-to-200-documents",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://www.hirist.tech/blog/top-rag-interview-questions-and-answers/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-039",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Legal asks whether your customer-facing RAG assistant \"can be guaranteed never to hallucinate\" before launch. Which response is most appropriate?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Yes, because answers are grounded in retrieved documents rather than model memory",
+        "why": "Grounding reduces hallucination but does not remove it: retrieval can return the wrong text and models can misread the right text."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "No guarantee is possible, so the assistant should not launch",
+        "why": "That ignores that risk can be measured and reduced to an acceptable level for the use case; zero risk is not the bar for comparable human processes either."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Yes, once temperature is set to 0 so that answers are deterministic",
+        "why": "Deterministic decoding makes outputs repeatable, not correct; a wrong answer at temperature 0 is wrong every time."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "No zero guarantee, but commit to measured error rates on a representative test set, verifiable citations, abstaining without evidence, and human review for high-risk topics",
+        "why": "This is honest about the limits and offers concrete, auditable controls that legal can weigh against the use case's risk."
+      }
+    ],
+    "explanation": "Stakeholder questions about hallucination test whether an engineer can speak precisely about risk. The credible answer refuses an absolute guarantee and replaces it with measurement (error rates on a representative evaluation set, monitored after launch) and controls (citations users can check, abstention when retrieval finds no support, escalation or human review for high-stakes cases).",
+    "source": "interview:production",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476824/ai-engineer-interview-rag-agents-evals/",
+        "https://www.recrew.ai/interview-questions/llm-engineer"
+      ],
+      "companies": [
+        "Anthropic"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-040",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "A semantic answer cache in front of your RAG assistant keeps serving answers from policy pages that have since been updated or deleted. Which three changes together make cached answers track the corpus? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raise the similarity threshold to 0.99 so that only near-identical questions hit",
+        "why": "The threshold controls which questions match, not whether the cached answer is still true; a stale answer to the identical question is still stale."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Ask the LLM to judge, at serve time, whether a cached answer still looks current",
+        "why": "The model has no way to know the corpus changed unless you retrieve again, which defeats the purpose of the cache."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Set a 30-day lifetime and rely on it alone",
+        "why": "Answers based on changed policies could be served for up to a month."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Store the source document ids and versions with each cached answer, and evict matching entries when ingestion updates or deletes those documents",
+        "why": "Event-driven invalidation removes exactly the answers built on changed content, as soon as the change is indexed."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Keep a moderate lifetime on entries as a backstop for change events that are lost",
+        "why": "A lifetime bounds the damage from a missed event without being the main freshness mechanism."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Include the prompt template and model versions in the cache key",
+        "why": "A change to the prompt or model then misses the cache instead of serving answers produced under the old configuration."
+      }
+    ],
+    "explanation": "Cached answers are derived data, so they need the same invalidation discipline as the index. Track lineage (which documents and versions each answer used) and evict on change events; version the configuration that produced the answer; keep a lifetime as a safety net. Similarity thresholds and model judgement address different problems.",
+    "source": "interview:production",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476794/glean-engineering-interview/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://blog.theinterviewguys.com/?p=12600",
+        "https://schoolofcoreai.com/interview-prep/topics/rag-interview-questions"
+      ],
+      "companies": [
+        "Glean"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-041",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are designing permission-aware RAG over Confluence, Jira and SharePoint for a 50,000-employee company. Which three properties should the design have? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Each chunk stores its source's access principals, and the server builds a filter from the authenticated user's memberships and applies it inside the vector query",
+        "why": "This keeps unauthorised text out of the prompt and does not depend on anything the client or the model says."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Permission changes in the source systems are propagated by events or frequent syncs that update chunk metadata without re-embedding",
+        "why": "Access changes take effect quickly, and only metadata is rewritten."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Any answer or semantic cache is scoped to the permission set that produced the answer",
+        "why": "Otherwise a cached answer leaks content to a user who could not have retrieved it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The system prompt tells the model not to reveal content the user is not allowed to see",
+        "why": "The model cannot know who may see what, and prompt instructions can be overridden; they are not an access-control mechanism."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A separate full copy of the index is built for each employee",
+        "why": "50,000 copies of a shared corpus would be enormously expensive to build and keep in sync."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Generated answers are scanned afterwards for terms from restricted documents",
+        "why": "Paraphrases slip past term matching, and by then the model has already read the restricted text."
+      }
+    ],
+    "explanation": "Enterprise search vendors enforce permissions at retrieval time using ACLs mirrored from each source, keep them in sync as permissions change, and make sure every derived store (caches, traces) respects the same boundaries. Prompt-level rules and output scanning are at most extra layers, never the enforcement point.",
+    "source": "interview:production",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.hellointerview.com/community/questions/rag-system-design/cmoaemvhf1emv09adwqq9wk3f",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://www.techinterview.org/post/3233476794/glean-engineering-interview/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.interviewbit.com/varsity/blog/?p=127"
+      ],
+      "companies": [
+        "Scale AI",
+        "Atlassian",
+        "Glean",
+        "EPAM"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-042",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A customer's documents must be erased from a RAG system, with proof. Order these steps from first to last.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Verify by searching each store for the document ids, and record the results in an audit log",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Invalidate cache entries whose recorded sources include those documents",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Mark the documents as deleted in the source-of-truth registry, so connectors stop re-ingesting them and retrieval filters exclude them at once",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Purge copies in traces, logs and evaluation datasets according to the retention policy",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Delete their chunks and vectors from the vector store by document id",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "C",
+      "E",
+      "B",
+      "D",
+      "A"
+    ],
+    "explanation": "A tombstone in the registry comes first: it stops a running sync from re-adding the documents and lets query-time filters hide them immediately, before slower physical deletes finish. Then remove the primary derived data (vectors), then data derived from that (cached answers), then incidental copies (traces, evaluation sets). Finally verify each store and keep an audit record; with stores that soft-delete and compact later, note when physical removal completes.",
+    "source": "interview:production",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://prachub.com/interview-questions/reconcile-rag-document-expiry-chat-history-and-cold-audits",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://schoolofcoreai.com/interview-prep/topics/rag-interview-questions"
+      ],
+      "companies": [
+        "Qualified Health"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-043",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "After release 2.3, p95 latency of a RAG endpoint rose by about 3.6 seconds. The generation path now looks like this:\n\n```python\nasync def answer(q):\n    hits = await search(q, k=8)                         # ~80 ms\n    notes = []\n    for h in hits:                                      # added in 2.3\n        notes.append(await llm_compress(q, h.text))     # ~450 ms each\n    return await llm_generate(q, notes)\n```\n\nWhat is the cause, and the best fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Eight compression calls are awaited one after another (8 x 450 ms = 3.6 s); run them concurrently with a bound, or batch them into one call, and check that compression earns its cost",
+        "why": "Each `await` in the loop waits for the previous call to finish. Running the calls concurrently with a limit brings the step close to one call's latency, and batching cuts the call count too."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`llm_generate` gets longer inputs; lower `max_tokens` on the answer",
+        "why": "Compressed notes are shorter than the raw chunks, so generation input shrinks; capping output does not address the added calls."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Raise k so that fewer follow-up searches are needed",
+        "why": "A larger k adds even more compression calls in this loop, making latency worse."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The vector search slowed down; add a faster index",
+        "why": "Search is about 80 ms and unchanged by the release; it cannot explain 3.6 seconds."
+      }
+    ],
+    "explanation": "A per-item model call inside a loop (an N+1 pattern) is a classic latency regression. Per-stage timings in traces would show one span repeated eight times. Fix it by running independent calls concurrently (for example `asyncio.gather` with a semaphore to respect rate limits) or by batching them, and confirm with evaluation that the extra step improves answers enough to justify its latency and cost.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.hirist.tech/blog/top-rag-interview-questions-and-answers/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://pub.towardsai.net/senior-ai-interviews-dont-test-what-you-know-they-test-what-breaks-at-2am-2b949558fe6d"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-044",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You review 40 traces of wrong answers and classify them: in 14, the answer-bearing document is not in the index at all (ingestion logs show PDFs over 50 MB failing parsing and landing in a dead-letter queue); in 8, the document is indexed but its chunk is not in the top 50 candidates; in 6, the chunk is in the candidates but the reranker drops it below the top 5; in 9, the chunk is in the prompt but the answer is wrong; 3 are ambiguous questions. What should you fix first?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Swap in a stronger generator, since the generator is the final step in every failure",
+        "why": "Only 9 of 40 failures had the right chunk in the prompt; the other 28 retrieval-side failures would not change."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Fine-tune the embedding model to lift recall in the top 50",
+        "why": "This targets 8 failures at high cost, and the 14 missing documents cannot be retrieved by any embedding model."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Fix parsing of large PDFs, re-process the dead-letter queue and alert on its size",
+        "why": "This is the largest bucket (35%), it has one clear root cause, and no retrieval or generation change can find documents that were never indexed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rerank the top 100 instead of the top 50 and pass the top 10 to the prompt",
+        "why": "This could help some of the 8 + 6 ranking failures, but it adds latency and cost and does nothing for the biggest bucket."
+      }
+    ],
+    "explanation": "Bucket failures by pipeline stage, then fix the largest bucket with a clear root cause. Here ingestion silently dropped documents; that is cheap to fix, it is invisible to retrieval and generation metrics, and it calls for an ongoing monitor (dead-letter queue size, per-source document counts). Ranking and generation fixes come next, ordered by bucket size and cost.",
+    "source": "interview:failure-diagnosis",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233477306/rag-evaluation-interview-questions/",
+        "https://www.datacamp.com/blog/rag-interview-questions",
+        "https://kodekloud.com/blog/ai-interview-questions/",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "RAG-OPS-045",
+    "domain": 4,
+    "skill": "production-ops",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "Your RAG assistant has input and output guardrails (topic filter, PII check, grounding check). Which three practices keep them working in production? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Return a generic error without logging anything, so that no sensitive input is stored",
+        "why": "Logs can be redacted and access-controlled; logging nothing makes the guardrail impossible to debug or tune."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Set thresholds once from the launch red-team set and never revisit them",
+        "why": "Traffic, attacks and models drift, so thresholds tuned once go stale."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Enforce the guardrails only in the client application",
+        "why": "Client-side checks can be bypassed by calling the API directly; enforcement belongs on the server."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Log each guardrail decision with the rule, a reason code and the trace id",
+        "why": "Without decision logs you cannot tell why a request was blocked or passed, or audit the guardrail's behaviour."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Monitor block and flag rates per rule and alert on sudden shifts",
+        "why": "A sudden spike or drop usually means a broken rule, a model change or a new attack pattern."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Sample blocked and passed traffic for human review to estimate false positives and false negatives",
+        "why": "This is the only way to know whether a guardrail is over-blocking real users or missing harmful outputs."
+      }
+    ],
+    "explanation": "Guardrails are classifiers with error rates of their own, so they need the same operational care as the main model: decision logging for audit and debugging, rate monitoring per rule for drift, regular human review of samples to measure precision and recall, and server-side enforcement.",
+    "roleLevel": 4
+  }
+]
