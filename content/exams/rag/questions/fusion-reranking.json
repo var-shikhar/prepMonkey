@@ -1,0 +1,2047 @@
+[
+  {
+    "id": "RAG-RRK-001",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a retrieve-then-rerank RAG pipeline, what job does the reranker do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It rescores a small candidate set more accurately so the best chunks come first",
+        "why": "Correct. The first stage optimises recall over the corpus; the reranker optimises precision over the shortlist."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It searches the whole corpus faster than the first-stage retriever, so it can replace it",
+        "why": "Rerankers are slower per document than first-stage retrieval; they are only affordable on a small candidate set."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It rewrites the user's question so that the first-stage retriever finds more documents",
+        "why": "That is query transformation, which runs before retrieval. A reranker works on documents already retrieved."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It compresses each retrieved chunk so that more chunks fit into the model's context window",
+        "why": "Compression changes chunk content; a reranker only changes the order (and optionally the cut-off) of candidates."
+      }
+    ],
+    "explanation": "Two-stage retrieval splits the work: a cheap, scalable first stage (dense, BM25 or hybrid) casts a wide net for recall, then a more expensive model such as a cross-encoder scores each (query, candidate) pair to decide which few chunks reach the prompt. A reranker can only reorder what the first stage returned.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "source": "interview:reranking",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.hirist.tech/blog/?p=10568"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-002",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Which model type can encode every document once, offline, and store the vectors for later search?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A cross-encoder, because it processes the query and document together in one pass",
+        "why": "Processing them together is exactly why a cross-encoder cannot precompute anything: its input includes the query."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A bi-encoder, because it embeds documents and queries independently",
+        "why": "Correct. Document vectors do not depend on the query, so they can be computed at indexing time and searched with an ANN index."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "An LLM listwise reranker, because it sees all candidates in a single prompt",
+        "why": "A listwise reranker also needs the query in its prompt, so it must run at query time."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Any reranker, as long as its scores are normalised to the range 0 to 1",
+        "why": "Score normalisation is unrelated; what matters is whether the document representation depends on the query."
+      }
+    ],
+    "explanation": "A bi-encoder maps query and document to vectors separately and compares them with cosine or dot product, so documents are embedded offline. A cross-encoder feeds the pair through one transformer and outputs a score; it produces no reusable document embedding, so it runs per pair at query time.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "source": "interview:reranking",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://vn.linkedin.com/in/thphat19",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-003",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "How is the Reciprocal Rank Fusion (RRF) score of a document computed from several ranked lists?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The best (lowest) rank the document reached in any of the lists",
+        "why": "Taking the minimum rank ignores agreement between lists; RRF adds a contribution from every list."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The average of the raw similarity scores the document received in each list",
+        "why": "That is score fusion. RRF deliberately ignores raw scores and uses only rank positions."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "The sum, over the lists, of 1 / (k + rank of the document in that list)",
+        "why": "Correct. Cormack et al. (2009) define RRF score(d) as the sum over rankings of 1 / (k + r(d)), with k = 60."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The number of lists that contain the document, with ties broken at random",
+        "why": "Counting appearances ignores how high the document ranked; RRF weights higher positions more."
+      }
+    ],
+    "explanation": "RRF sorts documents by the sum of 1/(k + rank) across input rankings. High positions matter most, but lower positions still contribute (the decay is gentle, not exponential), and documents found by several retrievers accumulate score. Because only ranks are used, retrievers with incomparable score scales can be fused without normalisation.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "roleLevel": 2
+  },
+  {
+    "id": "RAG-RRK-004",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If the gold chunk was not in the first-stage retriever's top 50, adding a cross-encoder reranker over those 50 candidates can still bring it into the final top 5.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "A reranker only reorders the candidates it is given; it never sees chunks the first stage missed."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Reranking cannot raise recall beyond the candidate set; a missing chunk needs a retrieval fix (hybrid search, better chunking or a larger first-stage k)."
+      }
+    ],
+    "explanation": "Rerankers improve precision within the shortlist. If the gold chunk is absent from the candidates, fix retrieval: add a lexical leg for exact terms, fix chunking or embeddings, or retrieve more candidates for the reranker.",
+    "source": "interview:reranking",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-005",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each stage of a hybrid retrieve-and-rerank pipeline with its job.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "First-stage retrieval",
+        "why": "Dense, BM25 or both; fast search over the whole index."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Rank fusion",
+        "why": "Merges several ranked lists into one."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Reranking",
+        "why": "Rescores a shortlist with a slower, more accurate model."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Relevance threshold",
+        "why": "Drops candidates whose rerank score is too low."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Find a few hundred plausible chunks among millions, optimising for recall",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Combine the dense list and the BM25 list without comparing their raw scores",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Decide the order of the top 50 candidates by scoring each one jointly with the query",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Avoid passing weakly related chunks to the model when nothing relevant was found",
+        "answer": "D"
+      }
+    ],
+    "explanation": "A typical production path is hybrid retrieval, then fusion (often RRF), then a cross-encoder or API reranker, then a cut-off by count and/or score before generation. Each stage trades cost for precision on a smaller set.",
+    "source": "interview:reranking",
+    "roleLevel": 1,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.hirist.tech/blog/?p=10568"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-006",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the stages of a typical hybrid RAG query path that keeps 5 chunks for the prompt.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rerank the merged candidates with a cross-encoder",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Retrieve about 50 candidates each from the dense and BM25 indexes",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Generate the answer from the selected chunks",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Merge the two lists with reciprocal rank fusion",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Keep the top 5 reranked chunks",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "E",
+      "C"
+    ],
+    "explanation": "Retrieve wide from both indexes, fuse the lists, rerank the merged shortlist, cut to the context budget, then generate. Fusion comes before reranking so the expensive model scores one deduplicated candidate set.",
+    "source": "interview:reranking",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://pub.towardsai.net/40-generative-ai-interview-questions-that-actually-get-asked-in-2026-with-answers-b4c647f1e2e8",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-007",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "Why is simply adding a BM25 score to a cosine similarity a poor way to merge keyword and vector results?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "BM25 scores are always negative, so adding them lowers the cosine score",
+        "why": "BM25 scores are non-negative for matching documents; they are just on a different, unbounded scale."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Cosine similarity cannot be computed for documents that BM25 also matched",
+        "why": "Both scores can be computed for any document; the issue is that their magnitudes are not comparable."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Adding scores is slower than any rank-based method because it needs floating-point maths",
+        "why": "Speed is not the problem; summing two numbers is trivial. Comparability is."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "BM25 scores are unbounded and vary by query while cosine sits in a narrow range, so BM25 dominates the sum",
+        "why": "Correct. The two scales are incomparable; a raw sum or average mostly reproduces the BM25 order."
+      }
+    ],
+    "explanation": "BM25 scores depend on term statistics and query length, cosine similarities on the embedding model, so a raw sum is dominated by whichever is larger. Options are per-query score normalisation followed by a weighted sum, or rank fusion such as RRF, which ignores raw scores altogether.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://aiinterviewprep.substack.com/p/rag-interview-questions-1-the-averaging",
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-008",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 1,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each fusion method with how it combines ranked lists.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Reciprocal Rank Fusion",
+        "why": "Rank-based, unsupervised."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "CombMNZ",
+        "why": "Score-based, rewards appearing in many lists."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Condorcet Fuse",
+        "why": "Pairwise majority voting."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Convex combination",
+        "why": "Weighted score blend."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Sums 1 / (k + rank) over the lists",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "Sums a document's scores and multiplies by the number of lists in which it appears",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Orders each pair of documents by majority vote among the input rankings",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Computes w x (normalised score from list 1) + (1 - w) x (normalised score from list 2)",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Cormack et al. compared RRF with Condorcet Fuse and CombMNZ and found RRF equal or better while needing no training data or score calibration. Score-based methods (CombMNZ, convex combination) need comparable scores, so they usually require normalisation and tuned weights.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "roleLevel": 2
+  },
+  {
+    "id": "RAG-RRK-009",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Using RRF with k = 60, which document ranks first after fusing these two lists?\n\n- Dense: `d3, d1, d7, d2, d9`\n- BM25: `d1, d5, d3, d8, d2`",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`d1`, ranked 2nd by dense and 1st by BM25",
+        "why": "Correct. 1/62 + 1/61 = 0.03252, narrowly ahead of d3 (1/61 + 1/63 = 0.03227)."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`d2`, because it appears near the bottom of both lists",
+        "why": "Appearing in both lists helps, but at ranks 4 and 5 d2 scores 1/64 + 1/65 = 0.03101, below d1 and d3."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`d5`, because it is the only new document that BM25 adds",
+        "why": "d5 appears in one list only, at rank 2: 1/62 = 0.01613, about half of d1's score."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`d3`, because it is ranked first by the dense retriever",
+        "why": "d3 scores 1/61 + 1/63 = 0.03227, slightly below d1's 1/62 + 1/61 = 0.03252."
+      }
+    ],
+    "explanation": "Each list adds 1/(60 + rank). d1: 1/62 + 1/61 = 0.03252; d3: 1/61 + 1/63 = 0.03227; d2: 1/64 + 1/65 = 0.03101; single-list documents score about 0.016 or less. Documents that both retrievers rank highly win, which is why RRF works well for hybrid search.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation",
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://cloudsoftsol.com/blog/genai-engineer-interview-questions-2026/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/retrieval.md"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-010",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Why can a cross-encoder reranker not precompute document representations the way a bi-encoder does?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Its document vectors are too large to store in a vector database",
+        "why": "A cross-encoder produces no document vector at all, so storage size is not the reason."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "It reads query and document together, so its output depends on the query",
+        "why": "Correct. The score comes from joint attention over the concatenated pair, so nothing useful exists before the query arrives."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Its licence forbids running it at indexing time",
+        "why": "Licensing has nothing to do with it; the limitation is architectural."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It only works with BM25 candidates, which change every time the index is updated",
+        "why": "Cross-encoders can rerank candidates from any retriever; the limitation is the joint input."
+      }
+    ],
+    "explanation": "A cross-encoder concatenates query and passage and lets every query token attend to every passage token, producing one relevance score. That joint attention is why it is more accurate, and also why it must run once per (query, candidate) pair at query time. Sentence Transformers' docs note a cross-encoder produces no sentence embedding.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://vn.linkedin.com/in/thphat19",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-011",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Your corpus has 2,000,000 chunks. A cross-encoder takes about 5 ms per (query, chunk) pair. Roughly how long would scoring the whole corpus take for one query?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "About 10 seconds, which is acceptable for an internal tool",
+        "why": "2,000,000 x 5 ms = 10,000 seconds, not 10. Off by a factor of 1,000."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "About 5 ms, because the cross-encoder runs once per query",
+        "why": "A cross-encoder runs once per pair, so cost grows linearly with the number of documents scored."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "About 2.8 hours, which is why cross-encoders only rerank a shortlist",
+        "why": "Correct. 2,000,000 x 0.005 s = 10,000 s, about 2.8 hours per query."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It depends only on the ANN index type, since the cross-encoder reuses its vectors",
+        "why": "Cross-encoders do not use ANN vectors; each pair needs a full forward pass."
+      }
+    ],
+    "explanation": "Cross-encoder cost is linear in the number of documents scored per query, with no index to prune the search. 2 million pairs at 5 ms each is 10,000 seconds. An ANN index over precomputed bi-encoder vectors avoids this by touching only a small fraction of the corpus, which is why the cross-encoder only sees the top tens or hundreds.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "source": "interview:reranking",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-012",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about two-stage retrieve-then-rerank are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Reranking makes the first stage unnecessary once the corpus is under a million documents",
+        "why": "Even a million pairs per query is far too slow for a cross-encoder; the first stage remains essential."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The first stage is tuned for recall over the whole corpus; the reranker is tuned for precision over a shortlist",
+        "why": "Correct. This division of labour is the reason for two stages."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A cross-encoder reranker typically ranks more accurately than the bi-encoder that produced the candidates",
+        "why": "Correct. Joint attention over the query and document captures interactions that independent embeddings miss."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The reranker should run before fusion so each retriever's list is already clean",
+        "why": "Reranking each list separately doubles cost; fuse first, then rerank the merged, deduplicated set once."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "A reranker raises recall@k when k equals the size of the candidate set",
+        "why": "Reordering a fixed set leaves recall over that whole set unchanged."
+      }
+    ],
+    "explanation": "Interviewers want the recall-versus-precision framing: cheap, scalable retrieval casts a wide net, an expensive, accurate model picks the best few. Neither stage can do the other's job.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "source": "interview:reranking",
+    "roleLevel": 2,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://www.recrew.ai/interview-questions/llm-engineer",
+        "https://www.hirist.tech/blog/?p=10568"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-013",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 2,
+    "stem": "Your retriever returns 20 candidate chunks but only 5 fit in the context window. Which two steps are sound? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pick 5 at random to avoid bias toward any single retriever",
+        "why": "Random selection throws away all ranking information."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Rerank the 20 with a cross-encoder (or rerank API) and keep the top 5",
+        "why": "Correct. A pairwise relevance model picks the five most useful chunks more reliably than first-stage scores."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Take the first 5 by vector similarity, since the retriever already sorted them",
+        "why": "First-stage order is the least precise signal available; this ignores why a reranker exists."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Truncate each of the 20 chunks to a quarter of its length so all of them fit",
+        "why": "Truncation cuts sentences arbitrarily and can remove the very fact needed; it trades five complete chunks for twenty broken ones."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Collapse near-duplicate chunks before choosing, so the 5 slots hold distinct evidence",
+        "why": "Correct. Duplicates waste scarce context; deduplicating first leaves room for complementary chunks."
+      }
+    ],
+    "explanation": "Choosing what fits is a precision problem: rerank the candidates, remove redundancy, then keep the top few (optionally also applying a score threshold). How those five are ordered and formatted in the prompt is a separate context-assembly decision.",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://pub.towardsai.net/40-generative-ai-interview-questions-that-actually-get-asked-in-2026-with-answers-b4c647f1e2e8",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-014",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "With Cohere Rerank, a document with relevance score 0.90 can be treated as twice as relevant as one with score 0.45 for the same query.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "Cohere's docs warn that scores are not ratios; a score twice as high does not mean twice as relevant."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Scores are normalised to [0, 1] and query dependent; the rank order is the most reliable output, and thresholds should be calibrated on your own data."
+      }
+    ],
+    "explanation": "Cohere's reranking best practices say the relevance score is normalised but query dependent, and you cannot assume a document with a higher score is proportionally more relevant. Use the ordering, and if you need a cut-off, calibrate a threshold on representative queries.",
+    "reference": "https://docs.cohere.com/docs/reranking-best-practices",
+    "roleLevel": 2
+  },
+  {
+    "id": "RAG-RRK-015",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "With RRF and k = 60, a document ranked 1st in one list and absent from the other gets 1/61. At what rank r would a document need to appear in *both* lists to get exactly the same total score? Type a number.",
+    "options": [],
+    "accepted": [
+      "62"
+    ],
+    "explanation": "Two appearances at rank r give 2/(60 + r). Setting 2/(60 + r) = 1/61 gives 60 + r = 122, so r = 62. A document found by both retrievers, even fairly deep, can match a single list's top hit, which is how RRF rewards agreement.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation",
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://cloudsoftsol.com/blog/genai-engineer-interview-questions-2026/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/retrieval.md"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-016",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "Order the steps of the RAG-Fusion pipeline.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Retrieve documents for each query variant",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Generate several query variants from the user's question with an LLM",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Generate the answer from the top fused documents",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Merge the per-query result lists with reciprocal rank fusion",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "A",
+      "D",
+      "C"
+    ],
+    "explanation": "RAG-Fusion (as evaluated by Rackauckas, 2024) generates multiple queries, retrieves for each, fuses the lists with RRF, and generates from the fused top results. The extra LLM call and N retrievals buy recall; the risk is generated queries drifting off topic.",
+    "reference": "https://arxiv.org/abs/2402.03367",
+    "source": "interview:fusion",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://ather-techie.github.io/rag-interview-system/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-017",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "BM25 retrieves the right five chunks for a support question, but the best one is ranked 5th, behind long chunks that repeat the query terms many times. Which stage fixes the order without changing what was retrieved?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Raising BM25's top-k from 5 to 50",
+        "why": "This changes what is retrieved (more candidates) but not the order of the five you already have."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Re-chunking the corpus into smaller pieces",
+        "why": "Re-chunking changes the candidates themselves and requires re-indexing; it is not an ordering fix."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Lowering the generation temperature",
+        "why": "Temperature affects sampling of the answer, not the order of retrieved chunks."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A cross-encoder reranker over the retrieved chunks",
+        "why": "Correct. It scores each chunk against the query on meaning, not term counts, and reorders the same set."
+      }
+    ],
+    "explanation": "BM25 rewards term frequency (with saturation) and adjusts for length, so verbose chunks that repeat query words can outrank a concise, exact answer. A reranker, or fusion with a dense list, repairs the ordering while recall stays the same.",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-018",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "What does a cross-encoder reranker receive as input, and what does it output?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The query and one candidate passage together, and it outputs a single relevance score",
+        "why": "Correct. Each (query, passage) pair is passed through the model jointly and scored."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A batch of documents without the query, and it outputs a cluster label for each",
+        "why": "Rerankers are query dependent; clustering is unrelated."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The query alone, and it outputs a query embedding that is compared with stored document vectors",
+        "why": "That describes the query side of a bi-encoder."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "All candidate passages in one prompt, and it outputs a permutation of their ids",
+        "why": "That is a listwise LLM reranker such as RankGPT, not a cross-encoder."
+      }
+    ],
+    "explanation": "Cross-encoders score pairs: the query and a candidate are concatenated (for example `[CLS] query [SEP] passage`) and the model outputs one relevance score. To rerank 50 candidates you run 50 pairs, usually batched on a GPU.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "roleLevel": 2
+  },
+  {
+    "id": "RAG-RRK-019",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "Pairwise Ranking Prompting (PRP) asks an LLM which of two passages is more relevant, and to reduce position bias it asks for every pair in both orders. In the all-pairs variant, how many LLM calls does reranking 20 passages take? Type a number.",
+    "options": [],
+    "accepted": [
+      "380"
+    ],
+    "explanation": "There are 20 x 19 / 2 = 190 unordered pairs; asking each in both orders gives 380 calls. All-pairs is O(N^2), which is why the PRP paper also offers a sorting variant (O(N log N)) and a sliding-window variant (O(N) per pass) for the top results.",
+    "reference": "https://arxiv.org/abs/2306.17563",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-RRK-020",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Document X is ranked 1st by one retriever and 30th by the other. Document Y is ranked 8th by both. Which document wins under RRF with k = 1, and which with k = 60?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "X wins with both values of k, because a first place always dominates",
+        "why": "With k = 60, X scores 1/61 + 1/90 = 0.0275 and Y scores 2/68 = 0.0294, so Y wins."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "X wins with k = 1 and Y wins with k = 60",
+        "why": "Correct. k = 1: X 0.532, Y 0.222. k = 60: X 0.0275, Y 0.0294."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Y wins with k = 1 and X wins with k = 60",
+        "why": "This is backwards: a small k rewards top positions, so X wins at k = 1."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Y wins with both values of k, because it is consistent across lists",
+        "why": "With k = 1, X scores 1/2 + 1/31 = 0.532 against Y's 2/9 = 0.222, so X wins."
+      }
+    ],
+    "explanation": "k controls how steeply contributions fall with rank. A small k makes first place worth far more than eighth, so a single top hit dominates; a larger k flattens the curve, so consistent mid-rank agreement can win. Cormack et al. found k = 60 near-optimal in their pilot, with the choice not critical.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation",
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://cloudsoftsol.com/blog/genai-engineer-interview-questions-2026/",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/retrieval.md"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-021",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate says: *\"This chunk has the highest RRF score, so it is the most relevant chunk for the query.\"* What is the precise objection?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "RRF scores are only valid when k equals the number of retrievers being fused",
+        "why": "k is a smoothing constant (60 by convention), unrelated to the number of retrievers."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "RRF scores are random, so they carry no information about the query at all",
+        "why": "RRF is deterministic and reflects how the retrievers ranked the chunk; it is just not a relevance judgement."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "RRF measures rank agreement between retrievers, not absolute relevance",
+        "why": "Correct. The top RRF score is fixed by rank positions; it says nothing about whether any candidate answers the query."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "RRF should be replaced by summing raw scores, which do measure absolute relevance",
+        "why": "Raw BM25 and cosine scores are not calibrated relevance either, and they are not comparable across retrievers."
+      }
+    ],
+    "explanation": "RRF is a consensus of rank positions. A chunk at rank 1 in both lists gets the maximum 2/61 whether or not it is relevant, so RRF scores cannot be used as relevance thresholds or confidence. For an absolute signal, use a reranker score calibrated on your data, and evaluate relevance with labelled queries.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-022",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "Recall@50 on your golden set is 40%: for 60% of questions the gold chunk is not in the top 50. Which two changes can actually improve this number? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add a cross-encoder reranker over the existing top 50",
+        "why": "A reranker reorders the same 50 candidates; recall@50 cannot change."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Use a larger generation model with a longer context window",
+        "why": "The generator only sees what retrieval supplies; recall is unaffected."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Fix the chunking or embedding problems that keep the gold chunks out of the dense top 50",
+        "why": "Correct. Recall is set by the first stage, so fixing how gold chunks are represented addresses it directly."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower the reranker's relevance threshold",
+        "why": "Thresholds act after retrieval; they cannot add chunks that were never retrieved."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Add a BM25 leg and fuse it with the dense results, so exact terms and identifiers are also matched",
+        "why": "Correct. A second retriever finds chunks the dense retriever misses, raising recall of the candidate set."
+      }
+    ],
+    "explanation": "Recall is a first-stage property. Hybrid retrieval, better chunking or embeddings, query transformation and larger first-stage k move it; rerankers and thresholds work only within the candidate set.",
+    "source": "interview:reranking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-023",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Your cross-encoder reranking step is the p95 latency bottleneck. Which three optimisations are valid? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Rerank before retrieval so the first stage has less work to do",
+        "why": "There is nothing to rerank before retrieval; the reranker needs candidates."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Switch to a smaller or distilled reranker model, accepting a measured accuracy trade-off",
+        "why": "Correct. Smaller models cut per-pair cost; evaluate the quality drop."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Batch all (query, candidate) pairs into one GPU forward pass, and truncate overly long passages",
+        "why": "Correct. Batching uses the hardware efficiently, and pair cost grows with sequence length."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Increase the first-stage top-k to 500 so the reranker has better material",
+        "why": "This multiplies reranker cost by five, the opposite of the goal."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Precompute cross-encoder scores for every document offline",
+        "why": "Scores depend on the query, so they cannot be precomputed for unseen queries."
+      },
+      {
+        "id": "F",
+        "correct": true,
+        "text": "Rerank fewer candidates, such as 30 instead of 100, after checking recall at the smaller depth",
+        "why": "Correct. Cost is linear in candidates; measure how much recall the shorter list loses."
+      }
+    ],
+    "explanation": "Reranker latency is roughly (candidates) x (cost per pair), and cost per pair grows with model size and sequence length. Tune candidate depth against recall, choose model size against measured quality, and batch on suitable hardware. Caching helps only for repeated queries.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://www.hirist.tech/blog/?p=10568"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-024",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Reranking 50 candidates takes 60 ms on your cross-encoder. Product wants to rerank 200 candidates to \"be safe\", and the reranking budget is 150 ms. What should you expect and do?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Latency stays around 60 ms, because a cross-encoder scores all candidates in one fixed-cost pass",
+        "why": "Cost is per pair; four times the candidates means roughly four times the work."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Latency falls, because a larger batch makes each pair cheaper on the GPU",
+        "why": "Batching improves throughput a little but cannot make 4x the work faster than 1x."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "About 75 ms, since only the extra 150 candidates cost anything",
+        "why": "Every candidate costs a forward pass; 200 candidates cost about 4 x 60 ms."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "About 240 ms, over budget; first measure whether recall at 200 is actually higher than at 50",
+        "why": "Correct. Linear scaling gives 60 x 200 / 50 = 240 ms; only pay for depth that measurably finds more gold chunks."
+      }
+    ],
+    "explanation": "Reranker latency grows roughly linearly with candidate count. Before increasing depth, check recall at each depth: if recall@50 and recall@200 are close, the extra 180 ms buys nothing. Common budgets keep a few dozen to about a hundred candidates.",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.analyticsvidhya.com/blog/2026/02/rag-interview-questions-and-answers/",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://www.hirist.tech/blog/?p=10568"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-025",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each constraint with the reranking option that best fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Self-hosted open cross-encoder",
+        "why": "e.g. a bge-reranker model on your own GPUs."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Hosted rerank API",
+        "why": "e.g. Cohere Rerank, billed per search."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "LLM listwise reranker",
+        "why": "An LLM orders candidates in its prompt."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "No reranker",
+        "why": "Serve first-stage results directly."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "Regulated data must never leave your own infrastructure",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A small team with no GPUs wants managed, multilingual reranking quickly",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "Low query volume, a budget of several seconds, and relevance that depends on nuanced written criteria",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "Navigational lookups where the first-stage top 1 is already right almost every time and latency is tight",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Pick rerankers by constraint: data residency points to self-hosting, operational simplicity to a hosted API, nuanced instruction-dependent relevance with a loose latency budget to an LLM reranker, and already-precise, latency-critical traffic may need no reranker at all.",
+    "source": "interview:reranking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-026",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "Order these ways of reranking 100 candidates for one query from lowest to highest compute per query.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A cross-encoder scoring all 100 (query, passage) pairs",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Sorting by the bi-encoder similarity scores the first stage already computed",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "PRP all-pairs: an LLM compares every pair in both orders (9,900 calls)",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "RankGPT sliding window: 9 LLM calls, each ordering 20 passages",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "A",
+      "D",
+      "C"
+    ],
+    "explanation": "The first-stage scores are free. A cross-encoder runs 100 small-model forward passes. RankGPT's sliding window (window 20, step 10) makes 9 large-model calls with long prompts. PRP all-pairs needs 100 x 99 = 9,900 LLM calls, which is why the PRP paper also proposes sorting and sliding-window variants.",
+    "reference": "https://arxiv.org/abs/2304.09542",
+    "source": "interview:reranking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-027",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "fill",
+    "select": 1,
+    "stem": "RankGPT reranks the top 100 passages with a sliding window of 20 passages and a step of 10, moving from the bottom of the list to the top. How many LLM calls (windows) does one full pass take? Type a number.",
+    "options": [],
+    "accepted": [
+      "9",
+      "nine"
+    ],
+    "explanation": "Windows start at positions 81, 71, 61, 51, 41, 31, 21, 11 and 1 (covering 81-100 down to 1-20): (100 - 20) / 10 + 1 = 9 calls. Overlapping windows let strong passages move up across window boundaries toward the top.",
+    "reference": "https://arxiv.org/abs/2304.09542",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-RRK-028",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "The assistant keeps citing a policy that was deleted last week and older versions of a fast-changing pricing page. Which three fixes address this? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Lower the generation temperature",
+        "why": "Temperature does not change which documents are retrieved."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Delete or tombstone the vectors of removed documents as part of ingestion, so they cannot be retrieved",
+        "why": "Correct. A deleted source that still has vectors in the index will keep being retrieved."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Add a recency signal to the final ranking for content where newer is more trustworthy",
+        "why": "Correct. A recency boost at rerank time favours the current version when several survive."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Store version or effective-date metadata and filter out superseded versions at query time",
+        "why": "Correct. Old versions should be excluded by metadata, not left to compete on similarity."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Increase top-k so the current version is more likely to be included",
+        "why": "The stale version is still retrieved too, and the model may cite it."
+      },
+      {
+        "id": "F",
+        "correct": false,
+        "text": "Re-embed the entire corpus with a larger embedding model",
+        "why": "Stale vectors stay stale with a better model; the problem is lifecycle and versioning, not embedding quality."
+      }
+    ],
+    "explanation": "Staleness has three layers: index lifecycle (deletes must propagate), versioning (filter superseded content with metadata) and ranking (boost recency where appropriate). Better embeddings or bigger k do not fix any of them.",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/post/3233476088/rag-system-design-interview/",
+        "https://www.datacamp.com/blog/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-029",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You send a 40-page contract to Cohere Rerank v5.0 as one document with the default `max_tokens_per_doc`, and the relevant clause is near the end. It scores low. What is the likely cause and fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The document exceeds the default 4,096 tokens and is truncated, so the clause is never seen; chunk it yourself",
+        "why": "Correct. Cohere's docs say v5.0 truncates long documents to `max_tokens_per_doc` (default 4096)."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Rerank scores long documents in reverse order, so the end is weighted least; reverse the text",
+        "why": "There is no reverse weighting; the issue is truncation of text beyond the token limit."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Rerank v5.0 averages the scores of all chunks of a long document, diluting the clause; send fewer documents",
+        "why": "v5.0 does not average chunk scores; per the docs, long documents are truncated to `max_tokens_per_doc`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Rerank only accepts documents in YAML format; convert the contract to YAML",
+        "why": "Plain text is accepted; YAML is an option for structured data, where key order matters because of truncation."
+      }
+    ],
+    "explanation": "For Rerank v5.0, Cohere truncates each document to `max_tokens_per_doc` (default 4096 tokens). Older models split long documents into chunks and used the maximum chunk score. Either way, rerank RAG-sized chunks you control, not whole documents.",
+    "reference": "https://docs.cohere.com/docs/reranking-best-practices",
+    "roleLevel": 3
+  },
+  {
+    "id": "RAG-RRK-030",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "You added a reranker over the top 50 candidates. Which offline measurement shows whether it improved what reaches the prompt?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Recall@50 before and after reranking",
+        "why": "Reranking reorders the same 50 candidates, so recall@50 is identical by construction."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "nDCG@5 (or MRR) on labelled queries before and after reranking",
+        "why": "Correct. Top-position metrics reflect reordering, which is exactly what a reranker changes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The average reranker score of the top 5 chunks",
+        "why": "A model's own scores are not ground truth; they can rise while true relevance falls."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The number of tokens in the final prompt",
+        "why": "Prompt length says nothing about whether the right chunks are at the top."
+      }
+    ],
+    "explanation": "Evaluate rerankers with rank-sensitive metrics at the cut-off you actually use (nDCG@k, MRR, precision@k) on labelled queries, comparing before and after. Recall over the full candidate set cannot move. Online, watch answer quality and per-slice regressions.",
+    "source": "interview:reranking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-031",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This RRF function is meant to merge a dense list and a BM25 list. What is wrong with it?\n\n```python\ndef rrf(dense, bm25, k=60):\n    scores = {}\n    for r, d in enumerate(dense, 1):\n        if d in bm25:\n            scores[d] = 1 / (k + r) + 1 / (k + bm25.index(d) + 1)\n    return sorted(scores, key=scores.get, reverse=True)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Ranks must start at 0 in RRF, so `enumerate(dense, 1)` shifts every score and changes the order",
+        "why": "RRF ranks start at 1; `enumerate(..., 1)` and `index(d) + 1` are both correct."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Sorting with `reverse=True` puts the lowest-scoring documents first",
+        "why": "Higher RRF scores are better, so descending order is correct."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Chunks found by only one retriever are dropped; only the intersection survives",
+        "why": "Correct. With the example lists `d3, d1, d7, d2, d9` and `d1, d5, d3, d8, d2` it returns only `d1, d3, d2`, losing d5, d7, d8 and d9."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Using k = 60 makes all scores equal, so the order is arbitrary",
+        "why": "k = 60 flattens differences but does not make them equal; the scores still differ."
+      }
+    ],
+    "explanation": "Every document from every list must get a contribution: loop over each list and accumulate `scores[d] = scores.get(d, 0) + 1 / (k + rank)`. Restricting to the intersection discards the extra recall that hybrid retrieval exists to provide. Running the buggy version on two five-item lists returns 3 documents instead of 7.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions",
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation",
+        "https://www.techinterview.org/post/3233476396/what-genai-engineer-interviews-test/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-032",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "Because a cross-encoder is generally more accurate than a bi-encoder, reranking the bi-encoder's top 100 with an off-the-shelf cross-encoder can never lower nDCG@10 on your queries.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "More accurate on benchmarks does not mean better on every corpus; a general reranker can mis-rank domain jargon or exact identifiers."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Rerankers can regress on some slices (exact SKUs, error codes, specialised vocabulary), so measure before and after on your own labelled queries."
+      }
+    ],
+    "explanation": "Cross-encoders usually rank better than bi-encoders, but \"usually\" is not \"never worse\". Domain shift and exact-match queries are common regression sources. Evaluate rank-sensitive metrics at your cut-off, per query slice, before shipping a reranker.",
+    "reference": "https://sbert.net/examples/cross_encoder/applications/README.html",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://vn.linkedin.com/in/thphat19",
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/reranking.md",
+        "https://letsdatascience.com/blog/50-llm-and-ai-engineer-interview-questions-for-2026",
+        "https://www.krishnaik.in/ai-tutorials/rag-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-033",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "To save latency you want to skip the reranker for some queries. Which runtime signal is the most defensible for bypassing it?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Query length: skip the reranker for queries shorter than five words",
+        "why": "Short queries such as error codes or product names are often the hardest to rank; length is a poor proxy for difficulty."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A random 50% sample of traffic, to halve reranking cost while keeping averages stable",
+        "why": "Random skipping degrades half the answers without any regard to which queries needed reranking."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Time of day: skip during peak hours when latency matters most",
+        "why": "Load-based skipping may be an emergency measure, but it ignores whether the query needs reranking at all."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "A large first-stage score gap between top-1 and top-2, validated offline",
+        "why": "Correct. A confident, well-separated first-stage result is the case where reranking changes the least."
+      }
+    ],
+    "explanation": "Bypass rules should target queries where the first stage is already decisive: exact identifier matches, navigational lookups, or a large margin between the top candidates. Validate the rule offline by checking how often reranking would have changed the top results for the queries it skips.",
+    "source": "interview:reranking",
+    "roleLevel": 3,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.techinterview.org/companies/contextual-ai-interview-guide/"
+      ],
+      "companies": [
+        "Contextual AI"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-034",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A teammate wants to replace RRF with a weighted score fusion (0.7 x dense + 0.3 x BM25, after normalisation) tuned on last quarter's labelled queries. It scores 3 points higher offline. What is the senior-level caveat?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The weights fit this corpus and query mix, so they drift and need re-tuning",
+        "why": "Correct. RRF has no learned weights and is robust; tuned weights can beat it but carry ongoing evaluation cost."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "RRF needs labelled data to tune k, so the two approaches have the same maintenance cost",
+        "why": "RRF works unsupervised with k = 60; that is its main advantage over tuned weights."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Weighted fusion always beats RRF once tuned, so there is no caveat",
+        "why": "Tuned weights can win on the data they were tuned on, but the gain may not hold as data shifts."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Weighted fusion cannot combine more than two retrievers",
+        "why": "Weighted sums extend to any number of retrievers; that is not the concern."
+      }
+    ],
+    "explanation": "Score fusion with tuned weights depends on normalisation choices and on the query distribution it was fit to; when content, embedding models or user behaviour change, the optimum moves. Accept it when you have a maintained labelled set and monitoring; otherwise RRF is a strong default that needs no training data.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://raw.githubusercontent.com/landedjobs/rag-engineer-interview-questions/main/questions/retrieval.md"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-035",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Your assistant fuses results from the production SQL database, an internal wiki and web search with RRF. Answers now conflict: a two-year-old blog post outranks the live database value. What is the right diagnosis?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "RRF's k is too small; raising it will push the database result above the blog post",
+        "why": "Changing k reshapes rank weighting but still treats all sources as equal peers."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Rank fusion treats every source as a peer; authority and freshness need source-aware rules",
+        "why": "Correct. Relevance is not authority; model source priority and recency explicitly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The web results need a stronger reranker so the relevant blog post is ranked correctly",
+        "why": "The blog post may well be relevant; the issue is that it is not authoritative."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The embedding model is not multilingual, so web content is scored inconsistently",
+        "why": "Nothing suggests a language problem; the failure is about source authority."
+      }
+    ],
+    "explanation": "RRF and rerankers answer \"how well does this match the query?\", not \"which source should win when they disagree?\". Encode authority explicitly: prefer the system of record for facts it owns, apply recency rules, label sources in the prompt and define conflict resolution, instead of letting a relevant but stale page win on rank.",
+    "source": "interview:fusion",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://aiinterviewprep.substack.com/p/rag-interview-questions-7-the-prestige"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-036",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Users ask both \"What is our refund policy for annual plans?\" and \"How many annual-plan refunds did we issue in March?\" The data lives in policy documents and a SQL warehouse. Which retrieval design fits?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Embed every SQL row as text, put everything into one vector index and rerank the results",
+        "why": "Similarity search cannot compute aggregates such as counts; embedding rows loses the database's precision."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Run text-to-SQL for every question and fall back to documents only if the SQL fails",
+        "why": "Policy questions do not map to SQL, so most of them would pay for a failed SQL attempt before reaching the right source."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Route aggregates to text-to-SQL and policy questions to document retrieval",
+        "why": "Correct. Each question type goes to the system that can answer it, with source-aware merging for mixed questions."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Fuse SQL results and document chunks with RRF so the best of both rises to the top",
+        "why": "SQL results and text chunks are not ranked lists over a shared space; RRF cannot decide which source should answer."
+      }
+    ],
+    "explanation": "Structured and unstructured data need different engines: SQL for exact filters and aggregates, retrieval for prose. Route by question type (or decompose mixed questions), run each engine, and combine with explicit source-aware rules rather than rank fusion.",
+    "source": "interview:fusion",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-037",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You want to drop reranked chunks that are probably irrelevant, using Cohere Rerank scores. What is the recommended way to pick the threshold?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Use 0.5 for every application, since scores are normalised to the range 0 to 1",
+        "why": "Normalisation does not make 0.5 meaningful; scores are query dependent and the cut-off depends on your domain."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Keep chunks scoring at least half of the top chunk's score for each query",
+        "why": "Cohere warns scores are not ratios, so relative fractions of the top score are not meaningful."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Never threshold; always pass the top 5 regardless of score",
+        "why": "A fixed top-5 sends weak chunks when nothing relevant exists, inviting the model to answer from noise."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Score 30-50 representative queries with borderline documents; use the average",
+        "why": "Correct. This is Cohere's suggested calibration procedure for a domain-specific threshold."
+      }
+    ],
+    "explanation": "Cohere's best practices describe calibrating a threshold: pick 30 to 50 representative queries, pair each with a document that is borderline relevant for your use case, score them, and use the average as a reference. Combine the threshold with a fallback, such as saying no relevant source was found, when nothing passes.",
+    "reference": "https://docs.cohere.com/docs/reranking-best-practices",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-RRK-038",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Which two statements about LLM-based rerankers are correct? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Pairwise prompting compares two passages per call and, in the PRP paper, asks both orders to counter position bias",
+        "why": "Correct. PRP queries each pair as (d1, d2) and (d2, d1) and treats disagreement as a tie."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LLM rerankers are usually faster than cross-encoders because they need fewer candidates",
+        "why": "LLM calls on long prompts are typically far slower and more expensive than small cross-encoder passes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pointwise LLM scoring cannot be parallelised because each score depends on the previous one",
+        "why": "Pointwise scores are independent per candidate, which makes them easy to parallelise."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Listwise rerankers such as RankGPT put many candidates in one prompt and output an order of their ids, using a sliding window for long lists",
+        "why": "Correct. RankGPT generates permutations like `[2] > [3] > [1]` with a window of 20 and step of 10."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "An LLM reranker can recover relevant documents the first stage missed",
+        "why": "Like any reranker, it only reorders the candidates it receives."
+      }
+    ],
+    "explanation": "LLM rerankers come in pointwise (score each pair independently, parallelisable), pairwise (PRP, robust but many calls) and listwise (RankGPT, permutation output, sensitive to window strategy) forms. They trade latency and cost for zero-shot, instruction-following relevance judgement.",
+    "reference": "https://arxiv.org/abs/2306.17563",
+    "source": "interview:reranking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-039",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A listwise LLM reranker gives your best nDCG, but it costs too much per query at production traffic. Which approach does the RankGPT paper show to keep most of the quality?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Distil the LLM's rankings into a small cross-encoder trained on its permutations",
+        "why": "Correct. RankGPT distilled ChatGPT rankings into a ~440M DeBERTa model that beat a 3B monoT5 on BEIR."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Cache the LLM's rankings by exact query string and serve misses from BM25",
+        "why": "Caching helps only repeated queries; most traffic would fall back to the weaker ranking."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Reduce the sliding window to 2 passages so each call is cheaper",
+        "why": "That turns listwise ranking into many pairwise calls, typically raising the call count rather than cutting cost."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ask the LLM for scores instead of a permutation and keep the same prompt size",
+        "why": "Changing output format does not remove the expensive LLM call per query."
+      }
+    ],
+    "explanation": "Sun et al. (RankGPT) trained a DeBERTa-v3-large cross-encoder (about 440M parameters) on ChatGPT-generated permutations; it averaged 53.03 nDCG on BEIR versus 51.36 for monoT5 (3B). Distillation moves the LLM cost offline and serves a cheap specialised reranker.",
+    "reference": "https://arxiv.org/abs/2304.09542",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-RRK-040",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "After launching a new reranker, overall answer ratings are flat, but support tickets mention that searches for exact SKUs and error codes got worse. Which two steps best detect and confirm such a regression? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Compare recall@50 of the candidate set before and after",
+        "why": "The candidate set is unchanged by reranking, so recall@50 cannot reveal the regression."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Evaluate offline on a labelled slice of exact-identifier queries, comparing old and new ranking at the cut-off you serve",
+        "why": "Correct. Aggregate metrics hide slice regressions; an identifier slice exposes them."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Check that the new reranker's average relevance score is higher than the old one's",
+        "why": "Scores from different models are not comparable and are not ground truth."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Ask the generator whether it liked the new chunks better",
+        "why": "Self-reported preference from the generator is not a reliable relevance measurement."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Run the old and new rankers side by side on live traffic (shadow or A/B) and compare per-slice signals such as clicks or citation use",
+        "why": "Correct. Online comparison per query type confirms what offline evaluation suggests."
+      }
+    ],
+    "explanation": "Semantic rerankers can underweight exact-token matches that BM25 handled well. Slice evaluation by query type (identifiers, navigational, long-form), compare with rank-sensitive metrics at the served cut-off, and confirm online. Mitigations include keeping exact-match boosts or bypassing the reranker for id lookups.",
+    "source": "interview:reranking",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-041",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "You want to bypass the reranker when it adds little. Which design is safest to roll out?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Bypass whenever the user is on a mobile device, where latency matters more",
+        "why": "Device type says nothing about whether this query needs reranking."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Derive a rule from logs of when reranking changed results; shadow it first",
+        "why": "Correct. Base the rule on evidence of when reranking matters, and verify it before relying on it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Bypass for all queries during an A/B test and compare overall averages only",
+        "why": "Overall averages hide which query types were hurt; you need per-slice results."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Bypass the reranker whenever its last call took more than 200 ms",
+        "why": "Skipping based on the previous call's latency is unrelated to the current query's needs and makes quality erratic."
+      }
+    ],
+    "explanation": "A safe bypass policy is evidence driven: measure on historical queries how often reranking changes the top-k for each slice (exact ids, high first-stage margin, simple navigational queries), derive a rule, run it in shadow mode, and enable it only where quality holds.",
+    "source": "interview:reranking",
+    "roleLevel": 5,
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/KalyanKS-NLP/RAG-Interview-Questions-and-Answers-Hub",
+        "https://www.techinterview.org/companies/contextual-ai-interview-guide/"
+      ],
+      "companies": [
+        "Contextual AI"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-042",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A RAG-Fusion deployment sometimes gives answers that drift off topic. Logs show that one of the four generated queries often reinterprets the question. Which change targets this failure most directly?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Generate eight query variants instead of four so the off-topic one is outvoted",
+        "why": "More variants can add more drift, and an off-topic variant still contributes its documents to the fusion."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise RRF's k so all ranks contribute equally",
+        "why": "Flattening rank weights does nothing to stop an off-topic list from contributing documents."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Keep the original query's list, weighted above the variants",
+        "why": "Correct. Anchoring on the original query limits how far generated variants can pull the fused list."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Remove RRF and simply concatenate the four lists",
+        "why": "Concatenation gives off-topic results full weight at the top of their segment, which is worse."
+      }
+    ],
+    "explanation": "The RAG-Fusion evaluation reports answers straying off topic when generated queries were not relevant enough to the original. Keep the original query in the mix with extra weight, check variants against the original (for example by embedding similarity), and rerank the fused set against the original question.",
+    "reference": "https://arxiv.org/abs/2402.03367",
+    "source": "interview:fusion",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://ather-techie.github.io/rag-interview-system/"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-043",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A user asks about a product feature that does not exist. Both the dense and BM25 retrievers put the same loosely related chunk first, so it gets the maximum two-list RRF score of 2/61 = 0.0328, and the model answers confidently from it. What is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Add a third retriever so the RRF score can reach 3/61",
+        "why": "More agreeing retrievers raise the score further without saying anything about relevance."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Lower k so that the top document's RRF score becomes larger",
+        "why": "A larger RRF score still reflects only rank agreement, not relevance."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Require RRF scores above 0.03 before the model is allowed to answer the question",
+        "why": "Any document ranked first by both retrievers clears 0.03 regardless of relevance, so this threshold cannot detect irrelevance."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Rerank and abstain when the best calibrated score is below a threshold",
+        "why": "Correct. A calibrated relevance score can signal \"no good evidence\", which a rank-based score cannot."
+      }
+    ],
+    "explanation": "RRF scores depend only on positions: whatever is top of both lists always gets 2/61. To detect the no-answer case you need an absolute relevance signal, such as a reranker score with a threshold calibrated on your data, plus generation instructions to say when the sources do not contain the answer.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "source": "interview:fusion",
+    "roleLevel": 4,
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://prachub.com/resources/hybrid-search-interview-questions-bm25-embeddings-fusion-and-evaluation"
+      ]
+    }
+  },
+  {
+    "id": "RAG-RRK-044",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "One of your two retrievers occasionally ranks an irrelevant chunk first while the other retriever does not return it at all. Under RRF with k = 60, how does that chunk compare with a chunk ranked 5th by both retrievers?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "It loses, scoring 1/61 = 0.0164 against 2/65 = 0.0308 for the consistent chunk",
+        "why": "Correct. The constant k damps any single list's top rank, so one outlier system cannot dominate."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It ties, because RRF only counts how many lists contain each chunk",
+        "why": "RRF uses rank positions, not just appearance counts; the two scores differ."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It is excluded entirely, because RRF keeps only chunks found by every retriever",
+        "why": "RRF keeps single-list chunks; they just score lower than chunks both retrievers agree on."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "It wins, because a first place is worth more than any combination of lower ranks",
+        "why": "With k = 60 a first place in one list is worth 1/61 = 0.0164, about half of the 0.0308 earned by rank 5 in both."
+      }
+    ],
+    "explanation": "Cormack et al. note that k mitigates the impact of high rankings by outlier systems. With k = 60 the gap between rank 1 and rank 5 in one list is small (0.0164 vs 0.0154), so agreement across lists outweighs one retriever's isolated top pick.",
+    "reference": "https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf",
+    "roleLevel": 4
+  },
+  {
+    "id": "RAG-RRK-045",
+    "domain": 2,
+    "skill": "fusion-reranking",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An off-the-shelf cross-encoder trained on general web search data reranks your medical-coding corpus, and it often puts chunks that share common words above chunks with the exact code descriptions. What is the most effective long-term fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Increase the candidate depth from 50 to 500 so the right chunk is more likely in the shortlist",
+        "why": "The right chunk is already in the shortlist; it is being misordered, and more candidates multiply cost."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Fine-tune the reranker on in-domain pairs with mined hard negatives",
+        "why": "Correct. Domain pairs with hard negatives teach the model the distinctions your corpus needs."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Replace the cross-encoder with the bi-encoder scores, which are domain neutral",
+        "why": "Bi-encoders are usually less accurate at ordering and are just as exposed to domain shift."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Lower the reranker's relevance threshold so more chunks pass through",
+        "why": "A threshold changes how many chunks pass, not their order."
+      }
+    ],
+    "explanation": "Rerankers trained on general data can mis-rank specialised jargon. Fine-tuning on in-domain labelled pairs, with hard negatives (near-miss chunks your retriever actually returns), adapts the model to your relevance criteria. Measure before and after with rank-sensitive metrics on a held-out domain set.",
+    "roleLevel": 4
+  }
+]
