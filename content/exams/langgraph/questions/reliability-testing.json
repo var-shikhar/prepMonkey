@@ -1,0 +1,2147 @@
+[
+  {
+    "id": "LGR-REL-001",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A LangGraph workflow compiled with a checkpointer crashes while running its fourth node. When the thread is resumed, where does execution pick up?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "From the last checkpoint; the interrupted node re-runs from its first line",
+        "why": "Checkpoints are saved at super-step boundaries, so the node that was running when the crash happened is re-executed from its first line."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "At the exact line inside the fourth node where the crash happened",
+        "why": "The docs say explicitly that resumption does not continue from the same line of code; it returns to a checkpoint boundary."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "At the very first node, because a crash discards the thread's checkpoints",
+        "why": "Saved checkpoints survive a crash of the process (with a persistent checkpointer); only the unfinished step is repeated."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Nowhere: a crashed run cannot be resumed and must be started again with new input",
+        "why": "Recovering from failures is one of the main purposes of a checkpointer; calling `invoke(None, config)` on the same thread continues the run."
+      }
+    ],
+    "explanation": "Durable execution means progress is saved at well-defined points so a run can continue after a failure. LangGraph saves a checkpoint at each super-step boundary, not in the middle of a function, so the node that was running is executed again from its start. That is why side effects inside nodes must be safe to repeat.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:durable-execution-concept",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/mchittineni/ultimate-ai-engineering-guide/main/ai-agents-and-mcp/what-is-an-agent-state-machine-and-how-does-state-persist-across-multi-step-execution.md",
+        "https://docs.langchain.com/oss/python/langgraph/functional-api"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-REL-002",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A node calls a flaky partner API. How do you make LangGraph retry that node automatically on transient failures?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Pass `{\"retries\": 3}` inside the `configurable` dict when invoking",
+        "why": "`configurable` holds your own run-time settings; LangGraph does not read a retry count from it."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Pass `retry_policy=RetryPolicy(...)` to `add_node` for that node",
+        "why": "`retry_policy` is the `add_node` parameter that takes a `RetryPolicy` from `langgraph.types`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Raise the graph's `recursion_limit` so the node gets more chances",
+        "why": "`recursion_limit` caps the number of super-steps; it does not re-run a node that raised."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap `graph.invoke` in a loop that calls it again with the same input on any error",
+        "why": "That restarts the whole run from the beginning instead of retrying only the failed node, and repeats work that already succeeded."
+      }
+    ],
+    "explanation": "Retries are configured per node: `builder.add_node(\"call_api\", call_api, retry_policy=RetryPolicy(max_attempts=3))`. LangGraph re-runs only that node's failed attempt, with backoff, according to the policy's `retry_on` rule.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:retry-policy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-REL-003",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "An agent loop keeps calling itself until it exceeds the run's `recursion_limit`. Which exception class does LangGraph raise? Type the class name.",
+    "options": [],
+    "accepted": [
+      "GraphRecursionError",
+      "langgraph.errors.GraphRecursionError",
+      "`GraphRecursionError`"
+    ],
+    "explanation": "Once the configured number of super-steps is used up without reaching a stop condition, LangGraph raises `GraphRecursionError` from `langgraph.errors`. You can catch it outside the graph, or handle the limit inside the graph with `RemainingSteps` before it is hit.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:recursion-limit",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langchain-interview-questions",
+        "https://github.com/afjalk09/AI-Interview-Prep-Hub/tree/main/LangGraph",
+        "https://raw.githubusercontent.com/mchittineni/ultimate-ai-engineering-guide/main/ai-agents-and-mcp/how-do-you-prevent-infinite-agentic-loops-and-runaway-execution.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-REL-004",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "With `durability=\"exit\"`, LangGraph still writes a checkpoint after every super-step; it only delays flushing them until the run exits.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false. In `\"exit\"` mode intermediate state is not saved at all; only the state at exit is persisted."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. `\"exit\"` persists changes only when the run exits (on success, on error or at an interrupt), so intermediate checkpoints are never written and a process crash mid-run loses that progress."
+      }
+    ],
+    "explanation": "The three durability modes trade speed for safety: `\"exit\"` saves only when execution exits, `\"async\"` saves each step in the background while the next step runs, and `\"sync\"` saves each step before the next one starts.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:durability modes",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-005",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "In a pytest suite, how do you unit-test just the `classify` node of a compiled graph without running the rest of the graph?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`compiled.get_graph().nodes[\"classify\"]()`",
+        "why": "`get_graph()` returns a drawable description of the graph for visualisation, not runnable nodes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`compiled.invoke({\"text\": \"refund please\"}, node=\"classify\")`",
+        "why": "`invoke` has no `node` argument for running a single node."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`compiled.nodes[\"classify\"].invoke({\"text\": \"refund please\"})`",
+        "why": "Compiled graphs expose each node through `graph.nodes`, and invoking one runs only that node."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Copy the function into the test and never touch the compiled graph",
+        "why": "Calling the raw function can work, but the docs' pattern is `graph.nodes`, which tests the node exactly as the graph wraps it."
+      }
+    ],
+    "explanation": "The testing guide shows `compiled_graph.nodes[\"node1\"].invoke(state)` for testing individual nodes. Note that this bypasses any checkpointer the graph was compiled with, so it is a pure unit test of the node's logic.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/test",
+    "source": "interview:testing-graphs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/abhishuman18/Minimal-Workflow-Agent-Enigne-Tredence-",
+        "https://github.com/melmallow/spotter",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://rpabotsworld.com/langgraph-interview-questions/"
+      ],
+      "companies": [
+        "Tredence",
+        "Future Research"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-REL-006",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "A node is registered with `cache_policy=CachePolicy()` (no `ttl`) and the graph is compiled with `cache=InMemoryCache()`. How long does a cached result stay valid?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Until the thread's next checkpoint is written",
+        "why": "The node cache is separate from checkpoints and is not tied to a thread."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "120 seconds, the default `ttl`",
+        "why": "120 seconds is only the value used in a docs example; the default `ttl` is `None`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Until the current super-step ends",
+        "why": "Cache entries outlive a step and even a run; that is what lets a second `invoke` hit them."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "It never expires on its own",
+        "why": "When `ttl` is not specified, the docs say the cache never expires."
+      }
+    ],
+    "explanation": "`CachePolicy` has two settings: `key_func` (by default a hash of the node's input) and `ttl` in seconds. With `ttl=None` an entry lives until the cache is cleared, for example with `graph.clear_cache()`, or the in-memory cache disappears with the process.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:performance and caching",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-007",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "fill",
+    "select": 1,
+    "stem": "To let nodes see how many super-steps are left before the recursion limit, you add a key to the state schema annotated with a managed value from `langgraph.managed`, e.g. `remaining_steps: ...`. What is that type called? Type the name.",
+    "options": [],
+    "accepted": [
+      "RemainingSteps",
+      "`RemainingSteps`",
+      "langgraph.managed.RemainingSteps"
+    ],
+    "explanation": "`RemainingSteps` is a managed value: LangGraph fills it in on every step with the number of steps left before `recursion_limit` is reached, and it is not stored as normal state. A router can read it and send the run to a wrap-up node before `GraphRecursionError` would be raised.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:loop control",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-008",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 1,
+    "type": "single",
+    "select": 1,
+    "stem": "You call `graph.invoke(inputs, config)` on a graph compiled with a checkpointer and pass no `durability` argument. Which durability mode is used?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`\"async\"`: checkpoints are written in the background",
+        "why": "`async` is the default in LangGraph 1.2; the source documents `durability` as defaulting to `\"async\"`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`\"sync\"`: each checkpoint is written before the next step starts",
+        "why": "`sync` is the most durable option, but you must ask for it explicitly."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`\"exit\"`: only the final state is written",
+        "why": "`exit` is an opt-in mode for speed; it is not the default."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "None; nothing is saved unless a durability mode is passed",
+        "why": "A graph compiled with a checkpointer saves checkpoints by default."
+      }
+    ],
+    "explanation": "LangGraph writes checkpoints in the background by default (`\"async\"`), so frequent checkpoints cost little latency. Pass `durability=\"sync\"` when every step must be saved before the next begins, or `\"exit\"` to save only at the end.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:durability-modes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-009",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A developer adds caching but the expensive node still runs on every identical call. What is missing?\n\n```python\nbuilder.add_node(\"embed\", embed_docs, cache_policy=CachePolicy(ttl=600))\ngraph = builder.compile(checkpointer=InMemorySaver())\n\ngraph.invoke({\"doc\": \"a\"}, cfg)\ngraph.invoke({\"doc\": \"a\"}, cfg)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `thread_id` that differs between the two calls",
+        "why": "The cache is keyed on the node input, not on the thread; changing the thread would not create a cache."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A cache backend passed to `compile()`, such as `cache=InMemoryCache()`",
+        "why": "Node caching needs both a `cache_policy` on the node and a `cache` passed to `compile()`; without the cache object nothing is stored."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "A `key_func` in the `CachePolicy`; without one no key is computed",
+        "why": "`key_func` has a default (a hash of the input), so it is optional."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`durability=\"sync\"`, because cached results are stored in checkpoints",
+        "why": "The node cache is a separate store from the checkpointer, and durability modes do not affect it."
+      }
+    ],
+    "explanation": "Two things must be configured for a cache hit: `cache_policy=CachePolicy(...)` on the node and `cache=InMemoryCache()` (or `SqliteCache`) on `compile()`. Running this code without the cache argument executes `embed` twice.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:cache-policy",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-010",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each `add_node` parameter with what it does when the node runs.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`retry_policy=RetryPolicy(...)`",
+        "why": "Re-runs a failed attempt with backoff when the exception matches `retry_on`."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`timeout=TimeoutPolicy(...)`",
+        "why": "Cancels an async attempt that runs or stays idle too long and raises `NodeTimeoutError`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`error_handler=handler`",
+        "why": "Runs after retries are exhausted, receives a `NodeError`, and can route with `Command`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`cache_policy=CachePolicy(...)`",
+        "why": "Skips the node and reuses an earlier output when the same input was seen before."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A node calling a provider that sometimes returns 503 should try again a few times",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "An async model call must not hang for more than two minutes",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "If charging the card still fails after retries, move to a refund-and-notify branch",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A costly embedding step is called again and again with the same document",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The fault-tolerance mechanisms compose in a fixed order: a timeout turns a stuck attempt into `NodeTimeoutError`, the retry policy decides whether to try again, and only after retries are exhausted does the error handler run. Caching is separate: it avoids running the node at all for a repeated input.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-011",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about `RetryPolicy()` created with no arguments are true in LangGraph 1.2? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A `ValueError` raised by the node is retried by default",
+        "why": "`ValueError` is on the default `retry_on` exclusion list, so it is raised immediately."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Waits are capped at `max_interval=60` seconds",
+        "why": "The default `max_interval` is 128 seconds."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`max_attempts` is 3, and that count includes the first attempt",
+        "why": "The default is 3 attempts in total: the original try plus two retries."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The first retry waits about `initial_interval=0.5` seconds, and later waits grow by `backoff_factor=2.0`",
+        "why": "Those are the documented defaults for the starting interval and the multiplier."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "`jitter` is on, so a random amount is added to each wait",
+        "why": "`jitter=True` by default, which spreads out retries from many workers."
+      }
+    ],
+    "explanation": "`RetryPolicy` defaults: `initial_interval=0.5`, `backoff_factor=2.0`, `max_interval=128.0`, `max_attempts=3`, `jitter=True`, and `retry_on=default_retry_on`, which skips common programming errors such as `ValueError`, `TypeError` and `LookupError`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:retry-policy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-012",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A node has `retry_policy=RetryPolicy()` with the default `retry_on`. Which of these exceptions raised by the node is retried?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The built-in `TimeoutError` raised by a socket call",
+        "why": "Built-in `TimeoutError` is a subclass of `OSError`, which the default rule excludes."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`KeyError` from reading a missing dict key",
+        "why": "`KeyError` is a `LookupError`, which the default rule does not retry."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A custom `class RateLimited(Exception)`",
+        "why": "The default rule retries any exception that is not on its exclusion list, and a plain `Exception` subclass is not on it."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ValueError` from a failed parse",
+        "why": "`ValueError` is excluded: retrying the same bad input would fail the same way."
+      }
+    ],
+    "explanation": "`default_retry_on` returns `False` for `ValueError`, `TypeError`, `ArithmeticError`, `ImportError`, `LookupError`, `NameError`, `SyntaxError`, `RuntimeError`, `ReferenceError`, `StopIteration`, `StopAsyncIteration` and `OSError` (and subclasses). The installed source checks the built-in `ConnectionError` first and does retry it. Everything else, such as your own exception classes, is retried.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:retry-policy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-013",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "order",
+    "select": 1,
+    "stem": "`charge` has `retry_policy=RetryPolicy(max_attempts=2, retry_on=ConnectionError)` and an `error_handler`. The gateway is down, so every attempt raises `ConnectionError`. Put the events in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "The error handler is called with a `NodeError` describing the failure",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The first attempt of `charge` raises `ConnectionError`",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The handler's `Command(goto=\"refund\")` sends the run to the `refund` node",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The policy matches, so `charge` runs a second attempt after a backoff wait, and it fails too",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "A",
+      "C"
+    ],
+    "explanation": "When an attempt raises, the retry policy decides first. Only when it is exhausted (or does not match) does the error handler run, and it can return a `Command` that updates state and routes to a recovery branch, such as a compensation step in a Saga.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:error-handling-strategy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-014",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "This test runs only part of a four-node linear graph (`node1 -> node2 -> node3 -> node4`), where each node sets `my_key` to `\"hello from <name>\"`. What does it observe?\n\n```python\ng = create_graph().compile(checkpointer=InMemorySaver())\ncfg = {\"configurable\": {\"thread_id\": \"1\"}}\ng.update_state(cfg, {\"my_key\": \"seed\"}, as_node=\"node1\")\nresult = g.invoke(None, cfg, interrupt_after=\"node3\")\nprint(result[\"my_key\"], g.get_state(cfg).next)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`hello from node1 ('node2',)`",
+        "why": "`node1` never runs; `as_node=\"node1\"` only pretends it produced the seeded state."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`hello from node4 ()`",
+        "why": "`interrupt_after=\"node3\"` stops the run before `node4` executes."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`seed ('node2',)`",
+        "why": "`invoke(None, cfg)` continues the thread, so `node2` runs straight away."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`hello from node3 ('node4',)`",
+        "why": "The update counts as `node1`'s output, so `node2` and `node3` run, and the run pauses after `node3` with `node4` pending."
+      }
+    ],
+    "explanation": "This is the testing guide's partial-execution recipe: seed a thread with `update_state(..., as_node=<node before the section>)`, then `invoke(None, ...)` with `interrupt_after=<last node of the section>`. Only the section under test runs, without restructuring the graph.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/test",
+    "source": "interview:testing graphs",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langchain/test/unit-testing",
+        "https://docs.langchain.com/oss/javascript/langchain/test/unit-testing",
+        "https://www.c-sharpcorner.com/article/unit-testing-enterprise-multi-agent-langgraph-systems/",
+        "https://dotzlaw.com/insights/advanced-testing-strategies-for-langgraph-and-pydantic-ai-agent-systems/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-015",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "When an async node has `timeout=60` and a retry policy, the 60 seconds cover all attempts together, so later retries get whatever time is left.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false. The timeout applies to each attempt on its own; the clock resets for every retry."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Each attempt gets the full timeout; a timed-out attempt raises `NodeTimeoutError`, its writes are cleared, and the retry policy decides whether to start a new attempt with a fresh clock."
+      }
+    ],
+    "explanation": "Per-node timeouts cap a single attempt. `NodeTimeoutError` is retryable by the default policy, so `timeout=60` with `RetryPolicy(max_attempts=3)` can take roughly three minutes plus backoff before the error finally surfaces.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-016",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "fill",
+    "select": 1,
+    "stem": "Older code passes `checkpoint_during=False` to `graph.stream(...)`. In LangGraph 1.2 that parameter is deprecated in favour of `durability`. Which durability value does `checkpoint_during=False` map to? Type the value.",
+    "options": [],
+    "accepted": [
+      "exit",
+      "\"exit\"",
+      "'exit'"
+    ],
+    "explanation": "The installed source converts `checkpoint_during=True` to `durability=\"async\"` and `checkpoint_during=False` to `durability=\"exit\"`, and warns that `checkpoint_during` will be removed. Passing both parameters raises an error.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-017",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "A unit test patches an async client used by an async node, and the run fails with `TypeError: object dict can't be used in 'await' expression`. What is the fix?\n\n```python\nclient = MagicMock()\nclient.fetch.return_value = {\"x\": 1}\n\nasync def load(state):\n    data = await client.fetch()\n    return {\"data\": data}\n\nasyncio.run(graph.ainvoke({}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Patch with `AsyncMock(return_value={\"x\": 1})`",
+        "why": "An `AsyncMock` call returns a coroutine, which `await` can consume."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Call `graph.invoke` instead of `graph.ainvoke`",
+        "why": "The node is still a coroutine that awaits the mock's plain dict, so the same error appears."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Add `retry_policy=RetryPolicy()` to the node",
+        "why": "`TypeError` is not retried by the default policy, and retrying would fail the same way anyway."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Compile the graph with `InMemorySaver()` so the node's result can be replayed",
+        "why": "A checkpointer has nothing to do with whether the mocked call is awaitable."
+      }
+    ],
+    "explanation": "`MagicMock().fetch()` returns the plain `return_value`, and awaiting a dict raises `TypeError`. Use `unittest.mock.AsyncMock` for anything the node awaits. Running this snippet with `AsyncMock` returns the state normally.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/test",
+    "source": "interview:testing graphs",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://dotzlaw.com/insights/advanced-testing-strategies-for-langgraph-and-pydantic-ai-agent-systems/",
+        "https://www.c-sharpcorner.com/article/unit-testing-enterprise-multi-agent-langgraph-systems/"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-018",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "In a take-home you write a tiny workflow engine with a `while` loop over nodes and a `max_steps` guard against infinite cycles. Which LangGraph setting plays the role of `max_steps`?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`RetryPolicy.max_attempts`, which caps how often a node may run",
+        "why": "`max_attempts` limits retries of one failed node attempt, not the length of a run."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "The `recursion_limit` config key",
+        "why": "Exceeding it raises `GraphRecursionError`, just like a step guard tripping."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`max_concurrency`, which caps how many nodes run at once",
+        "why": "That limits parallelism within a step, not how many steps a run may take."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`CachePolicy.ttl`, which expires work after a time",
+        "why": "`ttl` controls how long cached node results stay valid."
+      }
+    ],
+    "explanation": "`recursion_limit` counts super-steps; parallel nodes in one step count once. It is passed as a top-level config key, and hitting it raises `GraphRecursionError`. Unlike a hand-written counter, it applies to every cycle in the graph without extra code.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:workflow-engine-from-scratch",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/abhishuman18/Minimal-Workflow-Agent-Enigne-Tredence-",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://github.com/amitshekhariitbhu/ai-engineering-interview-questions"
+      ],
+      "companies": [
+        "Tredence",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 1
+  },
+  {
+    "id": "LGR-REL-019",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 2,
+    "type": "single",
+    "select": 1,
+    "stem": "Take-home review: you refactored a messy FastAPI RAG service and kept a two-node LangGraph (`retrieve -> generate`) instead of two plain function calls. Which justification is strongest?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "LangGraph removes the need for unit tests, because the graph structure is validated at compile time",
+        "why": "Compilation checks wiring, not behaviour; you still test nodes and paths."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "A graph is always faster than calling two functions in sequence",
+        "why": "A graph adds a small runtime overhead; the case for it is reliability and extensibility, not raw speed."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Per-node retries, caching, resume and isolated node tests, plus room for new branches",
+        "why": "These are concrete capabilities the graph gives each step, and they matter as soon as the pipeline grows."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "FastAPI cannot call an LLM unless the call is wrapped in a graph",
+        "why": "FastAPI can call any Python code; the graph is a design choice, not a requirement."
+      }
+    ],
+    "explanation": "For a two-step pipeline the graph is worth keeping when you can name what it buys: per-node `retry_policy`, `cache_policy` and `timeout`, a checkpointer for resume and inspection, `graph.nodes[...]` for isolated tests, and room to add grading or fallback branches later.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:refactor-take-home",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://github.com/verneylmavt/bithealth-crfc"
+      ],
+      "companies": [
+        "Bithealth"
+      ]
+    },
+    "roleLevel": 2
+  },
+  {
+    "id": "LGR-REL-020",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nclass S(TypedDict):\n    log: Annotated[list, operator.add]\n    remaining_steps: RemainingSteps\n\ndef agent(s):\n    return {\"log\": [s[\"remaining_steps\"]]}\n\ndef route(s):\n    return END if s[\"remaining_steps\"] <= 2 else \"agent\"\n\nb = StateGraph(S)\nb.add_node(agent)\nb.add_edge(START, \"agent\")\nb.add_conditional_edges(\"agent\", route)\nprint(b.compile().invoke({\"log\": []}, {\"recursion_limit\": 6}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{'log': [5, 4, 3, 2, 1]}`",
+        "why": "The router stops as soon as it sees 2, so `agent` never runs with 1 left."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'log': [6, 5, 4, 3, 2]}`",
+        "why": "Running it shows the first execution of `agent` reading 5 with a limit of 6, not 6."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`GraphRecursionError` after six runs of `agent`",
+        "why": "The router checks `remaining_steps` and returns `END` before the limit is reached."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`{'log': [5, 4, 3, 2]}`",
+        "why": "With a limit of 6, the first run of `agent` sees 5 steps left; the value drops by one each step, and once `agent` logs 2 the router returns `END`."
+      }
+    ],
+    "explanation": "`RemainingSteps` lets the graph wind down on its own terms: each node and router sees how many steps are left and can route to `END` or a fallback node before the limit would raise `GraphRecursionError`. The docs call this the proactive approach, and it ends the run normally.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:loop control",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-021",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "This counter loop needs 8 iterations, but it is first run with a limit of 5. What happens?\n\n```python\nb.add_node(\"inc\", lambda s: {\"n\": s[\"n\"] + 1})\nb.add_edge(START, \"inc\")\nb.add_conditional_edges(\"inc\", lambda s: END if s[\"n\"] >= 8 else \"inc\")\ng = b.compile(checkpointer=InMemorySaver())\ncfg = {\"configurable\": {\"thread_id\": \"r\"}}\n\ntry:\n    g.invoke({\"n\": 0}, {**cfg, \"recursion_limit\": 5})\nexcept GraphRecursionError:\n    print(g.get_state(cfg).values)\nprint(g.invoke(None, {**cfg, \"recursion_limit\": 10}))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`{'n': 5}`, then `{'n': 8}`: progress was checkpointed and the second call resumes it",
+        "why": "The first run stops after five steps with the state saved; `invoke(None, ...)` resumes the same thread with a higher limit."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "It prints `{'n': 0}` and then `{'n': 8}`: the failed run is rolled back and the second call starts over",
+        "why": "Completed steps stay in the thread's checkpoints; nothing is rolled back."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "It prints `{'n': 5}` and then `{'n': 5}`: `None` input means nothing runs",
+        "why": "`None` input on a thread with pending nodes means \"continue\", so `inc` keeps looping."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "The second `invoke` raises `GraphRecursionError` again because the limit counts the whole thread",
+        "why": "The limit applies to each run, so the resumed run has 10 fresh steps."
+      }
+    ],
+    "explanation": "Hitting `recursion_limit` raises `GraphRecursionError`, but with a checkpointer the thread keeps the last completed step. You can inspect it with `get_state`, then decide to resume with `invoke(None, config)` and a larger `recursion_limit`, or to route the thread elsewhere.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:loop-control",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://github.com/abhishuman18/Minimal-Workflow-Agent-Enigne-Tredence-",
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://github.com/jerichosuguru/AI-Coworker-Engine",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://towardsai.com/p/machine-learning/40-generative-ai-interview-questions-that-actually-get-asked-in-2026-with-answers"
+      ],
+      "companies": [
+        "Tredence",
+        "Cerina Health",
+        "Edtronaut"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-022",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "Which statements about LangGraph durability modes are accurate? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "`\"sync\"` writes each checkpoint before the next step starts, giving the strongest durability at some latency cost",
+        "why": "This is how the docs describe `sync`."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`\"async\"` writes checkpoints while the next step runs, so a crash at the wrong moment can lose the newest checkpoint",
+        "why": "The docs note a small risk that a checkpoint is not written if the process crashes during execution."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`\"exit\"` still saves the state when the run ends with an exception, so it can be resumed after an error",
+        "why": "Exit mode persists on success, on error and at interrupts; it only loses progress if the process itself dies."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`\"exit\"` makes nodes idempotent, because nothing is replayed",
+        "why": "Durability modes control when checkpoints are written; they do nothing to make side effects safe to repeat."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "The durability mode is fixed when the graph is compiled",
+        "why": "It is passed to each execution method, for example `graph.invoke(..., durability=\"sync\")`."
+      }
+    ],
+    "explanation": "Choose the mode per run: `exit` is fastest for long jobs that can be re-run from scratch, `async` is the balanced default, and `sync` fits steps that must be saved before anything else happens. None of them removes the need for idempotent side effects.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:durability-modes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-023",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A three-node pipeline `a -> b -> c` is run with `durability=\"exit\"`, and `c` raises. What do the two lines print?\n\n```python\ntry:\n    graph.invoke({\"log\": []}, cfg, durability=\"exit\")\nexcept RuntimeError:\n    pass\nst = graph.get_state(cfg)\nprint(st.values, st.next)\nprint(len(list(graph.get_state_history(cfg))))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`{} ()` and then `0`",
+        "why": "Exit mode does save on an error exit; it only skips the checkpoints between steps."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`{'log': ['a', 'b']} ('c',)` and then `1`",
+        "why": "Exit mode saved one checkpoint when the run exited with the error, holding the work of `a` and `b` and `c` still pending."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'log': ['a', 'b']} ('c',)` and then `4`",
+        "why": "Four snapshots would be the per-step history of `sync` or `async`; exit mode writes only one."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`{'log': ['a']} ('b',)` and then `1`",
+        "why": "Both `a` and `b` finished before `c` failed, so their updates are in the saved state."
+      }
+    ],
+    "explanation": "Running this in LangGraph 1.2.16 shows exit mode writing a single checkpoint at exit, which is enough to resume with `invoke(None, cfg)` after the bug is fixed. What exit mode cannot survive is the process dying mid-run, because nothing was written before the exit.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:durability modes",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-024",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "A node calls an API through `httpx` and uses `retry_policy=RetryPolicy()`. Under load the provider returns 429 and `response.raise_for_status()` raises `httpx.HTTPStatusError`, but the node fails at once without retrying. What is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `jitter=False` so that retries are not skipped under heavy load",
+        "why": "Jitter only changes the wait between retries; it never decides whether to retry."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise `max_attempts` to 10 so the policy has more room to retry",
+        "why": "More attempts do nothing when the exception never matches the policy."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "A `retry_on` callable that accepts 429 and otherwise calls `default_retry_on`",
+        "why": "This keeps the default behaviour for everything else and adds the rate-limit case."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wrap the call in `try/except` and re-raise the error as a `ValueError` instead",
+        "why": "`ValueError` is excluded by the default rule, so this guarantees no retry."
+      }
+    ],
+    "explanation": "For `httpx` and `requests` HTTP errors, `default_retry_on` retries only 5xx status codes, so a 429 is not retried. Extend it: `def retry_on(e): return (isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429) or default_retry_on(e)`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:retry-policy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-025",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "match",
+    "select": 1,
+    "stem": "A graph's nodes can fail in different ways. Match each failure with the handling strategy the LangGraph docs recommend.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Retry policy on the node",
+        "why": "Automatic retry with backoff for temporary failures."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Store the error in state and loop back to the model",
+        "why": "Lets the LLM see what went wrong and adjust its next attempt."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Pause with `interrupt()`",
+        "why": "Waits for a person to supply what is missing."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Let the exception propagate",
+        "why": "Surfaces unknown problems so a developer can debug them."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "The search provider times out on a network blip or returns a rate-limit error",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "The model called a tool with an invalid date format and the tool raised",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A refund request arrives without the order number",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A `KeyError` from a field nobody expected to be missing",
+        "answer": "D"
+      }
+    ],
+    "explanation": "The docs sort errors by who can fix them: the system (transient errors, retry), the LLM (recoverable tool or parsing errors, loop back with the error), a human (missing information, `interrupt()`), or the developer (unexpected errors, let them bubble up). An `error_handler` can add a declared recovery branch after retries are exhausted.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph",
+    "source": "interview:error-handling-strategy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-026",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "Four `worker` calls are fanned out with `Send`, and each takes about 0.3 s. The graph runs with `ainvoke`. With the first version the run takes about 1.2 s; with the second it takes about 0.3 s. Why?\n\n```python\n# version 1\nasync def worker(s):\n    time.sleep(0.3)  # stands in for a blocking HTTP client\n    return {\"out\": [s[\"item\"]]}\n\n# version 2\nasync def worker(s):\n    await asyncio.sleep(0.3)  # stands in for an async HTTP client\n    return {\"out\": [s[\"item\"]]}\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Checkpoints are written synchronously in version 1 because the node is not awaited",
+        "why": "No checkpointer is involved here; the difference is entirely how the node waits."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`Send` runs its workers one at a time unless a higher `max_concurrency` is set in config",
+        "why": "`Send` workers in the same step run concurrently by default; version 2 shows it."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Version 1 is retried three times by the default retry policy",
+        "why": "No retry policy is set and nothing fails; the delay comes from blocking."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "The blocking call holds the event loop, so the async workers run one after another",
+        "why": "Async nodes share one event loop; a blocking call stops the other tasks until it returns."
+      }
+    ],
+    "explanation": "Running both versions in LangGraph 1.2.16 gives about 1.2 s and 0.3 s. In async graphs, use async clients or move blocking work into `asyncio.to_thread`, otherwise fan-out gives no speed-up. The same applies to node timeouts, which can only cancel async nodes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:performance",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://dev.to/amantank/top-15-interview-questions-for-generative-ai-engineers-2025-guide-29n4"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-027",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "How many times does `exp` run?\n\n```python\nclass S(TypedDict, total=False):\n    x: int\n    req_id: str\n    result: int\n\nbuilder.add_node(\n    \"exp\", exp,\n    cache_policy=CachePolicy(ttl=60, key_func=lambda s: str(s[\"x\"])),\n)\ngraph = builder.compile(cache=InMemoryCache())\n\ngraph.invoke({\"x\": 5, \"req_id\": \"a\"})\ngraph.invoke({\"x\": 5, \"req_id\": \"b\"})\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Once: the custom key ignores `req_id`, so the second call is a cache hit",
+        "why": "Both calls produce the key `\"5\"`, so the second call reuses the cached output."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Twice: the inputs differ in `req_id`, so the keys differ",
+        "why": "That would be true with the default `key_func`, which hashes the whole input; the custom key only uses `x`."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Twice: the cache only works when a checkpointer and `thread_id` are configured",
+        "why": "Node caching does not need a checkpointer."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Zero times on the second call and once on the first, but only within the same super-step",
+        "why": "Cache entries persist across runs until `ttl` expires; that is what makes the second call a hit."
+      }
+    ],
+    "explanation": "With the default `key_func`, any difference in the node's input, such as a request id, a timestamp or a trace id, gives a new key and a miss. A custom `key_func` that uses only the fields the result depends on raises the hit rate. It must still include every field the output does depend on.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:performance and caching",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-028",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 3,
+    "stem": "You are setting up tests for a LangGraph agent that runs in CI on every commit. Which practices fit the official testing guidance? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "In live-model tests, assert on structure such as tool-call names and message types rather than exact text",
+        "why": "LLM outputs vary, so the guide recommends structural assertions."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Share one `GenericFakeChatModel` through a session-scoped fixture to save set-up time",
+        "why": "Its responses come from an iterator; once exhausted, later tests fail. Keep the default function scope."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Assert the exact final answer string from a live model with temperature above zero",
+        "why": "Exact-text assertions on non-deterministic output make tests flaky."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Use fake chat models with scripted responses and `InMemorySaver` for fast, deterministic unit tests",
+        "why": "The unit-testing guide recommends in-memory fakes so tests are fast, free and repeatable."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Mark tests that call real LLM APIs with a pytest marker and exclude them from the default run",
+        "why": "The integration-testing guide shows `@pytest.mark.integration` with `addopts = -m \"not integration\"`."
+      }
+    ],
+    "explanation": "Layer the suite: unit tests with fakes on every change, integration tests against real providers in CI or before deploy (optionally with recorded HTTP replays), and trajectory evals for behaviour. Build graphs and checkpointers fresh in each test so state does not leak between tests.",
+    "reference": "https://docs.langchain.com/oss/python/langchain/test/integration-testing",
+    "source": "interview:evaluation and CI",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langchain/test"
+      ],
+      "companies": [
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-029",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What is in `sent` after the second call?\n\n```python\nsent = []\nFAIL = True\n\n@task\ndef receipt(amount):\n    sent.append(\"receipt\")\n    return \"r\"\n\n@task\ndef charge(amount):\n    sent.append(amount)\n    if FAIL:\n        raise ConnectionError(\"lost response\")\n    return \"ok\"\n\n@entrypoint(checkpointer=InMemorySaver())\ndef wf(amount):\n    receipt(amount).result()\n    return charge(amount).result()\n\ncfg = {\"configurable\": {\"thread_id\": \"t\"}}\ntry:\n    wf.invoke(100, cfg)\nexcept ConnectionError:\n    pass\nFAIL = False\nwf.invoke(None, cfg)\nprint(sent)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`['receipt', 100]`",
+        "why": "Only completed task results are restored; a task that raised has no saved result and is executed again."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "`['receipt', 100, 100]`",
+        "why": "The completed `receipt` task is restored from the checkpoint, but `charge` did not finish, so it runs again and the charge side effect happens twice."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`['receipt', 100, 'receipt', 100]`",
+        "why": "`receipt` finished on the first run, so its result is replayed instead of re-executed."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[100, 'receipt', 100]`",
+        "why": "The entrypoint calls `receipt` before `charge`, and `receipt` is not re-executed on resume."
+      }
+    ],
+    "explanation": "Tasks save completed results, not attempts. If a task performs a side effect and then fails (here: the charge went through but the response was lost), resuming runs it again. The docs therefore ask for idempotent task bodies, for example passing an idempotency key derived from the order to the payment provider.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/functional-api",
+    "source": "interview:idempotency-resume",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/arpitkath/agentic-ai-interview-roadmap/main/questions/intermediate.md",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-030",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "order",
+    "select": 1,
+    "stem": "A graph with a `PostgresSaver` is run with `durability=\"sync\"`. The worker process is killed while node `c` is running. Put the recovery in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A new worker calls `graph.invoke(None, config)` with the same `thread_id`",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "The checkpoint after `b` is written before `c` starts",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`c` runs again from the first line of its function",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "LangGraph loads the thread's latest checkpoint, which shows `c` as the next node",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "A",
+      "D",
+      "C"
+    ],
+    "explanation": "In `sync` mode every step's checkpoint is stored before the next step begins, so after the crash the latest checkpoint is the one from after `b`. Resuming with `None` input on the same thread loads it, sees `c` pending, and re-executes `c` from the top, which is why `c` must be safe to repeat.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:durable-execution",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "Cerina Health",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-031",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "single",
+    "select": 1,
+    "stem": "What does this print?\n\n```python\nseen = []\n\ndef att(s, runtime: Runtime):\n    n = runtime.execution_info.node_attempt\n    seen.append(n)\n    if n < 3:\n        raise ConnectionError()\n    return {\"v\": f\"ok on {n}\"}\n\nb.add_node(\"att\", att, retry_policy=RetryPolicy(initial_interval=0.01))\nb.add_edge(START, \"att\")\nprint(b.compile().invoke({\"v\": \"\"})[\"v\"], seen)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It raises `ConnectionError` after `[1, 2]`, because the default allows only two retries after the first try fails",
+        "why": "Two retries after the first try is three attempts, and the third succeeds."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`ok on 2 [0, 1, 2]`",
+        "why": "`node_attempt` starts at 1 on the first try, not 0."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`ok on 3 [1, 2, 3]`",
+        "why": "`node_attempt` is 1-indexed, `ConnectionError` is retried, and the default three attempts are enough."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`ok on 1 [1, 1, 1]`",
+        "why": "The attempt number increases on each retry."
+      }
+    ],
+    "explanation": "`runtime.execution_info.node_attempt` tells a node which attempt it is on, which the docs suggest for switching to a fallback provider on retries. `node_first_attempt_time` stays constant across retries if you need an overall deadline.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-032",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "truefalse",
+    "select": 1,
+    "stem": "If a node with an `error_handler` calls `interrupt()`, the pause is treated as a failure and routed to the error handler.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "True",
+        "why": "It is false. `interrupt()` bypasses both retry policies and error handlers; the graph simply pauses."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "False",
+        "why": "Correct. Interrupts use the `GraphBubbleUp` mechanism, which retry policies and error handlers ignore, so the run pauses as usual."
+      }
+    ],
+    "explanation": "The docs warn that `interrupt()` is not routed to the error handler. Running it confirms that `invoke` returns the state with `__interrupt__` and the handler never runs. Error handlers only see real exceptions after retries are exhausted.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-033",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 3,
+    "type": "multi",
+    "select": 2,
+    "stem": "`save_order` inserts a row into the orders table and then calls a flaky stock service. It has `retry_policy=RetryPolicy(max_attempts=3)`. In production some orders appear twice. Which changes stop the duplicates? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Set `jitter=False` so the retries happen at predictable times",
+        "why": "Jitter only changes when retries happen; each retry still runs the insert again."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Make the insert an upsert keyed on a deterministic order id",
+        "why": "Re-running the insert then has no extra effect, so retries are harmless."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Move the stock-service call into its own node after `save_order`, with the retry policy on that node",
+        "why": "A retry re-runs the whole node function, so separating the flaky call means retries no longer repeat the insert."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Switch to `durability=\"sync\"`",
+        "why": "Retries happen inside one attempt sequence regardless of how checkpoints are written; the node still re-runs from the top."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Increase `initial_interval` so retries happen later",
+        "why": "Waiting longer does not change the fact that each retry runs the insert again."
+      }
+    ],
+    "explanation": "A retry re-executes the node's function from its first line, and the installed runtime clears the previous attempt's writes before each try. External effects inside the node, such as an insert, are not undone. Make them idempotent, or split nodes so the part that is retried has no effects that must happen only once.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:durable execution and idempotency",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/graph-api",
+        "https://docs.langchain.com/langgraph-platform/why-langgraph"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-034",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A `pay` node calls the payment gateway and then returns `{\"paid\": True}`. The pod is killed after the gateway charged the card but before the step's checkpoint was written. After the thread is resumed, what happens, and what is the right fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`pay` runs again; adding `RetryPolicy(max_attempts=1)` prevents this",
+        "why": "Retry settings apply to exceptions inside a live run, not to re-execution after a process crash."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Nothing is repeated, because LangGraph resumes after the gateway call inside `pay`",
+        "why": "Resumption returns to the last checkpoint boundary, not to a line inside the node."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`pay` runs again; switching the run to `durability=\"sync\"` would prevent the second charge",
+        "why": "`sync` saves checkpoints between steps; the crash still happened inside the step, before its checkpoint, so the node still re-runs."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`pay` re-runs and charges twice; pass the gateway an idempotency key from the order id",
+        "why": "The node re-executes from the start on resume, so only an idempotent external call prevents the double charge."
+      }
+    ],
+    "explanation": "No durability mode can save progress in the middle of a node. Any external effect between the start of a node and its checkpoint can repeat, so make it idempotent: idempotency keys, upserts, or read-before-write checks. Wrapping it in a `@task` also helps once the task has completed, but not if the crash hits during the call.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:durable-execution",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://github.com/mad-99/Cerina-Health-AI-Engineer-Role-Task",
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.techinterview.org/companies/langchain/",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.interviewcoder.co/blog/langgraph-interview-questions"
+      ],
+      "companies": [
+        "Cerina Health",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-035",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "Two HTTP requests for the same conversation arrive together and the API calls `graph.invoke(new_msg, cfg)` for each, with the same `thread_id`. The `inc` node reads `count`, waits on a model, and writes `count + 1`; `msgs` uses `operator.add`. In a test with `InMemorySaver`, the final state has `count == 2` instead of 3 and one user message is missing. Which statements explain or fix this? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Serialise runs per thread, for example a lock or queue keyed by `thread_id` in your API, so a second message waits for the first run",
+        "why": "One active run per thread removes the race; separate threads can still run in parallel."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "LangGraph queues the second `invoke` until the first finishes, so the cause must be the reducer",
+        "why": "The library does not serialise concurrent `invoke` calls on a thread; the test shows a lost update."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Giving `count` an `operator.add` reducer would make the two runs merge correctly",
+        "why": "The reducer merges writes within one run's step; two separate runs on the same thread do not merge their branches."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Running with `durability=\"sync\"` makes the second run wait for the first run's checkpoint",
+        "why": "Durability controls when a run writes its own checkpoints; it does not coordinate two runs on one thread."
+      },
+      {
+        "id": "E",
+        "correct": true,
+        "text": "Both runs started from the same latest checkpoint, so the later write was built on stale state and one run's update is missing",
+        "why": "Each run loads the thread's latest checkpoint when it starts; neither sees the other's step."
+      }
+    ],
+    "explanation": "Running this race with LangGraph 1.2.16 gives exactly the lost update described. Checkpoints form a chain per thread, and concurrent runs on one thread race on that chain while runs on different threads are independent. Serialise work per thread in your own service, or give independent work separate threads.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:concurrency-state-consistency",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-REL-036",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "A multi-tenant analytics agent caches its costly `summarise_account` node with `CachePolicy(key_func=lambda s: s[\"account_name\"])`, one `InMemoryCache` per process. A customer reports seeing another company's figures. What went wrong?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "The cache is shared across all threads, and the key omits the tenant id",
+        "why": "Cache lookups depend only on the key, so a key without tenant identity mixes tenants' results."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`InMemoryCache` is keyed by `thread_id`, so the threads must have collided",
+        "why": "Node cache keys come from `key_func` on the node input; thread ids play no part."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "The checkpointer returned the wrong thread's state because `ttl` was not set",
+        "why": "`ttl` only controls expiry, and checkpoints are separate from the node cache."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Cache hits skip the node, so the tenant's access check inside it was bypassed; a cache can never be used for tenant data",
+        "why": "Caching tenant data is fine if the key includes the tenant id and everything else the output depends on."
+      }
+    ],
+    "explanation": "Running a cached node on two different threads with the same input gives one execution: the cache is global to the compiled graph. Include the tenant id (and every other input the result depends on) in `key_func`, or keep separate caches per tenant.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "roleLevel": 5
+  },
+  {
+    "id": "LGR-REL-037",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Token spend tripled overnight because a few threads looped between `agent` and `tools` hundreds of times. Which control stops a single runaway run inside the graph, before the money is spent?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "A daily spend alert from the provider dashboard that emails the on-call engineer when costs spike",
+        "why": "Alerts report the problem after the spend has happened; they do not stop a run."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "A token or call budget in state, checked by the router, with `recursion_limit` as a backstop",
+        "why": "The budget check ends the run gracefully, and the recursion limit caps any path the check misses."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Increase `recursion_limit` so the loops have room to reach their natural stopping point on their own",
+        "why": "That lets each runaway loop run longer and cost more."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add `RetryPolicy(max_attempts=1)` to the `agent` node so it is never executed more than once per run",
+        "why": "Retry settings only apply to failed attempts; looping is not a failure."
+      }
+    ],
+    "explanation": "Bound spend per run in the graph: a budget or step counter in state checked by a conditional edge (or `RemainingSteps`) for a graceful stop, and `recursion_limit` as the hard limit that raises `GraphRecursionError`. Agents built with `create_agent` can also use call-limit middleware.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+    "source": "interview:cost control",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://www.novelvista.com/blogs/ai-and-ml/generative-ai-interview-questions",
+        "https://dev.to/amantank/top-15-interview-questions-for-generative-ai-engineers-2025-guide-29n4"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-038",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 2,
+    "stem": "A research agent plans three independent sub-questions, answers them one after another with a large model, then writes a report. Users wait about 40 seconds. Which changes reduce wall-clock time rather than only hiding it? (Choose two.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Switch the run to `durability=\"sync\"`",
+        "why": "`sync` adds checkpoint writes on the critical path; it can only make the run slower."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Raise `recursion_limit` so the planner never runs out of steps",
+        "why": "The limit caps the number of steps; raising it makes no step faster."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Fan the three sub-questions out with `Send` so they run in the same super-step",
+        "why": "Independent work then runs in parallel, so the step takes as long as the slowest branch instead of the sum."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "Use a smaller, faster model for planning and routing steps that need little reasoning",
+        "why": "Cheaper model calls on the critical path cut both latency and cost."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Stream the report tokens to the user as they are generated",
+        "why": "Streaming improves perceived latency, but the run takes just as long."
+      }
+    ],
+    "explanation": "Latency in agents comes mostly from LLM hops on the critical path. Parallelise independent hops, shorten or downsize the ones that remain, and cache repeated deterministic work. Streaming is still worth adding, but it changes what users see, not how long the run takes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/use-graph-api",
+    "source": "interview:cost-latency",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/ExperiencedDevs/comments/1r78ipa/agentic_ai_agents_system_design_interview",
+        "https://www.reddit.com/r/cscareerquestionsuk/comments/1qmybi3/ai_engineering_agents_interview_prep",
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2",
+        "https://www.reddit.com/r/developersIndia/comments/1pbaj11/need_advice_for_eightfoldai_agentic_ai_engineer",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/"
+      ],
+      "companies": [
+        "Eightfold.ai",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-039",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "match",
+    "select": 1,
+    "stem": "Match each requirement with the durability or shutdown setting that fits it.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "`durability=\"exit\"`",
+        "why": "Saves only when the run exits; fastest, but a process crash loses the run's progress."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`durability=\"async\"`",
+        "why": "Saves each step in the background while the next one runs; the default."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`durability=\"sync\"`",
+        "why": "Saves each step before the next starts; strongest guarantee, slower."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`RunControl.request_drain()`",
+        "why": "Stops the run cooperatively at the next super-step boundary and leaves a resumable checkpoint."
+      }
+    ],
+    "prompts": [
+      {
+        "id": "P1",
+        "text": "A nightly batch graph that is cheap to re-run from scratch and only its final result matters",
+        "answer": "A"
+      },
+      {
+        "id": "P2",
+        "text": "A chat agent where good performance and good durability are both wanted",
+        "answer": "B"
+      },
+      {
+        "id": "P3",
+        "text": "A ledger workflow where each step's checkpoint must be stored before the next step begins",
+        "answer": "C"
+      },
+      {
+        "id": "P4",
+        "text": "A Kubernetes pod receives SIGTERM during a rollout and should stop cleanly so another pod can resume the run",
+        "answer": "D"
+      }
+    ],
+    "explanation": "Durability modes choose when checkpoints are written. Graceful shutdown is separate: pass `control=RunControl()` to `invoke` or `stream`, call `request_drain(reason)` from a signal handler, catch `GraphDrained`, and resume later with `invoke(None, config)`.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+    "source": "interview:durability-modes",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://docs.langchain.com/oss/python/langgraph/checkpointers"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-040",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "`a` always raises `ValueError` and has an error handler. What does `stream` produce?\n\n```python\ndef a(s):\n    raise ValueError(\"bad input\")\n\ndef h_plain(s, error: NodeError):\n    return {\"log\": [\"handled\"]}\n\ng = (StateGraph(S)\n     .add_node(\"a\", a, error_handler=h_plain)\n     .add_node(\"b\", lambda s: {\"log\": [\"b\"]})\n     .add_edge(START, \"a\").add_edge(\"a\", \"b\")\n     .compile())\nprint(list(g.stream({\"log\": []}, stream_mode=\"updates\")))\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It raises `ValueError`, because `ValueError` is not retryable and so bypasses the handler",
+        "why": "The handler fires after retries are exhausted, or immediately when no retry applies."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`[{'__error_handler__a': {'log': ['handled']}}, {'b': {'log': ['b']}}]`: after the handler the normal edge to `b` is followed",
+        "why": "The handler runs instead of `a`'s normal outgoing edges; `b` only runs if the handler routes there with a `Command`."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "`[{'__error_handler__a': {'log': ['handled']}}]`: the handler's update is applied and the run ends without running `b`",
+        "why": "Running it in LangGraph 1.2.16 gives this; to continue to another node the handler must return `Command(goto=...)`."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "`[{'a': {'log': ['handled']}}, {'b': {'log': ['b']}}]`: the handler's output is attributed to `a`",
+        "why": "The handler runs as its own task named `__error_handler__a`, and `b` does not run."
+      }
+    ],
+    "explanation": "Error handlers are a recovery branch, not a silent catch. A plain dict updates state and the run ends there; return `Command(update=..., goto=\"next_node\")` to continue (the docs' compensation examples do this). If the handler itself raises, that exception propagates as if the node had no handler.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:error-handling-strategy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/03-agent-questions.md",
+        "https://github.com/shahshrey/langgraph-interview-questions",
+        "https://raw.githubusercontent.com/Navedphysicist/100-Agentic-AI-Interview-Questions/main/langgraph_interview_questions.md",
+        "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph"
+      ],
+      "companies": [
+        "ByteDance"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-041",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "`fa` and `fb` always raise `ConnectionError`, and each counts its calls in `cnt`. What does this print?\n\n```python\ng = (StateGraph(S)\n     .set_node_defaults(\n         retry_policy=RetryPolicy(max_attempts=2, initial_interval=0.01),\n         error_handler=default_handler,   # returns {\"log\": [f\"default:{error.node}\"]}\n     )\n     .add_node(\"a\", fa)\n     .add_node(\"b\", fb, retry_policy=RetryPolicy(max_attempts=4, initial_interval=0.01),\n               error_handler=custom_handler)\n     .add_edge(START, \"a\").add_edge(\"a\", \"b\")\n     .compile())\nprint(g.invoke({\"log\": []}), cnt)\n```",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "It raises `ConnectionError`, because defaults are ignored for nodes added after `set_node_defaults`",
+        "why": "Defaults are resolved at `compile()`, so the order of `set_node_defaults` and `add_node` does not matter."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "`{'log': ['default:a', 'custom:b']} {'a': 2, 'b': 4}`",
+        "why": "`b` never runs: the handler for `a` returns a plain update, not a `Command` that routes onward."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "`{'log': ['default:a']} {'a': 4, 'b': 0}`",
+        "why": "`a` has no per-node policy, so the default `max_attempts=2` applies; `b`'s override only affects `b`."
+      },
+      {
+        "id": "D",
+        "correct": true,
+        "text": "`{'log': ['default:a']} {'a': 2, 'b': 0}`",
+        "why": "`a` gets the default two attempts and the default handler, whose plain update ends the run before `b`."
+      }
+    ],
+    "explanation": "`set_node_defaults` applies `retry_policy`, `timeout`, `cache_policy` and `error_handler` to every node unless that node sets its own value. Defaults are resolved at compile time and are not inherited by subgraphs. Running this snippet in 1.2.16 prints the output shown.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-042",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "multi",
+    "select": 3,
+    "stem": "You must show that a support-agent graph improves between releases, not just that it runs. Which evaluation practices fit LangSmith and LangGraph? (Choose three.)",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Add a trajectory or intermediate-step evaluator that checks which tools were called, read from the messages in the graph's output state",
+        "why": "This catches correct answers reached through the wrong tools, which a final-answer check misses."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Evaluate an expensive node on its own by targeting `example_to_state | app.nodes[\"agent\"]`",
+        "why": "The evaluate-a-graph guide shows this to save time and cost."
+      },
+      {
+        "id": "C",
+        "correct": true,
+        "text": "Run each dataset example several times with `num_repetitions` and compare averages, because agent outputs vary",
+        "why": "Repetitions reduce noise in highly variable systems such as agents."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Only use a strict exact-match on the final answer string, because it is the cheapest evaluator",
+        "why": "Exact match on free text from a non-deterministic agent is noisy and ignores how the answer was reached."
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Run evaluations only on production traffic, since offline datasets cannot cover agents",
+        "why": "Offline datasets with reference outputs are the basis for comparing releases; online evaluation complements them."
+      }
+    ],
+    "explanation": "A compiled graph is a runnable, so it can be the target of `evaluate`/`aevaluate` directly. Combine final-answer checks with trajectory or intermediate-step evaluators, target single nodes when only one step changed, and use repetitions to separate real changes from noise.",
+    "reference": "https://docs.langchain.com/langsmith/evaluate-graph",
+    "source": "interview:agent-evaluation",
+    "asked": {
+      "frequency": "very-common",
+      "evidence": [
+        "https://www.reddit.com/r/AI_Agents/comments/1qrxchn/interview_prep_deep_learning_agentic_systems_what",
+        "https://github.com/Celesca/ai-product-research-assistant",
+        "https://github.com/Aaronxvc/cohere_sales_agent",
+        "https://github.com/reonrash/AI-Agent-Deployment-Engineer-Takehome",
+        "https://www.aced.io/experiences/lang-chain-machine-learning-engineer-interview-fea4c2"
+      ],
+      "companies": [
+        "QuanXAI",
+        "Cohere",
+        "Hippocratic AI",
+        "LangChain"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-043",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "Take-home: build an agent that answers complex questions over annual reports, earnings-call transcripts and market data, with a few hours to spend. Which design is most defensible?",
+    "options": [
+      {
+        "id": "A",
+        "correct": true,
+        "text": "Ingest once; per query retrieve with citations, analyse, synthesise; retry network nodes, cache parsing by hash, cap steps",
+        "why": "Each stage can be tested on its own, failures are handled per node, and cost and latency are bounded."
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Paste every report into one giant prompt on every question, so that retrieval can never miss a relevant passage or make an error",
+        "why": "This is slow, expensive and limited by context size, and it gives no citations."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "One autonomous agent with dozens of tools and no step limit, so it can explore the documents freely and decide for itself when to stop",
+        "why": "Unbounded loops are a cost and reliability risk, and the run is hard to test or explain."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Re-parse and re-embed every document on every question so the data is always fresh, and skip caching entirely to avoid stale answers",
+        "why": "Re-processing unchanged documents on each question wastes most of the time and money; cache by document hash instead."
+      }
+    ],
+    "explanation": "Interviewers look for a bounded, testable decomposition: separate ingestion from answering, keep citations in state, give flaky I/O retries and expensive deterministic work a cache, cap the number of steps, and test nodes in isolation with fake models.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:finance-agent-take-home",
+    "asked": {
+      "frequency": "occasional",
+      "evidence": [
+        "https://www.reddit.com/r/developpeurs/comments/1m84v47/on_ma_demand%C3%A9_de_construire_un_agent_llm_complet/"
+      ]
+    },
+    "roleLevel": 4
+  },
+  {
+    "id": "LGR-REL-044",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "order",
+    "select": 1,
+    "stem": "A node has `retry_policy=RetryPolicy(max_attempts=3, initial_interval=1.0, backoff_factor=2.0, jitter=False)` and every attempt raises `ConnectionError`. Put the events in order.",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Wait 2 seconds",
+        "why": ""
+      },
+      {
+        "id": "B",
+        "correct": false,
+        "text": "Attempt 1 fails",
+        "why": ""
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Attempt 3 fails and the `ConnectionError` is raised to the caller",
+        "why": ""
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Wait 1 second",
+        "why": ""
+      },
+      {
+        "id": "E",
+        "correct": false,
+        "text": "Attempt 2 fails",
+        "why": ""
+      }
+    ],
+    "answerOrder": [
+      "B",
+      "D",
+      "E",
+      "A",
+      "C"
+    ],
+    "explanation": "The first retry waits `initial_interval` (1 s), and each later wait is multiplied by `backoff_factor` (2 s), capped by `max_interval`. `max_attempts=3` counts the first try, so after the third failure the error propagates, or the node's error handler runs if it has one. With `jitter=True` a random amount is added to each wait.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "source": "interview:retry-policy",
+    "asked": {
+      "frequency": "common",
+      "evidence": [
+        "https://raw.githubusercontent.com/adongwanai/AgentGuide/main/docs/04-interview/12-company-interview-cases.md",
+        "https://cloudsoftsol.com/interview-questions/langgraph-interview-questions-answers/",
+        "https://raw.githubusercontent.com/langchain-ai/langchain-skills/main/config/skills/langgraph-fundamentals/SKILL.md",
+        "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py"
+      ]
+    },
+    "roleLevel": 3
+  },
+  {
+    "id": "LGR-REL-045",
+    "domain": 4,
+    "skill": "reliability-testing",
+    "difficulty": 4,
+    "type": "single",
+    "select": 1,
+    "stem": "An async `reindex` node processes 5,000 records in batches. It makes no LLM calls and streams nothing. It has `timeout=TimeoutPolicy(idle_timeout=30, refresh_on=\"heartbeat\")` and keeps failing with `NodeTimeoutError(kind=\"idle\")` although every batch finishes in a few seconds. What is the fix?",
+    "options": [
+      {
+        "id": "A",
+        "correct": false,
+        "text": "Make `reindex` a sync function so the timeout no longer applies",
+        "why": "A sync node with a `timeout` is rejected when the graph is compiled."
+      },
+      {
+        "id": "B",
+        "correct": true,
+        "text": "Call `runtime.heartbeat()` after each batch",
+        "why": "With `refresh_on=\"heartbeat\"` only explicit heartbeats reset the idle timer."
+      },
+      {
+        "id": "C",
+        "correct": false,
+        "text": "Replace `idle_timeout=30` with `run_timeout=30`",
+        "why": "`run_timeout` is a hard cap on the whole attempt and is never refreshed, so a long job would still be cut off."
+      },
+      {
+        "id": "D",
+        "correct": false,
+        "text": "Add `RetryPolicy(max_attempts=5)` so the job eventually finishes",
+        "why": "Each retry restarts the job and hits the same idle timeout."
+      }
+    ],
+    "explanation": "`idle_timeout` fires when a node shows no progress for the given time. In the default `refresh_on=\"auto\"` mode, state writes, stream output and LangChain callback events count as progress. With `\"heartbeat\"` only `runtime.heartbeat()` counts, so a quiet batch loop must call it. Running this pattern in 1.2.16 confirms it: without heartbeats the node times out, with them it completes.",
+    "reference": "https://docs.langchain.com/oss/python/langgraph/fault-tolerance",
+    "roleLevel": 4
+  }
+]
