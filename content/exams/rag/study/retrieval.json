@@ -1,0 +1,49 @@
+{
+  "retrieval": {
+    "summary": "The retriever decides what the LLM can see. Know when dense, BM25, learned sparse and hybrid retrieval win, be able to compute BM25, normalised score fusion and MMR by hand, and know how filters, top-k and thresholds change what comes back.",
+    "points": [
+      "Dense retrieval (bi-encoder embeddings plus nearest-neighbour search) matches meaning across different wording; DPR beat Lucene BM25 by 9-19 points absolute in top-20 passage accuracy. BEIR found BM25 a robust zero-shot baseline that dense models often fail to beat out of domain.",
+      "BM25: `IDF x tf x (k1 + 1) / (tf + k1 x (1 - b + b x dl / avgdl))`. `k1` sets term-frequency saturation (`k1 = 0` means present-or-absent; the factor never exceeds `k1 + 1`), `b` sets length normalisation (0 none, 1 full). Lucene and Elasticsearch default to `k1 = 1.2`, `b = 0.75`.",
+      "Lucene IDF is `log(1 + (N - n + 0.5) / (n + 0.5))` and always positive (N = 1000, n = 9 gives 4.66). Classic Robertson IDF, used by `rank_bm25`'s `BM25Okapi`, is zero at n = N/2 and negative above, so toy corpora give zero scores.",
+      "Hybrid search runs a lexical leg and a dense leg and fuses them: BM25 nails rare exact tokens (SKUs, error codes, section numbers, names); dense handles paraphrase. Embeddings do not preserve exact identity, so pure dense search misses literal IDs.",
+      "Convex-combination fusion: `alpha x norm(dense) + (1 - alpha) x norm(bm25)`. Normalise first (for example min-max), because raw BM25 is unbounded and varies per query. Bruch et al. (2022): a tuned convex combination beat RRF in and out of domain, needed few labels and was largely insensitive to the normalisation method. In Weaviate, `alpha` 1 is pure vector and 0 is pure keyword.",
+      "Lexical matching depends on text analysis: a whitespace tokenizer keeps punctuation (`bone.`) and case, the standard tokenizer splits `Brown-Foxes` into two terms. Index and query must be analysed the same way, and changes need a reindex.",
+      "SPLADE learns weights over BERT's 30,522-word-piece vocabulary with `log(1 + ReLU)` saturation and FLOPS or L1 sparsity regularisation. It expands documents with related terms (vocabulary mismatch) yet runs on an inverted index.",
+      "MMR adds results greedily by `lambda x sim(D, Q) - (1 - lambda) x max sim(D, selected)`. `lambda = 1` is the plain relevance ranking and `lambda = 0` is pure diversity. It removes near-duplicate chunks, for example from overlapping chunks of one document.",
+      "Metadata filters enforce hard constraints (tenant, date, product, access group) that embeddings cannot. Post-filtering an ANN top-k can return few or no results under a selective filter (10 x 1% = 0.1 expected matches). Pre-filtering or filtered search returns k eligible results, and a tiny eligible set can simply be brute-forced exactly.",
+      "Top-k sets recall, not order. Retrieve wide enough for recall (measure recall@k on labelled queries), then narrow with a reranker or fusion, rather than stuffing many chunks into the prompt.",
+      "Exact (flat) search has perfect recall and is fine for tens of thousands of vectors. ANN trades a little recall for speed at millions of vectors.",
+      "Similarity thresholds for abstaining are model-specific: calibrate them on labelled answerable and unanswerable queries and re-tune after changing the model, the chunking or the corpus."
+    ],
+    "traps": [
+      "Thinking a larger top-k moves the best chunk up: it only appends more results in the same order.",
+      "Mixing raw BM25 and cosine scores without normalising, so BM25 silently decides the ranking.",
+      "Fixing missed product codes with a bigger embedding model or larger chunks instead of adding a lexical leg or an exact metadata match.",
+      "Post-filtering ANN results for small tenants and getting empty answers, or enforcing permissions in the prompt instead of in the retrieval filter.",
+      "Swapping the meaning of MMR's `lambda`, or of BM25's `k1` (saturation) and `b` (length normalisation).",
+      "Adding hybrid retrieval on every project because it always wins, without measuring recall on the actual query mix."
+    ],
+    "docs": [
+      {
+        "title": "Lucene BM25Similarity",
+        "url": "https://lucene.apache.org/core/9_11_0/core/org/apache/lucene/search/similarities/BM25Similarity.html"
+      },
+      {
+        "title": "An Analysis of Fusion Functions for Hybrid Retrieval (Bruch et al., 2022)",
+        "url": "https://arxiv.org/abs/2210.11934"
+      },
+      {
+        "title": "SPLADE: Sparse Lexical and Expansion Model (Formal et al., 2021)",
+        "url": "https://arxiv.org/abs/2107.05720"
+      },
+      {
+        "title": "The Use of MMR, Diversity-Based Reranking (Carbonell and Goldstein, 1998)",
+        "url": "https://www.cs.cmu.edu/~jgc/publication/The_Use_MMR_Diversity_Based_LTMIR_1998.pdf"
+      },
+      {
+        "title": "Weaviate: Filtering concepts (pre- and post-filtering)",
+        "url": "https://docs.weaviate.io/weaviate/concepts/filtering"
+      }
+    ]
+  }
+}
