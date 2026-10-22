@@ -1,0 +1,50 @@
+{
+  "agents-tools": {
+    "summary": "A tool-calling agent in LangGraph is a model node, a tool node and a conditional edge in a cycle. Know how `ToolNode` and `tools_condition` build that loop, how tools reach state through `ToolRuntime` or update it with `Command`, how `create_agent` replaced the deprecated `create_react_agent`, and when a hand-written graph beats the prebuilt agent.",
+    "points": [
+      "The loop as a graph: `START -> model`, `add_conditional_edges(\"model\", tools_condition)`, `add_edge(\"tools\", \"model\")`. `tools_condition` checks only the last message and returns `\"tools\"` if it is an `AIMessage` with tool calls, otherwise `\"__end__\"`. Name the `ToolNode` `\"tools\"` or pass a path map; otherwise `compile()` raises a `ValueError` about an unknown target.",
+      "`ToolNode(tools)` runs every tool call in the last `AIMessage` in parallel within one node execution and returns one `ToolMessage` per call, in call order, each with the matching `tool_call_id`. `messages_key` changes the state key it reads and writes; `tools_condition(state, messages_key=...)` has the same option.",
+      "`handle_tool_errors` defaults to a handler that turns only `ToolInvocationError` (arguments that fail the schema) into an error `ToolMessage` and re-raises everything else. `True` or a string catches everything, a tuple of types or a type-annotated callable catches only those types, and `False` lets everything raise.",
+      "`runtime: ToolRuntime` is injected by `ToolNode` and hidden from the model's schema. It carries `state`, `context`, `store`, `stream_writer`, `config`, `tool_call_id` and `tools`. The docs treat `InjectedState`, `InjectedStore` and `InjectedToolCallId` as older patterns that still work.",
+      "Tools see only the state passed to the `ToolNode`. As a graph node it gets the full state; if you call `tool_node.invoke(...)` yourself, pass the whole state, not just `{\"messages\": ...}`.",
+      "A tool may return `Command(update=...)` to change state. When it targets the current graph, the update must include a `ToolMessage` with `tool_call_id=runtime.tool_call_id`, or `ToolNode` raises a `ValueError`. Keys written by parallel tool calls need a reducer.",
+      "`create_react_agent` is deprecated since LangGraph 1.0 (`LangGraphDeprecatedSinceV10`, to be removed in 2.0). Migrating to `langchain.agents.create_agent` means: `prompt` becomes `system_prompt`, hooks become middleware, state must be a `TypedDict` subclass of `AgentState`, no pre-bound models, no `ToolNode` as `tools`, and the streamed node name changes from `agent` to `model`.",
+      "`create_agent` returns a compiled LangGraph graph (nodes `model` and `tools`, plus middleware nodes). It takes a checkpointer, `context_schema`, `state_schema`, middleware (`before_model`, `after_model`, `wrap_model_call`, `wrap_tool_call`) and `response_format` for structured output (`ToolStrategy` or `ProviderStrategy`).",
+      "`return_direct=True` short-circuits only inside `create_agent`, and only when every tool in the batch has it. In a hand-written graph your edges decide, so the flag does nothing unless you route on it.",
+      "Choose `create_agent` when the flow is a model-and-tools loop and the extra needs are cross-cutting (memory, approval, summarisation, typed output). Hand-write a `StateGraph` for required deterministic steps, custom loops (grade and rewrite) or parallel branches. A `create_agent` graph can be a node inside a custom graph.",
+      "Agentic RAG in the tutorial: `generate_query_or_respond` (model bound to a retriever tool), `retrieve` (`ToolNode`), a `grade_documents` conditional edge using structured output, then `generate_answer` or `rewrite_question`, which loops back. Add a retry counter yourself; the tutorial's loop is unbounded.",
+      "MCP in langchain 1.4 or later: `langchain.mcp.MCPAdapter` (beta, `pip install \"langchain[mcp]\"`) replaces `langchain-mcp-adapters`. Use `async with MCPAdapter(target) as a: tools = await a.list_tools()`. Server `isError` results become error `ToolMessage`s, transport failures raise, and elicitation pauses the run with an interrupt, so it needs a checkpointer."
+    ],
+    "traps": [
+      "Putting `tools_condition` on the tools node, or appending an audit `AIMessage` after the model: the router sees a message without tool calls and ends the run, leaving the tool calls unanswered.",
+      "Assuming default `ToolNode` error handling sends every tool exception to the model: runtime exceptions raise and fail the whole node, including the other parallel calls.",
+      "Setting `handle_tool_errors=True` everywhere: real bugs become error messages that the model retries forever, burning tokens instead of alerting you.",
+      "Attaching a `RetryPolicy` to a `ToolNode`: the whole batch re-runs, repeating side effects of tool calls that already succeeded.",
+      "A `wrap_tool_call` handler that returns a plain string: it is not a `ToolMessage` (langchain 1.4.7 stores it as a `HumanMessage`), so the tool call is left without a result.",
+      "Saying `create_react_agent` was removed in 1.0: it still imports, with a deprecation warning, and is scheduled for removal in 2.0.",
+      "Adding `create_agent` features by hand-writing a graph when middleware, `context_schema` or `response_format` already cover them, or relying on a prompt to enforce a step that must always run."
+    ],
+    "docs": [
+      {
+        "title": "Workflows and agents (ToolNode)",
+        "url": "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+      },
+      {
+        "title": "Tools (ToolRuntime, Command, return_direct)",
+        "url": "https://docs.langchain.com/oss/python/langchain/tools"
+      },
+      {
+        "title": "LangGraph v1 migration guide",
+        "url": "https://docs.langchain.com/oss/python/migrate/langgraph-v1"
+      },
+      {
+        "title": "Build an agentic RAG system",
+        "url": "https://docs.langchain.com/oss/python/langgraph/agentic-rag"
+      },
+      {
+        "title": "Model Context Protocol (MCP)",
+        "url": "https://docs.langchain.com/oss/python/langchain/mcp"
+      }
+    ]
+  }
+}
