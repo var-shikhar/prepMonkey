@@ -5,20 +5,18 @@ import { dayKey } from '@/lib/streak';
 import type { Familiarity } from '@/lib/goal-plan';
 import { getMyExams } from '@/server/analytics';
 import { listExams } from '@/server/exams';
-import { getCurrentPlan, plannerLimits } from '@/server/goal-plan';
+import { getCurrentPlan, plannerAccess } from '@/server/goal-plan';
 import { getOrCreateProfile } from '@/server/profile';
 import { requireUser } from '@/server/session';
 
 export const metadata: Metadata = { title: 'New goal plan' };
 
-export default async function NewPlanPage({ searchParams }: { searchParams: Promise<{ exam?: string }> }) {
-  const { exam: initialExam } = await searchParams;
+export default async function NewPlanPage() {
   const user = await requireUser('/planner/new');
-  const [limits, current, exams, mine, profile] = await Promise.all([
-    plannerLimits(user.id), getCurrentPlan(user.id), listExams(), getMyExams(user.id, 50), getOrCreateProfile(user.id),
+  const [access, current, exams, mine, profile] = await Promise.all([
+    plannerAccess(user.id), getCurrentPlan(user.id), listExams(), getMyExams(user.id, 50), getOrCreateProfile(user.id),
   ]);
-  if (current) redirect('/planner');
-  const plannable = exams.filter((e) => e.category === 'certification' || e.category === 'interview');
+  if (!access || current) redirect('/planner');
 
   // Pre-fill each subject's level from practice here: enough answers and good accuracy read as further along.
   const suggested: Record<string, Familiarity> = {};
@@ -32,10 +30,8 @@ export default async function NewPlanPage({ searchParams }: { searchParams: Prom
 
   return (
     <SetupFlow
-      exams={plannable}
+      exams={exams.filter((e) => e.category === 'certification' || e.category === 'interview')}
       suggested={suggested}
-      limits={limits}
-      initialExam={plannable.some((e) => e.id === initialExam) ? initialExam : undefined}
       today={dayKey(new Date(), profile.timezone)}
     />
   );
