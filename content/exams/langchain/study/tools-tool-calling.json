@@ -1,0 +1,35 @@
+{
+  "tools-tool-calling": {
+    "summary": "A tool is a typed, documented function the model can ask you to run. The model never executes anything: it returns structured requests in `AIMessage.tool_calls`, and your code (or `create_agent`) runs each tool and answers with a `ToolMessage` linked by `tool_call_id`. Know how schemas are built, how to control tool choice, how errors and hidden arguments work, and how to write the loop by hand.",
+    "points": [
+      "`@tool` turns a function into a `StructuredTool`. Name: the function name unless you pass one (`@tool(\"web_search\")`). Description: `description=`, else the docstring, else the `args_schema` docstring; with none of these the decorator raises `ValueError`. Type hints are required and become the argument schema.",
+      "The model sees only name, description and argument JSON schema (inspect with `tool.args`, `tool.tool_call_schema` or `convert_to_openai_tool(tool)`). Defaults show as `default` and drop out of `required`; `Annotated[str, \"text\"]` adds a description; `Literal[...]` becomes an `enum`. The body and return type are never sent.",
+      "`parse_docstring=True` reads a Google-style `Args:` section into per-argument descriptions and keeps only the summary as the description; without it the whole docstring is the description. For constraints, pass a Pydantic `args_schema` (`Field(ge=1, description=...)`), which is both shown to the model and enforced on invoke. Validation is Pydantic lax mode, so `\"3\"` is coerced to `3`.",
+      "Other ways to build tools: `StructuredTool.from_function(func, coroutine=..., name=..., description=..., args_schema=...)`, a `BaseTool` subclass implementing `_run` (and optionally `_arun`), or a toolkit's `get_tools()`. Without a native async implementation, `ainvoke` runs the sync function in a thread executor.",
+      "`llm = model.bind_tools(tools)` returns a new Runnable; the original model is unchanged. `tool_choice=\"any\"` forces some tool call, `tool_choice=\"<name>\"` forces that tool, and `parallel_tool_calls=False` asks supported providers (for example OpenAI, Anthropic) for at most one call per turn.",
+      "`AIMessage.tool_calls` is a list of `{name, args (dict), id, type: \"tool_call\"}`; it is empty when the model answers directly. Unparseable calls go to `invalid_tool_calls` (`name`, raw `args` string, `id`, `error`). Streamed calls arrive as `tool_call_chunks` that merge by `index` when you add chunks together.",
+      "`tool.invoke(args_dict)` returns the raw result; `tool.invoke(tool_call)` (the dict must include `type: \"tool_call\"`) returns a `ToolMessage` with stringified content, the tool `name` and the matching `tool_call_id`. Dict and list returns are serialised to JSON text.",
+      "Manual loop: invoke the bound model, append the `AIMessage`, run every tool call and append one `ToolMessage` per call (each with its own id), invoke again, and stop when there are no tool calls. Add an iteration cap, handle unknown tool names and `invalid_tool_calls`, and use `batch(..., return_exceptions=True)` to run parallel calls concurrently without losing results.",
+      "`response_format=\"content_and_artifact\"`: the tool returns `(content, artifact)`; the model sees `content`, and `ToolMessage.artifact` keeps raw data (rows, document ids) for your code only. Returning anything other than a two-tuple raises `ValueError`.",
+      "Errors: raise `ToolException` for expected failures. `handle_tool_error` (`False` re-raises, `True` returns the message, a string returns that string, a callable builds the output) applies only to `ToolException`; `handle_validation_error` does the same for bad arguments. Handled results invoked via a tool call become `ToolMessage(status=\"error\")`. In `create_agent`, broader handling lives in tool middleware.",
+      "Hidden arguments: `runtime: ToolRuntime` (1.x recommendation) gives agent tools `state`, `context`, `store`, `stream_writer`, `config` and `tool_call_id`. Older markers are `InjectedToolArg` (your code supplies the value), `InjectedToolCallId`, `InjectedState` and `InjectedStore`. All are excluded from the model's schema; `config` and `runtime` are reserved parameter names.",
+      "MCP standardises how servers expose tools and context. LangChain adapts MCP tools into ordinary tools (`langchain.mcp.MCPAdapter` with `await adapter.list_tools()` in langchain 1.4+, beta; `langchain-mcp-adapters` before that), and the model still invokes them through tool calls."
+    ],
+    "traps": [
+      "Calling `model.bind_tools(...)` without using its return value: the tools are never sent.",
+      "Building `ToolMessage(tool_call_id=\"1\")` by hand: the id must match the request, so pass the tool call to `tool.invoke` instead.",
+      "Answering only some of the parallel tool calls in a turn: every call needs its own `ToolMessage` before the next model call.",
+      "Expecting `handle_tool_error=True` to catch a `KeyError`: it only handles `ToolException`.",
+      "Treating `InjectedToolArg` as a security boundary: it hides the argument from the schema, but a model can still put the key in `args`, so overwrite injected values in code.",
+      "Stopping the loop on `not ai.tool_calls` alone, which mistakes a malformed call in `invalid_tool_calls` for a final answer, and looping without a step budget.",
+      "Reading `tool_calls` on a single streamed chunk: it is a partial parse; accumulate chunks first."
+    ],
+    "docs": [
+      { "title": "LangChain docs: Tools", "url": "https://docs.langchain.com/oss/python/langchain/tools" },
+      { "title": "LangChain docs: Models (tool calling)", "url": "https://docs.langchain.com/oss/python/langchain/models" },
+      { "title": "LangChain docs: Messages (ToolMessage, tool calls)", "url": "https://docs.langchain.com/oss/python/langchain/messages" },
+      { "title": "API reference: tool decorator", "url": "https://reference.langchain.com/python/langchain-core/tools/convert/tool" },
+      { "title": "LangChain docs: Model Context Protocol", "url": "https://docs.langchain.com/oss/python/langchain/mcp" }
+    ]
+  }
+}
