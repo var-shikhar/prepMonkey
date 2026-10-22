@@ -1,0 +1,51 @@
+{
+  "evaluation": {
+    "summary": "Evaluating LLMs means choosing metrics that match what success means for the task, knowing what public benchmarks really measure and how contamination inflates them, using LLM judges without being fooled by their biases, and running offline and online comparisons with honest statistics. Interviewers probe perplexity, pass@k, BLEU/ROUGE/BERTScore, judge bias, Cohen's kappa, building eval sets without labels, and why benchmark gains do not always reach users.",
+    "points": [
+      "Perplexity = exp(average negative log-likelihood per token) = exp(cross-entropy). A loss of 2.0 nats means PPL of about 7.39. It depends on the tokenizer (compare per byte or character across tokenizers), on how context is given (disjoint chunks versus a strided sliding window: 19.44 versus 16.44 for GPT-2 large in the Transformers docs), and it is not well defined for masked models. It does not measure helpfulness.",
+      "HumanEval: 164 hand-written Python problems with unit tests (7.7 tests on average); reported as pass@k. Unbiased estimator: pass@k = 1 - C(n-c, k) / C(n, k) with n >= k samples (the Codex paper used n = 200). The plug-in 1 - (1 - c/n)^k is biased low. pass@k never decreases with k, and matters for a product only if it can pick the correct sample.",
+      "Benchmarks: MMLU (four-option questions across 57 subjects), GSM8K (about 8.5K grade-school maths word problems), SWE-bench (2,294 real GitHub issues from 12 Python repositories; solved only if fail-to-pass and pass-to-pass tests all pass), MT-Bench (80 multi-turn questions in 8 categories, LLM-judged), Chatbot Arena (anonymous pairwise human votes fitted with Bradley-Terry coefficients instead of the earlier online Elo).",
+      "Contamination: test items or close variants in training data inflate scores. Symptom: a drop on a fresh, matched test; GSM1k found drops of up to 8% for some model families, and models more likely to reproduce GSM8K examples showed bigger gaps.",
+      "Overlap metrics: BLEU = clipped n-gram precision (up to 4-grams) times a brevity penalty, precision-oriented; ROUGE is recall-oriented (ROUGE-N n-gram overlap, ROUGE-L longest common subsequence), so recall alone rewards padding; BERTScore greedily matches tokens by contextual-embedding cosine similarity and reports P/R/F1, crediting paraphrases. None of them checks facts.",
+      "QA metrics: SQuAD-style normalisation (lowercase, strip punctuation and a/an/the). Exact match is all-or-nothing; token F1 gives partial credit (\"eiffel tower in paris\" vs \"eiffel tower\" gives F1 0.67). Take the maximum over multiple references.",
+      "LLM-as-judge: pairwise comparison, single-answer (pointwise) grading, and reference-guided grading. A strong judge agreed with humans over 80% of the time, about the same as humans with each other. Pointwise suits monitoring one system over time; pairwise suits choosing between two.",
+      "Judge biases and fixes: position (judge both orders, tie if inconsistent), verbosity (anti-padding rubric, length control; LC AlpacaEval raised its Arena correlation from 0.94 to 0.98), self-preference (judges recognise and favour their own outputs; use a different family and judge blind), weak maths grading (reference-guided).",
+      "Judge validation: Cohen's kappa = (p_o - p_e) / (1 - p_e). Raw agreement misleads on skewed data: a judge that always says pass on a 90%-pass set agrees 90% of the time with kappa 0. Measure per criterion, prefer specific yes/no checks over a holistic 1-10 score, and freeze the judge model and prompt.",
+      "Building eval sets without labels: sample real or realistic inputs, add edge and adversarial cases, write explicit criteria, validate a judge on a small human-labelled subset, then grow the set from production failures. Keep a held-out split nobody tunes against, and never publish it.",
+      "Statistics: SE of an accuracy = sqrt(p(1-p)/n) (80% on 400 items gives 0.02). Compare two systems on the same items with a paired test on per-question differences; cluster standard errors when questions share a document; size A/B tests in advance (detecting 60% to 62% at 5% significance and 80% power needs about 9,300 per arm).",
+      "Offline versus online: offline (golden set, regression suite in CI) is fast and repeatable; online (shadow, canary, A/B with guardrails such as latency, cost and complaints) shows real impact. Benchmark gains can miss users because of contamination, distribution mismatch, style or verbosity changes, refusals and latency."
+    ],
+    "traps": [
+      "Treating lower perplexity as proof of a better assistant, or comparing perplexities across different tokenizers.",
+      "Estimating pass@k as 1 - (1 - p)^k, or quoting pass@10 for a product that shows users one unverified answer.",
+      "Reporting raw judge-human agreement without kappa on a skewed label distribution.",
+      "Concluding \"no difference\" because two confidence intervals overlap, when a paired test on the same questions is the right comparison.",
+      "Using BLEU or ROUGE to judge factual accuracy, or optimising ROUGE recall and rewarding padding.",
+      "Letting the judge see model names, always showing your own model first, or using the same model family as both contestant and judge.",
+      "Tuning prompts until the golden set hits 100% and calling that quality.",
+      "Stopping an A/B test as soon as the result looks significant."
+    ],
+    "docs": [
+      {
+        "title": "Hugging Face Transformers: Perplexity of fixed-length models",
+        "url": "https://huggingface.co/docs/transformers/perplexity"
+      },
+      {
+        "title": "Chen et al., Evaluating Large Language Models Trained on Code (HumanEval, pass@k)",
+        "url": "https://arxiv.org/abs/2107.03374"
+      },
+      {
+        "title": "Zheng et al., Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena",
+        "url": "https://arxiv.org/abs/2306.05685"
+      },
+      {
+        "title": "Miller, Adding Error Bars to Evals",
+        "url": "https://arxiv.org/abs/2411.00640"
+      },
+      {
+        "title": "scikit-learn: cohen_kappa_score",
+        "url": "https://scikit-learn.org/stable/modules/generated/sklearn.metrics.cohen_kappa_score.html"
+      }
+    ]
+  }
+}
