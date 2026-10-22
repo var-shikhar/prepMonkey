@@ -1,0 +1,35 @@
+{
+  "transports-versioning": {
+    "summary": "MCP has two standard transports, stdio and Streamable HTTP. Revision 2026-07-28 made both stateless: no handshake, no sessions, no resumable streams, and HTTP headers that mirror the body for intermediaries. Versions are dates, each request declares its version, and dual-era clients and servers bridge to the initialize-based 2025 revisions with well-defined fallback rules.",
+    "points": [
+      "stdio: the host launches the server as a subprocess; one JSON-RPC message per line, no embedded newlines, UTF-8. stdout carries only MCP messages; stderr is for any logging and SHOULD NOT be read as an error signal. The server never writes requests and the client never writes responses. Shutdown: close stdin, wait, then force-terminate (SIGTERM then SIGKILL, or TerminateProcess on Windows). Restart a crashed server and retry in-flight requests.",
+      "Streamable HTTP: one MCP endpoint that accepts POST; every client message is its own POST with `Accept: application/json, text/event-stream`. Requests are answered with a single JSON object or a request-scoped SSE stream (progress and log notifications, then the response). Accepted notifications get 202 with no body. Send `X-Accel-Buffering: no` on SSE so proxies do not buffer.",
+      "Removed from Streamable HTTP in 2026-07-28: the GET stream, `Mcp-Session-Id` sessions (and DELETE), server-sent requests, and resumability via `Last-Event-ID`. A broken stream loses the request: re-issue it with a new ID. Closing the stream is the cancellation signal. Modern-only servers answer GET or DELETE with 405 and ignore session and Last-Event-ID headers.",
+      "Request headers: `MCP-Protocol-Version` on every POST must match `_meta` protocolVersion; `Mcp-Method` on all requests; `Mcp-Name` (from `params.name` or `params.uri`) for `tools/call`, `resources/read` and `prompts/get`. Any mismatch, or a missing or malformed required header, gets 400 plus `-32020` HeaderMismatch. The body is the source of truth.",
+      "`x-mcp-header` in a tool's `inputSchema` mirrors a primitive (string, integer or boolean; not number) argument into `Mcp-Param-{Name}`. It must be reachable only through `properties` keys. HTTP clients MUST support it and MUST drop just the invalid tool from `tools/list`. Non-ASCII, control-character or padded values are sent as `=?base64?...?=`.",
+      "Security: validate `Origin` on every connection (403 if present and invalid), bind local servers to 127.0.0.1, and authenticate connections; otherwise DNS rebinding lets websites drive local servers. Gateways that enforce policy on mirrored headers SHOULD reject requests whose version predates header validation.",
+      "HTTP status map (2026-07-28): 202 accepted notification; 400 unsupported version (`-32022`), missing capability (`-32021`), header mismatch (`-32020`) or missing required `_meta` (`-32602`); 403 bad Origin; 404 plus `-32601` for unknown methods; 405 for GET or DELETE.",
+      "Versions are `YYYY-MM-DD` strings marking the last backwards-incompatible change: 2024-11-05 (HTTP+SSE), 2025-03-26 (Streamable HTTP, OAuth 2.1, batching added), 2025-06-18 (batching removed, structured output, elicitation, `MCP-Protocol-Version` header), 2025-11-25 (experimental tasks, URL elicitation, CIMD), and 2026-07-28 (stateless core, Current). Revisions are Draft, Current or Final.",
+      "Negotiation: each request declares its version and the server accepts or rejects each one. If unsupported: `UnsupportedProtocolVersionError` `-32022` with `data.supported` and `data.requested`, and the client retries with a common version. Servers MUST implement `server/discover` (supportedVersions, capabilities, instructions, serverInfo, ttlMs and cacheScope); clients MAY call it first.",
+      "Era fallback: on stdio, probe with `server/discover`. A DiscoverResult or a recognised modern error means modern; any other error or a timeout means legacy, so fall back to `initialize`. On HTTP, inspect a 400 body: a modern error means correct and retry, while an empty or unrecognised body means fall back to `initialize`, then to HTTP+SSE (GET expecting an `endpoint` event). Never key fallback to one code; cache the era per process or origin.",
+      "Dual-era servers MAY serve both eras on one endpoint: `initialize` selects legacy semantics scoped to the process or session, and modern `_meta` is served statelessly. Modern-only servers should name their supported versions in any error to `initialize`. A missing `MCP-Protocol-Version` header MAY be treated as 2025-03-26 if pre-2025-06-18 clients are supported; otherwise reject.",
+      "Feature lifecycle (SEP-2596): Active, Deprecated, Removed. The minimum deprecation window is twelve months (ninety days for expedited security removal), counted from the revision that deprecates the feature. Deprecated in 2026-07-28: Roots, Sampling, Logging, Dynamic Client Registration (earliest removal in the first revision on or after 2027-07-28), plus HTTP+SSE and the `includeContext` values. Earliest removal means eligible, not guaranteed. Extensions are negotiated in `extensions`; without support, fall back to core or reject."
+    ],
+    "traps": [
+      "Any `print()` or `console.log()` to stdout in a stdio server corrupts the JSON-RPC stream; log to stderr.",
+      "Saying Streamable HTTP dropped SSE: it still streams individual responses as SSE; what went away is the separate SSE endpoint (HTTP+SSE) and, in 2026-07-28, the GET stream.",
+      "Falling back to `initialize` on `-32022`: that is a modern server asking you to retry with a supported version.",
+      "Resuming a broken stream with `Last-Event-ID` or reusing the request ID; 2026-07-28 requires a new request with a new ID.",
+      "Describing `initialize`, `Mcp-Session-Id` or sticky sessions as current behaviour; they belong to 2025-11-25 and earlier.",
+      "Trusting mirrored headers at a gateway without checking the version; pre-2026 servers never validated them against the body.",
+      "Treating earliest removal as a hard deadline; Core Maintainers decide, and SDKs follow their own support policies."
+    ],
+    "docs": [
+      { "title": "Specification: Transports overview", "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports" },
+      { "title": "Specification: Streamable HTTP", "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http" },
+      { "title": "Specification: stdio", "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio" },
+      { "title": "Specification: Versioning and Compatibility", "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning" },
+      { "title": "Deprecated features registry", "url": "https://modelcontextprotocol.io/specification/2026-07-28/deprecated" }
+    ]
+  }
+}
