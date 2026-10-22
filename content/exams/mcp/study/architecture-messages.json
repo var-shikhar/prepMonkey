@@ -1,0 +1,35 @@
+{
+  "architecture-messages": {
+    "summary": "MCP connects AI applications (hosts) to external capabilities through servers, using JSON-RPC 2.0 messages. Since revision 2026-07-28 the protocol is stateless: there is no handshake, every request carries its version and capabilities in `_meta`, and every result carries a `resultType`. Know the roles, the message shapes and ID rules, the error-code ranges, and the per-request metadata that replaced connection state.",
+    "points": [
+      "Roles: the host is the AI application that owns the model, the conversation and consent; it creates one MCP client per server, and each client keeps a dedicated 1:1 connection; servers expose tools (model-controlled), resources (application-driven) and prompts (user-controlled). Servers never see the whole conversation or other servers.",
+      "Why MCP: it turns N apps x M tools custom connectors into N + M implementations, with runtime discovery (`*/list`) and one invocation contract. It complements model function calling (the model still picks the tool; the host's client runs `tools/call`) and RAG (a retriever can be exposed as a tool or resource).",
+      "Two layers: the data layer (JSON-RPC methods, `server/discover`, primitives, notifications, progress) and the transport layer (stdio or Streamable HTTP framing, connection handling, HTTP authorization). Data-layer messages are identical on every transport.",
+      "JSON-RPC shapes: a request has `method` and `id` (string or integer, never `null`, unique among the sender's unanswered requests); a response has the same `id` plus `result` or `error`; a notification has `method` and no `id`, and gets no response. Error responses may omit `id` only when it could not be read.",
+      "Direction (2026-07-28): clients send requests and notifications; servers send responses and request-scoped notifications. Servers MUST NOT initiate JSON-RPC requests; when they need input they return `resultType: \"input_required\"` (Multi Round-Trip Requests).",
+      "`resultType` is required on every 2026-07-28 result: `\"complete\"` or `\"input_required\"`, plus values defined by advertised extensions. Unrecognised values MUST be treated as invalid; an absent `resultType` from an earlier-revision server MUST be treated as `\"complete\"`.",
+      "Per-request `_meta`: `io.modelcontextprotocol/protocolVersion` and `io.modelcontextprotocol/clientCapabilities` are required on every request (missing means `-32602`, HTTP 400); `clientInfo` is a SHOULD; `logLevel` and `progressToken` are opt-ins. Servers SHOULD return `io.modelcontextprotocol/serverInfo` in result `_meta`. Info fields are self-reported and must not drive security decisions.",
+      "Statelessness: servers MUST NOT rely on earlier requests on the same connection for version, capabilities or identity, and a stdio process is not a session. Cross-request state MUST be referenced by an explicit identifier, typically a server-minted handle passed as a normal tool argument. Capabilities are judged per request; a missing one needed for processing gets `-32021` MissingRequiredClientCapability with `data.requiredCapabilities`.",
+      "Error codes: standard `-32700` parse, `-32600` invalid request, `-32601` method not found, `-32602` invalid params (also unknown tool and, since 2026-07-28, resource not found), `-32603` internal. `-32000` to `-32019` is legacy; `-32020` to `-32099` is reserved for the spec (`-32020` HeaderMismatch, `-32021` MissingRequiredClientCapability, `-32022` UnsupportedProtocolVersion). Put new application codes outside `-32768` to `-32000`.",
+      "Cancellation: on Streamable HTTP, closing the request's SSE stream is the signal; on stdio, send `notifications/cancelled` with `requestId` and an optional `reason`. Servers may ignore unknown or finished requests; clients ignore late responses. Set timeouts on every request, optionally reset on progress, but always enforce a maximum.",
+      "Progress: put a unique `progressToken` in `_meta`; the server MAY send `notifications/progress` with an increasing `progress`, optional `total` and `message`, and MUST stop after completion.",
+      "`_meta` keys: an optional dot-label prefix ending in `/` (reverse DNS preferred), then a name. Prefixes whose second label is `mcp` or `modelcontextprotocol` are reserved. `traceparent`, `tracestate` and `baggage` are unprefixed exceptions for OpenTelemetry (W3C formats). Extension identifiers use the same rules with a mandatory prefix and are advertised in the `extensions` capability."
+    ],
+    "traps": [
+      "Saying the model calls the MCP server: the host's client sends `tools/call`; the model only emits a tool-use request.",
+      "Using `-32601` for an unknown tool name: `tools/call` exists, so the spec uses `-32602` Invalid params.",
+      "Putting an `id` on a notification turns it into a request; notifications must never carry an ID or get a reply.",
+      "Assuming a stdio connection is a session, or reusing capabilities declared on an earlier request; every 2026-07-28 request stands alone.",
+      "Calling `logging/setLevel` or `ping`: both were removed in 2026-07-28 (log level is now per request via `_meta`, and Logging itself is deprecated).",
+      "Treating `clientInfo` as authentication; it is self-reported and only for display, logging and debugging.",
+      "Allocating a custom error in `-32020` to `-32099`; that sub-range belongs to the MCP specification."
+    ],
+    "docs": [
+      { "title": "Architecture overview", "url": "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture" },
+      { "title": "Specification: Architecture", "url": "https://modelcontextprotocol.io/specification/2026-07-28/architecture" },
+      { "title": "Specification: Base protocol overview (messages, statelessness, _meta, error codes)", "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic" },
+      { "title": "Specification: Cancellation", "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/cancellation" },
+      { "title": "Specification: Key changes in 2026-07-28", "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog" }
+    ]
+  }
+}
