@@ -1,17 +1,16 @@
-import 'server-only';
-import { and, desc, eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { db } from '@/db';
 import { interview, type InterviewReport, type InterviewTurn } from '@/db/schema';
 import {
   INTERVIEW_FOCUS, INTERVIEW_LEVELS, INTERVIEW_ROLES, RUBRICS, focusLabel, levelLabel, roleLabel,
   type InterviewFocusId,
 } from '@/lib/interview-presets';
-import { shortlist, seedFrom, type InterviewPrompt } from '@/lib/interview-prompts';
-import frontendPrompts from '../../../content/interview-prompts/frontend.json';
+import { seedFrom, shortlist, type InterviewPrompt } from '@/lib/interview-prompts';
+import { and, desc, eq } from 'drizzle-orm';
+import 'server-only';
+import { z } from 'zod';
 import { AppError, notFound } from '../errors';
 import { evaluateBadges } from '../gamification';
-import { jsonCompletion, consumeAiQuota } from './client';
+import { consumeAiQuota, jsonCompletion } from './client';
 
 type InterviewRow = typeof interview.$inferSelect;
 
@@ -23,8 +22,8 @@ const MAX_ANSWER = 4000;
 
 /** Roles whose technical questions come from the researched bank of real interview questions. */
 const REAL_QUESTIONS: Record<string, InterviewPrompt[]> = {
-  frontend: frontendPrompts as InterviewPrompt[],
-  fullstack: frontendPrompts as InterviewPrompt[],
+  frontend: [] as InterviewPrompt[],
+  fullstack: [] as InterviewPrompt[],
 };
 
 /** A per-interview shortlist of real questions; seeded by the interview so every turn sees the same list. */
